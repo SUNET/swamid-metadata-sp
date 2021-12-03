@@ -58,6 +58,8 @@ if (isset($_FILES['XMLfile'])) {
 	showEntity($_GET['mergeEntity']);
 } elseif (isset($_GET['removeSSO']) && isset($_GET['type'])) {
 	removeSSO($_GET['removeSSO'], $_GET['type']);
+} elseif (isset($_GET['removeKey']) && isset($_GET['type']) && isset($_GET['use']) && isset($_GET['hash'])) {
+	removeKey($_GET['removeKey'], $_GET['type'], $_GET['use'], $_GET['hash']);
 } elseif (isset($_GET['rawXML'])) {
 	$display->showRawXML($_GET['rawXML']);
 } else {
@@ -110,6 +112,7 @@ function showEntityList($status = 1) {
 
 	$showAll = true;
 	$sortOrder = 'entityID';
+	$query = '';
 	if (isset($_GET['feed'])) {
 		$sortOrder = 'publishIn DESC, entityID';
 	}
@@ -130,13 +133,19 @@ function showEntityList($status = 1) {
 		$sortOrder = 'errors DESC, entityID';
 	}
 
+	if (isset($_GET['query'])) {
+		$query = $_GET['query'];
+		$filter = '?query='.$query;
+	} else {
+		$filter = '?query';
+	}
+
 	$html->showHeaders('Metadata SWAMID - New');
 	showMenu();
-	$filter = '?all';
 	if (isset($_GET['action']))
 		$filter .= '&action='.$_GET['action'];
-	$entitys = $db->prepare("SELECT id, entityID, isIdP, isSP, publishIn, data AS OrganizationDisplayName, lastUpdated, lastValidated, validationOutput, warnings, errors FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = $status ORDER BY $sortOrder");
-
+	$entitys = $db->prepare("SELECT id, entityID, isIdP, isSP, publishIn, data AS OrganizationDisplayName, lastUpdated, lastValidated, validationOutput, warnings, errors FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
+	$entitys->bindValue(':Query', "%".$query."%");
 	$extraTH = '';
 
 	print '
@@ -144,7 +153,8 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><a href="%s&entityID">EntityID</a></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $filter, $filter, $filter, $filter);
+	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"> <input type="submit" value="Filtrera"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $filter, $filter, $filter, $filter);
+
 	print $extraTH . "</tr>\n";
 	showList($entitys);
 }
@@ -349,8 +359,8 @@ function importXML(){
 		include '../include/Metadata.php';
 		$metadata = new Metadata($configFile, $import->getEntityID(), 'New');
 		$metadata->importXML($import->getXML());
-		$metadata->validateXML();
-		$metadata->validateSAML();
+		$metadata->validateXML(true);
+		$metadata->validateSAML(true);
 		showEntity($metadata->dbIdNr);
 	} else
 		print ($import->getError());
@@ -367,15 +377,31 @@ function removeSSO($Entity_id, $type) {
 	validateEntity($Entity_id);
 	showEntity($Entity_id);
 }
+
+####
+# Remove an IDPSSO / SPSSO Key that is old & unused
+####
+function removeKey($Entity_id, $type, $use, $hash) {
+	global $configFile;
+	include '../include/MetadataEdit.php';
+	$metadata = new MetadataEdit($configFile, $Entity_id);
+	$metadata->removeKey($type, $use, $hash);
+	validateEntity($Entity_id);
+	showEntity($Entity_id);
+}
+
 ####
 # Shows menu row
 ####
 function showMenu() {
 	global $userLevel, $menuActive;
-	printf('<a href=".?action=new"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $menuActive == 'new' ? '' : '-outline');
-	printf('<a href=".?action=wait"><button type="button" class="btn btn%s-primary">Pending</button></a>', $menuActive == 'wait' ? '' : '-outline');
-	printf('<a href=".?action=pub"><button type="button" class="btn btn%s-primary">Published</button></a>', $menuActive == 'publ' ? '' : '-outline');
-	printf('<a href=".?action=upload"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $menuActive == 'upload' ? '' : '-outline');
+	$filter='';
+	if (isset($_GET['query']))
+		$filter='&query='.$_GET['query'];
+	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
+	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
+	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
+	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	print "<br>\n";print "<br>\n";
 }
 
@@ -383,7 +409,7 @@ function validateEntity($Entity_id) {
 	global $configFile;
 	include '../include/Metadata.php';
 	$metadata = new Metadata($configFile, $Entity_id);
-	$metadata->validateXML();
+	$metadata->validateXML(true);
 	$metadata->validateSAML();
 }
 

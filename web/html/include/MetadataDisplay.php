@@ -463,7 +463,7 @@ Class MetadataDisplay {
 	# Shows KeyInfo for IdP or SP
 	####
 	function showKeyInfo($Entity_id, $type, $otherEntity_id=0, $added = false) {
-		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type;');
+		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY notValidAfter DESC;');
 		$keyInfoHandler->bindParam(':Type', $type);
 		if ($otherEntity_id) {
 			$otherKeyInfos = array();
@@ -478,9 +478,37 @@ Class MetadataDisplay {
 		$keyInfoHandler->bindParam(':Id', $Entity_id);
 		$keyInfoHandler->execute();
 
+		$encryptionFound = false;
+		$signingFound = false;
 		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-			$use = $keyInfo['use'] == '' ? 'encryption & signing' : $keyInfo['use'];
+			$okRemove = false;
+			switch ($keyInfo['use']) {
+				case 'encryption' :
+					$use = 'encryption';
+					if ($encryptionFound)
+						$okRemove = true;
+					else
+						$encryptionFound = true;
+					break;
+				case 'signing' :
+					$use = 'signing';
+					if ($signingFound)
+						$okRemove = true;
+					else
+						$signingFound = true;
+					break;
+				case 'both' :
+					$use = 'encryption & signing';
+					if ($encryptionFound && $signingFound)
+						$okRemove = true;
+					else {
+						$encryptionFound = true;
+						$signingFound = true;
+					}
+					break;
+			}
 			$name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+
 			if ($otherEntity_id) {
 				$state = ($added) ? 'success' : 'danger';
 				if (isset($otherKeyInfos[$keyInfo['hash']][$keyInfo['use']])) {
@@ -488,14 +516,15 @@ Class MetadataDisplay {
 				}
 			} else
 				$state = 'dark';
-				printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
+				$extraButton = $okRemove ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&hash=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['hash']) : '';
+			printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s%s</span>
                 <ul>
                   <li>notValidAfter = %s</li>
                   <li>Subject = %s</li>
                   <li>Issuer = %s</li>
                   <li>Type / bits = %s / %d</li>
                   <li>Hash = %s</li>
-                </ul>', "\n", $state, $use, $name, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash']);
+                </ul>', "\n", $state, $use, $name, $extraButton, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash']);
 		}
 	}
 

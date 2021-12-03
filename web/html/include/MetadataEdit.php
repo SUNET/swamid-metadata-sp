@@ -435,7 +435,7 @@ Class MetadataEdit {
 			printf ('%s          <li>%s</li><ul>', "\n", $type);
 			foreach ($values as $data) {
 				$entityType = $data['type'];
-				if ($entityType == 'IdP/SP' || ($entityType == 'Idp' && $this->isIdP) || ($entityType == 'SP' && $this->isSP) ) {
+				if ($entityType == 'IdP/SP' || ($entityType == 'IdP' && $this->isIdP) || ($entityType == 'SP' && $this->isSP) ) {
 					$value = $data['value'];
 					if (isset($existingAttributeValues[$type]) && isset($existingAttributeValues[$type][$value])) {
 						printf ('%s            <li>%s</li>', "\n", $value);
@@ -785,13 +785,13 @@ Class MetadataEdit {
 				$heightValue = $_GET['height'];
 			} else {
 				$error .= $_GET['element'] == "Logo" ? '<br>Height must be larger than 0' : '';
-				$heightValue = '';
+				$heightValue = 0;
 			}
 			if (isset($_GET['width']) && $_GET['width'] > 0 ) {
 				$widthValue = $_GET['width'];
 			} else {
 				$error .= $_GET['element'] == "Logo" ? '<br>Width must be larger than 0' : '';
-				$widthValue = '';
+				$widthValue = 0;
 			}
 			if ($error) {
 				printf ('<div class="row alert alert-danger" role="alert">Error:%s</div>', $error);
@@ -862,23 +862,28 @@ Class MetadataEdit {
 							$MduiElement = false;
 							while ($child && ! $MduiElement) {
 								if ($child->nodeName == $elementmd && $child->getAttribute('xml:lang') == $langvalue) {
-									if ($elementmd == 'md:Logo') {
+									if ($elementmd == 'mdui:Logo') {
 										if ( $child->getAttribute('height') == $heightValue && $child->getAttribute('width') == $widthValue)
 											$MduiElement = $child;
-									} else
+									} else {
 										$MduiElement = $child;
+									}
 								}
 								$child = $child->nextSibling;
 							}
 							if ($MduiElement) {
 								# Update value
 								$MduiElement->nodeValue = $value;
-								$mduiUpdateHandler = $this->metaDb->prepare('UPDATE Mdui SET data = :Data WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND height = :Height AND  width = :Width AND element = :Element;');
+								if ($elementmd == 'mdui:Logo') {
+									$mduiUpdateHandler = $this->metaDb->prepare('UPDATE Mdui SET data = :Data WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND height = :Height AND  width = :Width AND element = :Element;');
+									$mduiUpdateHandler->bindParam(':Height', $heightValue);
+									$mduiUpdateHandler->bindParam(':Width', $widthValue);
+								} else {
+									$mduiUpdateHandler = $this->metaDb->prepare('UPDATE Mdui SET data = :Data WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND element = :Element;');
+								}
 								$mduiUpdateHandler->bindParam(':Id', $this->dbIdNr);
 								$mduiUpdateHandler->bindParam(':Type', $type);
 								$mduiUpdateHandler->bindParam(':Lang', $langvalue);
-								$mduiUpdateHandler->bindParam(':Height', $heightValue);
-								$mduiUpdateHandler->bindParam(':Width', $widthValue);
 								$mduiUpdateHandler->bindParam(':Element', $elementValue);
 								$mduiUpdateHandler->bindParam(':Data', $value);
 								$mduiUpdateHandler->execute();
@@ -886,15 +891,19 @@ Class MetadataEdit {
 								# Add if missing
 								$MduiElement = $this->newXml->createElement($elementmd, $value);
 								$MduiElement->setAttribute('xml:lang', $langvalue);
-								if ($heightValue > 0 ) $MduiElement->setAttribute('height', $heightValue);
-								if ($widthValue > 0 ) $MduiElement->setAttribute('width', $widthValue);
+								if ($elementmd == 'mdui:Logo') {
+									$MduiElement->setAttribute('height', $heightValue);
+									$MduiElement->setAttribute('width', $widthValue);
+									$mduiAddHandler = $this->metaDb->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
+									$mduiAddHandler->bindParam(':Height', $heightValue);
+									$mduiAddHandler->bindParam(':Width', $widthValue);
+								} else {
+									$mduiAddHandler = $this->metaDb->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, 0, 0, :Element, :Data);');
+								}
 								$UUInfo->appendChild($MduiElement);
-								$mduiAddHandler = $this->metaDb->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
- 								$mduiAddHandler->bindParam(':Id', $this->dbIdNr);
+								$mduiAddHandler->bindParam(':Id', $this->dbIdNr);
 								$mduiAddHandler->bindParam(':Type', $type);
 								$mduiAddHandler->bindParam(':Lang', $langvalue);
-								$mduiAddHandler->bindParam(':Height', $heightValue);
-								$mduiAddHandler->bindParam(':Width', $widthValue);
 								$mduiAddHandler->bindParam(':Element', $elementValue);
 								$mduiAddHandler->bindParam(':Data', $value);
 								$mduiAddHandler->execute();
@@ -934,14 +943,28 @@ Class MetadataEdit {
 									$moreMduiElement = false;
 									while ($child && ! $MduiElement) {
 										if ($child->nodeName == $elementmd && $child->getAttribute('xml:lang') == $langvalue) {
-											$MduiElement = $child;
+											if ($elementmd == 'mdui:Logo') {
+												if ($child->getAttribute('height') == $heightValue && $child->getAttribute('width') == $widthValue) {
+													$MduiElement = $child;
+												} else {
+													$moreMduiElement = true;
+												}
+											} else {
+												$MduiElement = $child;
+											}
 										} else
 											$moreMduiElement = true;
 										$child = $child->nextSibling;
 									}
 									if ($MduiElement) {
 										# Remove Node
-										$mduiRemoveHandler = $this->metaDb->prepare('DELETE FROM Mdui WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND element = :Element;');
+										if ($elementmd == 'mdui:Logo') {
+											$mduiRemoveHandler = $this->metaDb->prepare('DELETE FROM Mdui WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND height = :Height AND  width = :Width AND element = :Element;');
+											$mduiRemoveHandler->bindParam(':Height', $heightValue);
+											$mduiRemoveHandler->bindParam(':Width', $widthValue);
+										} else {
+											$mduiRemoveHandler = $this->metaDb->prepare('DELETE FROM Mdui WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND element = :Element;');
+										}
 										$mduiRemoveHandler->bindParam(':Id', $this->dbIdNr);
 										$mduiRemoveHandler->bindParam(':Type', $type);
 										$mduiRemoveHandler->bindParam(':Lang', $langvalue);
@@ -2661,7 +2684,7 @@ Class MetadataEdit {
 	private function mergeIdPScopes() {
 		if ( !$this->oldExists)
 			return;
-		$scopesHandler = $this->metaDb->prepare('SELECT scope, regexp FROM Scopes WHERE entity_id = :Id;');
+		$scopesHandler = $this->metaDb->prepare('SELECT scope, `regexp` FROM Scopes WHERE entity_id = :Id;');
 		$scopesHandler->bindParam(':Id', $this->dbOldIdNr);
 		$scopesHandler->execute();
 		while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -2732,7 +2755,7 @@ Class MetadataEdit {
 					$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
 				}
 				if ($changed) {
-					$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (entity_id, scope, regexp) VALUES (:Id, :Scope, 0);');
+					$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (entity_id, scope, `regexp`) VALUES (:Id, :Scope, 0);');
 					$scopesInsertHandler->bindParam(':Id', $this->dbIdNr);
 					$scopesInsertHandler->bindParam(':Scope', $_GET['value']);
 					$scopesInsertHandler->execute();
@@ -3360,6 +3383,9 @@ Class MetadataEdit {
 			case 'SP' :
 				$SSODescriptor = 'md:SPSSODescriptor';
 				break;
+			case 'IdP' :
+				$SSODescriptor = 'md:IDPSSODescriptor';
+				break;
 			default :
 				printf ("Unknown type : %s", $type);
 				return;
@@ -3378,6 +3404,84 @@ Class MetadataEdit {
 		$entityHandler->bindParam(':Id', $this->dbIdNr);
 		$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
 		$entityHandler->execute();
+	}
+	public function removeKey($type, $use, $hash) {
+		switch ($type) {
+			case 'SPSSO' :
+				$Descriptor = 'md:SPSSODescriptor';
+				break;
+			case 'IDPSSO' :
+				$Descriptor = 'md:IDPSSODescriptor';
+				break;
+		}
+		$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
+
+		# Find SSODecriptor in XML
+		$child = $EntityDescriptor->firstChild;
+		$SSODescriptor = false;
+		while ($child && ! $SSODescriptor) {
+			if ($child->nodeName == $Descriptor) {
+				$SSODescriptor = $child;
+			}
+			$child = $child->nextSibling;
+		}
+		if ($SSODescriptor) {
+			$child = $SSODescriptor->firstChild;
+			$removeKeyDescriptor = false;
+			$changed = false;
+			while ($child) {
+				// Loop thrue all KeyDescriptor:s not just the first one!
+				if ($child->nodeName == 'md:KeyDescriptor') {
+					$usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
+					if ( $usage == $use ) {
+						$KeyDescriptor = $child; // Save to be able to remove this KeyDescriptor
+						$descriptorChild = $KeyDescriptor->firstChild;
+						while ($descriptorChild && !$removeKeyDescriptor) {
+							if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+								$infoChild = $descriptorChild->firstChild;
+								while ($infoChild && !$removeKeyDescriptor) {
+									if ($infoChild->nodeName == 'ds:X509Data') {
+										$x509Child = $infoChild->firstChild;
+										while ($x509Child&& !$removeKeyDescriptor) {
+											if ($x509Child->nodeName == 'ds:X509Certificate') {
+												$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
+												if ($cert_info = openssl_x509_parse( $cert)) {
+													if ($cert_info['hash'] == $hash)
+														$removeKeyDescriptor = true;
+												}
+											}
+											$x509Child = $x509Child->nextSibling;
+										}
+									}
+									$infoChild = $infoChild->nextSibling;
+								}
+							}
+							$descriptorChild = $descriptorChild->nextSibling;
+						}
+					}
+				}
+				$child = $child->nextSibling;
+				// Remove
+				if ($removeKeyDescriptor) {
+					$SSODescriptor->removeChild($KeyDescriptor);
+					$keyInfoDeleteHandler = $this->metaDb->prepare('DELETE FROM KeyInfo WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `hash` = :Hash;');
+					$keyInfoDeleteHandler->bindParam(':Id', $this->dbIdNr);
+					$keyInfoDeleteHandler->bindParam(':Type', $type);
+					$keyInfoDeleteHandler->bindParam(':Use', $use);
+					$keyInfoDeleteHandler->bindParam(':Hash', $hash);
+					$keyInfoDeleteHandler->execute();
+					// Reset flag for next KeyDescriptor
+					$removeKeyDescriptor = false;
+					$changed = true;
+				}
+			}
+			if ($changed) {
+				$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
+				$entityHandler->bindParam(':Id', $this->dbIdNr);
+				$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
+				$entityHandler->execute();
+			}
+		}
 	}
 
 	private function getEntityDescriptor($xml) {

@@ -15,6 +15,7 @@ Class Metadata {
 		if (method_exists($this,$f='__construct'.$i)) {
 				call_user_func_array(array($this,$f),$a);
 		}
+		$this->startTimer = time();
 	}
 
 	private function __construct1($configFile) {
@@ -124,7 +125,8 @@ Class Metadata {
 		}
 	}
 
-	public function validateURLs(){
+	public function validateURLs($limit=10){
+		$this->showProgress('validateURLs - start');
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_HEADER, 1);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -136,7 +138,7 @@ Class Metadata {
 		curl_setopt($ch, CURLINFO_HEADER_OUT, 1);
 
 		$URLUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = NOW(), `status` = :Status, `validationOutput` = :Result WHERE `URL` = :Url;");
-		$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT 10;";
+		$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
 		$URLHandler = $this->metaDb->prepare($sql);
 		$URLHandler->execute();
 		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -190,6 +192,7 @@ Class Metadata {
 			$URLUpdateHandler->execute();
 		}
 		curl_close($ch);
+		$this->showProgress('validateURLs - done');
 	}
 
 	# Import an XML  -> metadata.db
@@ -242,7 +245,7 @@ Class Metadata {
 				$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 				$entityHandlerInsert->execute();
 				$this->result = "Added to db.\n";
-				$this->dbIdNr = $this->metaDb->lastInsertRowID();
+				$this->dbIdNr = $this->metaDb->lastInsertId();
 				$this->status = 3;
 			}
 			return $this->dbIdNr;
@@ -251,7 +254,7 @@ Class Metadata {
 	}
 
 	# Validate xml-code
-	public function validateXML() {
+	public function validateXML($verbose=false) {
 		if (! $this->entityExists) {
 			$this->result = "$this->entityID doesn't exist!!";
 			return 1;
@@ -276,6 +279,7 @@ Class Metadata {
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
 		$child = $EntityDescriptor->firstChild;
 		while ($child) {
+			#$this->showProgress($child->nodeName);
 			switch ($child->nodeName) {
 				case 'ds:Signature' :
 					// Should not be in SWAMID-metadata
@@ -550,6 +554,7 @@ Class Metadata {
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
 		$child = $data->firstChild;
 		while ($child) {
+			#$this->showProgress("SPSSODescriptor->".$child->nodeName);
 			switch ($child->nodeName) {
 				# 2.4.1
 				#case 'md:Signature' :
@@ -612,7 +617,7 @@ Class Metadata {
 			$index = 0;
 		}
 
-		$isRequired = ($data->getAttribute('isDefault') && ($data->getAttribute('isDefault') == 'true' || $data->getAttribute('isDefault') == '1')) ? 1 : 0;
+		$isDefault = ($data->getAttribute('isDefault') && ($data->getAttribute('isDefault') == 'true' || $data->getAttribute('isDefault') == '1')) ? 1 : 0;
 
 		$ServiceHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService(`entity_id`, `Service_index`, `isDefault`) VALUES (:Id, :Index, :Default);');
 		$ServiceElementHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_Service (`entity_id`, `Service_index`, `lang`, `element`, `data`) VALUES (:Id, :Index, :Lang, :Element, :Data);');
@@ -620,7 +625,7 @@ Class Metadata {
 
 		$ServiceHandler->bindValue(':Id', $this->dbIdNr);
 		$ServiceHandler->bindParam(':Index', $index);
-		$ServiceHandler->bindValue(':Default', $isRequired);
+		$ServiceHandler->bindValue(':Default', $isDefault);
 		$ServiceHandler->execute();
 		$ServiceElementHandler->bindValue(':Id', $this->dbIdNr);
 		$ServiceElementHandler->bindParam(':Index', $index);
@@ -652,11 +657,15 @@ Class Metadata {
 					break;
 				case 'md:RequestedAttribute' :
 					$FriendlyName = $child->getAttribute('FriendlyName') ? $child->getAttribute('FriendlyName') : '';
-					$Name = $child->getAttribute('Name') ? $child->getAttribute('Name') : '';
 					$NameFormat = $child->getAttribute('NameFormat') ? $child->getAttribute('NameFormat') : '';
 					$isRequired = ($child->getAttribute('isRequired') && ($child->getAttribute('isRequired') == 'true' || $child->getAttribute('isRequired') == '1')) ? 1 : 0;
-					$RequestedAttributeHandler->execute();
-					$RequestedAttributeFound = true;
+					if ($child->getAttribute('Name')) {
+						$Name = $child->getAttribute('Name');
+						$RequestedAttributeHandler->execute();
+						$RequestedAttributeFound = true;
+					} else {
+						$this->error .= sprintf("A Name attribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d]->RequestedAttribute.\n", $index);
+					}
 					break;
 				default :
 					$this->result .= $child->nodeType == 8 ? '' : sprintf("SPSSODescriptor->AttributeConsumingService->%s missing in validator.\n", $child->nodeName);
@@ -998,7 +1007,7 @@ Class Metadata {
 	}
 
 	# Validate SAML-rules
-	public function validateSAML() {
+	public function validateSAML($verbose=false) {
 		if (! $this->entityExists) {
 			$this->result = "$this->entityID doesn't exist!!";
 			return 1;
@@ -1037,7 +1046,6 @@ Class Metadata {
 					break;
 			}
 		}
-		
 		// 5.1.1 -> 5.1.5 / 6.1.1 -> 6.1.5
 		$this->checkLangElements();
 
@@ -1111,6 +1119,7 @@ Class Metadata {
 
 	// 5.1.1 -> 5.1.5/ 6.1.1 -> 6.1.5
 	private function checkLangElements() {
+		#$this->showProgress('checkLang');
 		$mduiArray = array();
 		$usedLangArray = array();
 		$mduiHandler = $this->metaDb->prepare("SELECT `type`, `lang`, `element` FROM Mdui WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
@@ -1675,6 +1684,14 @@ Class Metadata {
 			$child = $child->nextSibling;
 		}
 		return false;
+	}
+
+	private function showProgress($info) {
+		#if($verbose) {
+		#	printf('%d: %s<br>',time() - $this->startTimer, $info);
+		#	ob_flush();
+		#	flush();
+		#}
 	}
 }
 # vim:set ts=2:
