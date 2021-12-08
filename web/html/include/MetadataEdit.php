@@ -4,6 +4,7 @@ Class MetadataEdit {
 	function __construct($configFile, $newID, $oldID = 0) {
 		include $configFile;
 		$this->standardAttributes = $standardAttributes;
+		$this->FriendlyNames = $FriendlyNames;
 
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -31,46 +32,6 @@ Class MetadataEdit {
 			'md:EmailAddress' => 4,
 			'md:TelephoneNumber' => 5,
 			'md:Extensions' => 6);
-
-		$this->FriendlyNames = array(
-			'urn:oid:2.5.4.6'						=> array('desc' => 'c', 'swamidStd' => true),
-			'urn:oid:2.5.4.3'						=> array('desc' => 'cn', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.43'	=> array('desc' => 'co', 'swamidStd' => true),
-			'urn:oid:2.16.840.1.113730.3.1.241'		=> array('desc' => 'displayName', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.1'		=> array('desc' => 'eduPersonAffiliation', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.11'		=> array('desc' => 'eduPersonAssurance', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.7'		=> array('desc'  =>'eduPersonEntitlement', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.16'		=> array('desc' => 'eduPersonOrcid', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.5'		=> array('desc' => 'eduPersonPrimaryAffiliation', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.6'		=> array('desc' => 'eduPersonPrincipalName', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.9'		=> array('desc' => 'eduPersonScopedAffiliation', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.10'		=> array('desc' => 'eduPersonTargetedID', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.13'		=> array('desc' => 'eduPersonUniqueID', 'swamidStd' => true),
-			'urn:oid:2.16.840.1.113730.3.1.4'		=> array('desc' => 'employeeType', 'swamidStd' => true),
-			'urn:oid:2.5.4.42'						=> array('desc' => 'givenName', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.10'	=> array('desc' => 'manager', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.3'		=> array('desc' => 'mail', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.2428.90.1.5'		=> array('desc' => 'norEduPersonNIN', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.2428.90.1.6'		=> array('desc' => 'norEduOrgAcronym', 'swamidStd' => true),
-			'urn:oid:2.5.4.10'						=> array('desc' => 'o', 'swamidStd' => true),
-			'urn:oid:1.2.752.29.4.13'				=> array('desc' => 'personalIdentityNumber', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.25178.1.2.3'		=> array('desc' => 'schacDateOfBirth', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.25178.1.2.9'		=> array('desc' => 'schacHomeOrganization', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.25178.1.2.10'		=> array('desc' => 'schacHomeOrganizationType', 'swamidStd' => true),
-			'urn:oid:2.5.4.4'						=> array('desc' => 'sn', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.1'		=> array('desc' => 'uid', 'swamidStd' => true),
-
-			'urn:mace:dir:attribute-def:cn' => array('desc'=> 'cn_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:displayName' => array ('desc'=> 'displayName_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:eduPersonPrincipalName' => array ('desc'=> 'eduPersonPrincipalName_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:eduPersonScopedAffiliation' => array ('desc'=> 'eduPersonScopedAffiliation_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:eduPersonTargetedID' => array ('desc'=> 'eduPersonTargetedID_SAML1_DEPRECATED', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:givenName' => array ('desc'=> 'givenName_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:mail' => array ('desc'=> 'mail_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:sn' => array ('desc'=> 'sn_SAML1', 'swamidStd' => false),
-
-			'urn:oid:1.2.840.113549.1.9.1.1' => array ('desc' => 'Wrong - email', 'swamidStd' => false));
-
 		$entityHandler = $this->metaDb->prepare('SELECT entityID, isIdP, isSP, status, xml FROM Entities WHERE id = :Id;');
 		$entityHandler->bindValue(':Id', $newID);
 		$entityHandler->execute();
@@ -116,9 +77,6 @@ Class MetadataEdit {
 	  	}
 		printf('%s    </div>', "\n");
 		switch ($part) {
-			case 'PublishedIn' ;
-				$this->editPublishedIn();
-				break;
 			case 'EntityAttributes' :
 				$this->editEntityAttributes();
 				break;
@@ -151,46 +109,6 @@ Class MetadataEdit {
 		}
 	}
 
-	private function editPublishedIn() {
-		if (isset($_GET['action']) && isset($_GET['publishedIn'])) {
-			$entityUpdateHandler = $this->metaDb->prepare('UPDATE Entities SET publishIn = :PublishIn WHERE id = :Id;');
-			$entityUpdateHandler->bindParam(':Id', $this->dbIdNr);
-			$entityUpdateHandler->bindParam(':PublishIn', $_GET['publishedIn']);
-			$entityUpdateHandler->execute();
-		}
-		$entityHandler = $this->metaDb->prepare('SELECT publishIn FROM Entities WHERE id = :Id;');
-		$entityHandler->bindParam(':Id', $this->dbIdNr);
-		$entityHandler->execute();
-		$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
-
-		printf('%s    <div class="row">%s      <div class="col">%s        <b>Published in</b>', "\n", "\n", "\n");
-		printf('
-        <form>
-          <input type="hidden" name="edit" value="PublishedIn">
-          <input type="hidden" name="Entity" value="%d">
-          <input type="hidden" name="oldEntity" value="%d">
-          <input type="radio" id="SWAMID_Testing" name="publishedIn" value="3"%s>
-          <label for="SWAMID_Testing">SWAMID + Testing</label><br>
-          <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="6"%s>
-          <label for="SWAMID_eduGAIN">SWAMID + eduGAIN</label><br>
-          <input type="radio" id="Testing" name="publishedIn" value="1"%s>
-          <label for="Testing">Testing</label>
-          <br>
-          <input type="submit" name="action" value="Update">
-        </form>
-        <a href="./?showEntity=' . $this->dbIdNr . '"><button>Back</button></a>
-      </div><!-- end col -->
-      <div class="col">', $this->dbIdNr, $this->dbOldIdNr, $entity['publishIn'] == 3 ? ' checked' : '', $entity['publishIn'] == 6 ? ' checked' : '', $entity['publishIn'] == 1 ? ' checked' : '');
-		printf('%s        <b>Published in</b> ', "\n");
-		$entityHandler->bindParam(':Id', $this->dbOldIdNr);
-		$entityHandler->execute();
-		$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
-		if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
-		if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
-		if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
-		print (implode (', ', $publishArray));
-		print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
-	}
 	private function editEntityAttributes() {
 		$entityAttributesHandler = $this->metaDb->prepare('SELECT type, attribute FROM EntityAttributes WHERE entity_id = :Id ORDER BY type, attribute;');
 
@@ -873,7 +791,7 @@ Class MetadataEdit {
 							}
 							if ($MduiElement) {
 								# Update value
-								$MduiElement->nodeValue = $value;
+								$MduiElement->nodeValue = htmlspecialchars($value);
 								if ($elementmd == 'mdui:Logo') {
 									$mduiUpdateHandler = $this->metaDb->prepare('UPDATE Mdui SET data = :Data WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND height = :Height AND  width = :Width AND element = :Element;');
 									$mduiUpdateHandler->bindParam(':Height', $heightValue);
@@ -889,7 +807,7 @@ Class MetadataEdit {
 								$mduiUpdateHandler->execute();
 							} else {
 								# Add if missing
-								$MduiElement = $this->newXml->createElement($elementmd, $value);
+								$MduiElement = $this->newXml->createElement($elementmd, htmlspecialchars($value));
 								$MduiElement->setAttribute('xml:lang', $langvalue);
 								if ($elementmd == 'mdui:Logo') {
 									$MduiElement->setAttribute('height', $heightValue);
@@ -1420,7 +1338,7 @@ Class MetadataEdit {
 				} else {
 					$indexValue = 1;
 				}
-			} elseif ($_GET['action'] == 'SetIndex') {
+			} elseif ($_GET['action'] == 'SetIndex' || $_GET['action'] == 'DeleteIndex' ) {
 				if (isset($_GET['index']) && $_GET['index'] > -1) {
 					$indexValue = $_GET['index'];
 				} else {
@@ -1543,6 +1461,35 @@ Class MetadataEdit {
 									$serviceElementAddHandler->bindParam(':Data', $mdui['data']);
 									$serviceElementAddHandler->execute();
 								}
+							}
+						}
+						break;
+					case 'DeleteIndex' :
+						if ($SSODescriptor) {
+							$child = $SSODescriptor->firstChild;
+							$AttributeConsumingService = false;
+							while ($child && ! $AttributeConsumingService) {
+								if ($child->nodeName == 'md:AttributeConsumingService' && $child->getAttribute('index') == $indexValue)
+									$AttributeConsumingService = $child;
+								$child = $child->nextSibling;
+							}
+							if ($AttributeConsumingService) {
+								$changed = true;
+								$SSODescriptor->removeChild($AttributeConsumingService);
+								$serviceRemoveHandler = $this->metaDb->prepare('DELETE FROM AttributeConsumingService WHERE entity_id = :Id AND Service_index = :Index;');
+								$serviceRemoveHandler->bindParam(':Id', $this->dbIdNr);
+								$serviceRemoveHandler->bindParam(':Index', $indexValue);
+								$serviceRemoveHandler->execute();
+
+								$serviceElementRemoveHandler = $this->metaDb->prepare('DELETE FROM AttributeConsumingService_Service WHERE entity_id = :Id AND Service_index = :Index;');
+								$serviceElementRemoveHandler->bindParam(':Id', $this->dbIdNr);
+								$serviceElementRemoveHandler->bindParam(':Index', $indexValue);
+								$serviceElementRemoveHandler->execute();
+
+								$requestedAttributeRemoveHandler = $this->metaDb->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute WHERE entity_id = :Id AND Service_index = :Index;');
+								$requestedAttributeRemoveHandler->bindParam(':Id', $this->dbIdNr);
+								$requestedAttributeRemoveHandler->bindParam(':Index', $indexValue);
+								$requestedAttributeRemoveHandler->execute();
 							}
 						}
 						break;
@@ -1768,7 +1715,7 @@ Class MetadataEdit {
 		while ($serviceIndex = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
 			$index = $serviceIndex['Service_index'];
 			if ($indexValue == $index) {
-				printf ('%s        <b>Index = %d</b>%s        <ul>', "\n", $index, "\n");
+				printf ('%s        <b>Index = %d</b><a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%d&action=DeleteIndex"><i class="fa fa-trash"></i></a>%s        <ul>', "\n", $index, $this->dbIdNr, $this->dbOldIdNr, $index, "\n");
 			} else {
 				printf ('%s        <b>Index = %d</b><a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%d&action=SetIndex"><i class="fa fa-pencil-alt"></i></a>%s        <ul>', "\n", $index, $this->dbIdNr, $this->dbOldIdNr, $index, "\n");
 			}
@@ -1826,7 +1773,11 @@ Class MetadataEdit {
 
 			if ($indexValue == $index) {
 				foreach ($this->FriendlyNames as $name => $data) {
-					printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $name, $data['desc'], $data['desc'], $name,  "\n");
+					if ($data['swamidStd'])
+						if (isset($existingRequestedAttribute[$name]))
+							printf('<b>%s</b> - %s<br>%s', $data['desc'], $name,  "\n");
+						else
+							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $name, $data['desc'], $data['desc'], $name,  "\n");
 				}
 				printf('
         <form>
@@ -1908,123 +1859,139 @@ Class MetadataEdit {
 	private function editOrganization() {
 		$organizationHandler = $this->metaDb->prepare('SELECT element, lang, data FROM Organization WHERE entity_id = :Id ORDER BY element, lang;');
 
-		if (isset($_GET['action']) && isset($_GET['lang']) && $_GET['lang'] != '' && isset($_GET['value']) && $_GET['value'] != '' ) {
-			$element = $_GET['element'];
-			$elementmd = 'md:'.$element;
-			$lang = strtolower($_GET['lang']);
-			if (isset($this->orderOrganization[$elementmd])) {
-				$placement = $this->orderOrganization[$elementmd];
-			} else {
-				exit();
-			}
-			$value = $_GET['value'];
-
-			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-			# Find md:Extensions in XML
-			$child = $EntityDescriptor->firstChild;
-			$Organization = false;
-			while ($child && ! $Organization) {
-				switch ($child->nodeName) {
-					case 'md:Organization' :
-						$Organization = $child;
-						break;
-					case 'md:ContactPerson' :
-					case 'md:AdditionalMetadataLocation' :
-						$Organization = $this->newXml->createElement('md:Organization');
-						$EntityDescriptor->insertBefore($Organization, $child);
-						break;
+		if (isset($_GET['action'])) {
+			$error = '';
+			if (isset($_GET['element']) && $_GET['element'] != '') {
+				$element = $_GET['element'];
+				$elementmd = 'md:'.$element;
+				if (isset($this->orderOrganization[$elementmd])) {
+					$placement = $this->orderOrganization[$elementmd];
+				} else {
+					$error .= '<br>Unknown Element selected';
 				}
-				$child = $child->nextSibling;
+			} else {
+				$error .= '<br>No Element selected';
+				$elementValue = '';
 			}
+			if (isset($_GET['lang']) && $_GET['lang'] != '') {
+				$lang = strtolower($_GET['lang']);
+			} else {
+				$error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
+				$lang = '';
+			}
+			if (isset($_GET['value']) && $_GET['value'] != '') {
+				$value = $_GET['value'];
+			} else {
+				$error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+				$value = '';
+			}
+			if ($error) {
+				printf ('<div class="row alert alert-danger" role="alert">Error:%s</div>', $error);
+			} else {
+				$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
 
-			$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-			switch ($_GET['action']) {
-				case 'Add' :
-					if (! $Organization) {
-						# Add if missing
-						$Organization = $this->newXml->createElement('md:Organization');
-						$EntityDescriptor->appendChild($Organization);
+				# Find md:Extensions in XML
+				$child = $EntityDescriptor->firstChild;
+				$Organization = false;
+				while ($child && ! $Organization) {
+					switch ($child->nodeName) {
+						case 'md:Organization' :
+							$Organization = $child;
+							break;
+						case 'md:ContactPerson' :
+						case 'md:AdditionalMetadataLocation' :
+							$Organization = $this->newXml->createElement('md:Organization');
+							$EntityDescriptor->insertBefore($Organization, $child);
+							break;
 					}
+					$child = $child->nextSibling;
+				}
 
-					# Find md:Organization* in XML
-					$child = $Organization->firstChild;
-					$OrganizationElement = false;
-					$newOrg = true;
-					while ($child && ! $OrganizationElement) {
-						if ($child->getAttribute('xml:lang') == $lang && $child->nodeName == $elementmd) {
-							$OrganizationElement = $child;
-							$newOrg = false;
-						} elseif (isset ($this->orderOrganization[$child->nodeName]) && $this->orderOrganization[$child->nodeName] <= $placement) {
-							$child = $child->nextSibling;
-						} else {
-							$OrganizationElement = $this->newXml->createElement($elementmd, $value);
-							$OrganizationElement->setAttribute('xml:lang', $lang);
-							$Organization->insertBefore($OrganizationElement, $child);
+				$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
+				$changed = false;
+				switch ($_GET['action']) {
+					case 'Add' :
+						if (! $Organization) {
+							# Add if missing
+							$Organization = $this->newXml->createElement('md:Organization');
+							$EntityDescriptor->appendChild($Organization);
 						}
-					}
-					$changed = false;
-					if (! $OrganizationElement) {
-						# Add if missing
-						$OrganizationElement = $this->newXml->createElement($elementmd, $value);
-						$OrganizationElement->setAttribute('xml:lang', $lang);
-						$Organization->appendChild($OrganizationElement);
-					}
-					if ($newOrg) {
-						# Add if missing
-						$organizationAddHandler = $this->metaDb->prepare('INSERT INTO Organization (entity_id, element, lang, data) VALUES (:Id, :Element, :Lang, :Data) ;');
-						$organizationAddHandler->bindParam(':Id', $this->dbIdNr);
-						$organizationAddHandler->bindParam(':Element', $element);
-						$organizationAddHandler->bindParam(':Lang', $lang);
-						$organizationAddHandler->bindParam(':Data', $value);
-						$organizationAddHandler->execute();
-						$changed = true;
-					} elseif ($OrganizationElement->nodeValue != $value) {
-						$OrganizationElement->nodeValue = $value;
-						$organizationUpdateHandler = $this->metaDb->prepare('UPDATE Organization SET data = :Data WHERE entity_id = :Id AND element = :Element AND lang = :Lang;');
-						$organizationUpdateHandler->bindParam(':Id', $this->dbIdNr);
-						$organizationUpdateHandler->bindParam(':Element', $element);
-						$organizationUpdateHandler->bindParam(':Lang', $lang);
-						$organizationUpdateHandler->bindParam(':Data', $_GET['value']);
-						$organizationUpdateHandler->execute();
-						$changed = true;
-					}
 
-					if ($changed) {
-						$entityHandler->bindParam(':Id', $this->dbIdNr);
-						$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-						$entityHandler->execute();
-					}
-					break;
-				case 'Delete' :
-					if ($Organization) {
+						# Find md:Organization* in XML
 						$child = $Organization->firstChild;
 						$OrganizationElement = false;
-						$moreOrganizationElements = false;
+						$newOrg = true;
 						while ($child && ! $OrganizationElement) {
 							if ($child->getAttribute('xml:lang') == $lang && $child->nodeName == $elementmd) {
 								$OrganizationElement = $child;
+								$newOrg = false;
+							} elseif (isset ($this->orderOrganization[$child->nodeName]) && $this->orderOrganization[$child->nodeName] <= $placement) {
+								$child = $child->nextSibling;
+							} else {
+								$OrganizationElement = $this->newXml->createElement($elementmd, $value);
+								$OrganizationElement->setAttribute('xml:lang', $lang);
+								$Organization->insertBefore($OrganizationElement, $child);
 							}
-							$child = $child->nextSibling;
-							$moreOrganizationElements = ($moreOrganizationElements) ? true : $child;
 						}
-
-						if ($OrganizationElement) {
-							$Organization->removeChild($OrganizationElement);
-							if (! $moreOrganizationElements) $EntityDescriptor->removeChild($Organization);
-
-							$organizationRemoveHandler = $this->metaDb->prepare('DELETE FROM Organization WHERE entity_id = :Id AND element = :Element AND lang = :Lang AND data = :Data;');
-							$organizationRemoveHandler->bindParam(':Id', $this->dbIdNr);
-							$organizationRemoveHandler->bindParam(':Element', $element);
-							$organizationRemoveHandler->bindParam(':Lang', $lang);
-							$organizationRemoveHandler->bindParam(':Data', $value);
-							$organizationRemoveHandler->execute();
-							$entityHandler->bindParam(':Id', $this->dbIdNr);
-							$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-							$entityHandler->execute();
+						if (! $OrganizationElement) {
+							# Add if missing
+							$OrganizationElement = $this->newXml->createElement($elementmd, $value);
+							$OrganizationElement->setAttribute('xml:lang', $lang);
+							$Organization->appendChild($OrganizationElement);
 						}
-					}
-					break;
+						if ($newOrg) {
+							# Add if missing
+							$organizationAddHandler = $this->metaDb->prepare('INSERT INTO Organization (entity_id, element, lang, data) VALUES (:Id, :Element, :Lang, :Data) ;');
+							$organizationAddHandler->bindParam(':Id', $this->dbIdNr);
+							$organizationAddHandler->bindParam(':Element', $element);
+							$organizationAddHandler->bindParam(':Lang', $lang);
+							$organizationAddHandler->bindParam(':Data', $value);
+							$organizationAddHandler->execute();
+							$changed = true;
+						} elseif ($OrganizationElement->nodeValue != $value) {
+							$OrganizationElement->nodeValue = $value;
+							$organizationUpdateHandler = $this->metaDb->prepare('UPDATE Organization SET data = :Data WHERE entity_id = :Id AND element = :Element AND lang = :Lang;');
+							$organizationUpdateHandler->bindParam(':Id', $this->dbIdNr);
+							$organizationUpdateHandler->bindParam(':Element', $element);
+							$organizationUpdateHandler->bindParam(':Lang', $lang);
+							$organizationUpdateHandler->bindParam(':Data', $_GET['value']);
+							$organizationUpdateHandler->execute();
+							$changed = true;
+						}
+						break;
+					case 'Delete' :
+						if ($Organization) {
+							$child = $Organization->firstChild;
+							$OrganizationElement = false;
+							$moreOrganizationElements = false;
+							while ($child && ! $OrganizationElement) {
+								if ($child->getAttribute('xml:lang') == $lang && $child->nodeName == $elementmd) {
+									$OrganizationElement = $child;
+								}
+								$child = $child->nextSibling;
+								$moreOrganizationElements = ($moreOrganizationElements) ? true : $child;
+							}
+
+							if ($OrganizationElement) {
+								$Organization->removeChild($OrganizationElement);
+								if (! $moreOrganizationElements) $EntityDescriptor->removeChild($Organization);
+
+								$organizationRemoveHandler = $this->metaDb->prepare('DELETE FROM Organization WHERE entity_id = :Id AND element = :Element AND lang = :Lang AND data = :Data;');
+								$organizationRemoveHandler->bindParam(':Id', $this->dbIdNr);
+								$organizationRemoveHandler->bindParam(':Element', $element);
+								$organizationRemoveHandler->bindParam(':Lang', $lang);
+								$organizationRemoveHandler->bindParam(':Data', $value);
+								$organizationRemoveHandler->execute();
+								$changed = true;
+							}
+						}
+						break;
+				}
+				if ($changed) {
+					$entityHandler->bindParam(':Id', $this->dbIdNr);
+					$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
+					$entityHandler->execute();
+				}
 			}
 		} else {
 			$element = '';

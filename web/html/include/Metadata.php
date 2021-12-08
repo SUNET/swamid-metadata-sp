@@ -20,6 +20,7 @@ Class Metadata {
 
 	private function __construct1($configFile) {
 		include $configFile;
+		$this->FriendlyNames = $FriendlyNames;
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 			// set the PDO error mode to exception
@@ -33,6 +34,7 @@ Class Metadata {
 
 	private function __construct2($configFile, $entity_id) {
 		include $configFile;
+		$this->FriendlyNames = $FriendlyNames;
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 			// set the PDO error mode to exception
@@ -62,6 +64,7 @@ Class Metadata {
 
 	private function __construct3($configFile, $entityId = '', $entityStatus = '') {
 		include $configFile;
+		$this->FriendlyNames = $FriendlyNames;
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 			// set the PDO error mode to exception
@@ -663,6 +666,11 @@ Class Metadata {
 						$Name = $child->getAttribute('Name');
 						$RequestedAttributeHandler->execute();
 						$RequestedAttributeFound = true;
+						if ($FriendlyName != '' && isset($this->FriendlyNames[$Name])) {
+							if ( $this->FriendlyNames[$Name]['desc'] != $FriendlyName) {
+								$this->warning .= sprintf("FriendlyName for %s in RequestedAttribute for index %d is %s (recomended from SWAMID is %s).\n", $Name, $index, $FriendlyName, $this->FriendlyNames[$Name]['desc']);
+							}
+						}
 					} else {
 						$this->error .= sprintf("A Name attribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d]->RequestedAttribute.\n", $index);
 					}

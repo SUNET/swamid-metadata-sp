@@ -164,7 +164,7 @@ function showEntityList($status = 1) {
 ####
 function showEntity($Entity_id)  {
 	global $db, $html, $display, $userLevel, $menuActive;
-	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP, publishIn, status, errors FROM Entities WHERE id = :Id;');
+	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP, publishIn, status FROM Entities WHERE id = :Id;');
 	$entityHandlerOld = $db->prepare('SELECT id, isIdP, isSP, publishIn FROM Entities WHERE entityID = :Id AND status = 1;');
 	$publishArray = array();
 	$publishArrayOld = array();
@@ -214,10 +214,11 @@ function showEntity($Entity_id)  {
 				printf('%s      <a href=".?action=createDraft&Entity=%d"><button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $Entity_id);
 				break;
 			case 3:
-				if ($entity['errors'] == '') {
-					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Move to Pending</button></a>', "\n", $Entity_id);
+				$errors = getErrors($Entity_id);
+				if ($errors == '') {
+					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Request publication</button></a>', "\n", $Entity_id);
 				} else {
-					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-danger">Move to Pending</button></a>', "\n", $Entity_id);
+					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-danger">Request publication</button></a>', "\n", $Entity_id);
 				}
 				if ($oldEntity_id > 0) {
 					printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d"><button type="button" class="btn btn-outline-primary">Merge missing from published</button></a>', "\n", $Entity_id, $oldEntity_id);
@@ -251,7 +252,6 @@ function showEntity($Entity_id)  {
         <h3><?=$headerCol1?></h3>
         Published in : <?php
 		print (implode (', ', $publishArray));
-		printf('<a href="?edit=PublishedIn&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>', $Entity_id, $oldEntity_id);
 		if ($oldEntity_id > 0) { ?>
 
       </div>
@@ -415,19 +415,79 @@ function validateEntity($Entity_id) {
 
 function move2Pending($Entity_id) {
 	global $db, $html, $display, $userLevel;
-	$entityHandler = $db->prepare('SELECT entityID, errors FROM Entities WHERE status = 3 AND id = :Id;');
+	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP FROM Entities WHERE status = 3 AND id = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		if ( $entity['isIdP'] && $entity['isSP']) {
+			$sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
+		} elseif ($entity['isIdP']) {
+			$sections = '4.1.1 and 4.1.2' ;
+		} elseif ($entity['isSP']) {
+			$sections = '4.2.1 and 4.2.2' ;
+		}
 		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
-		if ($entity['errors'] == '') {
-			printf('%s      <p>You are about to move <b>%s</b> from Draft to Pending</p>', "\n", $entity['entityID']);
-			printf('%s      <form>%s        <input type="hidden" name="move2Pending" value="%d">', "\n", "\n", $Entity_id);
+		$errors = getErrors($Entity_id);
+		if ($errors == '') {
+			if (isset($_GET['publishedIn'])) {
+				$publish = true;
+				if ($_GET['publishedIn'] < 1) {
+					$errors .= "Missing where to publish Metadata.\n";
+					$publish = false;
+				}
+				if (!isset($_GET['OrganisationOK'])) {
+					$errors .= "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n";
+					$publish = false;
+				}
 
-			printf('%s        <button type="submit">Move</button>%s      </form>', "\n", "\n");
+				//if ()
+			} else
+				$publish = false;
+
+			if ($publish) {
+				print "Nu är det live :-)";
+			} else {
+				if ($errors != '') {
+					printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
+				}
+				printf('%s    <p>You are about to request publication of <b>%s</b></p>', "\n", $entity['entityID']);
+				$entityHandlerOld = $db->prepare('SELECT publishIn FROM Entities WHERE entityID = :Id AND status = 1;');
+				$publishArrayOld = array();
+				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+				$entityHandlerOld->execute();
+				if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
+					if (($entityOld['publishIn'] & 2) == 2) $publishArrayOld[] = 'SWAMID';
+					if (($entityOld['publishIn'] & 4) == 4) $publishArrayOld[] = 'eduGAIN';
+					if ($entityOld['publishIn'] == 1) $publishArrayOld[] = 'SWAMID-testing';
+					printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (', ', $publishArrayOld));
+				} else {
+					$entityOld['publishIn'] = $entity['isIdP'] ? 7 : 3;
+				}
+				printf('    <p>The entity should be published in:</p>
+    <form>
+      <input type="hidden" name="move2Pending" value="%d">
+      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
+      <label for="SWAMID_eduGAIN">SWAMID and eduGAIN</label><br>
+      <input type="radio" id="SWAMID_Testing" name="publishedIn" value="3"%s>
+      <label for="SWAMID_Testing">SWAMID</label><br>
+      <input type="radio" id="Testing" name="publishedIn" value="1"%s>
+      <label for="Testing">Testing only</label>
+      <br>
+      <input type="checkbox" id="OrganisationOK" name="OrganisationOK"> I confirme that this Entity fullfiles sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a><br>
+	  <br>
+      <input type="submit" name="action" value="Request publication">
+    </form>
+    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $Entity_id, $entityOld['publishIn'] == 7 ? ' checked' : '', $entityOld['publishIn'] == 3 ? ' checked' : '', $entityOld['publishIn'] == 1 ? ' checked' : '', $sections, $Entity_id);
+			}
 		} else {
-			printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Please fix the following errors before moving to Pending:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $entity['errors']), "\n", "\n");
-      		printf('%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>', "\n", $Entity_id);
+			printf('
+    <div class="row alert alert-danger" role="alert">
+      <div class="col">
+        <div class="row"><b>Please fix the following errors before requesting publication:</b></div>
+        <div class="row">%s</div>
+      </div>
+    </div>
+    <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>', str_ireplace("\n", "<br>", $errors), $Entity_id);
 		}
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');
@@ -440,4 +500,25 @@ function mergeEntity($Entity_id, $oldEntity_id){
 	include '../include/MetadataEdit.php';
 	$metadata = new MetadataEdit($configFile, $Entity_id, $oldEntity_id);
 	$metadata->mergeFrom();
+}
+
+function getErrors($Entity_id) {
+	global $db;
+	$errors = '';
+
+	$entityHandler = $db->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
+	$entityHandler->bindParam(':Id', $Entity_id);
+	$urlHandler = $db->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
+	$urlHandler->bindParam(':Id', $Entity_id);
+
+	$entityHandler->execute();
+	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		$urlHandler->execute();
+		while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+			if ($url['status'] > 0)
+				$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+		}
+		$errors .= $entity['errors'];
+	}
+	return $errors;
 }

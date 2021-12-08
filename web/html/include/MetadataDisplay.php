@@ -4,6 +4,7 @@ Class MetadataDisplay {
 	function __construct($configFile) {
 		include $configFile;
 		$this->standardAttributes = $standardAttributes;
+		$this->FriendlyNames = $FriendlyNames;
 
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -532,45 +533,6 @@ Class MetadataDisplay {
 	# Shows AttributeConsumingService for a SP
 	####
 	function showAttributeConsumingService($Entity_id, $otherEntity_id=0, $added = false) {
-		$FriendlyName = array(
-			'urn:oid:0.9.2342.19200300.100.1.1' => array ('desc' => 'uid', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.3' => array ('desc' => 'mail', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.10' => array ('desc' => 'manager', 'swamidStd' => true),
-			'urn:oid:0.9.2342.19200300.100.1.43' => array ('desc' => 'co', 'swamidStd' => true),
-			'urn:oid:1.2.752.29.4.13' => array ('desc'=> 'personalIdentityNumber', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.2428.90.1.5' => array ('desc'=> 'norEduPersonNIN', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.2428.90.1.6' => array ('desc'=> 'norEduOrgAcronym', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.1' => array ('desc'=> 'eduPersonAffiliation', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.5' => array ('desc'=> 'eduPersonPrimaryAffiliation', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.6' => array ('desc'=> 'eduPersonPrincipalName', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.7' => array('desc' =>'eduPersonEntitlement', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.9' => array ('desc'=> 'eduPersonScopedAffiliation', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.10' => array ('desc'=> 'eduPersonTargetedID', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.13' => array ('desc'=> 'eduPersonUniqueID', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.16' => array ('desc'=> 'eduPersonOrcid', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.5923.1.1.1.11' => array ('desc'=> 'eduPersonAssurance', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.25178.1.2.3' => array ('desc'=> 'schacDateOfBirth', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.25178.1.2.9' => array ('desc'=> 'schacHomeOrganization', 'swamidStd' => true),
-			'urn:oid:1.3.6.1.4.1.25178.1.2.10' => array ('desc'=> 'schacHomeOrganizationType', 'swamidStd' => true),
-			'urn:oid:2.5.4.3' => array ('desc'=> 'cn', 'swamidStd' => true),
-			'urn:oid:2.5.4.4' => array ('desc'=> 'sn', 'swamidStd' => true),
-			'urn:oid:2.5.4.6' => array ('desc'=> 'c', 'swamidStd' => true),
-			'urn:oid:2.5.4.10' => array ('desc'=> 'o', 'swamidStd' => true),
-			'urn:oid:2.5.4.42' => array ('desc'=> 'givenName', 'swamidStd' => true),
-			'urn:oid:2.16.840.1.113730.3.1.4' => array ('desc'=> 'employeeType', 'swamidStd' => true),
-			'urn:oid:2.16.840.1.113730.3.1.241' => array ('desc'=> 'displayName', 'swamidStd' => true),
-
-			'urn:mace:dir:attribute-def:cn' => array ('desc'=> 'cn_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:displayName' => array ('desc'=> 'displayName_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:eduPersonPrincipalName' => array ('desc'=> 'eduPersonPrincipalName_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:eduPersonScopedAffiliation' => array ('desc'=> 'eduPersonScopedAffiliation_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:eduPersonTargetedID' => array ('desc'=> 'eduPersonTargetedID_SAML1_DEPRECATED', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:givenName' => array ('desc'=> 'givenName_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:mail' => array ('desc'=> 'mail_SAML1', 'swamidStd' => false),
-			'urn:mace:dir:attribute-def:sn' => array ('desc'=> 'sn_SAML1', 'swamidStd' => false),
-
-			'urn:oid:1.2.840.113549.1.9.1.1' => array ('desc' => 'Wrong - email', 'swamidStd' => false));
-
 		$serviceIndexHandler = $this->metaDb->prepare('SELECT `Service_index` FROM AttributeConsumingService WHERE `entity_id` = :Id;');
 		$serviceElementHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `data` FROM AttributeConsumingService_Service WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `element` DESC, `lang`;');
 
@@ -624,7 +586,27 @@ Class MetadataDisplay {
 				} else {
 					$state = 'dark';
 				}
-				printf('%s                    <li><span class="text-%s"><b>%s</b> - %s%s</span></li>', "\n", $state, $requestedAttribute['FriendlyName'] == '' ? $FriendlyName[$requestedAttribute['Name']]['desc'] : $requestedAttribute['FriendlyName'] , $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+				$error = '';
+				if ($requestedAttribute['FriendlyName'] == '') {
+					if (isset($this->FriendlyNames[$requestedAttribute['Name']])) {
+						$FriendlyNameDisplay = sprintf('(%s)', $this->FriendlyNames[$requestedAttribute['Name']]['desc']);
+						if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd'])
+							$error = ' class="alert-warning" role="alert"';
+					} else {
+						$FriendlyNameDisplay = '(Unknown)';
+						$error = ' class="alert-warning" role="alert"';
+					}
+				} else {
+					$FriendlyNameDisplay = $requestedAttribute['FriendlyName'];
+					if (isset ($this->FriendlyNames[$requestedAttribute['Name']])) {
+						if ($requestedAttribute['FriendlyName'] != $this->FriendlyNames[$requestedAttribute['Name']]['desc'] || ! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+							$error = ' class="alert-warning" role="alert"';
+						}
+					} else {
+						$error = ' class="alert-warning" role="alert"';
+					}
+				}
+				printf('%s                    <li><div%s><span class="text-%s"><b>%s</b> - %s%s</span></div></li>', "\n", $error, $state, $FriendlyNameDisplay , $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
 			}
 			print "\n                  </ul></li>\n                </ul>";
 		}
@@ -690,7 +672,7 @@ Class MetadataDisplay {
 		}
 		$this->showCollapseEnd('ContactPersons', 0);
 	}
-	function showContactsPart($Entity_id, $otherEntity_id, $added) {
+	private function showContactsPart($Entity_id, $otherEntity_id, $added) {
 		$contactPersonHandler = $this->metaDb->prepare('SELECT * FROM ContactPerson WHERE `entity_id` = :Id ORDER BY `contactType`;');
 		if ($otherEntity_id) {
 			$contactPersonHandler->bindParam(':Id', $otherEntity_id);
@@ -788,7 +770,7 @@ Class MetadataDisplay {
 	####
 	# Shows XML for entiry
 	####
-	function showXML($Entity_id, $oldEntity_id = 0) {
+	function showXML($Entity_id) {
 		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s" target="_blank">Show XML</a></h4>%s', "\n", $Entity_id, "\n");
 		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s&download" target="_blank">Download XML</a></h4>%s', "\n", $Entity_id, "\n");
 	}
