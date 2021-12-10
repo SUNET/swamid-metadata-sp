@@ -1,4 +1,6 @@
 <?php
+include 'include/Html.php';
+$html = new HTML();
 
 $configFile = dirname($_SERVER['SCRIPT_FILENAME'], 1) . '/config.php' ;
 include $configFile;
@@ -12,9 +14,6 @@ try {
 }
 
 $collapseIcons = [];
-
-include 'include/Html.php';
-$html = new HTML();
 
 include 'include/MetadataDisplay.php';
 $display = new MetadataDisplay($configFile);
@@ -53,14 +52,16 @@ function showEntityList() {
 	if (isset($_GET['query'])) {
 		$query = $_GET['query'];
 	}
+	$csort=$sort;
 	$sort .= '&query='.$query;
 	
 	if (isset($_GET['showIdP'])) {
 		$html->showHeaders('Metadata SWAMID - IdP:s');
-		$filter = '?showIdP';
+		$filter = 'showIdP';
 		if (isset($_GET['AL'])) {
 			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute LIKE '%AL%' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
 			$sort = 'AL&query='.$query;;
+			$csort='AL';
 		} else
 			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
 
@@ -69,14 +70,14 @@ function showEntityList() {
 		$showAll = false;
 	} elseif (isset($_GET['showSP'])) {
 		$html->showHeaders('Metadata SWAMID - SP:s');
-		$filter = '?showSP';
+		$filter = 'showSP';
 		$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isSP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
 		print "         <a href=\"./?$sort\">Alla i SWAMID</a> | <a href=\".?showIdP&$sort\">IdP i SWAMID</a> | <b>SP i SWAMID</b> | <a href=\"https://metadata.swamid.se/all-idp.html\">IdP via interfederation</a> | <a href=\"https://metadata.swamid.se/all-sp.html\">SP via interfederation</a>\n";
 		$extraTH = '<th>CoCo</th><th>R&S</th><th>SIRTFI</th>';
 		$showAll = false;
 	} else {
 		$html->showHeaders('Metadata SWAMID - All');
-		$filter = '?all';
+		$filter = 'all';
 		$entitys = $db->prepare("SELECT id, entityID, isIdP, isSP, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
 		print "	  <b>Alla i SWAMID</b> | <a href=\".?showIdP&$sort\">IdP i SWAMID</a> | <a href=\".?showSP&$sort\">SP i SWAMID</a> | <a href=\"https://metadata.swamid.se/all-idp.html\">IdP via interfederation</a> | <a href=\"https://metadata.swamid.se/all-sp.html\">SP via interfederation</a>\n";
 		$extraTH = '';
@@ -88,7 +89,7 @@ EOF;
 	if ($showAll)	print '<th>IdP</th><th>SP</th>';
 
 	echo <<<EOF
- <th>Registrerad i</th> <th><a href="$filter&feed">eduGAIN</a></th> <th><form><a href="$filter&entityID">entityID</a> <input type="text" name="query" value="$query"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="$filter&org">OrganizationDisplayName</a></th>
+ <th>Registrerad i</th> <th><a href="?$filter&feed">eduGAIN</a></th> <th><form><a href="?$filter&entityID">entityID</a> <input type="text" name="query" value="$query"><input type="hidden" name="$csort"><input type="hidden" name="$filter"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="?$filter&org">OrganizationDisplayName</a></th>
 EOF;
 	print $extraTH . "</tr>\n";
 	$entitys->bindValue(':Query', "%".$query."%");

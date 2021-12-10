@@ -1,5 +1,16 @@
 <?php
-switch ($_SERVER['saml_eduPersonPrincipalName']) {
+include '../include/Html.php';
+$html = new HTML();
+
+$configFile = dirname($_SERVER['SCRIPT_FILENAME'], 2) . '/config.php' ;
+include $configFile;
+
+if (! isset($_SERVER['eduPersonPrincipalName'])) {
+	$html->showHeaders('Metadata SWAMID - Problem');
+	print 'Missing eduPersonPrincipalName in SAML response';
+	$html->showFooter($display->getCollapseIcons());
+}
+switch ($_SERVER['eduPersonPrincipalName']) {
 	case 'bjorn@sunet.se' :
 	case 'frkand02@umu.se' :
 	case 'paulscot@kau.se' :
@@ -13,12 +24,9 @@ switch ($_SERVER['saml_eduPersonPrincipalName']) {
 		break;
 	default :
 		$userLevel = 1;
-		exit;
 }
 
-$configFile = dirname($_SERVER['SCRIPT_FILENAME'], 2) . '/config.php' ;
 
-include $configFile;
 try {
 	$db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 	// set the PDO error mode to exception
@@ -27,8 +35,6 @@ try {
 	echo "Error: " . $e->getMessage();
 }
 
-include '../include/Html.php';
-$html = new HTML();
 
 include '../include/MetadataDisplay.php';
 $display = new MetadataDisplay($configFile);
