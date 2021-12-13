@@ -276,7 +276,7 @@ Class Metadata {
 		$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('UPDATE Entities SET `isIdP` = 0, `isSP` = 0 WHERE `id` = ' . $this->dbIdNr .';');
 
-		$SWAMID_5_1_29_error = false;
+		$SWAMID_5_1_30_error = false;
 		$cleanOutSignature = false;
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
@@ -293,7 +293,7 @@ Class Metadata {
 					break;
 				case 'md:RoleDescriptor' :
 					//5.1.29 Identity Provider metadata MUST NOT include RoleDescriptor elements.
-					$SWAMID_5_1_29_error = true;
+					$SWAMID_5_1_30_error = true;
 					break;
 				case 'md:IDPSSODescriptor' :
 					$this->metaDb->exec('UPDATE Entities SET `isIdP` = 1 WHERE `id` = '. $this->dbIdNr);
@@ -324,8 +324,8 @@ Class Metadata {
 			$child = $child->nextSibling;
 		}
 		if ($cleanOutSignature) $this->cleanOutSignature();
-		if ($SWAMID_5_1_29_error) {
-			$this->error .= "SWAMID Tech (draft) 5.1.29/6.1.27: entityID MUST NOT include RoleDescriptor elements. Have been removed.\n";
+		if ($SWAMID_5_1_30_error) {
+			$this->error .= "SWAMID Tech 5.1.30/6.1.29: entityID MUST NOT include RoleDescriptor elements. Have been removed.\n";
 			$this->cleanOutRoleDescriptor();
 		}
 
@@ -433,7 +433,7 @@ Class Metadata {
 		if ($data->getAttribute('errorURL'))
 			$this->addEntityUrl('error', $data->getAttribute('errorURL'));
 
-		$SWAMID_5_1_30_error = false;
+		$SWAMID_5_1_31_error = false;
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
 		$child = $data->firstChild;
 		while ($child) {
@@ -461,15 +461,15 @@ Class Metadata {
 				#case 'md:AttributeProfile' :
 				case 'samla:Attribute' :
 					# Should not be in SWAMID XML
-					$SWAMID_5_1_30_error = true;
+					$SWAMID_5_1_31_error = true;
 					break;
 				default :
 				$this->result .= $child->nodeType == 8 ? '' : sprintf("IDPSSODescriptor->%s missing in validator.\n", $child->nodeName);
 			}
 			$child = $child->nextSibling;
 		}
-		if ($SWAMID_5_1_30_error) {
-			$this->error .= "SWAMID Tech (draft) 5.1.30: The Identity Provider IDPSSODescriptor element in metadata MUST NOT include any Attribute elements. Have been removed.\n";
+		if ($SWAMID_5_1_31_error) {
+			$this->error .= "SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata MUST NOT include any Attribute elements. Have been removed.\n";
 			$this->cleanOutAttribuesInIDPSSODescriptor();
 		}
 		return $data;
@@ -1059,14 +1059,14 @@ Class Metadata {
 
 		// 5.1.7 /6.1.7
 		if (! (substr($this->entityID, 0, 4) == 'urn:' || substr($this->entityID, 0, 8) == 'https://' || substr($this->entityID, 0, 7) == 'http://' ))
-			$this->error .= "SWAMID Tech (draft) 5.1.7/6.1.7: entityID MUST start with either urn:, https:// or http://.\n";
+			$this->error .= "SWAMID Tech 5.1.7/6.1.7: entityID MUST start with either urn:, https:// or http://.\n";
 
 		if (substr($this->entityID, 0, 4) == 'urn:' )
-			$this->error .= "SWAMID Tech (draft) 5.1.7/6.1.7: entityID SHOULD NOT start with urn: for new entitys.\n";
+			$this->error .= "SWAMID Tech 5.1.7/6.1.7: entityID SHOULD NOT start with urn: for new entitys.\n";
 
 		// 5.1.8 /6.1.8
 		if (strlen($this->entityID) > 256)
-			$this->error .= "SWAMID Tech (draft) 5.1.8/6.1.8: entityID MUST NOT exceed 256 characters.\n";
+			$this->error .= "SWAMID Tech 5.1.8/6.1.8: entityID MUST NOT exceed 256 characters.\n";
 
 		if ($this->isIdP) {
 			// 5.1.9 -> 5.1.12
@@ -1147,7 +1147,7 @@ Class Metadata {
 
 			if (isset($mduiArray[$type][$element][$lang])) {
 				if ($element != 'Logo') {
-					$this->error .= sprintf("SWAMID Tech (draft) 5.1.2/6.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n", $element, $lang, $type);
+					$this->error .= sprintf("SWAMID Tech 5.1.2/6.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n", $element, $lang, $type);
 				}
 			} else
 				$mduiArray[$type][$element][$lang] = true;
@@ -1172,7 +1172,7 @@ Class Metadata {
 						$serviceNameArray[$index] = array();
 
 					if (isset($serviceNameArray[$index][$lang]))
-						$this->error .= sprintf("SWAMID Tech (draft) 6.1.2: More than one ServiceName with lang=%s in AttributeConsumingService (index=%d).\n", $lang, $index);
+						$this->error .= sprintf("SWAMID Tech 6.1.2: More than one ServiceName with lang=%s in AttributeConsumingService (index=%d).\n", $lang, $index);
 					else
 						$serviceNameArray[$index][$lang] = true;
 					break;
@@ -1180,7 +1180,7 @@ Class Metadata {
 					if (! isset ($serviceDescriptionArray[$index]))
 						$serviceDescriptionArray[$index] = array();
 					if (isset($serviceDescriptionArray[$index][$lang]))
-						$this->error .= sprintf("SWAMID Tech (draft) 6.1.2: More than one ServiceDescription with lang=%s in AttributeConsumingService (index=%d).\n", $lang, $index);
+						$this->error .= sprintf("SWAMID Tech 6.1.2: More than one ServiceDescription with lang=%s in AttributeConsumingService (index=%d).\n", $lang, $index);
 					else
 						$serviceDescriptionArray[$index][$lang] = true;
 					break;
@@ -1203,7 +1203,7 @@ Class Metadata {
 				$organizationArray[$element] = array();
 
 			if (isset($organizationArray[$element][$lang]))
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.2/6.1.2: More than one %s with lang=%s in Organization.\n", $element, $lang);
+				$this->error .= sprintf("SWAMID Tech 5.1.2/6.1.2: More than one %s with lang=%s in Organization.\n", $element, $lang);
 			else
 				$organizationArray[$element][$lang] = true;
 		}
@@ -1214,36 +1214,36 @@ Class Metadata {
 			foreach ($elementArray as $element => $langArray) {
 				foreach ($usedLangArray as $lang) {
 					if (! isset($langArray[$lang]))
-						$this->error .= sprintf("SWAMID Tech (draft) 5.1.3/6.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n", $lang, $element, $type);
+						$this->error .= sprintf("SWAMID Tech 5.1.3/6.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n", $lang, $element, $type);
 				}
 			}
 		}
 		foreach ($serviceNameArray as $langArray) {
 			foreach ($usedLangArray as $lang) {
 				if (! isset($langArray[$lang]))
-					$this->error .= sprintf("SWAMID Tech (draft) 6.1.3: Missing lang=%s for ServiceName in AttributeConsumingService.\n", $lang);
+					$this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for ServiceName in AttributeConsumingService.\n", $lang);
 			}
 		}
 		foreach ($serviceDescriptionArray as $langArray) {
 			foreach ($usedLangArray as $lang) {
 				if (! isset($langArray[$lang]))
-					$this->error .= sprintf("SWAMID Tech (draft) 6.1.3: Missing lang=%s for ServiceDescription in AttributeConsumingService.\n", $lang);
+					$this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for ServiceDescription in AttributeConsumingService.\n", $lang);
 			}
 		}
 		foreach ($organizationArray as $element => $langArray) {
 			foreach ($usedLangArray as $lang) {
 				if (! isset($langArray[$lang]))
-					$this->error .= sprintf("SWAMID Tech (draft) 5.1.3/6.1.3: Missing lang=%s for %s in Organization.\n", $lang, $element);
+					$this->error .= sprintf("SWAMID Tech 5.1.3/6.1.3: Missing lang=%s for %s in Organization.\n", $lang, $element);
 			}
 		}
 
 		//5.1.4/6.1.4 Metadata elements that support the lang attribute MUST have a definition with language English (en).
 		if (! isset($usedLangArray['en']))
-			$this->error .= "SWAMID Tech (draft) 5.1.4/6.1.4: Missing MDUI/Organization/... with lang=en.\n";
+			$this->error .= "SWAMID Tech 5.1.4/6.1.4: Missing MDUI/Organization/... with lang=en.\n";
 
 		// 5.1.5/6.1.5 Metadata elements that support the lang attribute SHOULD have a definition with language Swedish (sv).
 		if (! isset($usedLangArray['sv']))
-			$this->warning .= "SWAMID Tech (draft) 5.1.5/6.1.5: Missing MDUI/Organization/... with lang=sv.\n";
+			$this->warning .= "SWAMID Tech 5.1.5/6.1.5: Missing MDUI/Organization/... with lang=sv.\n";
 	}
 
 	// 5.1.9 -> 5.1.11 / 6.1.9 -> 6.1.11
@@ -1261,7 +1261,7 @@ Class Metadata {
 					$SWAMID_5_1_9_error = false;
 			}
 			if ($SWAMID_5_1_9_error)
-				$this->error .= "SWAMID Tech (draft) 5.1.9: SWAMID Identity Assurance Profile compliance MUST be registered in the assurance certification entity attribute as defined by the profiles.\n";
+				$this->error .= "SWAMID Tech 5.1.9: SWAMID Identity Assurance Profile compliance MUST be registered in the assurance certification entity attribute as defined by the profiles.\n";
 
 			// 5.1.10 Entity Categories applicable to the Identity Provider SHOULD be registered in the entity category entity attribute as defined by the respective Entity Category.
 			// Not handled yet.
@@ -1273,7 +1273,7 @@ Class Metadata {
 				$SWAMID_5_1_11_error = false;
 			}
 			if ($SWAMID_5_1_11_error)
-				$this->warning .= "SWAMID Tech (draft) 5.1.11: Support for Entity Categories SHOULD be registered in the entity category support entity attribute as defined by the respective Entity Category.\n";
+				$this->warning .= "SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the entity category support entity attribute as defined by the respective Entity Category.\n";
 		}
 	}
 
@@ -1283,7 +1283,7 @@ Class Metadata {
 		$errorURLHandler->bindParam(':Id', $this->dbIdNr);
 		$errorURLHandler->execute();
 		if (! $errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC))
-			$this->error .= "SWAMID Tech (draft) 5.1.13: IdP:s MUST have a registered errorURL.\n";
+			$this->error .= "SWAMID Tech 5.1.13: IdP:s MUST have a registered errorURL.\n";
 	}
 
 	// 5.1.15, 5.1.16 Scope
@@ -1295,10 +1295,10 @@ Class Metadata {
 		while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
 			$missingScope = false;
 			if ($scope['regexp'])
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.16: IdP Scopes (%s) MUST NOT include regular expressions.\n", $scope['scope']);
+				$this->error .= sprintf("SWAMID Tech 5.1.16: IdP Scopes (%s) MUST NOT include regular expressions.\n", $scope['scope']);
 		}
 		if ($missingScope)
-			$this->error .= "SWAMID Tech (draft) 5.1.15: IdP:s MUST have at least one Scope registered.\n";
+			$this->error .= "SWAMID Tech 5.1.15: IdP:s MUST have at least one Scope registered.\n";
 	}
 
 	// 5.1.17
@@ -1317,7 +1317,7 @@ Class Metadata {
 
 		foreach ($elementArray as $element => $value) {
 			if (! $value)
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
+				$this->error .= sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
 		}
 	}
 
@@ -1370,23 +1370,23 @@ Class Metadata {
 
 		if (! $keyInfoArray[$type]) {
 			if ($type == 'IDPSSO')
-				$this->error .= "SWAMID Tech (draft) 5.1.20: Identity Providers there MUST have at least one signing certificate.\n";
+				$this->error .= "SWAMID Tech 5.1.20: Identity Providers there MUST have at least one signing certificate.\n";
 			else
-				$this->error .= "SWAMID Tech (draft) 5.2.14: Service Providers there MUST have at least one encryption certificate.\n";
+				$this->error .= "SWAMID Tech 6.1.14: Service Providers there MUST have at least one encryption certificate.\n";
 		}
 		// 5.2.1 Identity Provider credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
 		if ( $SWAMID_5_2_1_RSAmin < 4096 || $SWAMID_5_2_1_ECmin < 384) {
 			if ($SWAMID_5_2_1_RSAmin < 2048 || $SWAMID_5_2_1_ECmin < 256)
-				$this->error .= "SWAMID Tech (draft) 5.2.1/6.2.1: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
+				$this->error .= "SWAMID Tech 5.2.1/6.2.1: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
 			else
-				$this->warning .= "SWAMID Tech (draft) 5.2.1/6.2.1: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n";
+				$this->warning .= "SWAMID Tech 5.2.1/6.2.1: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n";
 		}
 
 		if ($SWAMID_5_2_2_error)
-			$this->error .= "SWAMID Tech (draft) 5.2.2/6.2.2: Signing and encryption certificates MUST NOT be expired.\n";
+			$this->error .= "SWAMID Tech 5.2.2/6.2.2: Signing and encryption certificates MUST NOT be expired.\n";
 
 		if ($SWAMID_5_2_3_warning)
-			$this->warning .= "SWAMID Tech (draft) 5.2.3/6.2.3: Signing and encryption certificates SHOULD be self-signed.\n";
+			$this->warning .= "SWAMID Tech 5.2.3/6.2.3: Signing and encryption certificates SHOULD be self-signed.\n";
 	}
 
 	// 5.1.22 / 6.1.20
@@ -1402,7 +1402,7 @@ Class Metadata {
 
 		foreach ($elementArray as $element => $value) {
 			if (! $value)
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.22/6.1.20: Missing %s in Organization.\n", $element);
+				$this->error .= sprintf("SWAMID Tech 5.1.22/6.1.21: Missing %s in Organization.\n", $element);
 		}
 	}
 
@@ -1417,13 +1417,13 @@ Class Metadata {
 			$contactType = $contactPerson['contactType'];
 			// 5.1.23/6.1.21 ContactPerson elements MUST have an EmailAddress element
 			if ($contactPerson['emailAddress'] == '')
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.23/6.1.21: ContactPerson [%s] elements MUST have an EmailAddress element.\n", $contactType);
+				$this->error .= sprintf("SWAMID Tech 5.1.23/6.1.22: ContactPerson [%s] elements MUST have an EmailAddress element.\n", $contactType);
 			elseif (substr($contactPerson['emailAddress'], 0, 7) != 'mailto:')
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.23/6.1.21: ContactPerson [%s] EmailAddress MUST start with mailto:.\n", $contactType);
+				$this->error .= sprintf("SWAMID Tech 5.1.23/6.1.22: ContactPerson [%s] EmailAddress MUST start with mailto:.\n", $contactType);
 
 			// 5.1.24/6.1.22 There MUST NOT be more than one ContactPerson element of each type.
 			if ( isset($usedContactTypes[$contactType]))
-				$this->error .= sprintf("SWAMID Tech (draft) 5.1.24/6.1.22: There MUST NOT be more than one ContactPerson element of type = %s.\n", $contactType);
+				$this->error .= sprintf("SWAMID Tech 5.1.24/6.1.23: There MUST NOT be more than one ContactPerson element of type = %s.\n", $contactType);
 			else
 				$usedContactTypes[$contactType] = true;
 
@@ -1431,30 +1431,30 @@ Class Metadata {
 			// If the element is present, a GivenName element MUST be present and the ContactPerson MUST respect the Traffic Light Protocol (TLP) during all incident response correspondence.
 			if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'http://refeds.org/metadata/contactType/security' ) {
 				if ( $contactPerson['givenName'] == '')
-					$this->error .= "SWAMID Tech (draft) 5.1.28/6.1.26: GivenName element MUST be presenten for security ContactPerson.\n";
+					$this->error .= "SWAMID Tech 5.1.28/6.1.27: GivenName element MUST be presenten for security ContactPerson.\n";
 			}
 		}
 
 		// 5.1.25/6.1.23 Identity Providers MUST have one ContactPerson element of type administrative.
 		if (!isset ($usedContactTypes['administrative']))
-			$this->error .= "SWAMID Tech (draft) 5.1.25/6.1.23: Missing ContactPerson of type administrative.\n";
+			$this->error .= "SWAMID Tech 5.1.25/6.1.24: Missing ContactPerson of type administrative.\n";
 
 		// 5.1.26/6.1.24 Identity Providers MUST have one ContactPerson element of type technical.
 		if (!isset ($usedContactTypes['technical']))
-			$this->error .= "SWAMID Tech (draft) 5.1.26/6.1.24: Missing ContactPerson of type technical.\n";
+			$this->error .= "SWAMID Tech 5.1.26/6.1.25: Missing ContactPerson of type technical.\n";
 
 		// 5.1.27 Identity Providers MUST have one ContactPerson element of type support.
 		// 6.1.25 Service Providers SHOULD have one ContactPerson element of type support.
 		if (!isset ($usedContactTypes['support'])) {
 			if ($type = 'SPSSO')
-				$this->warning .= "SWAMID Tech (draft) 6.1.25: Missing ContactPerson of type support.\n";
+				$this->warning .= "SWAMID Tech 6.1.26: Missing ContactPerson of type support.\n";
 			else
-				$this->error .= "SWAMID Tech (draft) 5.1.27: Missing ContactPerson of type support.\n";
+				$this->error .= "SWAMID Tech 5.1.27: Missing ContactPerson of type support.\n";
 		}
 
 		// 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
 		if (!isset ($usedContactTypes['other']))
-			$this->warning .= "SWAMID Tech (draft) 5.1.28/6.1.26: Missing security ContactPerson.\n";
+			$this->warning .= "SWAMID Tech 5.1.28/6.1.27: Missing security ContactPerson.\n";
 	}
 
 	# Validate R&S SP
@@ -1529,7 +1529,7 @@ Class Metadata {
 
 	#############
 	# Removes RoleDescriptor.
-	# SWAMID_5_1_29_error
+	# SWAMID_5_1_30_error
 	#############
 	private function cleanOutRoleDescriptor() {
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
@@ -1563,7 +1563,7 @@ Class Metadata {
 
 	#############
 	# Removes Attribues from IDPSSODescriptor.
-	# SWAMID_5_1_30_error
+	# SWAMID_5_1_31_error
 	#############
 	private function cleanOutAttribuesInIDPSSODescriptor() {
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
