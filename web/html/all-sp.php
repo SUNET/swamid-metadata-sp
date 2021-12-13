@@ -2,10 +2,15 @@
 include 'include/Html.php';
 $html = new HTML();
 $html->showHeaders('Metadata SWAMID - eduGAIN - SP:s');
+if (isset($_GET['query'])) {
+	$query = $_GET['query'];
+} else {
+	$query = '';
+}
 print "         <a href=\"./\">Alla i SWAMID</a>  | <a href=\".?showIdP\">IdP i SWAMID</a> | <a href=\".?showSP\">SP i SWAMID</a> | <a href=\"all-idp.php\">IdP via interfederation</a> | <b>SP via interfederation</b>\n";
 echo <<<EOF
     <table class="table table-striped table-bordered">
-      <tr><th>EntityID</th><th>Service Name</th><th>Organization</th><th>Contacts</th><th>Entity Categories</td><th>Assurance Certification</th><th>Registration Authority</th></tr>
+      <tr><th><form><a href="?entityID">entityID</a> <input type="text" name="query" value="$query"><input type="submit" value="Filter"></form></th><th>Service Name</th><th>Organization</th><th>Contacts</th><th>Entity Categories</td><th>Assurance Certification</th><th>Registration Authority</th></tr>
 EOF;
 
 $xml = new DOMDocument;
@@ -14,17 +19,17 @@ $xml->formatOutput = true;
 $xml->load('/opt/swamid-metadata/swamid-2.0.xml');
 $xml->encoding = 'UTF-8';
 
-checkEntities($xml);
+checkEntities($xml,strtolower($query));
 $html->showFooter(array());
 
-function checkEntities($xml) {
+function checkEntities($xml,$query) {
 	foreach ($xml->childNodes as $child) {
 		switch (nodeName($child->nodeName)) {
 			case 'EntitiesDescriptor' :
-				checkEntities($child);
+				checkEntities($child,$query);
 				break;
 			case 'EntityDescriptor' :
-				checkEntity($child);
+				checkEntity($child,$query);
 				break;
 			case 'Signature' :
 			case 'Extensions' :
@@ -36,7 +41,7 @@ function checkEntities($xml) {
 	}
 }
 
-function checkEntity($xml) {
+function checkEntity($xml,$query) {
 	$show = false;
 	$EC = '';
 	$AC = '';
@@ -73,13 +78,16 @@ function checkEntity($xml) {
 				}
 				break;
 			case 'SPSSODescriptor' :
-				$show = true;
+				$entityID = $xml->getAttribute('entityID');
+				if ($query != '' && strpos(strtolower($entityID),$query) === FALSE )
+					$show = false;
+				else
+					$show = true;
 		}
 		
 	}
 
 	if ( $show && $hideSwamid) {
-		$entityID = $xml->getAttribute('entityID');
 		$displayName = '';
 		$serviceName = '';
 		$orgURL = '';
