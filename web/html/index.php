@@ -66,7 +66,7 @@ function showEntityList() {
 			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
 
 		print "         <a href=\"./?$sort\">Alla i SWAMID</a> | <b>IdP i SWAMID</b> | <a href=\".?showSP&$sort\">SP i SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
-		$extraTH = '<th>AL1</th><th>AL2</th><th><a href="?showIdP&AL">AL3</a></th><th>SIRTFI</th>';
+		$extraTH = '<th>AL1</th><th>AL2</th><th><a href="?showIdP&AL">AL3</a></th><th>SIRTFI</th><th>Hide</th>';
 		$showAll = false;
 	} elseif (isset($_GET['showSP'])) {
 		$html->showHeaders('Metadata SWAMID - SP:s');
@@ -164,6 +164,7 @@ function showList($entitys, $showRole) {
 		$isSIRTFI = '';
 		$isCoco = '';
 		$isRS = '';
+		$hasHide = '';
 
 		$mduiHandler->bindValue(':Id', $row['id']);
 		$mduiHandler->execute();
@@ -189,6 +190,7 @@ function showList($entitys, $showRole) {
 								break;
 							case 'http://refeds.org/category/hide-from-discovery' :
 								$countHideFromDisc ++;
+								$hasHide = 'X';
 								break;
 						}
 						break;
@@ -257,7 +259,7 @@ function showList($entitys, $showRole) {
 		printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td><a href=".?showEntity=%s">%s</a></td><td>%s</td><td>%s</td>', $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $DisplayName, $row['OrganizationDisplayName']);
 
 		if (isset($_GET['showIdP'])) {
-			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI);
+			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
 		} elseif (isset($_GET['showSP'])) {
 			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isCoco, $isRS, $isSIRTFI);
 		}

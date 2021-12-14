@@ -33,7 +33,7 @@
             styleSheet="/shibboleth-sp/main.css"/>
 
         <MetadataProvider type="XML" validate="true"
-	            url="http://mds.swamid.se/md/swamid-idp-transitive.xml"
+	            url="http://mds.swamid.se/md/swamid-idp.xml"
 		    backingFilePath="metadata/swamid-1.0.xml" maxRefreshDelay="7200">
             <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
             <MetadataFilter type="Signature" certificate="md-signer2.crt" verifyBackup="false"/>

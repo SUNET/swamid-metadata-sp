@@ -198,6 +198,14 @@ Class Metadata {
 		$this->showProgress('validateURLs - done');
 	}
 
+	public function showURLStatus(){
+		$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated` FROM URLs;");
+		$URLHandler->execute();
+		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
+			print_r($URL);
+		}
+	}
+
 	# Import an XML  -> metadata.db
 	public function importXML($xml) {
 		if ($this->entityExists) {
