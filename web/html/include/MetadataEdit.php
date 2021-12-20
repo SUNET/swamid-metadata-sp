@@ -482,11 +482,9 @@ Class MetadataEdit {
 		}
 		$newURL = ($newURL == 'Missing') ? 'Missing' : sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $newURL, $newstate, $newURL);
 		$oldURL = ($oldURL == 'Missing') ? 'Missing' : sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $oldURL, $oldstate, $oldURL);
-		
+
 		printf('%s    <div class="row">%s      <div class="col">', "\n", "\n");
 		printf('%s        <b>errorURL</b>%s        <ul><li><a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&errorURL=None&action=Delete"><i class="fas fa-trash"></i></a> <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">%s</p></li></ul>', "\n", "\n", $this->dbIdNr, $this->dbOldIdNr, $newstate, $newURL);
-		
-		
 		print '
         <form>
           <input type="hidden" name="edit" value="IdPErrorURL">
@@ -973,7 +971,7 @@ Class MetadataEdit {
 				}
 			} else
 				$state = 'success';
-			$removeLink = '<a href="?edit='.$edit.'&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$element.'&height='.$height.'&width='.$width.'&lang='.$lang.'&value='.$data.'&action=Delete"><i class="fas fa-trash"></i></a> ';
+			$removeLink = '<a href="?edit='.$edit.'&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$element.'&height='.$height.'&width='.$width.'&lang='.$lang.'&value='.urlencode($data).'&action=Delete"><i class="fas fa-trash"></i></a> ';
 			switch ($element) {
 				case 'InformationURL' :
 				case 'Logo' :
@@ -2986,19 +2984,26 @@ Class MetadataEdit {
 		if ($SSODescriptor && isset($oldServiceIndexes)) {
 			$addServiceIndexHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
 			$addServiceIndexHandler->bindParam(':Id', $this->dbIdNr);
+			$addServiceIndexHandler->bindParam(':Index', $index);
 
 			$serviceElementAddHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
 			$serviceElementAddHandler->bindParam(':Id', $this->dbIdNr);
+			$serviceElementAddHandler->bindParam(':Index', $index);
+			$serviceElementAddHandler->bindParam(':Lang', $lang);
+			$serviceElementAddHandler->bindParam(':Data', $value);
 
 			$requestedAttributeAddHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute (entity_id, Service_index, FriendlyName, Name, NameFormat, isRequired) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
 			$requestedAttributeAddHandler->bindParam(':Id', $this->dbIdNr);
+			$requestedAttributeAddHandler->bindParam(':Index', $index);
+			$requestedAttributeAddHandler->bindParam(':FriendlyName', $friendlyName);
+			$requestedAttributeAddHandler->bindParam(':Name', $name);
+			$requestedAttributeAddHandler->bindParam(':NameFormat', $nameFormat);
+			$requestedAttributeAddHandler->bindParam(':IsRequired', $isRequired);
 
 			$child = $SSODescriptor->firstChild;
 			while ($child) {
 				if ($child->nodeName == 'md:AttributeConsumingService' ) {
 					$index = $child->getAttribute('index');
-					$serviceElementAddHandler->bindParam(':Index', $index);
-					$requestedAttributeAddHandler->bindParam(':Index', $index);
 
 					$AttributeConsumingService = $child;
 					$servicechild = $AttributeConsumingService->firstChild;
@@ -3017,8 +3022,6 @@ Class MetadataEdit {
 										$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceName', $value);
 										$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
 										$AttributeConsumingService->insertBefore($AttributeConsumingServiceElement, $servicechild);
-										$serviceElementAddHandler->bindParam(':Lang', $lang);
-										$serviceElementAddHandler->bindParam(':Data', $value);
 										$serviceElementAddHandler->execute();
 										unset ($oldServiceElements[$index]['ServiceName'][$lang]);
 									}
@@ -3037,24 +3040,22 @@ Class MetadataEdit {
 											$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceName', $value);
 											$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
 											$AttributeConsumingService->insertBefore($AttributeConsumingServiceElement, $servicechild);
-											$serviceElementAddHandler->bindParam(':Lang', $lang);
-											$serviceElementAddHandler->bindParam(':Data', $value);
 											$serviceElementAddHandler->execute();
 											unset ($oldServiceElements[$index]['ServiceName'][$lang]);
 										}
 										unset($oldServiceElements[$index]['ServiceName']);
 									}
-									$serviceElementAddHandler->bindValue(':Element', 'ServiceDescription');
-									foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-										$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceDescription', $value);
-										$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
-										$AttributeConsumingService->insertBefore($AttributeConsumingServiceElement, $servicechild);
-										$serviceElementAddHandler->bindParam(':Lang', $lang);
-										$serviceElementAddHandler->bindParam(':Data', $value);
-										$serviceElementAddHandler->execute();
-										unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
+									if (isset($oldServiceElements[$index]['ServiceDescription'])) {
+										$serviceElementAddHandler->bindValue(':Element', 'ServiceDescription');
+										foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
+											$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceDescription', $value);
+											$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+											$AttributeConsumingService->insertBefore($AttributeConsumingServiceElement, $servicechild);
+											$serviceElementAddHandler->execute();
+											unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
+										}
+										unset ($oldServiceElements[$index]['ServiceDescription']);
 									}
-									unset ($oldServiceElements[$index]['ServiceDescription']);
 									$nextOrder = 3;
 								}
 								$name = $servicechild->getAttribute('Name');
@@ -3073,8 +3074,6 @@ Class MetadataEdit {
 							$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceName', $value);
 							$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
 							$AttributeConsumingService->appendChild($AttributeConsumingServiceElement);
-							$serviceElementAddHandler->bindParam(':Lang', $lang);
-							$serviceElementAddHandler->bindParam(':Data', $value);
 							$serviceElementAddHandler->execute();
 						}
 					}
@@ -3084,27 +3083,24 @@ Class MetadataEdit {
 							$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceDescription', $value);
 							$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
 							$AttributeConsumingService->appendChild($AttributeConsumingServiceElement);
-							$serviceElementAddHandler->bindParam(':Lang', $lang);
-							$serviceElementAddHandler->bindParam(':Data', $value);
 							$serviceElementAddHandler->execute();
 						}
 					}
 					unset($oldServiceElements[$index]);
 
 					foreach ($oldRequestedAttributes[$index] as $name => $data) {
-						$AttributeConsumingServiceElement = $this->newXml->createElement('md:RequestedAttribute');
+						$friendlyName = $data['friendlyName'];
+						$nameFormat =  $data['nameFormat'];
+						$isRequired = $data['isRequired'];
 
-						if ($data['friendlyName'] != '' )
-							$AttributeConsumingServiceElement->setAttribute('FriendlyName', $data['friendlyName']);
+						$AttributeConsumingServiceElement = $this->newXml->createElement('md:RequestedAttribute');
+						if ($friendlyName != '' )
+							$AttributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
 						$AttributeConsumingServiceElement->setAttribute('Name', $name);
-						if ($data['nameFormat'] != '' )
-							$AttributeConsumingServiceElement->setAttribute('NameFormat', $data['nameFormat']);
-						$AttributeConsumingServiceElement->setAttribute('isRequired', $data['isRequired'] ? 'true' : 'false');
+						if ($nameFormat != '' )
+							$AttributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+						$AttributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
 						$AttributeConsumingService->appendChild($AttributeConsumingServiceElement);
-						$requestedAttributeAddHandler->bindParam(':FriendlyName', $friendlyName);
-						$requestedAttributeAddHandler->bindParam(':Name', $name);
-						$requestedAttributeAddHandler->bindParam(':NameFormat', $nameFormat);
-						$requestedAttributeAddHandler->bindParam(':IsRequired', $isRequired);
 						$requestedAttributeAddHandler->execute();
 					}
 					unset ($oldRequestedAttributes[$index]);
@@ -3116,7 +3112,6 @@ Class MetadataEdit {
 				$AttributeConsumingService = $this->newXml->createElement('md:AttributeConsumingService');
 				$AttributeConsumingService->setAttribute('index', $index);
 				$SSODescriptor->appendChild($AttributeConsumingService);
-				$addServiceIndexHandler->bindParam(':Index', $index);
 				$addServiceIndexHandler->execute();
 
 				if(isset($oldServiceElements[$index]['ServiceName'])) {
@@ -3125,8 +3120,6 @@ Class MetadataEdit {
 						$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceName', $value);
 						$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
 						$AttributeConsumingService->appendChild($AttributeConsumingServiceElement);
-						$serviceElementAddHandler->bindParam(':Lang', $lang);
-						$serviceElementAddHandler->bindParam(':Data', $value);
 						$serviceElementAddHandler->execute();
 					}
 				}
@@ -3136,27 +3129,24 @@ Class MetadataEdit {
 						$AttributeConsumingServiceElement = $this->newXml->createElement('md:ServiceDescription', $value);
 						$AttributeConsumingServiceElement->setAttribute('xml:lang', $lang);
 						$AttributeConsumingService->appendChild($AttributeConsumingServiceElement);
-						$serviceElementAddHandler->bindParam(':Lang', $lang);
-						$serviceElementAddHandler->bindParam(':Data', $value);
 						$serviceElementAddHandler->execute();
 					}
 				}
 				unset($oldServiceElements[$index]);
 
 				foreach ($oldRequestedAttributes[$index] as $name => $data) {
-					$AttributeConsumingServiceElement = $this->newXml->createElement('md:RequestedAttribute');
+					$friendlyName = $data['friendlyName'];
+					$nameFormat =  $data['nameFormat'];
+					$isRequired = $data['isRequired'];
 
-					if ($data['friendlyName'] != '' )
-						$AttributeConsumingServiceElement->setAttribute('FriendlyName', $data['friendlyName']);
+					$AttributeConsumingServiceElement = $this->newXml->createElement('md:RequestedAttribute');
+					if ($friendlyName != '' )
+						$AttributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
 					$AttributeConsumingServiceElement->setAttribute('Name', $name);
-					if ($data['nameFormat'] != '' )
-						$AttributeConsumingServiceElement->setAttribute('NameFormat', $data['nameFormat']);
-					$AttributeConsumingServiceElement->setAttribute('isRequired', $data['isRequired'] ? 'true' : 'false');
+					if ($nameFormat != '' )
+						$AttributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+					$AttributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
 					$AttributeConsumingService->appendChild($AttributeConsumingServiceElement);
-					$requestedAttributeAddHandler->bindParam(':FriendlyName', $friendlyName);
-					$requestedAttributeAddHandler->bindParam(':Name', $name);
-					$requestedAttributeAddHandler->bindParam(':NameFormat', $nameFormat);
-					$requestedAttributeAddHandler->bindParam(':IsRequired', $isRequired);
 					$requestedAttributeAddHandler->execute();
 				}
 				unset($oldRequestedAttributes[$index]);
@@ -3164,6 +3154,7 @@ Class MetadataEdit {
 			}
 		}
 	}
+
 	private function mergeOrganization() {
 		if ( !$this->oldExists)
 			return;

@@ -95,3 +95,9 @@ CREATE TABLE URLs (
 	`status` TINYINT UNSIGNED,
 	`lastValidated` DATETIME,
 	`validationOutput` TEXT);
+
+CREATE TABLE Users (
+	`entity_id` INT UNSIGNED,
+	`userID` TEXT,
+	`email` TEXT,
+	UNIQUE(entity_id, userID));

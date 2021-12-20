@@ -2,19 +2,19 @@
 Class HTML {
 	# Setup
 	function __construct() {
+		$this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
 	}
 
 	###
 	# Print start of webpage
 	###
-	function showHeaders($title = "") {
-?>
+	public function showHeaders($title = "") { ?>
 <html>
 <head>
   <meta charset="UTF-8">
   <title><?=$title?></title>
-  <link href="//release-check.swamid.se/fontawesome/css/fontawesome.min.css" rel="stylesheet">
-  <link href="//release-check.swamid.se/fontawesome/css/solid.min.css" rel="stylesheet">
+  <link href="/fontawesome/css/fontawesome.min.css" rel="stylesheet">
+  <link href="/fontawesome/css/solid.min.css" rel="stylesheet">
   <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
@@ -103,33 +103,43 @@ body {
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <nav>
-        <ul class="nav nav-pills float-right">
-          <li role="presentation" class="nav-item"><a href="https://www.sunet.se/swamid/" class="nav-link">About SWAMID</a></li>
-          <li role="presentation" class="nav-item"><a href="https://www.sunet.se/swamid/kontakt/" class="nav-link">Contact us</a></li>
-        </ul>
+    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
+      <h3 class="my-0 mr-md-auto font-weight-normal"><a href="."><img src="https://release-check.swamid.se/swamid-logo-2-100x115.png" width="55"></a> Metadata</h3>
+      <nav class="my-2 my-md-0 mr-md-3">
+        <a class="p-2 text-dark"href="https://www.sunet.se/swamid/">About SWAMID</a>
+        <a class="p-2 text-dark"href="https://www.sunet.se/swamid/kontakt/">Contact us</a>
       </nav>
-      <h3 class="text-muted"><a href="."><img src="https://release-check.swamid.se/swamid-logo-2-100x115.png" width="55"></a> Metadata</h3>
+      <?=$this->displayName?>
+
     </div>
 <?php	}
 
 	###
 	# Print footer on webpage
 	###
-	function showFooter($collapseIcons = array()) {
-		echo <<<EOF
+	public function showFooter($collapseIcons = array()) {
+		$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+		?>
   </div>
+  <!-- Include the Seamless Access Sign in Button & Discovery Service -->
+  <script src="//service.seamlessaccess.org/thiss.js"></script>
+  <script>
+    window.onload = function() {
+      // Render the Seamless Access button
+      thiss.DiscoveryComponent({
+        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin<?=$_SERVER['REQUEST_URI']?>'
+      }).render('#SWAMID-SeamlessAccess');
+    };
+  </script>
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
   <script>
     $(function () {
-
-EOF;
-if (isset($collapseIcons)) {
-  foreach ($collapseIcons as $collapseIcon) { ?>
+<?php
+		if (isset($collapseIcons)) {
+			foreach ($collapseIcons as $collapseIcon) { ?>
       $('#<?=$collapseIcon?>').on('show.bs.collapse', function (event) {
         var tag_id = document.getElementById('<?=$collapseIcon?>-icon');
         tag_id.className = "fas fa-chevron-circle-down";
@@ -140,9 +150,8 @@ if (isset($collapseIcons)) {
         tag_id.className = "fas fa-chevron-circle-right";
         event.stopPropagation();
       })
-<?php }
-}
-echo <<<EOF
+<?php		}
+		} ?>
     })
     // Add the following code if you want the name of the file appear on select
     $(".custom-file-input").on("change", function() {
@@ -153,7 +162,11 @@ echo <<<EOF
   </script>
 </body>
 </html>
-EOF;
+<?php
+	}
+
+	public function setDisplayName($name) {
+		$this->displayName = $name;
 	}
 }
 

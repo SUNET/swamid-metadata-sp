@@ -55,8 +55,10 @@ Class NormalizeXML {
 						$name = $this->checkNameSpaceNode($child);
 						$newChild = $doc->createElement($name);
 						$new->appendChild($newChild);
-						if ($child->nodeValue)
-							$newChild->nodeValue = $child->nodeValue;
+						if ($child->nodeValue) {
+							$newText = $doc->createTextNode($child->nodeValue);
+							$newChild->appendChild($newText);
+						}
 						if ($child->hasAttributes() )  {
 							$nrOfAttribues = $child->attributes->count();
 							for ($index = 0; $index < $nrOfAttribues; $index++) {
@@ -91,11 +93,19 @@ Class NormalizeXML {
 	private function checkNameSpaceNode($node) {
 		$nameParts = explode(':', $node->nodeName, 2);
 		if (isset($nameParts[1])) {
+			$suggestedNS = $nameParts[0];
 			$name = $nameParts[1];
 		} else {
 			$name = $nameParts[0];
 		}
 		$uri = $node->namespaceURI;
+		while ($uri == '' && $suggestedNS != '') {
+			foreach ($this->knownList as $knowURI => $knowNS) {
+				if ( $suggestedNS == $knowNS ) {
+					$uri = $knowURI;
+				}
+			}
+		}
 		if (isset($this->knownList[$uri])) {
 			$ns = $this->knownList[$uri];
 		} else {

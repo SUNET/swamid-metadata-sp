@@ -2,7 +2,7 @@
 
 if (isset($_GET["file"])) {
 	switch ($_GET["file"]) {
-		case 'eduGAIN': 
+		case 'eduGAIN':
 			$match="swamid-edugain-1.0.xml</a";
 			$name="eduGAIN";
 			break;
@@ -18,7 +18,7 @@ if (isset($_GET["file"])) {
 			$match="swamid-2.0.xml</a";
 			$name="swamid-2.0";
 	}
-	
+
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_URL, "http://mds.swamid.se/md/");
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -26,10 +26,10 @@ if (isset($_GET["file"])) {
 
 	foreach (explode("\n",$output) as $row) {
 		$row_array = explode(">",$row);
-		if ($row_array[0] == "<tr"  && $row_array[6] == $match ) 
+		if ($row_array[0] == "<tr"  && $row_array[6] == $match )
 			checkTime($row_array[9],$name);
 	}
-	curl_close($ch);     
+	curl_close($ch);
 }
 
 function checkTime($value,$name) {

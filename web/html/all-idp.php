@@ -7,7 +7,7 @@ if (isset($_GET['query'])) {
 } else {
 	$query = '';
 }
-print "         <a href=\"./\">Alla i SWAMID</a>  | <a href=\".?showIdP\">IdP i SWAMID</a> | <a href=\".?showSP\">SP i SWAMID</a> | <b>IdP via interfederation</b> | <a href=\"all-sp.php\">SP via interfederation</a>\n";
+print "         <a href=\"./\">All in SWAMID</a>  | <a href=\".?showIdP\">IdP in SWAMID</a> | <a href=\".?showSP\">SP in SWAMID</a> | <b>IdP via interfederation</b> | <a href=\"all-sp.php\">SP via interfederation</a>\n";
 echo <<<EOF
     <table class="table table-striped table-bordered">
       <tr><th><form><a href="?entityID">entityID</a> <input type="text" name="query" value="$query"><input type="submit" value="Filter"></form></th><th>Organization</th><th>Contacts</th><th>Scopes</th><th>Entity category support</th><th>Assurance Certification</th><th>Registration Authority</th></tr>
@@ -55,7 +55,7 @@ function checkEntity($xml,$query) {
 							$hideSwamid = ($registrationAuthority == 'http://www.swamid.se/') ? false : true;
 							$hideSwamid = ($registrationAuthority == 'http://www.swamid.se/loop') ? false : $hideSwamid;
 							break;
-						case 'EntityAttributes' : 
+						case 'EntityAttributes' :
 							foreach ($extChild->childNodes as $entAttrChild) {
 								if (nodeName($entAttrChild->nodeName) == 'Attribute') {
 									switch ($entAttrChild->getAttribute('Name')){
@@ -84,7 +84,6 @@ function checkEntity($xml,$query) {
 				else
 					$show = true;
 		}
-		
 	}
 
 	if ( $show && $hideSwamid) {
@@ -112,7 +111,7 @@ function checkEntity($xml,$query) {
 				case 'Organization' :
 					foreach ($child->childNodes as $orgChild) {
 						if (nodeName($orgChild->nodeName) == 'OrganizationURL')
-							if ($orgURL == '') 
+							if ($orgURL == '')
 								$orgURL = $orgChild->nodeValue;
 							elseif ($orgChild->getAttribute('xml:lang') == 'en')
 								$orgURL = $orgChild->nodeValue;

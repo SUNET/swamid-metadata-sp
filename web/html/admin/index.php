@@ -5,12 +5,38 @@ $html = new HTML();
 $configFile = dirname($_SERVER['SCRIPT_FILENAME'], 2) . '/config.php' ;
 include $configFile;
 
+$errors = '';
+
 if (! isset($_SERVER['eduPersonPrincipalName'])) {
-	$html->showHeaders('Metadata SWAMID - Problem');
-	print 'Missing eduPersonPrincipalName in SAML response';
-	$html->showFooter($display->getCollapseIcons());
+	$errors .= 'Missing eduPersonPrincipalName in SAML response<br>';
+} else {
+	$EPPN = $_SERVER['eduPersonPrincipalName'];
 }
-switch ($_SERVER['eduPersonPrincipalName']) {
+
+if (! isset($_SERVER['mail'])) {
+	$errors .= 'Missing mail in SAML response<br>';
+} else {
+	$mail = $_SERVER['mail'];
+}
+
+if (isset($_SERVER['displayName'])) {
+	$displayName = $_SERVER['displayName'];
+} elseif (isset($_SERVER['givenName'])) {
+	$displayName = $_SERVER['givenName'];
+	if(isset($_SERVER['sn']))
+		$displayName .= ' ' .$_SERVER['sn'];
+} else
+	$displayName = '';
+
+if ($errors != '') {
+	$html->showHeaders('Metadata SWAMID - Problem');
+	printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>%s', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n","\n");
+	$html->showFooter(array());
+	exit;
+}
+
+$EPPN = $_SERVER['eduPersonPrincipalName'];
+switch ($EPPN) {
 	case 'bjorn@sunet.se' :
 	case 'frkand02@umu.se' :
 	case 'paulscot@kau.se' :
@@ -25,19 +51,21 @@ switch ($_SERVER['eduPersonPrincipalName']) {
 	default :
 		$userLevel = 1;
 }
-
+$displayName = '<div> Logged in as : <br> ' . $displayName . ' (' . $EPPN .') [admin]</div>';
+$html->setDisplayName($displayName);
 
 try {
 	$db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 	// set the PDO error mode to exception
 	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  } catch(PDOException $e) {
+} catch(PDOException $e) {
 	echo "Error: " . $e->getMessage();
 }
 
-
 include '../include/MetadataDisplay.php';
 $display = new MetadataDisplay($configFile);
+
+include '../include/Metadata.php';
 
 if (isset($_FILES['XMLfile'])) {
 	importXML();
@@ -72,7 +100,6 @@ if (isset($_FILES['XMLfile'])) {
 	$menuActive = 'publ';
 	if (isset($_GET['action'])) {
 		if (isset($_GET['Entity'])) {
-			include '../include/Metadata.php';
 			$Entity_id = $_GET['Entity'];
 			switch($_GET['action']) {
 				case 'createDraft' :
@@ -82,6 +109,7 @@ if (isset($_FILES['XMLfile'])) {
 						$metadata->validateXML();
 						$metadata->validateSAML();
 						showEntity($newEntity_id);
+						$metadata->updateResponsible($EPPN,$mail);
 					break;
 			}
 		} else {
@@ -98,6 +126,12 @@ if (isset($_FILES['XMLfile'])) {
 					$menuActive = 'upload';
 					showUpload();
 					break;
+				case 'URLlist' :
+					$menuActive = 'URLlist';
+					$html->showHeaders('Metadata SWAMID - Add new XML');
+					showMenu();
+					$display->showURLStatus();
+					break;
 				default :
 					showEntityList();
 			}
@@ -105,7 +139,6 @@ if (isset($_FILES['XMLfile'])) {
 	} else
 		showEntityList();
 }
-
 
 $html->showFooter($display->getCollapseIcons());
 # End of page
@@ -132,11 +165,11 @@ function showEntityList($status = 1) {
 	}
 
 	if (isset($_GET['warnings'])) {
-		$sortOrder = 'warnings DESC, entityID';
+		$sortOrder = 'warnings DESC, errors DESC';
 	}
 
 	if (isset($_GET['errors'])) {
-		$sortOrder = 'errors DESC, entityID';
+		$sortOrder = 'errors DESC, warnings DESC';
 	}
 
 	if (isset($_GET['query'])) {
@@ -146,7 +179,22 @@ function showEntityList($status = 1) {
 		$filter = '?query';
 	}
 
-	$html->showHeaders('Metadata SWAMID - New');
+	switch ($status) {
+		case 1:
+			$html->showHeaders('Metadata SWAMID - Published');
+			$action = 'pub';
+			break;
+		case 2:
+			$html->showHeaders('Metadata SWAMID - Pending');
+			$action = 'wait';
+			break;
+		case 3:
+			$html->showHeaders('Metadata SWAMID - Drafts');
+			$action = 'new';
+			break;
+		default:
+			$html->showHeaders('Metadata SWAMID');
+	}
 	showMenu();
 	if (isset($_GET['action']))
 		$filter .= '&action='.$_GET['action'];
@@ -159,7 +207,7 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"> <input type="submit" value="Filtrera"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $filter, $filter, $filter, $filter);
+	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filtrera"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, $filter, $filter, $filter);
 
 	print $extraTH . "</tr>\n";
 	showList($entitys);
@@ -356,20 +404,24 @@ function showUpload() {
 ####
 function importXML(){
 	global $html, $configFile;
+	global $EPPN,$mail;
 
 	include '../include/NormalizeXML.php';
 	$import = new NormalizeXML();
 	$import->fromFile($_FILES['XMLfile']['tmp_name']);
 	if ($import->getStatus()) {
 		$entityID = $import->getEntityID();
-		include '../include/Metadata.php';
 		$metadata = new Metadata($configFile, $import->getEntityID(), 'New');
 		$metadata->importXML($import->getXML());
 		$metadata->validateXML(true);
 		$metadata->validateSAML(true);
 		showEntity($metadata->dbIdNr);
-	} else
-		print ($import->getError());
+		$metadata->updateResponsible($EPPN,$mail);
+	} else {
+		$html->showHeaders('Metadata SWAMID - Problem');
+		printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error in XML-file:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>%s', "\n", "\n", "\n", "\n", $import->getError(), "\n", "\n","\n");
+		$html->showFooter(array());
+	}
 }
 
 ####
@@ -408,12 +460,13 @@ function showMenu() {
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
+	if ( $userLevel > 4 )
+		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
 	print "<br>\n";print "<br>\n";
 }
 
 function validateEntity($Entity_id) {
 	global $configFile;
-	include '../include/Metadata.php';
 	$metadata = new Metadata($configFile, $Entity_id);
 	$metadata->validateXML(true);
 	$metadata->validateSAML();
@@ -451,6 +504,7 @@ function move2Pending($Entity_id) {
 				$publish = false;
 
 			if ($publish) {
+
 				print "Nu är det live :-)";
 			} else {
 				if ($errors != '') {
@@ -465,7 +519,7 @@ function move2Pending($Entity_id) {
 					if (($entityOld['publishIn'] & 2) == 2) $publishArrayOld[] = 'SWAMID';
 					if (($entityOld['publishIn'] & 4) == 4) $publishArrayOld[] = 'eduGAIN';
 					if ($entityOld['publishIn'] == 1) $publishArrayOld[] = 'SWAMID-testing';
-					printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (', ', $publishArrayOld));
+					printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArrayOld));
 				} else {
 					$entityOld['publishIn'] = $entity['isIdP'] ? 7 : 3;
 				}

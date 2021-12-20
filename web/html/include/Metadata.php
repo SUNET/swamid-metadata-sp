@@ -42,7 +42,7 @@ Class Metadata {
 		} catch(PDOException $e) {
 			echo "Error: " . $e->getMessage();
 		}
-		
+
 		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindValue(':Id', $entity_id);
 		$entityHandler->execute();
@@ -198,15 +198,7 @@ Class Metadata {
 		$this->showProgress('validateURLs - done');
 	}
 
-	public function showURLStatus(){
-		$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated` FROM URLs;");
-		$URLHandler->execute();
-		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
-			print_r($URL);
-		}
-	}
-
-	# Import an XML  -> metadata.db
+		# Import an XML  -> metadata.db
 	public function importXML($xml) {
 		if ($this->entityExists) {
 			# Update entity in database
@@ -1039,7 +1031,7 @@ Class Metadata {
 		$this->isSP_RandS = false;
 		$this->isSP_CoCov1 = false;
 		$this->isSIRTFI = false;
-		
+
 		$entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute` FROM EntityAttributes WHERE `entity_id` = :Id;');
 		$entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
 		$entityAttributesHandler->execute();
@@ -1091,19 +1083,19 @@ Class Metadata {
 		}
 		if ($this->isSP) {
 			// 6.1.12
-//			$this->checkRequiredSPMDUIelements();
+			//			$this->checkRequiredSPMDUIelements();
 			// 6.1.14, 6.2.x
 			$this->checkRequiredSAMLcertificates('SPSSO');
 
 			// 6.1.16
-//			$this->checkAssertionConsumerService();
+			//			$this->checkAssertionConsumerService();
 
 			// 6.1.17
 			//Kollas med PolicyGruppen.
 		}
 
 		//5.1.20 / 6.1.15
-//		$this->checkHttpsOnEndpoints();
+		//		$this->checkHttpsOnEndpoints();
 
 		// 5.1.22 / 6.1.20
 		$this->checkRequiredOrganizationElements();
@@ -1632,6 +1624,17 @@ Class Metadata {
 	}
 
 	#############
+	# Updates which user that is responsible for an entity
+	#############
+	public function updateResponsible($EPPN,$mail) {
+		$userHandler = $this->metaDb->prepare('INSERT INTO Users (`entity_id`, `userID`, `email`) VALUES (:Entity_id, :UserID, :Email) ON DUPLICATE KEY UPDATE `email` = :Email');
+		$userHandler->bindValue(':Entity_id', $this->dbIdNr);
+		$userHandler->bindValue(':UserID', $EPPN);
+		$userHandler->bindValue(':Email', $mail);
+		$userHandler->execute();
+	}
+
+	#############
 	# Removes an entity from database
 	#############
 	public function removeEntity() {
@@ -1646,6 +1649,7 @@ Class Metadata {
 		$this->metaDb->exec('DELETE FROM ContactPerson WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM EntityURLs WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $this->dbIdNr .';');
+		$this->metaDb->exec('DELETE FROM Users WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM Entities WHERE `id` = ' . $this->dbIdNr .';');
 	}
 

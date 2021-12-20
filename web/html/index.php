@@ -54,7 +54,7 @@ function showEntityList() {
 	}
 	$csort=$sort;
 	$sort .= '&query='.$query;
-	
+
 	if (isset($_GET['showIdP'])) {
 		$html->showHeaders('Metadata SWAMID - IdP:s');
 		$filter = 'showIdP';
@@ -65,21 +65,21 @@ function showEntityList() {
 		} else
 			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
 
-		print "         <a href=\"./?$sort\">Alla i SWAMID</a> | <b>IdP i SWAMID</b> | <a href=\".?showSP&$sort\">SP i SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
+		print "         <a href=\"./?$sort\">All in SWAMID</a> | <b>IdP in SWAMID</b> | <a href=\".?showSP&$sort\">SP in SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
 		$extraTH = '<th>AL1</th><th>AL2</th><th><a href="?showIdP&AL">AL3</a></th><th>SIRTFI</th><th>Hide</th>';
 		$showAll = false;
 	} elseif (isset($_GET['showSP'])) {
 		$html->showHeaders('Metadata SWAMID - SP:s');
 		$filter = 'showSP';
 		$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isSP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
-		print "         <a href=\"./?$sort\">Alla i SWAMID</a> | <a href=\".?showIdP&$sort\">IdP i SWAMID</a> | <b>SP i SWAMID</b> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
+		print "         <a href=\"./?$sort\">All in SWAMID</a> | <a href=\".?showIdP&$sort\">IdP in SWAMID</a> | <b>SP in SWAMID</b> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
 		$extraTH = '<th>CoCo</th><th>R&S</th><th>SIRTFI</th>';
 		$showAll = false;
 	} else {
 		$html->showHeaders('Metadata SWAMID - All');
 		$filter = 'all';
 		$entitys = $db->prepare("SELECT id, entityID, isIdP, isSP, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
-		print "	  <b>Alla i SWAMID</b> | <a href=\".?showIdP&$sort\">IdP i SWAMID</a> | <a href=\".?showSP&$sort\">SP i SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
+		print "	  <b>All in SWAMID</b> | <a href=\".?showIdP&$sort\">IdP in SWAMID</a> | <a href=\".?showSP&$sort\">SP in SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
 		$extraTH = '';
 	}
 	echo <<<EOF

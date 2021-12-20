@@ -79,7 +79,7 @@ Class MetadataDisplay {
 				$extraButton = '';
 		}
 		printf('%s<h4><i id="%s-icon" class="fas fa-chevron-circle-%s"></i> <a data-toggle="collapse" href="#%s" aria-expanded="%s" aria-controls="%s">%s</a> %s</h4>%s<div class="%scollapse multi-collapse" id="%s">%s  <div class="row">', $spacer, $name, $icon, $name, $expanded, $name, $title, $extraButton, $spacer, $show, $name, $spacer);
-		if ($haveSub) { 
+		if ($haveSub) {
 			printf('%s    <span class="border-right"><div class="col-md-auto"></div></span>',$spacer);
 		}
 		printf('%s    <div class="col%s">', $spacer, $oldEntity_id > 0 ? '-6' : '');
@@ -229,7 +229,7 @@ Class MetadataDisplay {
 		}
 		$this->showCollapseEnd('DiscoHints', 1);
 		$this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 1, true, false, $Entity_id, $oldEntity_id);
-		$this->showKeyInfo($Entity_id, 'IDPSSO', $oldEntity_id, true);
+		$this->showKeyInfo($Entity_id, 'IDPSSO', $oldEntity_id, true, $allowEdit);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
 			$this->showKeyInfo($oldEntity_id, 'IDPSSO', $Entity_id);
@@ -257,7 +257,7 @@ Class MetadataDisplay {
 		$this->showCollapseEnd('UIInfo_SPSSO', 1);
 
 		$this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true, false, $Entity_id, $oldEntity_id);
-		$this->showKeyInfo($Entity_id, 'SPSSO', $oldEntity_id, true);
+		$this->showKeyInfo($Entity_id, 'SPSSO', $oldEntity_id, true, $allowEdit);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
 			$this->showKeyInfo($oldEntity_id, 'SPSSO', $Entity_id);
@@ -463,7 +463,7 @@ Class MetadataDisplay {
 	####
 	# Shows KeyInfo for IdP or SP
 	####
-	function showKeyInfo($Entity_id, $type, $otherEntity_id=0, $added = false) {
+	function showKeyInfo($Entity_id, $type, $otherEntity_id=0, $added = false, $removable = false) {
 		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY notValidAfter DESC;');
 		$keyInfoHandler->bindParam(':Type', $type);
 		if ($otherEntity_id) {
@@ -517,7 +517,7 @@ Class MetadataDisplay {
 				}
 			} else
 				$state = 'dark';
-				$extraButton = $okRemove ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&hash=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['hash']) : '';
+				$extraButton = $okRemove && $removable ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&hash=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['hash']) : '';
 			printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s%s</span>
                 <ul>
                   <li>notValidAfter = %s</li>
@@ -787,25 +787,39 @@ Class MetadataDisplay {
 		exit;
 	}
 
-	#############
-	# Returns Result
-	#############
-	function getResult() {
-		return $this->result;
-	}
+	public function showURLStatus(){
+		$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
+		$URLWaitHandler->execute();
+		printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
+		while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
+			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+		}
+		print "    </table>\n";
 
-	#############
-	# Clear Result
-	#############
-	function clearResult() {
-		$this->result = '';
-	}
+		$oldType = 0;
+		$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
+		$URLHandler->execute();
 
-	#############
-	# Return Warning
-	#############
-	function getWarning() {
-		return $this->warning;
+		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
+			if ($oldType != $URL['type']) {
+				switch ($URL['type']) {
+					case 1:
+						$typeInfo = 'URL check';
+						break;
+					case 2:
+						$typeInfo = 'CoCo - PrivacyURL';
+						break;
+					default :
+						$typeInfo = '?' . $URL['type'];
+				}
+				if ($oldType > 0)
+					print "    </table>\n";
+				printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
+				$oldType = $URL['type'];
+			}
+			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+		}
+		if ($oldType > 0) print "    </table>\n";
 	}
 
 	#############
@@ -813,27 +827,6 @@ Class MetadataDisplay {
 	#############
 	function getCollapseIcons() {
 		return $this->collapseIcons;
-	}
-
-	#############
-	# Clear Warning
-	#############
-	function clearWarning() {
-		$this->warning = '';
-	}
-
-	#############
-	# Return Error
-	#############
-	function getError() {
-		return $this->error;
-	}
-
-	#############
-	# Clear Error
-	#############
-	function clearError() {
-		$this->error = '';
 	}
 }
 # vim:set ts=2:
