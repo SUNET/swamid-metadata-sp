@@ -93,6 +93,7 @@ CREATE TABLE URLs (
 	`URL` TEXT,
 	`type` TINYINT UNSIGNED,
 	`status` TINYINT UNSIGNED,
+	`lastSeen` DATETIME,
 	`lastValidated` DATETIME,
 	`validationOutput` TEXT);
 

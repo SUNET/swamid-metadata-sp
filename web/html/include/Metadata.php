@@ -113,15 +113,17 @@ Class Metadata {
 		$urlHandler = $this->metaDb->prepare('SELECT `type` FROM URLs WHERE `URL` = :Url;');
 		$urlHandler->bindValue(':Url', $url);
 		$urlHandler->execute();
+
 		if ($currentType = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-			if ($currentType['type'] < $type) {
-				$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `type` = :Type, `status` = 10, `lastValidated` = '1972-01-01' WHERE `URL` = :Url;");
-				$urlUpdateHandler->bindParam(':Url', $url);
-				$urlUpdateHandler->bindParam(':Type', $type);
-				$urlUpdateHandler->execute();
+			if ($currentType['type'] > $type) {
+				$type = $currentType['type'];
 			}
+			$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `type` = :Type, `lastSeen` = NOW() WHERE `URL` = :Url;");
+			$urlUpdateHandler->bindParam(':Url', $url);
+			$urlUpdateHandler->bindParam(':Type', $type);
+			$urlUpdateHandler->execute();
 		} else {
-			$urlAddHandler = $this->metaDb->prepare("INSERT INTO URLs (`URL`, `type`, `status`, `lastValidated`) VALUES (:Url, :Type, 10, '1972-01-01');");
+			$urlAddHandler = $this->metaDb->prepare("INSERT INTO URLs (`URL`, `type`, `status`, `lastValidated`, `lastSeen`) VALUES (:Url, :Type, 10, '1972-01-01', NOW());");
 			$urlAddHandler->bindParam(':Url', $url);
 			$urlAddHandler->bindParam(':Type', $type);
 			$urlAddHandler->execute();
@@ -198,32 +200,36 @@ Class Metadata {
 		$this->showProgress('validateURLs - done');
 	}
 
-		# Import an XML  -> metadata.db
+	# Import an XML  -> metadata.db
 	public function importXML($xml) {
-		if ($this->entityExists) {
-			# Update entity in database
-			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml WHERE `entityId` = :Id AND `status` = :Status;');
-			$entityHandlerUpdate->bindValue(':Id', $this->entityID);
-			$entityHandlerUpdate->bindValue(':Status', $this->status);
-			$entityHandlerUpdate->bindValue(':Xml', $xml);
-			$entityHandlerUpdate->execute();
-			$this->result = "Updated in db.\n";
-		} else {
-			# Add new entity into database
-			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`) VALUES(:Id, 0, 0, 0, :Status, :Xml);');
-			$entityHandlerInsert->bindValue(':Id', $this->entityID);
-			$entityHandlerInsert->bindValue(':Status', $this->status);
-			$entityHandlerInsert->bindValue(':Xml', $xml);
-			$entityHandlerInsert->execute();
-			$this->result = "Added to db.\n";
-			$this->dbIdNr = $this->metaDb->lastInsertId();
-		}
-		$this->entityExists = true;
 		$this->xml = new DOMDocument;
 		$this->xml->preserveWhiteSpace = false;
 		$this->xml->formatOutput = true;
 		$this->xml->loadXML($xml);
 		$this->xml->encoding = 'UTF-8';
+		$this->cleanOutRoleDescriptor();
+		$this->cleanOutAttribuesInIDPSSODescriptor();
+		if ($this->entityExists) {
+			# Update entity in database
+			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml , `lastUpdated` = NOW() WHERE `entityId` = :Id AND `status` = :Status;');
+			$entityHandlerUpdate->bindValue(':Id', $this->entityID);
+			$entityHandlerUpdate->bindValue(':Status', $this->status);
+			#$entityHandlerUpdate->bindValue(':Xml', $xml);
+			$entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
+			$entityHandlerUpdate->execute();
+			$this->result = "Updated in db.\n";
+		} else {
+			# Add new entity into database
+			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW());');
+			$entityHandlerInsert->bindValue(':Id', $this->entityID);
+			$entityHandlerInsert->bindValue(':Status', $this->status);
+			#$entityHandlerInsert->bindValue(':Xml', $xml);
+			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
+			$entityHandlerInsert->execute();
+			$this->result = "Added to db.\n";
+			$this->dbIdNr = $this->metaDb->lastInsertId();
+		}
+		$this->entityExists = true;
 	}
 
 	# Creates / updates XML from Published into Draft
@@ -325,7 +331,6 @@ Class Metadata {
 		}
 		if ($cleanOutSignature) $this->cleanOutSignature();
 		if ($SWAMID_5_1_30_error) {
-			$this->error .= "SWAMID Tech 5.1.30/6.1.29: entityID MUST NOT include RoleDescriptor elements. Have been removed.\n";
 			$this->cleanOutRoleDescriptor();
 		}
 
@@ -469,7 +474,6 @@ Class Metadata {
 			$child = $child->nextSibling;
 		}
 		if ($SWAMID_5_1_31_error) {
-			$this->error .= "SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata MUST NOT include any Attribute elements. Have been removed.\n";
 			$this->cleanOutAttribuesInIDPSSODescriptor();
 		}
 		return $data;
@@ -668,7 +672,7 @@ Class Metadata {
 						$RequestedAttributeFound = true;
 						if ($FriendlyName != '' && isset($this->FriendlyNames[$Name])) {
 							if ( $this->FriendlyNames[$Name]['desc'] != $FriendlyName) {
-								$this->warning .= sprintf("FriendlyName for %s in RequestedAttribute for index %d is %s (recomended from SWAMID is %s).\n", $Name, $index, $FriendlyName, $this->FriendlyNames[$Name]['desc']);
+								$this->warning .= sprintf("SWAMID Tech 6.1.20: FriendlyName for %s in RequestedAttribute for index %d is %s (recomended from SWAMID is %s).\n", $Name, $index, $FriendlyName, $this->FriendlyNames[$Name]['desc']);
 							}
 						}
 					} else {
@@ -681,9 +685,9 @@ Class Metadata {
 			$child = $child->nextSibling;
 		}
 		if ( ! $ServiceNameFound )
-			$this->error .= sprintf("ServiceName is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n", $index);
+			$this->error .= sprintf("SWAMID Tech 6.1.17: ServiceName is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n", $index);
 		if ( ! $RequestedAttributeFound )
-			$this->error .= sprintf("RequestedAttribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n", $index);
+			$this->error .= sprintf("SWAMID Tech 6.1.19: RequestedAttribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n", $index);
 	}
 
 	#############
@@ -1532,6 +1536,7 @@ Class Metadata {
 	# SWAMID_5_1_30_error
 	#############
 	private function cleanOutRoleDescriptor() {
+		$removed = false;
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
 		$child = $EntityDescriptor->firstChild;
 		while ($child) {
@@ -1539,9 +1544,12 @@ Class Metadata {
 				$remChild = $child;
 				$child = $child->nextSibling;
 				$EntityDescriptor->removeChild($remChild);
+				$removed = true;
 			} else
 				$child = $child->nextSibling;
 		}
+		if ($removed)
+			$this->error .= "SWAMID Tech 5.1.30/6.1.29: entityID MUST NOT include RoleDescriptor elements. Have been removed.\n";
 	}
 
 	#############
@@ -1552,10 +1560,10 @@ Class Metadata {
 		$child = $EntityDescriptor->firstChild;
 		while ($child) {
 			if ($child->nodeName == 'ds:Signature') {
-				print "removing : $child->nodeName<br>";
 				$remChild = $child;
 				$child = $child->nextSibling;
 				$EntityDescriptor->removeChild($remChild);
+				$removed = true;
 			} else
 				$child = $child->nextSibling;
 		}
@@ -1566,6 +1574,7 @@ Class Metadata {
 	# SWAMID_5_1_31_error
 	#############
 	private function cleanOutAttribuesInIDPSSODescriptor() {
+		$removed = false;
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
 		$child = $EntityDescriptor->firstChild;
 		while ($child) {
@@ -1576,12 +1585,16 @@ Class Metadata {
 						$remChild = $subchild;
 						$subchild = $subchild->nextSibling;
 						$child->removeChild($remChild);
+						$removed = true;
 					} else
 						$subchild = $subchild->nextSibling;
 				}
 			}
 			$child = $child->nextSibling;
 		}
+		if ($removed)
+			$this->error .= "SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata MUST NOT include any Attribute elements. Have been removed.\n";
+
 	}
 
 	#############

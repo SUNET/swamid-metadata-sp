@@ -1758,6 +1758,26 @@ Class MetadataEdit {
 			$requestedAttributeHandler->execute();
 			printf("\n        <b>RequestedAttributes</b>\n        <ul>");
 			while ($requestedAttribute = $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
+				$error = '';
+				if ($requestedAttribute['FriendlyName'] == '') {
+					if (isset($this->FriendlyNames[$requestedAttribute['Name']])) {
+						$FriendlyNameDisplay = sprintf('(%s)', $this->FriendlyNames[$requestedAttribute['Name']]['desc']);
+						if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd'])
+							$error = ' class="alert-warning" role="alert"';
+					} else {
+						$FriendlyNameDisplay = '(Unknown)';
+						$error = ' class="alert-warning" role="alert"';
+					}
+				} else {
+					$FriendlyNameDisplay = $requestedAttribute['FriendlyName'];
+					if (isset ($this->FriendlyNames[$requestedAttribute['Name']])) {
+						if ($requestedAttribute['FriendlyName'] != $this->FriendlyNames[$requestedAttribute['Name']]['desc'] || ! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+							$error = ' class="alert-warning" role="alert"';
+						}
+					} else {
+						$error = ' class="alert-warning" role="alert"';
+					}
+				}
 				if (isset($oldRequestedAttributes[$index][$requestedAttribute['Name']]) && $oldRequestedAttributes[$index][$requestedAttribute['Name']]['isRequired'] == $requestedAttribute['isRequired']) {
 					$state = 'dark';
 					$oldRequestedAttributes[$index][$requestedAttribute['Name']]['state'] = 'same';
@@ -1765,17 +1785,17 @@ Class MetadataEdit {
 					$state = 'success';
 				$removeLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%d&action=Delete"><i class="fas fa-trash"></i></a> ', $this->dbIdNr, $this->dbOldIdNr, $index, $requestedAttribute['Name'], $requestedAttribute['isRequired']);
 				$existingRequestedAttribute[$requestedAttribute['Name']] = true;
-				printf('%s            <li>%s<span class="text-%s">%s (%s)%s</span></li>', "\n", $removeLink, $state, $requestedAttribute['Name'], $requestedAttribute['FriendlyName'] == '' ? $this->FriendlyNames[$requestedAttribute['Name']]['desc'] : $requestedAttribute['FriendlyName'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+				printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>', "\n", $error, $removeLink, $state, $FriendlyNameDisplay, $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
 			}
 			print "\n        </ul>";
 
 			if ($indexValue == $index) {
-				foreach ($this->FriendlyNames as $name => $data) {
+				foreach ($this->FriendlyNames as $nameL => $data) {
 					if ($data['swamidStd'])
-						if (isset($existingRequestedAttribute[$name]))
-							printf('<b>%s</b> - %s<br>%s', $data['desc'], $name,  "\n");
+						if (isset($existingRequestedAttribute[$nameL]))
+							printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
 						else
-							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $name, $data['desc'], $data['desc'], $name,  "\n");
+							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $data['desc'], $nameL,  "\n");
 				}
 				printf('
         <form>
@@ -1847,7 +1867,7 @@ Class MetadataEdit {
 							$copy = '';
 							$state = 'danger';
 					}
-					printf('%s            <li>%s<span class="text-%s">%s (%s)%s</span></li>', "\n", $copy, $state, $name, $data['friendlyName'] == '' ? $this->FriendlyNames[$name]['desc'] : $data['friendlyName'], $data['isRequired'] == '1' ? ' (Required)' : '');
+					printf('%s            <li>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>', "\n", $copy, $state, $data['friendlyName'] == '' ? '(' . $this->FriendlyNames[$name]['desc'] .')' : $data['friendlyName'], $name, $data['isRequired'] == '1' ? ' (Required)' : '');
 				}
 				print "\n          </ul></li>\n        </ul>";
 			}
@@ -2859,7 +2879,7 @@ Class MetadataEdit {
 				$oldMDUIElements[$mdelement] = array();
 			$oldMDUIElements[$mdelement][$value] = true;
 		}
-		if ($oldMDUIElements) {
+		if (isset($oldMDUIElements)) {
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
 
 			# Find md:IDPSSODescriptor in XML
@@ -3451,5 +3471,19 @@ Class MetadataEdit {
 			$child = $child->nextSibling;
 		}
 		return false;
+	}
+
+	public function checkAccess($userID,$userLevel,$minLevel) {
+		if ($userLevel >= $minLevel)
+			return true;
+		$userHandler = $this->metaDb->prepare('SELECT * FROM Users WHERE entity_id = :Entity_id AND `userID` = :UserID');
+		$userHandler->bindValue(':Entity_id', $this->dbIdNr);
+		$userHandler->bindValue(':UserID', $userID);
+		$userHandler->execute();
+		if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

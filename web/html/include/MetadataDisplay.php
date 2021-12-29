@@ -606,7 +606,7 @@ Class MetadataDisplay {
 						$error = ' class="alert-warning" role="alert"';
 					}
 				}
-				printf('%s                    <li><div%s><span class="text-%s"><b>%s</b> - %s%s</span></div></li>', "\n", $error, $state, $FriendlyNameDisplay , $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+				printf('%s                    <li%s><span class="text-%s"><b>%s</b> - %s%s</span></li>', "\n", $error, $state, $FriendlyNameDisplay, $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
 			}
 			print "\n                  </ul></li>\n                </ul>";
 		}
@@ -788,16 +788,16 @@ Class MetadataDisplay {
 	}
 
 	public function showURLStatus(){
-		$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
+		$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
 		$URLWaitHandler->execute();
-		printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
+		printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
 		while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
-			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
 		}
 		print "    </table>\n";
 
 		$oldType = 0;
-		$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
+		$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
 		$URLHandler->execute();
 
 		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -814,10 +814,10 @@ Class MetadataDisplay {
 				}
 				if ($oldType > 0)
 					print "    </table>\n";
-				printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
+				printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
 				$oldType = $URL['type'];
 			}
-			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
 		}
 		if ($oldType > 0) print "    </table>\n";
 	}
