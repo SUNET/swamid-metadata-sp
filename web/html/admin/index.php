@@ -193,11 +193,10 @@ function showEntityList($status = 1) {
 
 	if (isset($_GET['query'])) {
 		$query = $_GET['query'];
+	} elseif (isset($_GET['first'])) {
+		$query = explode('@',$EPPN)[1];
 	} else {
-		if (isset($_GET['first']))
-			$query = explode('@',$EPPN)[1];
-		else
-			 $query = '';
+		 $query = '';
 	}
 	$filter = '?query='.$query;
 
@@ -480,7 +479,7 @@ function showMenu() {
 	$filter='';
 	if (isset($_GET['query'])) {
 		$filter='&query='.$_GET['query'];
-	} else {
+	} elseif (isset($_GET['first'])) {
 		$filter='&query='. explode('@',$EPPN)[1];
 	}
 

@@ -787,38 +787,60 @@ Class MetadataDisplay {
 	}
 
 	public function showURLStatus(){
-		$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
-		$URLWaitHandler->execute();
-		printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
-		while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
-			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
-		}
-		print "    </table>\n";
-
-		$oldType = 0;
-		$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
-		$URLHandler->execute();
-
-		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
-			if ($oldType != $URL['type']) {
-				switch ($URL['type']) {
-					case 1:
-						$typeInfo = 'URL check';
-						break;
-					case 2:
-						$typeInfo = 'CoCo - PrivacyURL';
-						break;
-					default :
-						$typeInfo = '?' . $URL['type'];
-				}
-				if ($oldType > 0)
-					print "    </table>\n";
-				printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
-				$oldType = $URL['type'];
+		if(isset($_GET['URL'])) {
+			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
+			$EntityHandler->bindValue(':URL', $_GET['URL']);
+			$EntityHandler->execute();
+			$SSOUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID` FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL');
+			$SSOUIIHandler->bindValue(':URL', $_GET['URL']);
+			$SSOUIIHandler->execute();
+			$OrganizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID` FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
+			$OrganizationHandler->bindValue(':URL', $_GET['URL']);
+			$OrganizationHandler->execute();
+			printf ('    <h3>URL : %s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Part</th><th></tr>%s', $_GET['URL'], "\n", "\n", "\n");
+			while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], 'ErrorURL', "\n");
 			}
-			printf ('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+			while ($Entity = $SSOUIIHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s:%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], substr($Entity['type'],0,-3), $Entity['element'], $Entity['lang'], "\n");
+			}
+			while ($Entity = $OrganizationHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $Entity['element'], $Entity['lang'], "\n");
+			}
+		} else {
+			$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
+			$URLWaitHandler->execute();
+			printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
+			while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+			}
+			print "    </table>\n";
+
+			$oldType = 0;
+			$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
+			$URLHandler->execute();
+
+			while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
+				if ($oldType != $URL['type']) {
+					switch ($URL['type']) {
+						case 1:
+							$typeInfo = 'URL check';
+							break;
+						case 2:
+							$typeInfo = 'CoCo - PrivacyURL';
+							break;
+						default :
+							$typeInfo = '?' . $URL['type'];
+					}
+					if ($oldType > 0)
+						print "    </table>\n";
+					printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
+					$oldType = $URL['type'];
+				}
+				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+			}
+			if ($oldType > 0) print "    </table>\n";
 		}
-		if ($oldType > 0) print "    </table>\n";
 	}
 
 	#############

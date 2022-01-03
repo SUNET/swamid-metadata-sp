@@ -146,6 +146,7 @@ Class Metadata {
 		$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
 		$URLHandler = $this->metaDb->prepare($sql);
 		$URLHandler->execute();
+		$count = 0;
 		while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
 			$URLUpdateHandler->bindValue(':Url', $URL['URL']);
 
@@ -195,9 +196,12 @@ Class Metadata {
 				}
 			}
 			$URLUpdateHandler->execute();
+			$count ++;
 		}
 		curl_close($ch);
 		$this->showProgress('validateURLs - done');
+		if ($limit > 10)
+			printf ('Checked %d URL:s', $count);
 	}
 
 	# Import an XML  -> metadata.db
@@ -743,10 +747,11 @@ Class Metadata {
 		while ($child) {
 			$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
 			switch ($child->nodeName) {
+				case 'md:OrganizationURL' :
+					$this->addURL(trim($child->textContent), 1);
 				case 'md:Extensions' :
 				case 'md:OrganizationName' :
 				case 'md:OrganizationDisplayName' :
-				case 'md:OrganizationURL' :
 					$element = substr($child->nodeName, 3);
 					break;
 				default :
