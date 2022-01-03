@@ -788,6 +788,7 @@ Class MetadataDisplay {
 
 	public function showURLStatus(){
 		if(isset($_GET['URL'])) {
+			$missing = true;
 			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
 			$EntityHandler->bindValue(':URL', $_GET['URL']);
 			$EntityHandler->execute();
@@ -800,19 +801,29 @@ Class MetadataDisplay {
 			printf ('    <h3>URL : %s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Part</th><th></tr>%s', $_GET['URL'], "\n", "\n", "\n");
 			while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
 				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], 'ErrorURL', "\n");
+				$missing = false;
 			}
 			while ($Entity = $SSOUIIHandler->fetch(PDO::FETCH_ASSOC)) {
 				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s:%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], substr($Entity['type'],0,-3), $Entity['element'], $Entity['lang'], "\n");
+				$missing = false;
 			}
 			while ($Entity = $OrganizationHandler->fetch(PDO::FETCH_ASSOC)) {
 				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $Entity['element'], $Entity['lang'], "\n");
+				$missing = false;
+			}
+			print "    </table>\n";
+			if ($missing) {
+				$URLHandler = $this->metaDb->prepare('DELETE FROM URLs WHERE `URL` = :URL');
+				$URLHandler->bindValue(':URL', $_GET['URL']);
+				$URLHandler->execute();
+				print "Not used anymore, removed";
 			}
 		} else {
 			$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
 			$URLWaitHandler->execute();
 			printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
 			while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', $URL['URL'], $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
 			}
 			print "    </table>\n";
 
