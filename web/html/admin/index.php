@@ -167,11 +167,10 @@ $html->showFooter($display->getCollapseIcons());
 # Shows EntityList
 ####
 function showEntityList($status = 1) {
-	global $db, $html;
+	global $db, $html, $EPPN;
 
 	$showAll = true;
 	$sortOrder = 'entityID';
-	$query = '';
 	if (isset($_GET['feed'])) {
 		$sortOrder = 'publishIn DESC, entityID';
 	}
@@ -194,10 +193,13 @@ function showEntityList($status = 1) {
 
 	if (isset($_GET['query'])) {
 		$query = $_GET['query'];
-		$filter = '?query='.$query;
 	} else {
-		$filter = '?query';
+		if (isset($_GET['first']))
+			$query = explode('@',$EPPN)[1];
+		else
+			 $query = '';
 	}
+	$filter = '?query='.$query;
 
 	switch ($status) {
 		case 1:
@@ -230,7 +232,7 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filtrera"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, $filter, $filter, $filter);
+	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, $filter, $filter, $filter);
 
 	print $extraTH . "</tr>\n";
 	showList($entitys, $minLevel);
@@ -474,10 +476,14 @@ function removeKey($Entity_id, $type, $use, $hash) {
 # Shows menu row
 ####
 function showMenu() {
-	global $userLevel, $menuActive;
+	global $userLevel, $menuActive, $EPPN;
 	$filter='';
-	if (isset($_GET['query']))
+	if (isset($_GET['query'])) {
 		$filter='&query='.$_GET['query'];
+	} else {
+		$filter='&query='. explode('@',$EPPN)[1];
+	}
+
 	print "\n    ";
 	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');

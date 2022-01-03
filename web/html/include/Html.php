@@ -86,7 +86,7 @@ public function showFooter($collapseIcons = array()) {
     window.onload = function() {
       // Render the Seamless Access button
       thiss.DiscoveryComponent({
-        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin<?=$_SERVER['REQUEST_URI']?>'
+        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin/?first'
       }).render('#SWAMID-SeamlessAccess');
     };
   </script>
