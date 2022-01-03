@@ -105,6 +105,9 @@ if (isset($_FILES['XMLfile'])) {
 		}
 		showEntity($_GET['mergeEntity']);
 	}
+} elseif (isset($_GET['removeEntity'])) {
+	if (checkAccess($_GET['removeEntity'],$EPPN,$userLevel,10, true))
+		removeEntity($_GET['removeEntity']);
 } elseif (isset($_GET['removeSSO']) && isset($_GET['type'])) {
 	if (checkAccess($_GET['removeSSO'],$EPPN,$userLevel,10, true))
 		removeSSO($_GET['removeSSO'], $_GET['type']);
@@ -288,36 +291,40 @@ function showEntity($Entity_id)  {
 				printf('%s      <a href=".?action=createDraft&Entity=%d"><button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $Entity_id);
 				break;
 			case 2:
-				printf('%s      <a href=".?move2Draft=%d"><button type="button" class="btn btn-outline-danger">Cancel publication request</button></a>', "\n", $Entity_id);
+				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false))
+					printf('%s      <a href=".?move2Draft=%d"><button type="button" class="btn btn-outline-danger">Cancel publication request</button></a>', "\n", $Entity_id);
 				break;
 			case 3:
-				$errors = getErrors($Entity_id);
-				if ($errors == '') {
-					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Request publication</button></a>', "\n", $Entity_id);
-				} else {
-					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-danger">Request publication</button></a>', "\n", $Entity_id);
-				}
-				if ($oldEntity_id > 0) {
-					printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d"><button type="button" class="btn btn-outline-primary">Merge missing from published</button></a>', "\n", $Entity_id, $oldEntity_id);
-				}
-				printf ('%s      <form>%s        <input type="hidden" name="mergeEntity" value="%d">%s        Merge missing from : %s        <select name="oldEntity">', "\n", "\n", $Entity_id, "\n", "\n");
-				if ($entity['isIdP'] ) {
-					if ($entity['isSP'] ) {
-						// is both SP and IdP
-						$mergeEntityHandler = $db->prepare('SELECT id, entityID FROM Entities WHERE status = 1 ORDER BY entityID;');
+				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
+					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Remove</button></a>', "\n", $Entity_id);
+					$errors = getErrors($Entity_id);
+					if ($errors == '') {
+						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Request publication</button></a>', "\n", $Entity_id);
 					} else {
-						// isIdP only
-						$mergeEntityHandler = $db->prepare('SELECT id, entityID FROM Entities WHERE status = 1 AND isIdP = 1 ORDER BY entityID;');
+						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-danger">Request publication</button></a>', "\n", $Entity_id);
 					}
-				} else {
-					// isSP only
-					$mergeEntityHandler = $db->prepare('SELECT id, entityID FROM Entities WHERE status = 1 AND isSP = 1 ORDER BY entityID;');
+					if ($oldEntity_id > 0) {
+						printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d"><button type="button" class="btn btn-outline-primary">Merge missing from published</button></a>', "\n", $Entity_id, $oldEntity_id);
+					}
+					printf ('%s      <form>%s        <input type="hidden" name="mergeEntity" value="%d">%s        Merge missing from : %s        <select name="oldEntity">', "\n", "\n", $Entity_id, "\n", "\n");
+					if ($entity['isIdP'] ) {
+						if ($entity['isSP'] ) {
+							// is both SP and IdP
+							$mergeEntityHandler = $db->prepare('SELECT id, entityID FROM Entities WHERE status = 1 ORDER BY entityID;');
+						} else {
+							// isIdP only
+							$mergeEntityHandler = $db->prepare('SELECT id, entityID FROM Entities WHERE status = 1 AND isIdP = 1 ORDER BY entityID;');
+						}
+					} else {
+						// isSP only
+						$mergeEntityHandler = $db->prepare('SELECT id, entityID FROM Entities WHERE status = 1 AND isSP = 1 ORDER BY entityID;');
+					}
+					$mergeEntitys = $mergeEntityHandler->execute();
+					while ($mergeEntity = $mergeEntityHandler->fetch(PDO::FETCH_ASSOC)) {
+						printf('%s          <option value="%d">%s</option>', "\n", $mergeEntity['id'], $mergeEntity['entityID']);
+					}
+					printf ('%s        </select>%s        <button type="submit">Merge</button>%s      </form>', "\n", "\n", "\n");
 				}
-				$mergeEntitys = $mergeEntityHandler->execute();
-				while ($mergeEntity = $mergeEntityHandler->fetch(PDO::FETCH_ASSOC)) {
-					printf('%s          <option value="%d">%s</option>', "\n", $mergeEntity['id'], $mergeEntity['entityID']);
-				}
-				printf ('%s        </select>%s        <button type="submit">Merge</button>%s      </form>', "\n", "\n", "\n");
 				break;
 		}
 
@@ -471,13 +478,14 @@ function showMenu() {
 	$filter='';
 	if (isset($_GET['query']))
 		$filter='&query='.$_GET['query'];
+	print "\n    ";
 	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	if ( $userLevel > 4 )
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
-	print "<br>\n";print "<br>\n";
+	print "\n    <br>\n    <br>\n";
 }
 
 function validateEntity($Entity_id) {
@@ -691,11 +699,49 @@ function move2Draft($Entity_id) {
 	print "\n";
 }
 
-function mergeEntity($Entity_id, $oldEntity_id){
+function mergeEntity($Entity_id, $oldEntity_id) {
 	global $configFile;
 	include '../include/MetadataEdit.php';
 	$metadata = new MetadataEdit($configFile, $Entity_id, $oldEntity_id);
 	$metadata->mergeFrom();
+}
+
+function removeEntity($Entity_id) {
+	global $db, $html, $menuActive, $configFile;
+	$entityHandler = $db->prepare('SELECT entityID, status FROM Entities WHERE id = :Id;');
+	$entityHandler->bindParam(':Id', $Entity_id);
+	$entityHandler->execute();
+	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+		switch($entity['status']) {
+			case 1:
+				$menuActive = 'publ';
+				$from = 'Published';
+				break;
+			case 2:
+				$menuActive = 'wait';
+				$from = 'Pending';
+				break;
+			case 3:
+				$menuActive = 'new';
+				$from = 'Drafts';
+				break;
+		}
+		showMenu();
+		if (isset($_GET['action']) && $_GET['action'] == 'Remove' ) {
+			$metadata = new Metadata($configFile, $Entity_id);
+			$metadata->removeEntity();
+			printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
+		} else {
+			printf('    <p>You are about to request removal of <b>%s</b> from %s</p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="Remove">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $entity['entityID'], $from, "\n", "\n", $Entity_id, "\n", "\n", "\n",  $Entity_id);
+		}
+	} else {
+		$html->showHeaders('Metadata SWAMID - NotFound');
+		$menuActive = 'new';
+		showMenu();
+		print "Can't find Entity";
+	}
+	print "\n";
 }
 
 function checkAccess($Entity_id, $userID, $userLevel, $minLevel, $showError=false) {

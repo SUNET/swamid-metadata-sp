@@ -453,10 +453,10 @@ Class MetadataDisplay {
 				}
 			} else
 				$state = 'dark';
-			printf ('%s          <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
+			printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
 		}
 		if ($showEndUL) {
-			print "\n        </ul>";
+			print "\n                </ul>";
 		}
 	}
 
@@ -771,8 +771,7 @@ Class MetadataDisplay {
 	# Shows XML for entiry
 	####
 	function showXML($Entity_id) {
-		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s" target="_blank">Show XML</a></h4>%s', "\n", $Entity_id, "\n");
-		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s&download" target="_blank">Download XML</a></h4>%s', "\n", $Entity_id, "\n");
+		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s" target="_blank">Show XML</a></h4>%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s&download" target="_blank">Download XML</a></h4>%s', "\n", $Entity_id, "\n", $Entity_id, "\n");
 	}
 
 	function showRawXML($Entity_id) {
