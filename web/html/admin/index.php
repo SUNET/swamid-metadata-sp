@@ -783,13 +783,27 @@ function getErrors($Entity_id) {
 
 	$entityHandler = $db->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
-	$urlHandler = $db->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
-	$urlHandler->bindParam(':Id', $Entity_id);
+	$urlHandler1 = $db->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
+	$urlHandler1->bindParam(':Id', $Entity_id);
+	$urlHandler2 = $db->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+	$urlHandler2->bindParam(':Id', $Entity_id);
+	$urlHandler3 = $db->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+	$urlHandler3->bindParam(':Id', $Entity_id);
 
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-		$urlHandler->execute();
-		while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+		$urlHandler1->execute();
+		while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
+			if ($url['status'] > 0)
+				$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+		}
+		$urlHandler2->execute();
+		while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
+			if ($url['status'] > 0)
+				$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+		}
+		$urlHandler3->execute();
+		while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
 			if ($url['status'] > 0)
 				$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
 		}

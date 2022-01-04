@@ -22,14 +22,30 @@ Class MetadataDisplay {
 	function showStatusbar($Entity_id, $admin = false){
 		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
-		$urlHandler = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
-		$urlHandler->bindParam(':Id', $Entity_id);
+		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
+		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+		$urlHandler3 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+		#$urlHandler = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id UNION SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+		#$urlHandler->bindParam(':Id', $Entity_id);
+		$urlHandler1->bindParam(':Id', $Entity_id);
+		$urlHandler2->bindParam(':Id', $Entity_id);
+		$urlHandler3->bindParam(':Id', $Entity_id);
 
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$errors = '';
-			$urlHandler->execute();
-			while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+			$urlHandler1->execute();
+			while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
+				if ($url['status'] > 0)
+					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+			}
+			$urlHandler2->execute();
+			while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
+				if ($url['status'] > 0)
+					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+			}
+			$urlHandler3->execute();
+			while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
 				if ($url['status'] > 0)
 					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
 			}
