@@ -148,9 +148,15 @@ if (isset($_FILES['XMLfile'])) {
 					break;
 				case 'URLlist' :
 					$menuActive = 'URLlist';
-					$html->showHeaders('Metadata SWAMID - Add new XML');
+					$html->showHeaders('Metadata SWAMID - URL status');
 					showMenu();
 					$display->showURLStatus();
+					break;
+				case 'ErrorList' :
+					$menuActive = 'Errors';
+					$html->showHeaders('Metadata SWAMID - Errror status');
+					showMenu();
+					$display->showErrorList();
 					break;
 				default :
 					showEntityList();
@@ -490,6 +496,7 @@ function showMenu() {
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	if ( $userLevel > 4 )
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
+		printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
 	print "\n    <br>\n    <br>\n";
 }
 
@@ -503,6 +510,7 @@ function validateEntity($Entity_id) {
 function move2Pending($Entity_id) {
 	global $db, $html, $display, $userLevel, $menuActive;
 	global $mail, $fullName;
+	global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut;
 	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP FROM Entities WHERE status = 3 AND id = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
@@ -544,8 +552,8 @@ function move2Pending($Entity_id) {
 				$mailRequetser->SMTPDebug = 2;*/
 				$mailContacts->isSMTP();
 				$mailRequetser->isSMTP();
-				$mailContacts->Host = 'smtp.sunet.se';
-				$mailRequetser->Host = 'smtp.sunet.se';
+				$mailContacts->Host = $SMTPHost;
+				$mailRequetser->Host = $SMTPHost;
 				$mailContacts->SMTPAuth = true;
 				$mailRequetser->SMTPAuth = true;
 				$mailContacts->SMTPAutoTLS = true;
@@ -554,21 +562,20 @@ function move2Pending($Entity_id) {
 				$mailRequetser->Port = 587;
 				$mailContacts->SMTPAuth = true;
 				$mailRequetser->SMTPAuth = true;
-				$mailContacts->Username = 'metadata@swamid.se';
-				$mailRequetser->Username = 'metadata@swamid.se';
-				$mailContacts->Password = 'sszh_GKXZ8AdmYvC.Rx_MHAv9VKup-!cnnE';
-				$mailRequetser->Password = 'sszh_GKXZ8AdmYvC.Rx_MHAv9VKup-!cnnE';
+				$mailContacts->Username = $SASLUser;
+				$mailRequetser->Username = $SASLUser;
+				$mailContacts->Password = $SASLPassword;
+				$mailRequetser->Password = $SASLPassword;
 				$mailContacts->SMTPSecure = 'tls';
 				$mailRequetser->SMTPSecure = 'tls';
 
 				//Recipients
-				$mailContacts->setFrom('bjorn@sunet.se', 'Björn');
-				$mailRequetser->setFrom('bjorn@sunet.se', 'Björn');
-				/* Plockas bort i skarpt läge */
-				$mailContacts->addAddress('bjorn@sunet.se');
-				$mailRequetser->addAddress($mail);
-				/*$mailContacts->addBCC('bjorn@sunet.se');
-				$mailRequetser->addBCC('bjorn@sunet.se');*/
+				$mailContacts->setFrom($MailFrom, 'Metadata - Admin');
+				$mailRequetser->setFrom($MailFrom, 'Metadata - Admin');
+				if ($SendOut)
+					$mailRequetser->addAddress($mail);
+				$mailContacts->addBCC('bjorn@sunet.se');
+				$mailRequetser->addBCC('bjorn@sunet.se');
 				$mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
 				$mailRequetser->addReplyTo('operations@swamid.se', 'SWAMID Operations');
 				$addresses = array();
@@ -576,7 +583,8 @@ function move2Pending($Entity_id) {
 				$contactHandler->bindParam(':EntityID',$entity['entityID']);
 				$contactHandler->execute();
 				while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
-					//$mailContacts->addAddress($address['emailAddress'],7);
+					if ($SendOut)
+						$mailContacts->addAddress($address['emailAddress'],7);
 					$addresses[] = substr($address['emailAddress'],7);
 				}
 
@@ -593,7 +601,7 @@ function move2Pending($Entity_id) {
 				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to <a href=\"mailto:operations@swamid.se\">SWAMID Operations</a></p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>A mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
 				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to operations@swamid.se\n\nThe new version can be found at %s/?showEntity=%d\n\nA mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
 
-				/*try {
+				try {
 					$mailContacts->send();
 				} catch (Exception $e) {
 					echo 'Message could not be sent to contacts.<br>';
@@ -605,7 +613,7 @@ function move2Pending($Entity_id) {
 				} catch (Exception $e) {
 					echo 'Message could not be sent to requester.<br>';
 					echo 'Mailer Error: ' . $mailRequetser->ErrorInfo . '<br>';
-				}*/
+				}
 
 				printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following old/new technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
 				printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);

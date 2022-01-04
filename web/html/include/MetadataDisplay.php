@@ -854,6 +854,35 @@ Class MetadataDisplay {
 		}
 	}
 
+	public function showErrorList() {
+		$emails = array();
+		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `entityID`, `errors` FROM Entities WHERE errors <> '' AND status = 1");
+		$EntityHandler->execute();
+		$contactPersonHandler = $this->metaDb->prepare('SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
+		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
+		while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
+			$contactPersonHandler->bindValue(':Id', $Entity['id']);
+			$contactPersonHandler->execute();
+			$emails['administrative'] = '';
+			$emails['support'] = '';
+			$emails['technical'] = '';
+			while ($contact = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
+				$emails[$contact['contactType']] = substr($contact['emailAddress'],7);
+			}
+			if ($emails['technical'] != '' ) {
+				$email = $emails['technical'];
+			} elseif($emails['administrative'] != '') {
+				$email = $emails['administrative'];
+			} elseif ($emails['support'] != '' ) {
+				$email = $emails['support'];
+			} else
+				$email = 'Missing';
+			printf ('      <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors']), "\n");
+			$missing = false;
+		}
+		print "    </table>\n";
+	}
+
 	#############
 	# Return collapseIcons
 	#############
