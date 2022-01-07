@@ -1,6 +1,6 @@
 <?php
 include "/var/www/html/include/Metadata.php";
 
-$metadata = new Metadata('/var/www/html/config.php');
+$metadata = new Metadata('/var/www/html');
 $metadata->validateURLs(100);
 ?>

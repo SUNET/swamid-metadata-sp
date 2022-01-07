@@ -1,11 +1,9 @@
 <?php
 Class MetadataEdit {
 	# Setup
-	function __construct($configFile, $newID, $oldID = 0) {
-		include $configFile;
-		$this->standardAttributes = $standardAttributes;
-		$this->FriendlyNames = $FriendlyNames;
-
+	function __construct($baseDir, $newID, $oldID = 0) {
+		include $baseDir . '/config.php';
+		include $baseDir . '/include/common.php';
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 			// set the PDO error mode to exception
@@ -930,20 +928,14 @@ Class MetadataEdit {
 		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
 			if ($oldLang != $mdui['lang']) {
 				$lang = $mdui['lang'];
-				switch ($lang) {
-					case '' :
-						$info = ' (NOT RECOMMENDED)';
-						break;
-					case 'en' :
-						$info = ' (REQUIRED)';
-						break;
-					case 'sv' :
-						$info = ' (RECOMMENDED)';
-						break;
-					default :
-						$info = '';
+				if (isset($this->langCodes[$lang])) {
+					$fullLang = $this->langCodes[$lang];
+				} elseif ($lang == "") {
+					$fullLang = "(NOT ALLOWED - switch to en/sv)";
+				} else {
+					$fullLang = "Unknown";
 				}
-				printf('%s        <b>Lang = "%s"%s</b>%s        <ul>', $showEndUL ? "\n        </ul>\n" : '', $lang, $info, "\n");
+				printf('%s        <b>Lang = "%s" - %s</b>%s        <ul>', $showEndUL ? "\n        </ul>\n" : '', $lang, $fullLang, "\n");
 				$showEndUL = true;
 				$oldLang = $lang;
 			}
@@ -1008,11 +1000,13 @@ Class MetadataEdit {
           </div>
           <div class="row">
             <div class="col-1">Lang: </div>
-            <div class="col"><input type="text" size="2" name="lang" value="%s"></div>
+            <div class="col">', $edit, $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DisplayName' ? ' selected' : '', $elementValue == 'Description' ? ' selected' : '', $elementValue == 'Keywords' ? ' selected' : '', $elementValue == 'Logo' ? ' selected' : '', $elementValue == 'InformationURL' ? ' selected' : '', $elementValue == 'PrivacyStatementURL' ? ' selected' : '');
+			$this->showLangSelector($langvalue);
+			printf('            </div>
           </div>
           <div class="row">
             <div class="col-1">Value: </div>
-            <div class="col"><input type="text" name="value" value="%s"></div>
+            <div class="col"><input type="text" size="60" name="value" value="%s"></div>
           </div>
           <div class="row">
             <div class="col-1">Height: </div>
@@ -1026,7 +1020,7 @@ Class MetadataEdit {
         </form>
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">', $edit, $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DisplayName' ? ' selected' : '', $elementValue == 'Description' ? ' selected' : '', $elementValue == 'Keywords' ? ' selected' : '', $elementValue == 'Logo' ? ' selected' : '', $elementValue == 'InformationURL' ? ' selected' : '', $elementValue == 'PrivacyStatementURL' ? ' selected' : '', $langvalue, $value, $heightValue, $widthValue, $this->dbIdNr);
+      <div class="col">', $value, $heightValue, $widthValue, $this->dbIdNr);
 
 	  foreach ($oldMDUIElements as $lang => $elementValues) {
 			printf ('%s        <b>Lang = "%s"</b>%s        <ul>', "\n", $lang, "\n");
@@ -1746,14 +1740,16 @@ Class MetadataEdit {
               </div>
               <div class="row">
                 <div class="col-2">Lang: </div>
-                <div class="col"><input type="text" size="2" name="lang" value="%s"></div>
+                <div class="col">', $this->dbIdNr, $this->dbOldIdNr, $index, $elementValue == 'ServiceName' ? ' selected' : '', $elementValue == 'ServiceDescription' ? ' selected' : '');
+				$this->showLangSelector($langvalue);
+				printf('            </div>
               </div>
               <div class="row">
                 <div class="col-2">Value: </div>
-                <div class="col"><input type="textbox" name="value" value="%s"></div>
+                <div class="col"><input type="textbox" size="60" name="value" value="%s"></div>
               </div>
               <button type="submit" name="action" value="Add">Add/Update</button>
-            </form>', $this->dbIdNr, $this->dbOldIdNr, $index, $elementValue == 'ServiceName' ? ' selected' : '', $elementValue == 'ServiceDescription' ? ' selected' : '', $langvalue, $value);
+            </form>', $value);
 			}
 			$requestedAttributeHandler->execute();
 			printf("\n        <b>RequestedAttributes</b>\n        <ul>");
@@ -2062,17 +2058,19 @@ Class MetadataEdit {
           </div>
           <div class="row">
             <div class="col-1">Lang: </div>
-            <div class="col"><input type="text" size="2" name="lang" value="%s"></div>
+            <div class="col">', $this->dbIdNr, $this->dbOldIdNr, $element == 'OrganizationName' ? ' selected' : '', $element == 'OrganizationDisplayName' ? ' selected' : '', $element == 'OrganizationURL' ? ' selected' : '', $element == 'Extensions' ? ' selected' : '');
+			$this->showLangSelector($lang);
+			printf('            </div>
           </div>
           <div class="row">
             <div class="col-1">Value: </div>
-            <div class="col"><input type="text" name="value" value="%s"></div>
+            <div class="col"><input type="text" size="60" name="value" value="%s"></div>
           </div>
           <button type="submit" name="action" value="Add">Add/Update</button>
         </form>
         <a href="./?validateEntity=' . $this->dbIdNr . '"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">%s', $this->dbIdNr, $this->dbOldIdNr, $element == 'OrganizationName' ? ' selected' : '', $element == 'OrganizationDisplayName' ? ' selected' : '', $element == 'OrganizationURL' ? ' selected' : '', $element == 'Extensions' ? ' selected' : '', $lang, $value, "\n");
+      <div class="col">%s', $value, "\n");
 
 		$organizationHandler->bindParam(':Id', $this->dbOldIdNr);
 		$organizationHandler->execute();
@@ -3472,18 +3470,14 @@ Class MetadataEdit {
 		}
 		return false;
 	}
-
-	public function checkAccess($userID,$userLevel,$minLevel) {
-		if ($userLevel >= $minLevel)
-			return true;
-		$userHandler = $this->metaDb->prepare('SELECT * FROM Users WHERE entity_id = :Entity_id AND `userID` = :UserID');
-		$userHandler->bindValue(':Entity_id', $this->dbIdNr);
-		$userHandler->bindValue(':UserID', $userID);
-		$userHandler->execute();
-		if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
-			return true;
-		} else {
-			return false;
+	private function showLangSelector($langValue) {
+		print "\n".'              <select name="lang">';
+		foreach ($this->langCodes as $lang => $descr) {
+			if ($lang == $langValue)
+				printf('%s                <option value="%s" selected>%s</option>', "\n",  $lang, $descr);
+			else
+				printf('%s                <option value="%s">%s</option>', "\n",  $lang, $descr);
 		}
+		print "\n              </select>\n";
 	}
 }

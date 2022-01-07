@@ -1,10 +1,9 @@
 <?php
 Class MetadataDisplay {
 	# Setup
-	function __construct($configFile) {
-		include $configFile;
-		$this->standardAttributes = $standardAttributes;
-		$this->FriendlyNames = $FriendlyNames;
+	function __construct($baseDir) {
+		include $baseDir . '/config.php';
+		include $baseDir . '/include/common.php';
 
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -23,12 +22,10 @@ Class MetadataDisplay {
 		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
-		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-		$urlHandler3 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-		#$urlHandler = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id UNION SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-		#$urlHandler->bindParam(':Id', $Entity_id);
 		$urlHandler1->bindParam(':Id', $Entity_id);
+		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
 		$urlHandler2->bindParam(':Id', $Entity_id);
+		$urlHandler3 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
 		$urlHandler3->bindParam(':Id', $Entity_id);
 
 		$entityHandler->execute();
@@ -384,20 +381,15 @@ Class MetadataDisplay {
 		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
 			if ($oldLang != $mdui['lang']) {
 				$lang = $mdui['lang'];
-				switch ($lang) {
-					case '' :
-						$info = ' (NOT RECOMMENDED)';
-						break;
-					case 'en' :
-						$info = ' (REQUIRED)';
-						break;
-					case 'sv' :
-						$info = ' (RECOMMENDED)';
-						break;
-					default :
-						$info = '';
+				if (isset($this->langCodes[$lang])) {
+					$fullLang = $this->langCodes[$lang];
+				} elseif ($lang == "") {
+					$fullLang = "(NOT ALLOWED - switch to en/sv)";
+				} else {
+					$fullLang = "Unknown";
 				}
-				printf('%s                <b>Lang = "%s"%s</b>%s                <ul>', $showEndUL ? "\n                </ul>\n" : "\n", $lang, $info, "\n");
+
+				printf('%s                <b>Lang = "%s" - %s</b>%s                <ul>', $showEndUL ? "\n                </ul>\n" : "\n", $lang, $fullLang, "\n");
 				$showEndUL = true;
 				$oldLang = $lang;
 			}
@@ -835,14 +827,6 @@ Class MetadataDisplay {
 				print "Not used anymore, removed";
 			}
 		} else {
-			$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
-			$URLWaitHandler->execute();
-			printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
-			while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
-			}
-			print "    </table>\n";
-
 			$oldType = 0;
 			$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
 			$URLHandler->execute();
@@ -867,6 +851,15 @@ Class MetadataDisplay {
 				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
 			}
 			if ($oldType > 0) print "    </table>\n";
+
+			$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
+			$URLWaitHandler->execute();
+			printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
+			while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+			}
+			print "    </table>\n";
+
 		}
 	}
 

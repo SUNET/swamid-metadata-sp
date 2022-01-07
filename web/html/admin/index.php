@@ -10,8 +10,8 @@ require '../vendor/autoload.php';
 include '../include/Html.php';
 $html = new HTML();
 
-$configFile = dirname($_SERVER['SCRIPT_FILENAME'], 2) . '/config.php' ;
-include $configFile;
+$baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 2);
+include $baseDir  . '/config.php' ;
 
 $errors = '';
 
@@ -70,7 +70,7 @@ try {
 }
 
 include '../include/MetadataDisplay.php';
-$display = new MetadataDisplay($configFile);
+$display = new MetadataDisplay($baseDir);
 
 include '../include/Metadata.php';
 
@@ -79,7 +79,7 @@ if (isset($_FILES['XMLfile'])) {
 } elseif (isset($_GET['edit'])) {
 	if (isset($_GET['Entity']) && (isset($_GET['oldEntity']))) {
 		include '../include/MetadataEdit.php';
-		$editMeta = new MetadataEdit($configFile, $_GET['Entity'], $_GET['oldEntity']);
+		$editMeta = new MetadataEdit($baseDir, $_GET['Entity'], $_GET['oldEntity']);
 		if (checkAccess($_GET['Entity'], $EPPN, $userLevel, 10, true)) {
 			$html->showHeaders('Metadata SWAMID - Edit - '.$_GET['edit']);
 			$editMeta->edit($_GET['edit']);
@@ -124,7 +124,7 @@ if (isset($_FILES['XMLfile'])) {
 			switch($_GET['action']) {
 				case 'createDraft' :
 					$menuActive = 'new';
-					$metadata = new Metadata($configFile, $Entity_id);
+					$metadata = new Metadata($baseDir, $Entity_id);
 					if ($newEntity_id = $metadata->createDraft())
 						$metadata->validateXML();
 						$metadata->validateSAML();
@@ -432,7 +432,7 @@ function showUpload() {
 # Import and validate uploaded XML.
 ####
 function importXML(){
-	global $html, $configFile;
+	global $html, $baseDir;
 	global $EPPN,$mail;
 
 	include '../include/NormalizeXML.php';
@@ -440,7 +440,7 @@ function importXML(){
 	$import->fromFile($_FILES['XMLfile']['tmp_name']);
 	if ($import->getStatus()) {
 		$entityID = $import->getEntityID();
-		$metadata = new Metadata($configFile, $import->getEntityID(), 'New');
+		$metadata = new Metadata($baseDir, $import->getEntityID(), 'New');
 		$metadata->importXML($import->getXML());
 		$metadata->validateXML(true);
 		$metadata->validateSAML(true);
@@ -457,9 +457,9 @@ function importXML(){
 # Remove an IDPSSO / SPSSO Decriptor that isn't used
 ####
 function removeSSO($Entity_id, $type) {
-	global $configFile;
+	global $baseDir;
 	include '../include/MetadataEdit.php';
-	$metadata = new MetadataEdit($configFile, $Entity_id);
+	$metadata = new MetadataEdit($baseDir, $Entity_id);
 	$metadata->removeSSO($type);
 	validateEntity($Entity_id);
 	showEntity($Entity_id);
@@ -469,9 +469,9 @@ function removeSSO($Entity_id, $type) {
 # Remove an IDPSSO / SPSSO Key that is old & unused
 ####
 function removeKey($Entity_id, $type, $use, $hash) {
-	global $configFile;
+	global $baseDir;
 	include '../include/MetadataEdit.php';
-	$metadata = new MetadataEdit($configFile, $Entity_id);
+	$metadata = new MetadataEdit($baseDir, $Entity_id);
 	$metadata->removeKey($type, $use, $hash);
 	validateEntity($Entity_id);
 	showEntity($Entity_id);
@@ -501,8 +501,8 @@ function showMenu() {
 }
 
 function validateEntity($Entity_id) {
-	global $configFile;
-	$metadata = new Metadata($configFile, $Entity_id);
+	global $baseDir;
+	$metadata = new Metadata($baseDir, $Entity_id);
 	$metadata->validateXML(true);
 	$metadata->validateSAML();
 }
@@ -676,21 +676,21 @@ function move2Pending($Entity_id) {
 	print "\n";
 }
 function move2Draft($Entity_id) {
-	global $db, $html, $display, $menuActive, $configFile;
+	global $db, $html, $display, $menuActive, $baseDir;
 	global $EPPN,$mail;
 	$entityHandler = $db->prepare('SELECT entityID, xml FROM Entities WHERE status = 2 AND id = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 		if (isset($_GET['action'])) {
-			$newMetadata = new Metadata($configFile, $entity['entityID'], 'New');
+			$newMetadata = new Metadata($baseDir, $entity['entityID'], 'New');
 			$newMetadata->importXML($entity['xml']);
 			$newMetadata->validateXML(true);
 			$newMetadata->validateSAML(true);
 			$menuActive = 'new';
 			showEntity($newMetadata->dbIdNr);
 			$newMetadata->updateResponsible($EPPN,$mail);
-			$oldMetadata = new Metadata($configFile, $Entity_id);
+			$oldMetadata = new Metadata($baseDir, $Entity_id);
 			$oldMetadata->removeEntity();
 		} else {
 			$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
@@ -713,14 +713,14 @@ function move2Draft($Entity_id) {
 }
 
 function mergeEntity($Entity_id, $oldEntity_id) {
-	global $configFile;
+	global $baseDir;
 	include '../include/MetadataEdit.php';
-	$metadata = new MetadataEdit($configFile, $Entity_id, $oldEntity_id);
+	$metadata = new MetadataEdit($baseDir, $Entity_id, $oldEntity_id);
 	$metadata->mergeFrom();
 }
 
 function removeEntity($Entity_id) {
-	global $db, $html, $menuActive, $configFile;
+	global $db, $html, $menuActive, $baseDir;
 	$entityHandler = $db->prepare('SELECT entityID, status FROM Entities WHERE id = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
@@ -742,7 +742,7 @@ function removeEntity($Entity_id) {
 		}
 		showMenu();
 		if (isset($_GET['action']) && $_GET['action'] == 'Remove' ) {
-			$metadata = new Metadata($configFile, $Entity_id);
+			$metadata = new Metadata($baseDir, $Entity_id);
 			$metadata->removeEntity();
 			printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
 		} else {

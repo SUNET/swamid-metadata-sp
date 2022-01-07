@@ -29,7 +29,7 @@ $entitys->execute();
 #print $count;
 while ($count > 0 && $row = $entitys->fetch(PDO::FETCH_ASSOC)) {
 	printf ("%s -> entityID : %s\n",$row['lastValidated'], $row['entityID']);
-	$metadata = new Metadata('/var/www/html/config.php',$row['id']);
+	$metadata = new Metadata('/var/www/html',$row['id']);
 	if ($metadata->getResult() <> "")
 		printf ("%s\n" ,$metadata->getResult());
 	$metadata->clearResult();

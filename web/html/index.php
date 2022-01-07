@@ -2,8 +2,8 @@
 include 'include/Html.php';
 $html = new HTML();
 
-$configFile = dirname($_SERVER['SCRIPT_FILENAME'], 1) . '/config.php' ;
-include $configFile;
+$baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 1);
+include $baseDir . '/config.php';
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -16,7 +16,7 @@ try {
 $collapseIcons = [];
 
 include 'include/MetadataDisplay.php';
-$display = new MetadataDisplay($configFile);
+$display = new MetadataDisplay($baseDir);
 
 if (isset($_GET['showEntity'])) {
 	showEntity($_GET['showEntity']);

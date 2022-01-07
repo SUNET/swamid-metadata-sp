@@ -13,36 +13,26 @@ Class Metadata {
 		$a = func_get_args();
 		$i = func_num_args();
 		if (method_exists($this,$f='__construct'.$i)) {
+				include $a[0] . '/config.php';
+				include $a[0] . '/include/common.php';
+				try {
+					$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
+					// set the PDO error mode to exception
+					$this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+				} catch(PDOException $e) {
+					echo "Error: " . $e->getMessage();
+				}
 				call_user_func_array(array($this,$f),$a);
 		}
 		$this->startTimer = time();
 	}
 
-	private function __construct1($configFile) {
-		include $configFile;
-		$this->FriendlyNames = $FriendlyNames;
-		try {
-			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-			// set the PDO error mode to exception
-			$this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		} catch(PDOException $e) {
-			echo "Error: " . $e->getMessage();
-		}
+	private function __construct1($baseDir) {
 		$this->entityID = false;
 		$this->entityExists = false;
 	}
 
-	private function __construct2($configFile, $entity_id) {
-		include $configFile;
-		$this->FriendlyNames = $FriendlyNames;
-		try {
-			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-			// set the PDO error mode to exception
-			$this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		} catch(PDOException $e) {
-			echo "Error: " . $e->getMessage();
-		}
-
+	private function __construct2($baseDir, $entity_id) {
 		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindValue(':Id', $entity_id);
 		$entityHandler->execute();
@@ -62,16 +52,7 @@ Class Metadata {
 		}
 	}
 
-	private function __construct3($configFile, $entityId = '', $entityStatus = '') {
-		include $configFile;
-		$this->FriendlyNames = $FriendlyNames;
-		try {
-			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-			// set the PDO error mode to exception
-			$this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		} catch(PDOException $e) {
-			echo "Error: " . $e->getMessage();
-		}
+	private function __construct3($baseDir, $entityId = '', $entityStatus = '') {
 		$this->entityID = $entityId;
 
 		switch (strtolower($entityStatus)) {
@@ -143,7 +124,11 @@ Class Metadata {
 		curl_setopt($ch, CURLINFO_HEADER_OUT, 1);
 
 		$URLUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = NOW(), `status` = :Status, `validationOutput` = :Result WHERE `URL` = :Url;");
-		$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
+		if ($limit > 10) {
+			$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
+		} else {
+			$sql = "SELECT `URL`, `type` FROM URLs WHERE `status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-8:0:0') ORDER BY `lastValidated` LIMIT $limit;";
+		}
 		$URLHandler = $this->metaDb->prepare($sql);
 		$URLHandler->execute();
 		$count = 0;
@@ -1099,13 +1084,7 @@ Class Metadata {
 			$this->checkRequiredMDUIelements('SPSSO');
 			// 6.1.14, 6.2.x
 			$this->checkRequiredSAMLcertificates('SPSSO');
-
-			// 6.1.16
-			//			$this->checkAssertionConsumerService();
 		}
-
-		//5.1.20 / 6.1.15
-		//		$this->checkHttpsOnEndpoints();
 
 		// 5.1.22 / 6.1.20
 		$this->checkRequiredOrganizationElements();
