@@ -237,7 +237,7 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registrerad i</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, $filter, $filter, $filter);
+	printf('<th>Registered in</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, $filter, $filter, $filter);
 
 	print $extraTH . "</tr>\n";
 	showList($entitys, $minLevel);

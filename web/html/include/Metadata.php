@@ -173,6 +173,11 @@ Class Metadata {
 							$URLUpdateHandler->bindValue(':Status', 2);
 							$continue = false;
 							break;
+						case 503 :
+							$URLUpdateHandler->bindValue(':Result', "Service Unavailable. Can't check URL.");
+							$URLUpdateHandler->bindValue(':Status', 2);
+							$continue = false;
+							break;
 						default :
 							$URLUpdateHandler->bindValue(':Result', "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
 							$URLUpdateHandler->bindValue(':Status', 2);
@@ -1326,45 +1331,79 @@ Class Metadata {
 	// 5.1.20, 5.2.x / 6.1.14, 6.2.x
 	private function checkRequiredSAMLcertificates($type) {
 		$keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false);
-		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type` FROM KeyInfo WHERE `entity_id` = :Id AND `type` =:Type;');
+		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type` FROM KeyInfo WHERE `entity_id` = :Id AND `type` =:Type ORDER BY notValidAfter DESC;');
 		$keyInfoHandler->bindValue(':Id', $this->dbIdNr);
 		$keyInfoHandler->bindValue(':Type', $type);
 		$keyInfoHandler->execute();
 
-		$SWAMID_5_2_1_RSAmin = 16000;
-		$SWAMID_5_2_1_ECmin = 2049;
+		$SWAMID_5_2_1_Level = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
 		$SWAMID_5_2_2_error = false;
+		$SWAMID_5_2_2_warning = false;
 		$SWAMID_5_2_3_warning = false;
+		$validEncryptionFound = false;
+		$validSigningFound = false;
+		$oldCertFound = false;
 		$timeNow = date('Y-m-d H:i:00');
+		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
 		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+			$validCertExists = false;
 			switch ($keyInfo['use']) {
 				case 'encryption' :
 					$keyInfoArray['SPSSO'] = true;
+					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+					} elseif ($validEncryptionFound) {
+						$validCertExists = true;
+						$oldCertFound = true;
+					}
 					break;
 				case 'signing' :
 					$keyInfoArray['IDPSSO'] = true;
+					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						$validSigningFound = true;
+					} elseif ($validSigningFound) {
+						$validCertExists = true;
+						$oldCertFound = true;
+					}
 					break;
 				case 'both' :
 					$keyInfoArray['SPSSO'] = true;
 					$keyInfoArray['IDPSSO'] = true;
+					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+						$validSigningFound = true;
+					} else if ($validEncryptionFound &&  $validSigningFound) {
+						$validCertExists = true;
+						$oldCertFound = true;
+					}
 					break;
 			}
 			switch ($keyInfo['key_type']) {
 				case 'RSA' :
-					if ($SWAMID_5_2_1_RSAmin > $keyInfo['bits'])
-						$SWAMID_5_2_1_RSAmin = $keyInfo['bits'];
-					break;
 				case 'DSA' :
-					if ($SWAMID_5_2_1_RSAmin > $keyInfo['bits'])
-						$SWAMID_5_2_1_RSAmin = $keyInfo['bits'];
+					if ($keyInfo['bits'] >= 4096 && $keyInfo['notValidAfter'] >= $timeNow ) {
+						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
+					} elseif ($keyInfo['bits'] >= 2048 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
+					}
 					break;
 				case 'EC' :
-					if ($SWAMID_5_2_1_ECmin > $keyInfo['bits'])
-						$SWAMID_5_2_1_ECmin = $keyInfo['bits'];
+					if ($keyInfo['bits'] >= 384 && $keyInfo['notValidAfter'] >= $timeNow ) {
+						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
+					} elseif ($keyInfo['bits'] >= 256 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
+					}
 					break;
 			}
-			if ($keyInfo['notValidAfter'] < $timeNow )
-				$SWAMID_5_2_2_error = true;
+			if ($keyInfo['notValidAfter'] <= $timeNow ) {
+				if ($validCertExists) {
+					$SWAMID_5_2_2_warning = true;
+				} else {
+					$SWAMID_5_2_2_error = true;
+				}
+			} elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
+				$this->warning .= sprintf ("Certificate (%s) %s will soon expire.\n", $keyInfo['use'], $keyInfo['subject']);
+			}
 
 			if ($keyInfo['subject'] != $keyInfo['issuer'])
 				$SWAMID_5_2_3_warning = true;
@@ -1377,30 +1416,27 @@ Class Metadata {
 				$this->error .= "SWAMID Tech 6.1.14: Service Providers there MUST have at least one encryption certificate.\n";
 		}
 		// 5.2.1 Identity Provider credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
-		if ( $SWAMID_5_2_1_RSAmin < 4096 || $SWAMID_5_2_1_ECmin < 384) {
-			if ($SWAMID_5_2_1_RSAmin < 2048 || $SWAMID_5_2_1_ECmin < 256) {
-				if ($type == 'IDPSSO')
-					$this->error .= "SWAMID Tech 5.2.1: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
-				else
-					$this->error .= "SWAMID Tech 6.2.1: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
-			} else
-			if ($type == 'IDPSSO')
-				$this->warning .= "SWAMID Tech 5.2.1: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n";
-			else
-				$this->warning .= "SWAMID Tech 6.2.1: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n";
+		if ((($SWAMID_5_2_1_Level['encryption'] < 2) || ($SWAMID_5_2_1_Level['signing'] < 2)) && ($SWAMID_5_2_1_Level['both'] < 2)) {
+			if ((($SWAMID_5_2_1_Level['encryption'] < 1) && ($SWAMID_5_2_1_Level['signing'] < 1)) && ($SWAMID_5_2_1_Level['both'] < 1)) {
+				$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+			} else {
+				$this->warning .= sprintf("SWAMID Tech %s: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+			}
 		}
 
 		if ($SWAMID_5_2_2_error)
-			if ($type == 'IDPSSO')
-				$this->error .= "SWAMID Tech 5.2.2: Signing and encryption certificates MUST NOT be expired.\n";
-			else
-				$this->error .= "SWAMID Tech 6.2.2: Signing and encryption certificates MUST NOT be expired.\n";
+			$this->error .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
+		if ($SWAMID_5_2_2_warning) {
+			$this->warning .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
+		}
 
-		if ($SWAMID_5_2_3_warning)
-			if ($type == 'IDPSSO')
-				$this->warning .= "SWAMID Tech 5.2.3: Signing and encryption certificates SHOULD be self-signed.\n";
-			else
-				$this->warning .= "SWAMID Tech 6.2.3: Signing and encryption certificates SHOULD be self-signed.\n";
+		if ($oldCertFound) {
+			$this->warning .= "One or more old certs found. Please remove when new certs have propagated.\n";
+		}
+
+		if ($SWAMID_5_2_3_warning) {
+			$this->warning .= sprintf("SWAMID Tech %s: Signing and encryption certificates SHOULD be self-signed.\n", ($type == 'IDPSSO') ? '5.2.3' : '6.2.3');
+		}
 	}
 
 	// 5.1.21 / 6.1.15

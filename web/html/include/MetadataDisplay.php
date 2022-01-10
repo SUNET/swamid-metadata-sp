@@ -489,8 +489,14 @@ Class MetadataDisplay {
 
 		$encryptionFound = false;
 		$signingFound = false;
+		$validEncryptionFound = false;
+		$validSigningFound = false;
+		$timeNow = date('Y-m-d H:i:00');
+		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
 		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
 			$okRemove = false;
+			$error = '';
+			$validCertExists = false;
 			switch ($keyInfo['use']) {
 				case 'encryption' :
 					$use = 'encryption';
@@ -498,6 +504,11 @@ Class MetadataDisplay {
 						$okRemove = true;
 					else
 						$encryptionFound = true;
+					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+					} elseif ($validEncryptionFound) {
+						$validCertExists = true;
+					}
 					break;
 				case 'signing' :
 					$use = 'signing';
@@ -505,6 +516,11 @@ Class MetadataDisplay {
 						$okRemove = true;
 					else
 						$signingFound = true;
+					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						$validSigningFound = true;
+					} elseif ($validSigningFound) {
+						$validCertExists = true;
+					}
 					break;
 				case 'both' :
 					$use = 'encryption & signing';
@@ -514,9 +530,21 @@ Class MetadataDisplay {
 						$encryptionFound = true;
 						$signingFound = true;
 					}
+					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+						$validSigningFound = true;
+					} else if ($validEncryptionFound &&  $validSigningFound) {
+						$validCertExists = true;
+					}
 					break;
 			}
 			$name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+
+			if ($keyInfo['notValidAfter'] <= $timeNow ) {
+				$error = ($validCertExists) ? ' class="alert-warning" role="alert"' : ' class="alert-danger" role="alert"';
+			} elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
+				$error = ' class="alert-warning" role="alert"';
+			}
 
 			if ($otherEntity_id) {
 				$state = ($added) ? 'success' : 'danger';
@@ -527,13 +555,13 @@ Class MetadataDisplay {
 				$state = 'dark';
 				$extraButton = $okRemove && $removable ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&hash=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['hash']) : '';
 			printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s%s</span>
-                <ul>
+                <ul%s>
                   <li>notValidAfter = %s</li>
                   <li>Subject = %s</li>
                   <li>Issuer = %s</li>
                   <li>Type / bits = %s / %d</li>
                   <li>Hash = %s</li>
-                </ul>', "\n", $state, $use, $name, $extraButton, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash']);
+                </ul>', "\n", $state, $use, $name, $extraButton, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash']);
 		}
 	}
 
@@ -828,7 +856,7 @@ Class MetadataDisplay {
 			}
 		} else {
 			$oldType = 0;
-			$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, lastValidated DESC;");
+			$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, `URL`;");
 			$URLHandler->execute();
 
 			while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {

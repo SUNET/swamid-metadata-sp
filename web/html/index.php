@@ -89,7 +89,7 @@ EOF;
 	if ($showAll)	print '<th>IdP</th><th>SP</th>';
 
 	echo <<<EOF
- <th>Registrerad i</th> <th><a href="?$filter&feed">eduGAIN</a></th> <th><form><a href="?$filter&entityID">entityID</a> <input type="text" name="query" value="$query"><input type="hidden" name="$csort"><input type="hidden" name="$filter"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="?$filter&org">OrganizationDisplayName</a></th>
+ <th>Registered in</th> <th><a href="?$filter&feed">eduGAIN</a></th> <th><form><a href="?$filter&entityID">entityID</a> <input type="text" name="query" value="$query"><input type="hidden" name="$csort"><input type="hidden" name="$filter"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="?$filter&org">OrganizationDisplayName</a></th>
 EOF;
 	print $extraTH . "</tr>\n";
 	$entitys->bindValue(':Query', "%".$query."%");
@@ -268,18 +268,18 @@ function showList($entitys, $showRole) {
     </table>
     <h4>Statistik</h4>
     <table class="table table-striped table-bordered">
-      <tr><th rowspan="3">&nbsp;Registrerad i </th><th> SWAMID-Produktion </th> <td> <?=$countSWAMID?> </td></tr>
-      <tr><th> eduGAIN-Export </th> <td> <?=$counteduGAIN?> </td></tr>
-      <tr><th> SWAMID-Test enbart </th> <td> <?=$countTesting?> </td></tr>
-      <tr><th rowspan="3"> Entitetskategorier i produktion </th><th> CoCo </th> <td> <?=$countECcoco?> </td></tr>
-      <tr><th> R&S</th> <td><?=$countECrs?> </td></tr>
-      <tr><th> DS-hide </th> <td> <?=$countHideFromDisc?> </td></tr>
-      <tr><th rowspan="2"> Supportkategorier i produktion</th><th> CoCo </th> <td> <?=$countECScoco?> </td></tr>
-      <tr><th> R&S</th> <td><?=$countECSrs?> </td></tr>
-      <tr><th rowspan="4"> Tillitsprofiler i produktion</th><th> AL1</th> <td><?=$countAL1?> </td></tr>
-      <tr><th> AL2 </th> <td> <?=$countAL2?> </td></tr>
-      <tr><th> AL3 </th> <td> <?=$countAL3?> </td></tr>
-      <tr><th> SIRTFI </th> <td> <?=$countSIRTFI?> </td></tr>
+      <tr><th rowspan="3">&nbsp;Registered in</th><th>SWAMID-Produktion </th><td><?=$countSWAMID?></td></tr>
+      <tr><th>eduGAIN-Export </th><td><?=$counteduGAIN?></td></tr>
+      <tr><th>SWAMID-Test enbart </th><td><?=$countTesting?></td></tr>
+      <tr><th rowspan="3">Entitetskategorier i produktion </th><th>CoCo </th><td><?=$countECcoco?></td></tr>
+      <tr><th>R&S</th><td><?=$countECrs?></td></tr>
+      <tr><th>DS-hide </th><td><?=$countHideFromDisc?></td></tr>
+      <tr><th rowspan="2">Supportkategorier i produktion</th><th>CoCo </th><td><?=$countECScoco?></td></tr>
+      <tr><th>R&S</th><td><?=$countECSrs?></td></tr>
+      <tr><th rowspan="4">Tillitsprofiler i produktion</th><th>AL1</th><td><?=$countAL1?></td></tr>
+      <tr><th>AL2 </th><td><?=$countAL2?></td></tr>
+      <tr><th>AL3 </th><td><?=$countAL3?></td></tr>
+      <tr><th>SIRTFI </th><td><?=$countSIRTFI?></td></tr>
     </table>
 
 <?php
