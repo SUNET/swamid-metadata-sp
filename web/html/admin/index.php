@@ -361,6 +361,7 @@ function showEntity($Entity_id)  {
 		$display->showOrganization($Entity_id, $oldEntity_id, $allowEdit);
 		$display->showContacts($Entity_id, $oldEntity_id, $allowEdit);
 		$display->showXML($Entity_id);
+		if ($entity['status'] > 1 ) $display->showEditors($Entity_id);
 
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');

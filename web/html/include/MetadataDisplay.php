@@ -821,7 +821,7 @@ Class MetadataDisplay {
 		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s" target="_blank">Show XML</a></h4>%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s&download" target="_blank">Download XML</a></h4>%s', "\n", $Entity_id, "\n", $Entity_id, "\n");
 	}
 
-	function showRawXML($Entity_id) {
+	public function showRawXML($Entity_id) {
 		$entityHandler = $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$entityHandler->execute();
@@ -831,6 +831,19 @@ Class MetadataDisplay {
 			header('Content-Disposition: attachment; filename=metadata.xml');
 		print $entity['xml'];
 		exit;
+	}
+
+	public function showEditors($Entity_id){
+		$this->showCollapse('Editors', 'Editors', false, 0, true, false, $Entity_id, 0);
+		$usersHandler = $this->metaDb->prepare('SELECT * FROM Users WHERE `entity_id` = :Id ORDER BY `userID`;');
+		$usersHandler->bindParam(':Id', $Entity_id);
+		$usersHandler->execute();
+		print "        <ul>\n";
+		while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
+			printf ('          <li>%s, %s</li>%s', $user['userID'], $user['email'], "\n");
+		}
+		print "        </ul>";
+		$this->showCollapseEnd('Editors', 0);
 	}
 
 	public function showURLStatus(){
