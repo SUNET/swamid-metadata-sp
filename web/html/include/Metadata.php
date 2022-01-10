@@ -1006,7 +1006,7 @@ Class Metadata {
 						$KeyInfoHandler->bindValue(':Bits', 0);
 						$KeyInfoHandler->bindValue(':Key_type', '?');
 						$KeyInfoHandler->bindValue(':Hash', '?');
-						$KeyInfoHandler->bindParam(':SerialNumber', '?');
+						$KeyInfoHandler->bindValue(':SerialNumber', '?');
 						$name = 'Invalid Certificate';
 					}
 				break;
