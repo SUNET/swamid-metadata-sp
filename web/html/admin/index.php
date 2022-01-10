@@ -111,9 +111,9 @@ if (isset($_FILES['XMLfile'])) {
 } elseif (isset($_GET['removeSSO']) && isset($_GET['type'])) {
 	if (checkAccess($_GET['removeSSO'],$EPPN,$userLevel,10, true))
 		removeSSO($_GET['removeSSO'], $_GET['type']);
-} elseif (isset($_GET['removeKey']) && isset($_GET['type']) && isset($_GET['use']) && isset($_GET['hash'])) {
+} elseif (isset($_GET['removeKey']) && isset($_GET['type']) && isset($_GET['use']) && isset($_GET['serialNumber'])) {
 	if (checkAccess($_GET['removeKey'],$EPPN,$userLevel,10, true))
-		removeKey($_GET['removeKey'], $_GET['type'], $_GET['use'], $_GET['hash']);
+		removeKey($_GET['removeKey'], $_GET['type'], $_GET['use'], $_GET['serialNumber']);
 } elseif (isset($_GET['rawXML'])) {
 	$display->showRawXML($_GET['rawXML']);
 } else {
@@ -468,11 +468,11 @@ function removeSSO($Entity_id, $type) {
 ####
 # Remove an IDPSSO / SPSSO Key that is old & unused
 ####
-function removeKey($Entity_id, $type, $use, $hash) {
+function removeKey($Entity_id, $type, $use, $serialNumber) {
 	global $baseDir;
 	include '../include/MetadataEdit.php';
 	$metadata = new MetadataEdit($baseDir, $Entity_id);
-	$metadata->removeKey($type, $use, $hash);
+	$metadata->removeKey($type, $use, $serialNumber);
 	validateEntity($Entity_id);
 	showEntity($Entity_id);
 }

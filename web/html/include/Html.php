@@ -3,6 +3,7 @@ Class HTML {
 	# Setup
 	function __construct() {
 		$this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
+		$this->startTimer = time();
 	}
 
 	###
@@ -78,6 +79,7 @@ Class HTML {
 ###
 public function showFooter($collapseIcons = array()) {
 	$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+	// printf('    <hr>%s    %d%s', "\n", time()-$this->startTimer, "\n");
 	?>
   </div>
   <!-- Include the Seamless Access Sign in Button & Discovery Service -->

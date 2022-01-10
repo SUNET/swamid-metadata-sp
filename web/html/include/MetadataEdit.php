@@ -3381,7 +3381,7 @@ Class MetadataEdit {
 		$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
 		$entityHandler->execute();
 	}
-	public function removeKey($type, $use, $hash) {
+	public function removeKey($type, $use, $serialNumber) {
 		switch ($type) {
 			case 'SPSSO' :
 				$Descriptor = 'md:SPSSODescriptor';
@@ -3422,7 +3422,7 @@ Class MetadataEdit {
 											if ($x509Child->nodeName == 'ds:X509Certificate') {
 												$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
 												if ($cert_info = openssl_x509_parse( $cert)) {
-													if ($cert_info['hash'] == $hash)
+													if ($cert_info['serialNumber'] == $serialNumber)
 														$removeKeyDescriptor = true;
 												}
 											}

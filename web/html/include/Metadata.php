@@ -926,7 +926,7 @@ Class Metadata {
 	# Extract Certs and check dates
 	#############
 	private function parseKeyDescriptor_KeyInfo_X509Data($data, $type, $use, $name) {
-		$KeyInfoHandler = $this->metaDb->prepare('INSERT INTO KeyInfo (`entity_id`, `type`, `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash`) VALUES (:Id, :Type, :Use, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :Hash);');
+		$KeyInfoHandler = $this->metaDb->prepare('INSERT INTO KeyInfo (`entity_id`, `type`, `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash`, `serialNumber`) VALUES (:Id, :Type, :Use, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :Hash, :SerialNumber);');
 
 		$KeyInfoHandler->bindValue(':Id', $this->dbIdNr);
 		$KeyInfoHandler->bindValue(':Type', $type);
@@ -998,6 +998,7 @@ Class Metadata {
 						$KeyInfoHandler->bindParam(':Bits', $key_info['bits']);
 						$KeyInfoHandler->bindParam(':Key_type', $keyType);
 						$KeyInfoHandler->bindParam(':Hash', $cert_info['hash']);
+						$KeyInfoHandler->bindParam(':SerialNumber', $cert_info['serialNumber']);
 					} else {
 						$KeyInfoHandler->bindValue(':NotValidAfter', date('Y-m-d H:i:s', $cert_info['validTo_time_t']));
 						$KeyInfoHandler->bindValue(':Subject', '?');
@@ -1005,6 +1006,7 @@ Class Metadata {
 						$KeyInfoHandler->bindValue(':Bits', 0);
 						$KeyInfoHandler->bindValue(':Key_type', '?');
 						$KeyInfoHandler->bindValue(':Hash', '?');
+						$KeyInfoHandler->bindParam(':SerialNumber', '?');
 						$name = 'Invalid Certificate';
 					}
 				break;

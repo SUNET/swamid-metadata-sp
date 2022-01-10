@@ -43,7 +43,8 @@ CREATE TABLE KeyInfo (
 	`issuer` VARCHAR(256),
 	`bits` SMALLINT UNSIGNED,
 	`key_type` VARCHAR(256),
-	`hash` VARCHAR(8));
+	`hash` VARCHAR(8),
+	`serialNumber` VARCHAR(44));
 
 CREATE TABLE AttributeConsumingService (
 	`entity_id` INT UNSIGNED,

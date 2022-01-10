@@ -23,7 +23,7 @@ Class MetadataDisplay {
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 		$urlHandler1->bindParam(':Id', $Entity_id);
-		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id)");
 		$urlHandler2->bindParam(':Id', $Entity_id);
 		$urlHandler3 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
 		$urlHandler3->bindParam(':Id', $Entity_id);
@@ -472,7 +472,30 @@ Class MetadataDisplay {
 	# Shows KeyInfo for IdP or SP
 	####
 	function showKeyInfo($Entity_id, $type, $otherEntity_id=0, $added = false, $removable = false) {
-		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY notValidAfter DESC;');
+		$KeyInfoCountHandler = $this->metaDb->prepare('SELECT `use`, COUNT(`use`) AS count FROM KeyInfo WHERE entity_id = :Id AND type = :Type GROUP BY `use`');
+		$KeyInfoCountHandler->bindParam(':Type', $type);
+		$KeyInfoCountHandler->bindParam(':Id', $Entity_id);
+		$KeyInfoCountHandler->execute();
+		$extraEncryptionFound = false;
+		$extraSigningFound = false;
+		while ($keyInfoCount = $KeyInfoCountHandler->fetch(PDO::FETCH_ASSOC)) {
+			if ($keyInfoCount['count'] > 1) {
+				switch ($keyInfoCount['use']) {
+					case 'encryption' :
+						$extraEncryptionFound = true;
+						break;
+					case 'signing' :
+						$extraSigningFound = true;
+						break;
+					case 'both' :
+						$extraEncryptionFound = true;
+						$extraSigningFound = true;
+						break;
+				}
+			}
+		}
+
+		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash`, `serialNumber` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY notValidAfter DESC;');
 		$keyInfoHandler->bindParam(':Type', $type);
 		if ($otherEntity_id) {
 			$otherKeyInfos = array();
@@ -487,8 +510,6 @@ Class MetadataDisplay {
 		$keyInfoHandler->bindParam(':Id', $Entity_id);
 		$keyInfoHandler->execute();
 
-		$encryptionFound = false;
-		$signingFound = false;
 		$validEncryptionFound = false;
 		$validSigningFound = false;
 		$timeNow = date('Y-m-d H:i:00');
@@ -500,10 +521,7 @@ Class MetadataDisplay {
 			switch ($keyInfo['use']) {
 				case 'encryption' :
 					$use = 'encryption';
-					if ($encryptionFound)
-						$okRemove = true;
-					else
-						$encryptionFound = true;
+					$okRemove = $extraEncryptionFound;
 					if ($keyInfo['notValidAfter'] > $timeNow ) {
 						$validEncryptionFound = true;
 					} elseif ($validEncryptionFound) {
@@ -512,10 +530,7 @@ Class MetadataDisplay {
 					break;
 				case 'signing' :
 					$use = 'signing';
-					if ($signingFound)
-						$okRemove = true;
-					else
-						$signingFound = true;
+					$okRemove = $extraSigningFound;
 					if ($keyInfo['notValidAfter'] > $timeNow ) {
 						$validSigningFound = true;
 					} elseif ($validSigningFound) {
@@ -524,12 +539,7 @@ Class MetadataDisplay {
 					break;
 				case 'both' :
 					$use = 'encryption & signing';
-					if ($encryptionFound && $signingFound)
-						$okRemove = true;
-					else {
-						$encryptionFound = true;
-						$signingFound = true;
-					}
+					$okRemove = ($extraEncryptionFound && $extraSigningFound);
 					if ($keyInfo['notValidAfter'] > $timeNow ) {
 						$validEncryptionFound = true;
 						$validSigningFound = true;
@@ -553,15 +563,16 @@ Class MetadataDisplay {
 				}
 			} else
 				$state = 'dark';
-				$extraButton = $okRemove && $removable ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&hash=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['hash']) : '';
+				$extraButton = $okRemove && $removable ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&serialNumber=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['serialNumber']) : '';
 			printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s%s</span>
                 <ul%s>
                   <li>notValidAfter = %s</li>
                   <li>Subject = %s</li>
                   <li>Issuer = %s</li>
                   <li>Type / bits = %s / %d</li>
-                  <li>Hash = %s</li>
-                </ul>', "\n", $state, $use, $name, $extraButton, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash']);
+                  <li>Key Hash = %s</li>
+                  <li>Serial Number = %s</li>
+                </ul>', "\n", $state, $use, $name, $extraButton, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash'], $keyInfo['serialNumber']);
 		}
 	}
 
