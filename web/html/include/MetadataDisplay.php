@@ -904,11 +904,14 @@ Class MetadataDisplay {
 			}
 			if ($oldType > 0) print "    </table>\n";
 
-			$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
+			$warnTime = date('Y-m-d H:i', time() - 25200 ); // (7 * 60 * 60 =  7 hours)
+			$warnTimeweek = date('Y-m-d H:i', time() - 608400 ); // (7 * 24 * 60 * 60 + 3600 =  7 days 1 hour)
+			$URLWaitHandler = $this->metaDb->prepare("SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen`, `status` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated`;");
 			$URLWaitHandler->execute();
 			printf ('    <h3>Waiting for validation</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', "\n", "\n", "\n");
 			while ($URL = $URLWaitHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
+				$warn = (($URL['lastValidated'] < $warnTime && $URL['status'] > 0) || $URL['lastValidated'] < $warnTimeweek) ? '! ' : '';
+				printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s', urlencode($URL['URL']), $warn, $URL['URL'], $URL['lastSeen'], $URL['lastValidated'], $URL['validationOutput'], "\n");
 			}
 			print "    </table>\n";
 

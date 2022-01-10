@@ -1383,17 +1383,21 @@ Class Metadata {
 			switch ($keyInfo['key_type']) {
 				case 'RSA' :
 				case 'DSA' :
-					if ($keyInfo['bits'] >= 4096 && $keyInfo['notValidAfter'] >= $timeNow ) {
+					//if ($keyInfo['bits'] >= 4096 && $keyInfo['notValidAfter'] >= $timeNow ) {
+					if ($keyInfo['bits'] >= 4096 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
-					} elseif ($keyInfo['bits'] >= 2048 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+	//				} elseif ($keyInfo['bits'] >= 2048 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
 					}
 					break;
 				case 'EC' :
-					if ($keyInfo['bits'] >= 384 && $keyInfo['notValidAfter'] >= $timeNow ) {
-						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
-					} elseif ($keyInfo['bits'] >= 256 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
-						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
+					//if ($keyInfo['bits'] >= 384 && $keyInfo['notValidAfter'] >= $timeNow ) {
+					if ($keyInfo['bits'] >= 384 ) {
+							$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
+					//} elseif ($keyInfo['bits'] >= 256 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+					} elseif ($keyInfo['bits'] >= 256 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+							$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
 					}
 					break;
 			}
