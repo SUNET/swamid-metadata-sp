@@ -1431,7 +1431,7 @@ Class Metadata {
 		}
 
 		if ($SWAMID_5_2_2_error)
-			$this->error .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
+			$this->error .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
 		if ($SWAMID_5_2_2_warning) {
 			$this->warning .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
 		}

@@ -58,7 +58,7 @@ switch ($EPPN) {
 	default :
 		$userLevel = 1;
 }
-$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .') [admin]</div>';
+$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 
 try {
@@ -278,6 +278,7 @@ function showEntity($Entity_id)  {
 			} else {
 				$headerCol1 = 'Waiting for publishing';
 				$menuActive = 'wait';
+				$allowEdit = checkAccess($Entity_id, false, $userLevel, 10, false);
 			}
 		} else {
 			$headerCol1 = 'Published metadata';
@@ -298,8 +299,12 @@ function showEntity($Entity_id)  {
 				printf('%s      <a href=".?action=createDraft&Entity=%d"><button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $Entity_id);
 				break;
 			case 2:
-				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false))
-					printf('%s      <a href=".?move2Draft=%d"><button type="button" class="btn btn-outline-danger">Cancel publication request</button></a>', "\n", $Entity_id);
+				if (checkAccess($Entity_id, false, $userLevel, 10, false)) {
+					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Remove</button></a>', "\n", $Entity_id);
+				}
+				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
+						printf('%s      <a href=".?move2Draft=%d"><button type="button" class="btn btn-outline-danger">Cancel publication request</button></a>', "\n", $Entity_id);
+				}
 				break;
 			case 3:
 				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
@@ -510,7 +515,7 @@ function validateEntity($Entity_id) {
 
 function move2Pending($Entity_id) {
 	global $db, $html, $display, $userLevel, $menuActive;
-	global $mail, $fullName;
+	global $EPPN, $mail, $fullName;
 	global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut;
 	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP FROM Entities WHERE status = 3 AND id = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
@@ -594,13 +599,13 @@ function move2Pending($Entity_id) {
 				//Content
 				$mailContacts->isHTML(true);
 				$mailContacts->Subject	= 'Info : Updated Metadata';
-				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s) have requested an update of %s</p>\n<p>You get this mail since you are either old/new technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s</a></p>\n<p>If you don't approve this update please contact <a href=\"mailto:operations@swamid.se\">Operations</a>", $mail, $fullName, $entity['entityID'], $hostURL, $Entity_id, $_SERVER['SERVER_NAME']);
-				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s) have requested an update of %s\n\nYou get this mail since you are either old/new technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you don't approve this update please contact operations@swamid.se", $mail, $fullName, $entity['entityID'], $hostURL, $Entity_id);
+				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) have requested an update of %s</p>\n<p>You get this mail since you are either old/new technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you don't approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
+				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) have requested an update of %s\n\nYou get this mail since you are either old/new technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you don't approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
 
 				$mailRequetser->isHTML(true);
 				$mailRequetser->Subject	= 'Updated Metadata';
-				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to <a href=\"mailto:operations@swamid.se\">SWAMID Operations</a></p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>A mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
-				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to operations@swamid.se\n\nThe new version can be found at %s/?showEntity=%d\n\nA mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
+				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>A mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
+				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nA mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
 
 				try {
 					$mailContacts->send();
