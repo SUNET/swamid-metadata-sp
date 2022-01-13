@@ -103,3 +103,10 @@ CREATE TABLE Users (
 	`userID` TEXT,
 	`email` TEXT,
 	UNIQUE(entity_id, userID));
+
+CREATE TABLE TestResults (
+	`entityID` VARCHAR(256),
+	`test` VARCHAR(20),
+	`time` DATETIME,
+	`result` VARCHAR(70),
+	UNIQUE(entityID, test));

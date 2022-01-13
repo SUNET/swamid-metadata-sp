@@ -662,17 +662,25 @@ Class Metadata {
 					break;
 				case 'md:RequestedAttribute' :
 					$FriendlyName = $child->getAttribute('FriendlyName') ? $child->getAttribute('FriendlyName') : '';
-					$NameFormat = $child->getAttribute('NameFormat') ? $child->getAttribute('NameFormat') : '';
+					$NameFormat = '';
 					$isRequired = ($child->getAttribute('isRequired') && ($child->getAttribute('isRequired') == 'true' || $child->getAttribute('isRequired') == '1')) ? 1 : 0;
 					if ($child->getAttribute('Name')) {
 						$Name = $child->getAttribute('Name');
-						$RequestedAttributeHandler->execute();
-						$RequestedAttributeFound = true;
 						if ($FriendlyName != '' && isset($this->FriendlyNames[$Name])) {
 							if ( $this->FriendlyNames[$Name]['desc'] != $FriendlyName) {
 								$this->warning .= sprintf("SWAMID Tech 6.1.20: FriendlyName for %s in RequestedAttribute for index %d is %s (recomended from SWAMID is %s).\n", $Name, $index, $FriendlyName, $this->FriendlyNames[$Name]['desc']);
 							}
 						}
+						if ($child->getAttribute('NameFormat')) {
+							$NameFormat = $child->getAttribute('NameFormat');
+							if ($NameFormat <> 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri') {
+								$this->warning .= sprintf("NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n", $NameFormat, $Name, $index);
+							}
+						} else {
+							$this->warning .= sprintf("NameFormat is missing for %s in RequestedAttribute for index %d. This might create problmes with some IdP:s\n", $Name, $index);
+						}
+						$RequestedAttributeHandler->execute();
+						$RequestedAttributeFound = true;
 					} else {
 						$this->error .= sprintf("A Name attribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d]->RequestedAttribute.\n", $index);
 					}
@@ -1408,7 +1416,7 @@ Class Metadata {
 					$SWAMID_5_2_2_error = true;
 				}
 			} elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
-				$this->warning .= sprintf ("Certificate (%s) %s will soon expire.\n", $keyInfo['use'], $keyInfo['subject']);
+				$this->warning .= sprintf ("Certificate (%s) %s will soon expire. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", $keyInfo['use'], $keyInfo['subject']);
 			}
 
 			if ($keyInfo['subject'] != $keyInfo['issuer'])
@@ -1424,7 +1432,7 @@ Class Metadata {
 		// 5.2.1 Identity Provider credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
 		if ((($SWAMID_5_2_1_Level['encryption'] < 2) || ($SWAMID_5_2_1_Level['signing'] < 2)) && ($SWAMID_5_2_1_Level['both'] < 2)) {
 			if ((($SWAMID_5_2_1_Level['encryption'] < 1) && ($SWAMID_5_2_1_Level['signing'] < 1)) && ($SWAMID_5_2_1_Level['both'] < 1)) {
-				$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+				$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			} else {
 				$this->warning .= sprintf("SWAMID Tech %s: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			}
