@@ -101,8 +101,10 @@ EOF;
 ####
 function showEntity($Entity_id)  {
 	global $db, $html, $display;
-	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP, publishIn FROM Entities WHERE id = :Id;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `publishIn`, `status` FROM Entities WHERE id = :Id;');
+	$entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE entityID = :Id AND status = 1;');
 	$publishArray = array();
+	$publishArrayOld = array();
 
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
@@ -110,24 +112,49 @@ function showEntity($Entity_id)  {
 		if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
 		if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
 		if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
+		if ($entity['status'] > 1) {
+			$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+			$entityHandlerOld->execute();
+			if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
+				$oldEntity_id = $entityOld['id'];
+				if (($entityOld['publishIn'] & 2) == 2) $publishArrayOld[] = 'SWAMID';
+				if (($entityOld['publishIn'] & 4) == 4) $publishArrayOld[] = 'eduGAIN';
+				if (($entityOld['publishIn'] & 1) == 1) $publishArrayOld[] = 'SWAMID-testing';
+			} else {
+				$oldEntity_id = 0;
+			}
+		} else {
+			$oldEntity_id = 0;
+		}
 		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']); ?>
+
     <div class="row">
       <div class="col">
         <h3>entityID = <?=$entity['entityID']?></h3>
       </div>
-    </div>
+    </div><?php $display->showStatusbar($Entity_id); ?>
+
     <div class="row">
       <div class="col">
-        Published in : <?=implode (', ', $publishArray)?><br>
+        <?=($oldEntity_id > 0) ? "<h3>New metadata</h3>\n" : ''; ?>
+        Published in : <?php
+		print (implode (', ', $publishArray));
+		if ($oldEntity_id > 0) { ?>
+
       </div>
-    </div>
-    <br><?php
-		$display->showStatusbar($Entity_id);
-		$display->showEntityAttributes($Entity_id);
-		if ($entity['isIdP'] ) $display->showIdP($Entity_id);
-		if ($entity['isSP'] ) $display->showSp($Entity_id);
-		$display->showOrganization($Entity_id);
-		$display->showContacts($Entity_id);
+      <div class="col">
+        <h3>Old metadata</h3>
+        Published in : <?php
+			print (implode (', ', $publishArrayOld));
+		} ?>
+
+      </div>
+    </div><?php
+		$display->showEntityAttributes($Entity_id, $oldEntity_id);
+		if ($entity['isIdP'] ) $display->showIdP($Entity_id, $oldEntity_id);
+		if ($entity['isSP'] ) $display->showSp($Entity_id, $oldEntity_id);
+		$display->showOrganization($Entity_id, $oldEntity_id);
+		$display->showContacts($Entity_id, $oldEntity_id);
 		$display->showXML($Entity_id);
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');

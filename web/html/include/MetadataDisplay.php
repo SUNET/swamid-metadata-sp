@@ -19,7 +19,7 @@ Class MetadataDisplay {
 	# Shows menu row
 	####
 	function showStatusbar($Entity_id, $admin = false){
-		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 		$urlHandler1->bindParam(':Id', $Entity_id);
@@ -28,9 +28,58 @@ Class MetadataDisplay {
 		$urlHandler3 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
 		$urlHandler3->bindParam(':Id', $Entity_id);
 
+		$testResults = $this->metaDb->prepare('SELECT `test`, `result`, `time` FROM TestResults WHERE entityID = :EntityID');
+		$entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute` FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category-support';");
+		$entityAttributesHandler->bindParam(':Id', $Entity_id);
+
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$errors = '';
+			$warnings = '';
+			
+			if ($entity['isIdP']) {
+				$ECSTagged = array('http://refeds.org/category/research-and-scholarship' => false, 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => false);
+				$ECSTested = array('rands' => false, 'cocov1-1' => false);
+				
+				$entityAttributesHandler->execute();
+				while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+					$ECSTagged[$attribute['attribute']] = true;
+				}
+
+				$testResults->bindValue(':EntityID', $entity['entityID']);
+				$testResults->execute();
+				while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
+					$ECSTested[$testResult['test']] = true;
+					switch ($testResult['test']) {
+						case 'rands' :
+							$tag = 'http://refeds.org/category/research-and-scholarship';
+							break;
+						case 'cocov1-1' :
+							$tag = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1';
+							break;
+					}
+					switch ($testResult['result']) {
+						case 'CoCo OK, Entity Category Support OK' :
+						case 'R&S attributes OK, Entity Category Support OK' :
+						case 'CoCo OK, Entity Category Support missing' :
+						case 'R&S attributes OK, Entity Category Support missing' :
+							$warnings .= ($ECSTagged[$tag]) ? '' : sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']);
+							break;
+						case 'Support for CoCo missing, Entity Category Support missing' :
+						case 'R&S attribute missing, Entity Category Support missing' :
+						case 'CoCo is not supported, BUT Entity Category Support is claimed' :
+						case 'R&S attributes missing, BUT Entity Category Support claimed' :
+							$errors .= ($ECSTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']) : '';
+							break;
+						default:
+							printf('Unknown result : %s', $testResult['result']);
+					}
+				}
+				foreach ($ECSTested AS $tag => $tested) {
+					$warnings .= ($ECSTested[$tag]) ? '' : sprintf('SWAMID Release-check: Updated test missing please rerun at <a href="https://%s.release-check.swamid.se/">Release-check</a>%s', $tag, "\n");
+				}
+			}
+
 			$urlHandler1->execute();
 			while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
 				if ($url['status'] > 0)
@@ -50,8 +99,9 @@ Class MetadataDisplay {
 			if ($errors != '') {
 				printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
 			}
-			if ($entity['warnings'] != '')
-				printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">%s        <div class="row"><b>Warnings:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $entity['warnings']), "\n", "\n");
+			$warnings .= $entity['warnings'];
+			if ( $warnings != '')
+				printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">%s        <div class="row"><b>Warnings:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $warnings), "\n", "\n");
 			if ($entity['validationOutput'] != '')
 				printf('%s    <div class="row alert alert-primary" role="alert">%s</div>', "\n", str_ireplace("\n", "<br>", $entity['validationOutput']));
 		}
@@ -167,7 +217,7 @@ Class MetadataDisplay {
 			if (isset($this->standardAttributes[$type])) {
 				foreach ($this->standardAttributes[$type] as $data)
 					if ($data['value'] == $value)
-						$error = '';
+						$error = ($data['swamidStd']) ? '' : ' class="alert-danger" role="alert"';
 			}
 			?>
 
@@ -187,7 +237,7 @@ Class MetadataDisplay {
 				if (isset($this->standardAttributes[$type])) {
 					foreach ($this->standardAttributes[$type] as $data)
 						if ($data['value'] == $value)
-							$error = '';
+							$error = ($data['swamidStd']) ? '' : ' class="alert-danger" role="alert"';
 				}
 				if ($oldType != $type) {
 					print "\n          </ul>";
@@ -554,6 +604,10 @@ Class MetadataDisplay {
 				$error = ($validCertExists) ? ' class="alert-warning" role="alert"' : ' class="alert-danger" role="alert"';
 			} elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
 				$error = ' class="alert-warning" role="alert"';
+			}
+
+			if (($keyInfo['bits'] < 2048 && $keyInfo['key_type'] == "RSA") || $keyInfo['bits'] < 256) {
+				$error = ' class="alert-danger" role="alert"';
 			}
 
 			if ($otherEntity_id) {

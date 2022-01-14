@@ -128,8 +128,8 @@ if (isset($_FILES['XMLfile'])) {
 					if ($newEntity_id = $metadata->createDraft())
 						$metadata->validateXML();
 						$metadata->validateSAML();
-						showEntity($newEntity_id);
 						$metadata->updateResponsible($EPPN,$mail);
+						showEntity($newEntity_id);
 					break;
 			}
 		} else {
@@ -176,25 +176,25 @@ function showEntityList($status = 1) {
 	global $db, $html, $EPPN;
 
 	$showAll = true;
-	$sortOrder = 'entityID';
+	$sortOrder = 'entityID, id';
 	if (isset($_GET['feed'])) {
 		$sortOrder = 'publishIn DESC, entityID';
 	}
 
 	if (isset($_GET['org'])) {
-		$sortOrder = 'OrganizationDisplayName, entityID';
+		$sortOrder = 'OrganizationDisplayName, entityID, id';
 	}
 
 	if (isset($_GET['validationOutput'])) {
-		$sortOrder = 'validationOutput DESC, entityID';
+		$sortOrder = 'validationOutput DESC, entityID, id';
 	}
 
 	if (isset($_GET['warnings'])) {
-		$sortOrder = 'warnings DESC, errors DESC';
+		$sortOrder = 'warnings DESC, errors DESC, entityID, id';
 	}
 
 	if (isset($_GET['errors'])) {
-		$sortOrder = 'errors DESC, warnings DESC';
+		$sortOrder = 'errors DESC, warnings DESC, entityID, id';
 	}
 
 	if (isset($_GET['query'])) {
@@ -237,7 +237,7 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registered in</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>lastUpdated</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, $filter, $filter, $filter);
+	printf('<th>Registered in</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>%s</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, ($status == 1) ? 'lastUpdated' : 'created' , $filter, $filter, $filter);
 
 	print $extraTH . "</tr>\n";
 	showList($entitys, $minLevel);
@@ -358,7 +358,8 @@ function showEntity($Entity_id)  {
 		} ?>
 
       </div>
-    </div><?php
+    </div>
+    <br><?php
 		$display->showEntityAttributes($Entity_id, $oldEntity_id, $allowEdit);
 		$able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
 		if ($entity['isIdP'] ) $display->showIdP($Entity_id, $oldEntity_id, $allowEdit, $able2beRemoveSSO);

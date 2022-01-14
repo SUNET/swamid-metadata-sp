@@ -307,7 +307,7 @@ Class MetadataEdit {
 			if (isset($this->standardAttributes[$type])) {
 				foreach ($this->standardAttributes[$type] as $data)
 					if ($data['value'] == $value) {
-						$error = '';
+						$error = ($data['swamidStd']) ? '' : ' class="alert-danger" role="alert"';
 						$entityType = $data['type'];
 					}
 			}?>
@@ -328,7 +328,7 @@ Class MetadataEdit {
 				if (isset($this->standardAttributes[$type])) {
 					foreach ($this->standardAttributes[$type] as $data)
 						if ($data['value'] == $value) {
-							$error = '';
+							$error = ($data['swamidStd']) ? '' : ' class="alert-danger" role="alert"';
 							$entityType = $data['type'];
 						}
 				}
@@ -351,7 +351,7 @@ Class MetadataEdit {
 			printf ('%s          <li>%s</li><ul>', "\n", $type);
 			foreach ($values as $data) {
 				$entityType = $data['type'];
-				if ($entityType == 'IdP/SP' || ($entityType == 'IdP' && $this->isIdP) || ($entityType == 'SP' && $this->isSP) ) {
+				if (($entityType == 'IdP/SP' || ($entityType == 'IdP' && $this->isIdP) || ($entityType == 'SP' && $this->isSP)) && $data['swamidStd']) {
 					$value = $data['value'];
 					if (isset($existingAttributeValues[$type]) && isset($existingAttributeValues[$type][$value])) {
 						printf ('%s            <li>%s</li>', "\n", $value);

@@ -32,7 +32,7 @@ function parseJson($json) {
 				}
 			}
 			$resultCleanupHandler = $db->prepare('DELETE FROM TestResults WHERE `time` < :Time');
-			$resultCleanupHandler->bindParam(':Time', $time);
+			$resultCleanupHandler->bindParam(':Time', $removeBefore);
 			$resultCleanupHandler->execute();
 		} else {
 			print "Can't find objects in JSON response";

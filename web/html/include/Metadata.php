@@ -203,12 +203,11 @@ Class Metadata {
 		$this->xml->encoding = 'UTF-8';
 		$this->cleanOutRoleDescriptor();
 		$this->cleanOutAttribuesInIDPSSODescriptor();
-		if ($this->entityExists) {
+		if ($this->entityExists && $this->status == 1) {
 			# Update entity in database
 			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml , `lastUpdated` = NOW() WHERE `entityId` = :Id AND `status` = :Status;');
 			$entityHandlerUpdate->bindValue(':Id', $this->entityID);
 			$entityHandlerUpdate->bindValue(':Status', $this->status);
-			#$entityHandlerUpdate->bindValue(':Xml', $xml);
 			$entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerUpdate->execute();
 			$this->result = "Updated in db.\n";
@@ -217,7 +216,6 @@ Class Metadata {
 			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW());');
 			$entityHandlerInsert->bindValue(':Id', $this->entityID);
 			$entityHandlerInsert->bindValue(':Status', $this->status);
-			#$entityHandlerInsert->bindValue(':Xml', $xml);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerInsert->execute();
 			$this->result = "Added to db.\n";
@@ -229,31 +227,17 @@ Class Metadata {
 	# Creates / updates XML from Published into Draft
 	public function createDraft() {
 		if ($this->entityExists && $this->status == 1) {
-			$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml` FROM Entities WHERE `entityId` = :Id AND `status` = 3;');
-			$entityHandler->bindValue(':Id', $this->entityID);
-			$entityHandler->execute();
-			if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-				# Update entity in database
-				$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml WHERE `id` = :Id;');
-				$entityHandlerUpdate->bindValue(':Id', $entity['id']);
-				$entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
-				$entityHandlerUpdate->execute();
-				$this->result = "Updated in db.\n";
-				$this->dbIdNr = $entity['id'];
-				$this->status = 3;
-			} else {
-				# Add new entity into database
-				$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`) VALUES(:Id, 0, 0, 0, 3, :Xml);');
-				$entityHandlerInsert->bindValue(':Id', $this->entityID);
-				$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
-				$entityHandlerInsert->execute();
-				$this->result = "Added to db.\n";
-				$this->dbIdNr = $this->metaDb->lastInsertId();
-				$this->status = 3;
-			}
+			# Add new entity into database
+			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, 3, :Xml, NOW());');
+			$entityHandlerInsert->bindValue(':Id', $this->entityID);
+			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
+			$entityHandlerInsert->execute();
+			$this->result = "Added to db.\n";
+			$this->dbIdNr = $this->metaDb->lastInsertId();
+			$this->status = 3;
 			return $this->dbIdNr;
 		} else
-		  return false;
+			return false;
 	}
 
 	# Validate xml-code
@@ -1285,6 +1269,16 @@ Class Metadata {
 			if ($SWAMID_5_1_11_error)
 				$this->warning .= "SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the entity category support entity attribute as defined by the respective Entity Category.\n";
 		}
+
+		/*$SWAMID_5_1_11_error = true;
+		$entityAttributesHandler->bindValue(':Type', 'entity-category-support');
+		$entityAttributesHandler->execute();
+		while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+			$SWAMID_5_1_11_error = false;
+		}
+		if ($SWAMID_5_1_11_error)
+			$this->warning .= "SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the entity category support entity attribute as defined by the respective Entity Category.\n";
+			*/
 	}
 
 	# 5.1.13 errorURL

@@ -1,26 +1,33 @@
 <?php
 $this->standardAttributes = array(
 	'assurance-certification' => array(
-		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al1'),
-		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al2'),
-		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al3'),
-		array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi')),
+		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al1', 'swamidStd' => true),
+		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al2', 'swamidStd' => true),
+		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al3', 'swamidStd' => true),
+		array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi', 'swamidStd' => true)),
 	'entity-category' => array(
-		array('type' => 'SP', 'value' => 'http://refeds.org/category/research-and-scholarship'),
-		array('type' => 'SP', 'value' => 'http://refeds.org/category/anonymous'),
-		array('type' => 'SP', 'value' => 'http://refeds.org/category/pseudonymous'),
-		array('type' => 'SP', 'value' => 'http://refeds.org/category/personalized'),
-		array('type' => 'SP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'),
-		array('type' => 'SP', 'value' => 'https://myacademicid.org/entity-categories/esi'),
-		array('type' => 'IdP', 'value' => 'http://refeds.org/category/hide-from-discovery')),
+		array('type' => 'SP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'http://refeds.org/category/anonymous', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'http://refeds.org/category/pseudonymous', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'http://refeds.org/category/personalized', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'https://myacademicid.org/entity-categories/esi', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/eu-adequate-protection', 'swamidStd' => false),
+		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/hei-service', 'swamidStd' => false),
+		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/nren-service', 'swamidStd' => false),
+		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/research-and-education', 'swamidStd' => false),
+		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/sfs-1993-1153', 'swamidStd' => false),
+		array('type' => 'IdP', 'value' => 'http://refeds.org/category/hide-from-discovery', 'swamidStd' => true)),
+		
+
 	'entity-category-support' => array(
-		array('type' => 'IdP', 'value' => 'http://refeds.org/category/research-and-scholarship'),
-		array('type' => 'IdP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1')),
+		array('type' => 'IdP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
+		array('type' => 'IdP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', 'swamidStd' => true)),
 	'subject-id:req' => array(
-		array('type' => 'SP', 'value' => 'subject-id'),
-		array('type' => 'SP', 'value' => 'pairwise-id'),
-		array('type' => 'SP', 'value' => 'none'),
-		array('type' => 'SP', 'value' => 'any'))
+		array('type' => 'SP', 'value' => 'subject-id', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'pairwise-id', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'none', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'any', 'swamidStd' => true))
 );
 $this->FriendlyNames = array(
 	'urn:oid:2.5.4.6'						=> array('desc' => 'c', 'swamidStd' => true),
