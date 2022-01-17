@@ -5,6 +5,7 @@ Class Metadata {
 		$this->result = '';
 		$this->warning = '';
 		$this->error = '';
+		$this->errorNB = '';
 
 		$this->isIdP = false;
 		$this->isSP = false;
@@ -312,12 +313,13 @@ Class Metadata {
 			$this->cleanOutRoleDescriptor();
 		}
 
-		$resultHandler = $this->metaDb->prepare("UPDATE Entities SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput, `warnings` = :Warnings, `errors` = :Errors, `xml` = :Xml, `lastValidated` = NOW() WHERE `id` = :Id;");
+		$resultHandler = $this->metaDb->prepare("UPDATE Entities SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput, `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `xml` = :Xml, `lastValidated` = NOW() WHERE `id` = :Id;");
 		$resultHandler->bindValue(':Id', $this->dbIdNr);
 		$resultHandler->bindValue(':RegistrationInstant', $this->registrationInstant);
 		$resultHandler->bindValue(':validationOutput', $this->result);
 		$resultHandler->bindValue(':Warnings', $this->warning);
 		$resultHandler->bindValue(':Errors', $this->error);
+		$resultHandler->bindValue(':ErrorsNB', $this->errorNB);
 		$resultHandler->bindValue(':Xml', $this->xml->saveXML());
 		$resultHandler->execute();
 	}
@@ -1104,11 +1106,12 @@ Class Metadata {
 
 		if ($this->isSP_CoCov1) $this->validateSPCoCov1();
 
-		$resultHandler = $this->metaDb->prepare("UPDATE Entities SET `validationOutput` = :validationOutput, `warnings` = :Warnings, `errors` = :Errors, `lastValidated` = NOW() WHERE `id` = :Id;");
+		$resultHandler = $this->metaDb->prepare("UPDATE Entities SET `validationOutput` = :validationOutput, `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `lastValidated` = NOW() WHERE `id` = :Id;");
 		$resultHandler->bindValue(':Id', $this->dbIdNr);
 		$resultHandler->bindValue(':validationOutput', $this->result);
 		$resultHandler->bindValue(':Warnings', $this->warning);
 		$resultHandler->bindValue(':Errors', $this->error);
+		$resultHandler->bindValue(':ErrorsNB', $this->errorNB);
 		$resultHandler->execute();
 		$this->validateURLs();
 	}
@@ -1309,10 +1312,8 @@ Class Metadata {
 	private function checkRequiredMDUIelements($type) {
 		if ($type == 'IDPSSO') {
 			$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false, 'Logo' => false);
-			$IDP = true;
 		} elseif ($type == 'SPSSO') {
-			$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false, 'Logo' => false);
-			$IDP = false;
+			$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false);
 		}
 		$mduiHandler = $this->metaDb->prepare('SELECT DISTINCT `element` FROM Mdui WHERE `entity_id` = :Id AND `type`  = :Type ;');
 		$mduiHandler->bindValue(':Id', $this->dbIdNr);
@@ -1324,7 +1325,7 @@ Class Metadata {
 
 		foreach ($elementArray as $element => $value) {
 			if (! $value) {
-				if ($IDP)
+				if ($type == 'IDPSSO')
 					$this->error .= sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
 				else
 					$this->error .= sprintf("SWAMID Tech 6.1.12: Missing mdui:%s in SPSSODecriptor.\n", $element);
@@ -1342,7 +1343,7 @@ Class Metadata {
 
 		$SWAMID_5_2_1_Level = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
 		$SWAMID_5_2_2_error = false;
-		$SWAMID_5_2_2_warning = false;
+		$SWAMID_5_2_2_errorNB = false;
 		$SWAMID_5_2_3_warning = false;
 		$validEncryptionFound = false;
 		$validSigningFound = false;
@@ -1353,8 +1354,10 @@ Class Metadata {
 			$validCertExists = false;
 			switch ($keyInfo['use']) {
 				case 'encryption' :
-					$keyInfoArray['SPSSO'] = true;
 					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
+							$keyInfoArray['SPSSO'] = true;
+						}
 						$validEncryptionFound = true;
 					} elseif ($validEncryptionFound) {
 						$validCertExists = true;
@@ -1362,8 +1365,10 @@ Class Metadata {
 					}
 					break;
 				case 'signing' :
-					$keyInfoArray['IDPSSO'] = true;
 					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
+							$keyInfoArray['IDPSSO'] = true;
+						}
 						$validSigningFound = true;
 					} elseif ($validSigningFound) {
 						$validCertExists = true;
@@ -1371,9 +1376,11 @@ Class Metadata {
 					}
 					break;
 				case 'both' :
-					$keyInfoArray['SPSSO'] = true;
-					$keyInfoArray['IDPSSO'] = true;
 					if ($keyInfo['notValidAfter'] > $timeNow ) {
+						if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
+							$keyInfoArray['SPSSO'] = true;
+							$keyInfoArray['IDPSSO'] = true;
+						}
 						$validEncryptionFound = true;
 						$validSigningFound = true;
 					} else if ($validEncryptionFound &&  $validSigningFound) {
@@ -1388,7 +1395,7 @@ Class Metadata {
 					//if ($keyInfo['bits'] >= 4096 && $keyInfo['notValidAfter'] >= $timeNow ) {
 					if ($keyInfo['bits'] >= 4096 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
-	//				} elseif ($keyInfo['bits'] >= 2048 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+					//} elseif ($keyInfo['bits'] >= 2048 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
 					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
 					}
@@ -1405,7 +1412,7 @@ Class Metadata {
 			}
 			if ($keyInfo['notValidAfter'] <= $timeNow ) {
 				if ($validCertExists) {
-					$SWAMID_5_2_2_warning = true;
+					$SWAMID_5_2_2_errorNB = true;
 				} else {
 					$SWAMID_5_2_2_error = true;
 				}
@@ -1432,10 +1439,10 @@ Class Metadata {
 			}
 		}
 
-		if ($SWAMID_5_2_2_error)
+		if ($SWAMID_5_2_2_error) {
 			$this->error .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
-		if ($SWAMID_5_2_2_warning) {
-			$this->warning .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
+		} elseif ($SWAMID_5_2_2_errorNB) {
+			$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Signing and encryption certificates MUST NOT be expired.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
 		}
 
 		if ($oldCertFound) {
@@ -1792,7 +1799,7 @@ Class Metadata {
 	# Return Error
 	#############
 	public function getError() {
-		return $this->error;
+		return $this->error . $this->errorNB;
 	}
 
 	#############
@@ -1800,6 +1807,7 @@ Class Metadata {
 	#############
 	public function clearError() {
 		$this->error = '';
+		$this->errorNB = '';
 	}
 
 	private function getEntityDescriptor($xml) {

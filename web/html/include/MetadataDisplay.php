@@ -19,7 +19,7 @@ Class MetadataDisplay {
 	# Shows menu row
 	####
 	function showStatusbar($Entity_id, $admin = false){
-		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 		$urlHandler1->bindParam(':Id', $Entity_id);
@@ -95,7 +95,7 @@ Class MetadataDisplay {
 				if ($url['status'] > 0)
 					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
 			}
-			$errors .= $entity['errors'];
+			$errors .= $entity['errors'] . $entity['errorsNB'];
 			if ($errors != '') {
 				printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
 			}
@@ -974,7 +974,7 @@ Class MetadataDisplay {
 
 	public function showErrorList() {
 		$emails = array();
-		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `entityID`, `errors` FROM Entities WHERE errors <> '' AND status = 1");
+		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1");
 		$EntityHandler->execute();
 		$contactPersonHandler = $this->metaDb->prepare('SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
 		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
@@ -995,7 +995,7 @@ Class MetadataDisplay {
 				$email = $emails['support'];
 			} else
 				$email = 'Missing';
-			printf ('      <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors']), "\n");
+			printf ('      <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors'].$Entity['errorsNB']), "\n");
 			$missing = false;
 		}
 		print "    </table>\n";

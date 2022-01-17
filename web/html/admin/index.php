@@ -178,23 +178,23 @@ function showEntityList($status = 1) {
 	$showAll = true;
 	$sortOrder = 'entityID, id';
 	if (isset($_GET['feed'])) {
-		$sortOrder = 'publishIn DESC, entityID';
+		$sortOrder = '`publishIn` DESC, `entityID`, `id`';
 	}
 
 	if (isset($_GET['org'])) {
-		$sortOrder = 'OrganizationDisplayName, entityID, id';
+		$sortOrder = '`OrganizationDisplayName`, `entityID`, `id';
 	}
 
 	if (isset($_GET['validationOutput'])) {
-		$sortOrder = 'validationOutput DESC, entityID, id';
+		$sortOrder = '`validationOutput` DESC, `entityID`, `id`';
 	}
 
 	if (isset($_GET['warnings'])) {
-		$sortOrder = 'warnings DESC, errors DESC, entityID, id';
+		$sortOrder = '`warnings` DESC, `errors` DESC, `errorsNB` DESC, `entityID`, `id`';
 	}
 
 	if (isset($_GET['errors'])) {
-		$sortOrder = 'errors DESC, warnings DESC, entityID, id';
+		$sortOrder = '`errors` DESC, `errorsNB` DESC, `warnings` DESC, `entityID`, `id`';
 	}
 
 	if (isset($_GET['query'])) {
@@ -228,7 +228,7 @@ function showEntityList($status = 1) {
 	showMenu();
 	if (isset($_GET['action']))
 		$filter .= '&action='.$_GET['action'];
-	$entitys = $db->prepare("SELECT id, entityID, isIdP, isSP, publishIn, data AS OrganizationDisplayName, lastUpdated, lastValidated, validationOutput, warnings, errors FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
+	$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationDisplayName, `lastUpdated`, `lastValidated`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
 	$entitys->bindValue(':Query', "%".$query."%");
 	$extraTH = '';
 
@@ -309,7 +309,7 @@ function showEntity($Entity_id)  {
 			case 3:
 				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
 					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Remove</button></a>', "\n", $Entity_id);
-					$errors = getErrors($Entity_id);
+					$errors = getBlockingErrors($Entity_id);
 					if ($errors == '') {
 						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Request publication</button></a>', "\n", $Entity_id);
 					} else {
@@ -406,7 +406,7 @@ function showList($entitys, $minLevel) {
 					$export2Edugain = '';
 			}
 			$validationStatus = ($row['warnings'] == '') ? '' : '<i class="fas fa-exclamation-triangle"></i>';
-			$validationStatus .= ($row['errors'] == '') ? '' : '<i class="fas fa-exclamation"></i>';
+			$validationStatus .= ($row['errors'] == '' && $row['errorsNB'] == '') ? '' : '<i class="fas fa-exclamation"></i>';
 			$validationOutput = ($row['validationOutput'] == '') ? '' : '<i class="fas fa-question"></i>';
 			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td><a href="?showEntity=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>', $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationDisplayName'], $row['lastUpdated'], $row['lastValidated'], $validationOutput, $validationStatus);
 			print "</tr>\n";
@@ -530,7 +530,7 @@ function move2Pending($Entity_id) {
 			$sections = '4.2.1 and 4.2.2' ;
 		}
 		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
-		$errors = getErrors($Entity_id);
+		$errors = getBlockingErrors($Entity_id);
 		if ($errors == '') {
 			if (isset($_GET['publishedIn'])) {
 				$publish = true;
@@ -591,7 +591,7 @@ function move2Pending($Entity_id) {
 				$contactHandler->execute();
 				while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
 					if ($SendOut)
-						$mailContacts->addAddress($address['emailAddress'],7);
+						$mailContacts->addAddress(substr($address['emailAddress'],7));
 					$addresses[] = substr($address['emailAddress'],7);
 				}
 
@@ -784,7 +784,8 @@ function checkAccess($Entity_id, $userID, $userLevel, $minLevel, $showError=fals
 	}
 }
 
-function getErrors($Entity_id) {
+# Return Blocking errors
+function getBlockingErrors($Entity_id) {
 	global $db;
 	$errors = '';
 

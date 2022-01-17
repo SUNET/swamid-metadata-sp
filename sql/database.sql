@@ -12,6 +12,7 @@ CREATE TABLE Entities (
 	`validationOutput` TEXT,
 	`warnings` TEXT,
 	`errors` TEXT,
+	`errorsNB` TEXT,
 	`xml` TEXT);
 
 CREATE TABLE EntityAttributes (
