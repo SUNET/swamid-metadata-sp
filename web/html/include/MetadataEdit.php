@@ -870,6 +870,7 @@ Class MetadataEdit {
 											$moreMduiElement = true;
 										$child = $child->nextSibling;
 									}
+									$moreMduiElement = $moreMduiElement ? true : $child;
 									if ($MduiElement) {
 										# Remove Node
 										if ($elementmd == 'mdui:Logo') {

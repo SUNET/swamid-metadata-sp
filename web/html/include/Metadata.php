@@ -211,7 +211,6 @@ Class Metadata {
 			$entityHandlerUpdate->bindValue(':Status', $this->status);
 			$entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerUpdate->execute();
-			$this->result = "Updated in db.\n";
 		} else {
 			# Add new entity into database
 			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW());');
@@ -219,7 +218,6 @@ Class Metadata {
 			$entityHandlerInsert->bindValue(':Status', $this->status);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerInsert->execute();
-			$this->result = "Added to db.\n";
 			$this->dbIdNr = $this->metaDb->lastInsertId();
 		}
 		$this->entityExists = true;
@@ -1081,6 +1079,8 @@ Class Metadata {
 			$this->checkRequiredSAMLcertificates('IDPSSO');
 		}
 		if ($this->isSP) {
+			// 6.1.9 -> 6.1.11
+			$this->checkEntityAttributes('SPSSO');
 			// 6.1.12
 			$this->checkRequiredMDUIelements('SPSSO');
 			// 6.1.14, 6.2.x
@@ -1271,17 +1271,17 @@ Class Metadata {
 			}
 			if ($SWAMID_5_1_11_error)
 				$this->warning .= "SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the entity category support entity attribute as defined by the respective Entity Category.\n";
+		} else {
+			$entityAttributesHandler->bindValue(':Type', 'entity-category');
+			$entityAttributesHandler->execute();
+			while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+				foreach ($this->standardAttributes['entity-category'] as $data) {
+					if ($data['value'] == $entityAttribute['attribute'] && ! $data['swamidStd']) {
+						$this->errorNB .= sprintf ("Entity Category Error: (Non breaking) The entity category %s is deprecated.\n", $entityAttribute['attribute']);
+					}
+				}
+			}
 		}
-
-		/*$SWAMID_5_1_11_error = true;
-		$entityAttributesHandler->bindValue(':Type', 'entity-category-support');
-		$entityAttributesHandler->execute();
-		while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-			$SWAMID_5_1_11_error = false;
-		}
-		if ($SWAMID_5_1_11_error)
-			$this->warning .= "SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the entity category support entity attribute as defined by the respective Entity Category.\n";
-			*/
 	}
 
 	# 5.1.13 errorURL
@@ -1348,6 +1348,7 @@ Class Metadata {
 		$validEncryptionFound = false;
 		$validSigningFound = false;
 		$oldCertFound = false;
+		$smalKeyFound = false;
 		$timeNow = date('Y-m-d H:i:00');
 		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
 		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1399,6 +1400,7 @@ Class Metadata {
 					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
 					}
+					if ($keyInfo['bits'] < 2048) $smalKeyFound = true;
 					break;
 				case 'EC' :
 					//if ($keyInfo['bits'] >= 384 && $keyInfo['notValidAfter'] >= $timeNow ) {
@@ -1408,6 +1410,7 @@ Class Metadata {
 					} elseif ($keyInfo['bits'] >= 256 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
 							$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
 					}
+					if ($keyInfo['bits'] < 256) $smalKeyFound = true;
 					break;
 			}
 			if ($keyInfo['notValidAfter'] <= $timeNow ) {
@@ -1435,7 +1438,15 @@ Class Metadata {
 			if ((($SWAMID_5_2_1_Level['encryption'] < 1) && ($SWAMID_5_2_1_Level['signing'] < 1)) && ($SWAMID_5_2_1_Level['both'] < 1)) {
 				$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			} else {
-				$this->warning .= sprintf("SWAMID Tech %s: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+				if ($smalKeyFound) {
+					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+				} else {
+					$this->warning .= sprintf("SWAMID Tech %s: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+				}
+			}
+		} else {
+			if ($smalKeyFound) {
+				$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			}
 		}
 
@@ -1478,7 +1489,7 @@ Class Metadata {
 			$this->error .= sprintf("SWAMID Tech 6.1.16: Binding with value urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect is no allowed in SPSSODescriptor->AssertionConsumerService[index=%d].\n", $index);
 	}
 
-	// 5.1.22 / 6.1.20
+	// 5.1.22 / 6.1.21
 	private function checkRequiredOrganizationElements() {
 		$elementArray = array('OrganizationName' => false, 'OrganizationDisplayName' => false, 'OrganizationURL' => false);
 
@@ -1495,7 +1506,7 @@ Class Metadata {
 		}
 	}
 
-	// 5.1.23 -> 5.1.28 / 6.1.21 -> 6.1.26
+	// 5.1.23 -> 5.1.28 / 6.1.22 -> 6.1.26
 	private function checkRequiredContactPersonElements($type) {
 		$usedContactTypes = array();
 		$contactPersonHandler = $this->metaDb->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName` FROM ContactPerson WHERE `entity_id` = :Id;');

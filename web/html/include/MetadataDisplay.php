@@ -97,11 +97,11 @@ Class MetadataDisplay {
 			}
 			$errors .= $entity['errors'] . $entity['errorsNB'];
 			if ($errors != '') {
-				printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
+				printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Errors:</b><br>%s        %s%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
 			}
 			$warnings .= $entity['warnings'];
 			if ( $warnings != '')
-				printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">%s        <div class="row"><b>Warnings:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $warnings), "\n", "\n");
+				printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">%s        <b>Warnings:</b><br>%s        %s%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $warnings), "\n", "\n");
 			if ($entity['validationOutput'] != '')
 				printf('%s    <div class="row alert alert-primary" role="alert">%s</div>', "\n", str_ireplace("\n", "<br>", $entity['validationOutput']));
 		}

@@ -9,7 +9,7 @@ $this->standardAttributes = array(
 		array('type' => 'SP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
 		array('type' => 'SP', 'value' => 'http://refeds.org/category/anonymous', 'swamidStd' => true),
 		array('type' => 'SP', 'value' => 'http://refeds.org/category/pseudonymous', 'swamidStd' => true),
-		array('type' => 'SP', 'value' => 'http://refeds.org/category/personalized', 'swamidStd' => true),
+		array('type' => 'SP', 'value' => 'https://refeds.org/category/personalized', 'swamidStd' => true),
 		array('type' => 'SP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', 'swamidStd' => true),
 		array('type' => 'SP', 'value' => 'https://myacademicid.org/entity-categories/esi', 'swamidStd' => true),
 		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/eu-adequate-protection', 'swamidStd' => false),
