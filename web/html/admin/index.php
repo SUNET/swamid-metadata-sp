@@ -601,13 +601,13 @@ function move2Pending($Entity_id) {
 				//Content
 				$mailContacts->isHTML(true);
 				$mailContacts->Subject	= 'Info : Updated Metadata';
-				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) have requested an update of %s</p>\n<p>You get this mail since you are either old/new technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you don't approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
-				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) have requested an update of %s\n\nYou get this mail since you are either old/new technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you don't approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
+				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested an update of %s</p>\n<p>You have received this mail because you are either the new or old technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
+				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested an update of %s\n\nYou have received this mail because you are either the new or old technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
 
 				$mailRequetser->isHTML(true);
 				$mailRequetser->Subject	= 'Updated Metadata';
-				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>A mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
-				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nA mail have also been sent to the following addresses since they are old/new technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
+				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You has requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
+				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou has requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
 
 				try {
 					$mailContacts->send();
@@ -623,7 +623,7 @@ function move2Pending($Entity_id) {
 					echo 'Mailer Error: ' . $mailRequetser->ErrorInfo . '<br>';
 				}
 
-				printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following old/new technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
+				printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following new or old technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
 				printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);
 				$entityPublishHandler = $db->prepare('UPDATE Entities SET status = 2, publishIn = :PublishIn WHERE status = 3 AND id = :Id;');
 				$entityPublishHandler->bindParam(':Id', $Entity_id);
@@ -659,7 +659,7 @@ function move2Pending($Entity_id) {
       <label for="Testing">Testing only</label>
       <br>
       <input type="checkbox" id="OrganisationOK" name="OrganisationOK">
-      <label for="OrganisationOK">I confirme that this Entity fullfiles sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
+      <label for="OrganisationOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
       <br>
       <input type="submit" name="action" value="Request publication">
     </form>
@@ -792,16 +792,16 @@ function getBlockingErrors($Entity_id) {
 
 	$entityHandler = $db->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
-	$urlHandler1 = $db->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
+	/*$urlHandler1 = $db->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 	$urlHandler1->bindParam(':Id', $Entity_id);
 	$urlHandler2 = $db->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id UNION SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
 	$urlHandler2->bindParam(':Id', $Entity_id);
 	$urlHandler3 = $db->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-	$urlHandler3->bindParam(':Id', $Entity_id);
+	$urlHandler3->bindParam(':Id', $Entity_id);*/
 
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-		$urlHandler1->execute();
+		/*$urlHandler1->execute();
 		while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
 			if ($url['status'] > 0)
 				$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
@@ -815,7 +815,7 @@ function getBlockingErrors($Entity_id) {
 		while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
 			if ($url['status'] > 0)
 				$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
-		}
+		}*/
 		$errors .= $entity['errors'];
 	}
 	return $errors;
