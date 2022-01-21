@@ -196,7 +196,7 @@ function showEntityList($status = 1) {
 	}
 
 	if (isset($_GET['org'])) {
-		$sortOrder = '`OrganizationDisplayName`, `entityID`, `id';
+		$sortOrder = '`OrganizationDisplayName`, `entityID`, `id`';
 	}
 
 	if (isset($_GET['validationOutput'])) {
