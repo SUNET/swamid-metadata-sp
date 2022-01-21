@@ -16,6 +16,7 @@ Class Metadata {
 		if (method_exists($this,$f='__construct'.$i)) {
 				include $a[0] . '/config.php';
 				include $a[0] . '/include/common.php';
+				$this->basedDir = $a[0];
 				try {
 					$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 					// set the PDO error mode to exception
@@ -1776,6 +1777,44 @@ Class Metadata {
 		$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM Users WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM Entities WHERE `id` = ' . $this->dbIdNr .';');
+	}
+
+	#############
+	# Removes an entity from pendingQueue if exists with sameq XML in published
+	#############
+	public function checkPendingIfPublished() {
+		$pendingHandler = $this->metaDb->prepare('SELECT `entityID`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 2 AND `id` = :Id');
+		$pendingHandler->bindParam(':Id', $this->dbIdNr);
+		$pendingHandler->execute();
+
+		$publishedHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
+		$publishedHandler->bindParam(':EntityID', $entityID);
+
+		include $this->basedDir.'/include/NormalizeXML.php';
+		$normalize = new NormalizeXML();
+
+		if ($pendingEntity = $pendingHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entityID = $pendingEntity['entityID'];
+
+			$normalize->fromString($pendingEntity['xml']);
+			if ($normalize->getStatus()) {
+				if ($normalize->getEntityID() == $entityID) {
+					$pendingXML = $normalize->getXML();
+					$publishedHandler->execute();
+					if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)) {
+						if ($pendingXML == $publishedEntity['xml'] && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
+							return true;
+						} else {
+							return false;
+						}
+					}
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		}
 	}
 
 	#############

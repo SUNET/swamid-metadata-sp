@@ -106,6 +106,7 @@ function showEntity($Entity_id)  {
 	$publishArray = array();
 	$publishArrayOld = array();
 
+	$html->setDestination('?showEntity='.$Entity_id);
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {

@@ -4,6 +4,7 @@ Class MetadataDisplay {
 	function __construct($baseDir) {
 		include $baseDir . '/config.php';
 		include $baseDir . '/include/common.php';
+		$this->basedDir = $baseDir;
 
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -997,6 +998,44 @@ Class MetadataDisplay {
 				$email = 'Missing';
 			printf ('      <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors'].$Entity['errorsNB']), "\n");
 			$missing = false;
+		}
+		print "    </table>\n";
+	}
+
+	public function showPendingListToRemove() {
+		$entitiesHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 2 ORDER BY lastUpdated ASC, `entityID`');
+		$entityHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
+		$entityHandler->bindParam(':EntityID', $entityID);
+		$entitiesHandler->execute();
+
+		if (! class_exists('NormalizeXML')) {
+			include $this->basedDir.'/include/NormalizeXML.php';
+		}
+		$normalize = new NormalizeXML();
+
+		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", "\n");
+		while ($pendingEntity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entityID = $pendingEntity['entityID'];
+
+			$normalize->fromString($pendingEntity['xml']);
+			if ($normalize->getStatus()) {
+				if ($normalize->getEntityID() == $entityID) {
+					$pendingXML = $normalize->getXML();
+					$entityHandler->execute();
+					if ($publishedEntity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+						if ($pendingXML == $publishedEntity['xml'] && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
+							$OKRemove = sprintf('<a href=".?action=CleanPending&entity_id=%d">%s</a>',$pendingEntity['id'], $entityID); 
+						} else {
+							$OKRemove = $entityID;
+						}
+						printf('      <tr><td>%s</td><td>%s</td><td>%s</td></tr>', $OKRemove, ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '' );
+					}
+				} else {
+					printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>',  $entityID, 'Diff in entityID');
+				}
+			} else {
+				printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>',  $entityID, 'Problem with XML');
+			}
 		}
 		print "    </table>\n";
 	}

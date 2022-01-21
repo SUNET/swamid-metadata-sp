@@ -45,6 +45,8 @@ if ($errors != '') {
 
 switch ($EPPN) {
 	case 'bjorn@sunet.se' :
+		$userLevel = 20;
+		break;
 	case 'frkand02@umu.se' :
 	case 'paulscot@kau.se' :
 		$userLevel = 10;
@@ -158,6 +160,18 @@ if (isset($_FILES['XMLfile'])) {
 					showMenu();
 					$display->showErrorList();
 					break;
+				case 'CleanPending' :
+					$menuActive = 'CleanPending';
+					$html->showHeaders('Metadata SWAMID - Clean Pending');
+					showMenu();
+					if (isset($_GET['entity_id'])) {
+						$metadata = new Metadata($baseDir, $_GET['entity_id']);
+						if ($metadata->checkPendingIfPublished()) {
+							$metadata->removeEntity();
+						}
+					}
+					$display->showPendingListToRemove();
+					break;
 				default :
 					showEntityList();
 			}
@@ -200,7 +214,7 @@ function showEntityList($status = 1) {
 	if (isset($_GET['query'])) {
 		$query = $_GET['query'];
 	} elseif (isset($_GET['first'])) {
-		$query = explode('@',$EPPN)[1];
+		$query = '.'.explode('@',$EPPN)[1];
 	} else {
 		 $query = '';
 	}
@@ -504,6 +518,9 @@ function showMenu() {
 	if ( $userLevel > 4 ) {
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
 		printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
+	}
+	if ( $userLevel > 10 ) {
+		printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>', $filter, $menuActive == 'CleanPending' ? '' : '-outline');
 	}
 	print "\n    <br>\n    <br>\n";
 }

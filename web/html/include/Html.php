@@ -3,6 +3,7 @@ Class HTML {
 	# Setup
 	function __construct() {
 		$this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
+		$this->destination = '?first';
 		$this->startTimer = time();
 	}
 
@@ -88,7 +89,7 @@ public function showFooter($collapseIcons = array()) {
     window.onload = function() {
       // Render the Seamless Access button
       thiss.DiscoveryComponent({
-        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin/?first'
+        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin/<?=$this->destination?>'
       }).render('#SWAMID-SeamlessAccess');
     };
   </script>
@@ -129,5 +130,8 @@ public function showFooter($collapseIcons = array()) {
 	public function setDisplayName($name) {
 		$this->displayName = $name;
 	}
-}
 
+	public function setDestination($destination) {
+		$this->destination = $destination;
+	}
+}

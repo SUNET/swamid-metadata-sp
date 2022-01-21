@@ -48,6 +48,7 @@ Class NormalizeXML {
 					foreach ($this->nsList as $ns => $uriArray) {
 						$newChild->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:'.$ns, $uriArray['uri']);
 					}
+					if ($newChild->hasAttribute('ID')) $newChild->removeAttribute('ID');
 				}
 			} else {
 				switch ($child->nodeType) {
@@ -153,6 +154,7 @@ Class NormalizeXML {
 	}
 
 	public function fromFile($filename) {
+		$this->nsList = array();
 		if (file_exists($filename)) {
 			if (is_readable($filename)) {
 				$doc = new DOMDocument('1.0', 'UTF-8');
@@ -189,6 +191,7 @@ Class NormalizeXML {
 	}
 
 	public function fromString($xml) {
+		$this->nsList = array();
 		$doc = new DOMDocument('1.0', 'UTF-8');
 		set_error_handler(array($this, 'checkDOMError'));
 		if ($doc->loadXML($xml)) {
