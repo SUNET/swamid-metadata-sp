@@ -59,7 +59,7 @@ function showEntityList() {
 		$html->showHeaders('Metadata SWAMID - IdP:s');
 		$filter = 'showIdP';
 		if (isset($_GET['AL'])) {
-			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute LIKE '%AL%' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
+			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName, MAX(attribute) AS attribute FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute LIKE '%AL%' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query GROUP BY id ORDER BY publishIn DESC, attribute DESC, $sortOrder");
 			$sort = 'AL&query='.$query;;
 			$csort='AL';
 		} else
