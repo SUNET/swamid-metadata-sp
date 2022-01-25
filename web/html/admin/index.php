@@ -617,14 +617,24 @@ function move2Pending($Entity_id) {
 
 				//Content
 				$mailContacts->isHTML(true);
-				$mailContacts->Subject	= 'Info : Updated Metadata';
 				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested an update of %s</p>\n<p>You have received this mail because you are either the new or old technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
 				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested an update of %s\n\nYou have received this mail because you are either the new or old technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
 
 				$mailRequetser->isHTML(true);
-				$mailRequetser->Subject	= 'Updated Metadata';
 				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
 				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
+
+				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entity['entityID']);
+				$entityHandlerOld = $db->prepare('SELECT publishIn FROM Entities WHERE entityID = :Id AND status = 1;');
+				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+				$entityHandlerOld->execute();
+				if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
+					$mailContacts->Subject	= 'Info : Updated SWAMID metadata for ' . $short_entityid;
+					$mailRequetser->Subject	= 'Updated SWAMID metadata for ' . $short_entityid;
+				} else {
+					$mailContacts->Subject	= 'Info : New SWAMID metadata for ' . $short_entityid;
+					$mailRequetser->Subject	= 'New SWAMID metadata for ' . $short_entityid;
+				}
 
 				try {
 					$mailContacts->send();
