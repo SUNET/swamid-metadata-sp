@@ -1780,7 +1780,7 @@ Class Metadata {
 	}
 
 	#############
-	# Removes an entity from pendingQueue if exists with sameq XML in published
+	# Removes an entity from pendingQueue if exists with same XML in published
 	#############
 	public function checkPendingIfPublished() {
 		$pendingHandler = $this->metaDb->prepare('SELECT `entityID`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 2 AND `id` = :Id');
@@ -1790,7 +1790,9 @@ Class Metadata {
 		$publishedHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$publishedHandler->bindParam(':EntityID', $entityID);
 
-		include $this->basedDir.'/include/NormalizeXML.php';
+		if (! class_exists('NormalizeXML')) {
+			include $this->basedDir.'/include/NormalizeXML.php';
+		}
 		$normalize = new NormalizeXML();
 
 		if ($pendingEntity = $pendingHandler->fetch(PDO::FETCH_ASSOC)) {
