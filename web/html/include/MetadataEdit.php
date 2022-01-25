@@ -2113,7 +2113,7 @@ Class MetadataEdit {
 				exit();
 			}
 
-			$value = $_GET['value'];
+			$value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:') ? 'mailto:'.$_GET['value'] : $_GET['value'];
 
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
 
