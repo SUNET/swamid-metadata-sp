@@ -570,7 +570,7 @@ Class MetadataEdit {
 						}
 
 						if ($changed) {
-							$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (entity_id, scope, regexp) VALUES (:Id, :Scope, 0);');
+							$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, 0);');
 							$scopesInsertHandler->bindParam(':Id', $this->dbIdNr);
 							$scopesInsertHandler->bindParam(':Scope', $_GET['value']);
 							$scopesInsertHandler->execute();
@@ -620,7 +620,7 @@ Class MetadataEdit {
 			}
 		}
 
-		$scopesHandler = $this->metaDb->prepare('SELECT scope, regexp FROM Scopes WHERE entity_id = :Id;');
+		$scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
 		$scopesHandler->bindParam(':Id', $this->dbOldIdNr);
 		$scopesHandler->execute();
 		$oldScopes = array();
@@ -2668,7 +2668,7 @@ Class MetadataEdit {
 	private function mergeIdPScopes() {
 		if ( !$this->oldExists)
 			return;
-		$scopesHandler = $this->metaDb->prepare('SELECT scope, `regexp` FROM Scopes WHERE entity_id = :Id;');
+		$scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
 		$scopesHandler->bindParam(':Id', $this->dbOldIdNr);
 		$scopesHandler->execute();
 		while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -2739,7 +2739,7 @@ Class MetadataEdit {
 					$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
 				}
 				if ($changed) {
-					$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (entity_id, scope, `regexp`) VALUES (:Id, :Scope, 0);');
+					$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, 0);');
 					$scopesInsertHandler->bindParam(':Id', $this->dbIdNr);
 					$scopesInsertHandler->bindParam(':Scope', $_GET['value']);
 					$scopesInsertHandler->execute();
