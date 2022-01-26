@@ -46,10 +46,10 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 				#OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
 				break;
 			default :
-				$errors .= 'Missing eduPersonScopedAffiliation in SAML response<br>';
+			$errors .= 'Missing eduPersonScopedAffiliation and eduPersonAffiliation in SAML response<br>One of them is required<br>';
 		}
 
-	} else $errors .= 'Missing eduPersonScopedAffiliation in SAML response<br>';
+	} else $errors .= 'Missing eduPersonScopedAffiliation and eduPersonAffiliation in SAML response<br>One of them is required<br>';
 }
 
 if ( isset($_SERVER['mail'])) {

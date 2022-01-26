@@ -1557,7 +1557,7 @@ Class Metadata {
 		}
 
 		// 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
-		if (!isset ($usedContactTypes['other']))
+		if (!isset ($usedContactTypes['other/security']))
 			$this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
 	}
 
