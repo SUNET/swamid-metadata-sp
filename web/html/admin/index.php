@@ -190,25 +190,53 @@ function showEntityList($status = 1) {
 	global $db, $html, $EPPN;
 
 	$showAll = true;
-	$sortOrder = 'entityID, id';
-	if (isset($_GET['feed'])) {
-		$sortOrder = '`publishIn` DESC, `entityID`, `id`';
-	}
 
-	if (isset($_GET['org'])) {
-		$sortOrder = '`OrganizationDisplayName`, `entityID`, `id`';
-	}
-
-	if (isset($_GET['validationOutput'])) {
+	$feedOrder = 'feedDesc';
+	$orgOrder = 'orgAsc';
+	$entityIDOrder = 'entityIDAsc';
+	$feedArrow = '';
+	$orgArrow = '';
+	$entityIDArrow = '';
+	$validationArrow = '';
+	$warningArrow = '';
+	$errorArrow = '';
+	if (isset($_GET['feedDesc'])) {
+		$sortOrder = '`publishIn` DESC, `entityID`';
+		$sort = 'feedDesc';
+		$feedOrder = 'feedAsc';
+		$feedArrow = '<i class="fa fa-arrow-up"></i>';
+	} elseif (isset($_GET['feedAsc'])) {
+		$sortOrder = '`publishIn` ASC, `entityID`';
+		$sort = 'feedAsc';
+		$feedArrow = '<i class="fa fa-arrow-down"></i>';
+	} elseif (isset($_GET['orgDesc'])) {
+		$sortOrder = '`OrganizationDisplayName` DESC, `entityID`';
+		$sort = 'orgDesc';
+		$orgArrow = '<i class="fa fa-arrow-up"></i>';
+	} elseif (isset($_GET['orgAsc'])) {
+		$sortOrder = '`OrganizationDisplayName` ASC, `entityID`';
+		$sort = 'orgAsc';
+		$orgOrder = 'orgDesc';
+		$orgArrow = '<i class="fa fa-arrow-down"></i>';
+	} elseif (isset($_GET['validationOutput'])) {
 		$sortOrder = '`validationOutput` DESC, `entityID`, `id`';
-	}
-
-	if (isset($_GET['warnings'])) {
+		$validationArrow = '<i class="fa fa-arrow-down"></i>';
+	}elseif (isset($_GET['warnings'])) {
 		$sortOrder = '`warnings` DESC, `errors` DESC, `errorsNB` DESC, `entityID`, `id`';
-	}
-
-	if (isset($_GET['errors'])) {
+		$warningArrow = '<i class="fa fa-arrow-down"></i>';
+	}elseif (isset($_GET['errors'])) {
 		$sortOrder = '`errors` DESC, `errorsNB` DESC, `warnings` DESC, `entityID`, `id`';
+		$errorArrow = '<i class="fa fa-arrow-down"></i>';
+	} elseif (isset($_GET['entityIDDesc'])) {
+		$sortOrder = '`entityID` DESC';
+		$sort = 'entityIDDesc';
+		$entityIDOrder = 'entityIDAsc';
+		$entityIDArrow = '<i class="fa fa-arrow-up"></i>';
+	} else {
+		$sortOrder = '`entityID` ASC';
+		$sort = 'entityIDAsc';
+		$entityIDOrder = 'entityIDDesc';
+		$entityIDArrow = '<i class="fa fa-arrow-down"></i>';
 	}
 
 	if (isset($_GET['query'])) {
@@ -218,7 +246,7 @@ function showEntityList($status = 1) {
 	} else {
 		 $query = '';
 	}
-	$filter = '?query='.$query;
+	$filter = 'query='.$query;
 
 	switch ($status) {
 		case 1:
@@ -244,16 +272,13 @@ function showEntityList($status = 1) {
 		$filter .= '&action='.$_GET['action'];
 	$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationDisplayName, `lastUpdated`, `lastValidated`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
 	$entitys->bindValue(':Query', "%".$query."%");
-	$extraTH = '';
 
 	print '
     <table class="table table-striped table-bordered">
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registered in</th> <th><a href="%s&feed">eduGAIN</a></th> <th><form><a href="%s&entityID">entityID</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="%s&org">OrganizationDisplayName</a></th><th>%s</th><th>lastValidated</th><th><a href="%s&validationOutput">validationOutput</a></th><th><a href="%s&warnings">warning</a> / <a href="%s&errors">errors</a></th>', $filter, $filter, $query, $action, $filter, ($status == 1) ? 'lastUpdated' : 'created' , $filter, $filter, $filter);
-
-	print $extraTH . "</tr>\n";
+	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="?%s&%s">OrganizationDisplayName%s</a></th><th>%s</th><th>lastValidated</th><th><a href="?%s&validationOutput">validationOutput%s</a></th><th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter, $orgOrder, $orgArrow, ($status == 1) ? 'lastUpdated' : 'created' , $filter, $validationArrow, $filter, $warningArrow, $filter, $errorArrow, "\n");
 	showList($entitys, $minLevel);
 }
 

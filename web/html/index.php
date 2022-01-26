@@ -36,17 +36,45 @@ function showEntityList() {
 	global $db, $html;
 
 	$showAll = true;
-	$sortOrder = 'entityID';
-	$sort = 'entityID';
-	$query = '';
-	if (isset($_GET['feed'])) {
-		$sortOrder = 'publishIn DESC, entityID';
-		$sort = 'feed';
-	}
 
-	if (isset($_GET['org'])) {
-		$sortOrder = 'OrganizationDisplayName, entityID';
-		$sort = 'org';
+	$query = '';
+
+	$feedOrder = 'feedDesc';
+	$orgOrder = 'orgAsc';
+	$entityIDOrder = 'entityIDAsc';
+	$feedArrow = '';
+	$orgArrow = '';
+	$entityIDArrow = '';
+	$ALArrow = '';
+	$SIRTFIArrow = '';
+	if (isset($_GET['feedDesc'])) {
+		$sortOrder = '`publishIn` DESC, `entityID`';
+		$sort = 'feedDesc';
+		$feedOrder = 'feedAsc';
+		$feedArrow = '<i class="fa fa-arrow-up"></i>';
+	} elseif (isset($_GET['feedAsc'])) {
+		$sortOrder = '`publishIn` ASC, `entityID`';
+		$sort = 'feedAsc';
+		$feedArrow = '<i class="fa fa-arrow-down"></i>';
+	} elseif (isset($_GET['orgDesc'])) {
+		$sortOrder = '`OrganizationDisplayName` DESC, `entityID`';
+		$sort = 'orgDesc';
+		$orgArrow = '<i class="fa fa-arrow-up"></i>';
+	} elseif (isset($_GET['orgAsc'])) {
+		$sortOrder = '`OrganizationDisplayName` ASC, `entityID`';
+		$sort = 'orgAsc';
+		$orgOrder = 'orgDesc';
+		$orgArrow = '<i class="fa fa-arrow-down"></i>';
+	} elseif (isset($_GET['entityIDDesc'])) {
+		$sortOrder = '`entityID` DESC';
+		$sort = 'entityIDDesc';
+		$entityIDOrder = 'entityIDAsc';
+		$entityIDArrow = '<i class="fa fa-arrow-up"></i>';
+	} else {
+		$sortOrder = '`entityID` ASC';
+		$sort = 'entityIDAsc';
+		$entityIDOrder = 'entityIDDesc';
+		$entityIDArrow = '<i class="fa fa-arrow-down"></i>';
 	}
 
 	if (isset($_GET['query'])) {
@@ -59,26 +87,44 @@ function showEntityList() {
 		$html->showHeaders('Metadata SWAMID - IdP:s');
 		$filter = 'showIdP';
 		if (isset($_GET['AL'])) {
-			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName, MAX(attribute) AS attribute FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute LIKE '%AL%' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query GROUP BY id ORDER BY publishIn DESC, attribute DESC, $sortOrder");
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationDisplayName, MAX(attribute) AS attribute FROM Entities LEFT JOIN Organization ON Organization.`entity_id` = `id` AND `element` = 'OrganizationDisplayName' AND `lang` = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute LIKE '%AL%' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query GROUP BY id ORDER BY `attribute` DESC, $sortOrder");
 			$sort = 'AL&query='.$query;;
 			$csort='AL';
+			$ALArrow = '<i class="fa fa-arrow-down"></i>';
+			$entityIDOrder = 'entityIDAsc';
+			$entityIDArrow = '';
+		} elseif (isset($_GET['SIRTFI'])) {
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationDisplayName, MAX(attribute) AS attribute FROM Entities LEFT JOIN Organization ON Organization.`entity_id` = `id` AND `element` = 'OrganizationDisplayName' AND `lang` = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute = 'https://refeds.org/sirtfi' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query GROUP BY `id` ORDER BY `attribute` DESC,  $sortOrder");
+			$sort = 'SIRTFI&query='.$query;;
+			$csort='SIRTFI';
+			$SIRTFIArrow = '<i class="fa fa-arrow-down"></i>';
+			$entityIDOrder = 'entityIDAsc';
+			$entityIDArrow = '';
 		} else
-			$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isIdP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationDisplayName' AND `lang` = 'en' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query ORDER BY $sortOrder");
 
 		print "         <a href=\"./?$sort\">All in SWAMID</a> | <b>IdP in SWAMID</b> | <a href=\".?showSP&$sort\">SP in SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
-		$extraTH = '<th>AL1</th><th>AL2</th><th><a href="?showIdP&AL">AL3</a></th><th>SIRTFI</th><th>Hide</th>';
+		$extraTH = sprintf('<th><a href="?showIdP&AL">AL1%s</a></th><th><a href="?showIdP&AL">AL2%s</a></th><th><a href="?showIdP&AL">AL3%s</a></th><th><a href="?showIdP&SIRTFI">SIRTFI%s</a></th><th>Hide</th>', $ALArrow, $ALArrow, $ALArrow, $SIRTFIArrow);
 		$showAll = false;
 	} elseif (isset($_GET['showSP'])) {
 		$html->showHeaders('Metadata SWAMID - SP:s');
 		$filter = 'showSP';
-		$entitys = $db->prepare("SELECT id, entityID, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND isSP = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
+		if (isset($_GET['SIRTFI'])) {
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationDisplayName, `attribute` FROM Entities LEFT JOIN Organization ON Organization.`entity_id` = `id` AND `element` = 'OrganizationDisplayName' AND `lang` = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute = 'https://refeds.org/sirtfi' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query GROUP BY `id` ORDER BY `attribute` DESC, $sortOrder");
+			$sort = 'SIRTFI&query='.$query;;
+			$csort='SIRTFI';
+			$SIRTFIArrow = '<i class="fa fa-arrow-down"></i>';
+			$entityIDOrder = 'entityIDAsc';
+			$entityIDArrow = '';
+		} else
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationDisplayName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY $sortOrder");
 		print "         <a href=\"./?$sort\">All in SWAMID</a> | <a href=\".?showIdP&$sort\">IdP in SWAMID</a> | <b>SP in SWAMID</b> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
-		$extraTH = '<th>CoCo</th><th>R&S</th><th>SIRTFI</th>';
+		$extraTH = sprintf('<th>CoCo</th><th>R&S</th><th><a href="?showSP&SIRTFI">SIRTFI%s</a></th>', $SIRTFIArrow);
 		$showAll = false;
 	} else {
 		$html->showHeaders('Metadata SWAMID - All');
 		$filter = 'all';
-		$entitys = $db->prepare("SELECT id, entityID, isIdP, isSP, publishIn, data AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = 1 AND entityID LIKE :Query ORDER BY $sortOrder");
+		$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationDisplayName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationDisplayName' AND `lang` = 'en' WHERE `status` = 1 AND `entityID` LIKE :Query ORDER BY $sortOrder");
 		print "	  <b>All in SWAMID</b> | <a href=\".?showIdP&$sort\">IdP in SWAMID</a> | <a href=\".?showSP&$sort\">SP in SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
 		$extraTH = '';
 	}
@@ -87,11 +133,7 @@ function showEntityList() {
       <tr>
 EOF;
 	if ($showAll)	print '<th>IdP</th><th>SP</th>';
-
-	echo <<<EOF
- <th>Registered in</th> <th><a href="?$filter&feed">eduGAIN</a></th> <th><form><a href="?$filter&entityID">entityID</a> <input type="text" name="query" value="$query"><input type="hidden" name="$csort"><input type="hidden" name="$filter"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="?$filter&org">OrganizationDisplayName</a></th>
-EOF;
-	print $extraTH . "</tr>\n";
+	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="%s"><input type="hidden" name="%s"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="?%s&%s">OrganizationDisplayName%s</a></th>%s</tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $csort, $filter, $filter, $orgOrder, $orgArrow, $extraTH, "\n");
 	$entitys->bindValue(':Query', "%".$query."%");
 	showList($entitys, $showAll);
 }
@@ -201,57 +243,77 @@ function showList($entitys, $showRole) {
 		} else {
 			$DisplayName = '';
 		}
-		if ($row['publishIn'] > 1) {
-			$entityAttributesHandler->bindValue(':Id', $row['id']);
-			$entityAttributesHandler->execute();
-			while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-				switch ($attribute['type']) {
-					case 'entity-category' :
-						switch ($attribute['attribute']) {
-							case 'http://refeds.org/category/research-and-scholarship' :
+		$prodFeed = ($row['publishIn'] > 1) ? true : false;
+		$entityAttributesHandler->bindValue(':Id', $row['id']);
+		$entityAttributesHandler->execute();
+		while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+			switch ($attribute['type']) {
+				case 'entity-category' :
+					switch ($attribute['attribute']) {
+						case 'http://refeds.org/category/research-and-scholarship' :
+							if ($prodFeed) {
 								$countECrs ++;
 								$isRS = 'X';
-								break;
-							case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+							} else
+								$isRS = '(X)';
+							break;
+						case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+							if ($prodFeed) {
 								$countECcoco ++;
 								$isCoco = 'X';
-								break;
-							case 'http://refeds.org/category/hide-from-discovery' :
+							} else
+								$isCoco = '(X)';
+							break;
+						case 'http://refeds.org/category/hide-from-discovery' :
+							if ($prodFeed) {
 								$countHideFromDisc ++;
 								$hasHide = 'X';
-								break;
-						}
-						break;
-					case 'entity-category-support' :
-						switch ($attribute['attribute']) {
-							case 'http://refeds.org/category/research-and-scholarship' :
-								$countECSrs ++;
-								break;
-							case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
-								$countECScoco ++;
-								break;
-						}
-						break;
-					case 'assurance-certification' :
-						switch ($attribute['attribute']) {
-							case 'http://www.swamid.se/policy/assurance/al1' :
+							} else
+								$hasHide = '(X)';
+							break;
+					}
+					break;
+				case 'entity-category-support' :
+					switch ($attribute['attribute']) {
+						case 'http://refeds.org/category/research-and-scholarship' :
+							if ($prodFeed) $countECSrs ++;
+							break;
+						case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+							if ($prodFeed) $countECScoco ++;
+							break;
+					}
+					break;
+				case 'assurance-certification' :
+					switch ($attribute['attribute']) {
+						case 'http://www.swamid.se/policy/assurance/al1' :
+							if ($prodFeed) {
 								$countAL1 ++;
 								$isAL1 = 'X';
-								break;
-							case 'http://www.swamid.se/policy/assurance/al2' :
+							} else
+								$isAL1 = '(X)';
+							break;
+						case 'http://www.swamid.se/policy/assurance/al2' :
+							if ($prodFeed) {
 								$countAL2 ++;
 								$isAL2 = 'X';
-								break;
-							case 'http://www.swamid.se/policy/assurance/al3' :
+							} else
+								$isAL2 = '(X)';
+							break;
+						case 'http://www.swamid.se/policy/assurance/al3' :
+							if ($prodFeed) {
 								$countAL3 ++;
 								$isAL3 = 'X';
-								break;
-							case 'https://refeds.org/sirtfi' :
+							} else
+								$isAL3 = '(X)';
+							break;
+						case 'https://refeds.org/sirtfi' :
+							if ($prodFeed) {
 								$countSIRTFI ++;
 								$isSIRTFI = 'X';
-								break;
-						}
-				}
+							} else
+								$isSIRTFI = '(X)';
+							break;
+					}
 			}
 		}
 		printf ('      <tr>');
@@ -294,17 +356,17 @@ function showList($entitys, $showRole) {
 		print "</tr>\n";
 	} ?>
     </table>
-    <h4>Statistik</h4>
+    <h4>Statistics</h4>
     <table class="table table-striped table-bordered">
-      <tr><th rowspan="3">&nbsp;Registered in</th><th>SWAMID-Produktion </th><td><?=$countSWAMID?></td></tr>
-      <tr><th>eduGAIN-Export </th><td><?=$counteduGAIN?></td></tr>
-      <tr><th>SWAMID-Test enbart </th><td><?=$countTesting?></td></tr>
-      <tr><th rowspan="3">Entitetskategorier i produktion </th><th>CoCo </th><td><?=$countECcoco?></td></tr>
+      <tr><th rowspan="3">&nbsp;Registered in</th><th>SWAMID-Production</th><td><?=$countSWAMID?></td></tr>
+      <tr><th>eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr>
+      <tr><th>SWAMID-Test only</th><td><?=$countTesting?></td></tr>
+      <tr><th rowspan="3">Entity Categorys in production<br><i>Excluding (X)</i></th><th>CoCo </th><td><?=$countECcoco?></td></tr>
       <tr><th>R&S</th><td><?=$countECrs?></td></tr>
       <tr><th>DS-hide </th><td><?=$countHideFromDisc?></td></tr>
-      <tr><th rowspan="2">Supportkategorier i produktion</th><th>CoCo </th><td><?=$countECScoco?></td></tr>
+      <tr><th rowspan="2">Support Categorys in production<br><i>Excluding (X)</i></th><th>CoCo </th><td><?=$countECScoco?></td></tr>
       <tr><th>R&S</th><td><?=$countECSrs?></td></tr>
-      <tr><th rowspan="4">Tillitsprofiler i produktion</th><th>AL1</th><td><?=$countAL1?></td></tr>
+      <tr><th rowspan="4">Assurance profiles in production<br><i>Excluding (X)</i></th><th>AL1</th><td><?=$countAL1?></td></tr>
       <tr><th>AL2 </th><td><?=$countAL2?></td></tr>
       <tr><th>AL3 </th><td><?=$countAL3?></td></tr>
       <tr><th>SIRTFI </th><td><?=$countSIRTFI?></td></tr>

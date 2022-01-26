@@ -1522,7 +1522,7 @@ Class Metadata {
 			if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
 				$contactType = 'other/security';
 				if ( $contactPerson['givenName'] == '')
-					$this->error .= $this->selectError('5.1.28', '6.1.27', 'GivenName element MUST be presenten for security ContactPerson.');
+					$this->error .= $this->selectError('5.1.28', '6.1.27', 'GivenName element MUST be present for security ContactPerson.');
 			}
 
 			// 5.1.23/6.1.22 ContactPerson elements MUST have an EmailAddress element
