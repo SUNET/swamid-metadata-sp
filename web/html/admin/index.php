@@ -15,16 +15,38 @@ include $baseDir  . '/config.php' ;
 
 $errors = '';
 
-if (! isset($_SERVER['eduPersonPrincipalName'])) {
-	$errors .= 'Missing eduPersonPrincipalName in SAML response<br>';
-} else {
+if (isset($_SERVER['eduPersonPrincipalName'])) {
 	$EPPN = $_SERVER['eduPersonPrincipalName'];
+} else {
+	$errors .= 'Missing eduPersonPrincipalName in SAML response<br>';
 }
 
-if (! isset($_SERVER['mail'])) {
-	$errors .= 'Missing mail in SAML response<br>';
+if (isset($_SERVER['eduPersonScopedAffiliation'])) {
+	$foundEmployee = false;
+	foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
+		if (explode('@',$ScopedAffiliation)[0] == 'employee')
+			$foundEmployee = true;
+	}
+	if (! $foundEmployee) {
+		$errors .= sprintf('Did not find employee in eduPersonScopedAffiliation. Only got %s<br>', $_SERVER['eduPersonScopedAffiliation']);
+	}
 } else {
+	if (isset($_SERVER['Shib-Identity-Provider'])) {
+		switch ($_SERVER['Shib-Identity-Provider']) {
+			case 'https://login.idp.eduid.se/idp.xml' :
+				#OK to not send eduPersonScopedAffiliation
+				break;
+			default :
+				$errors .= 'Missing eduPersonScopedAffiliation in SAML response<br>';
+		}
+
+	} else $errors .= 'Missing eduPersonScopedAffiliation in SAML response<br>';
+}
+
+if ( isset($_SERVER['mail'])) {
 	$mail = $_SERVER['mail'];
+} else {
+	$errors .= 'Missing mail in SAML response<br>';
 }
 
 if (isset($_SERVER['displayName'])) {
