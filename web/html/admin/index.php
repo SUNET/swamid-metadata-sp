@@ -30,11 +30,20 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 	if (! $foundEmployee) {
 		$errors .= sprintf('Did not find employee in eduPersonScopedAffiliation. Only got %s<br>', $_SERVER['eduPersonScopedAffiliation']);
 	}
+} elseif (isset($_SERVER['eduPersonAffiliation'])) {
+	$foundEmployee = false;
+	foreach (explode(';',$_SERVER['eduPersonAffiliation']) as $Affiliation) {
+		if ($Affiliation == 'employee')
+			$foundEmployee = true;
+	}
+	if (! $foundEmployee) {
+		$errors .= sprintf('Did not find employee in eduPersonAffiliation. Only got %s<br>', $_SERVER['eduPersonAffiliation']);
+	}
 } else {
 	if (isset($_SERVER['Shib-Identity-Provider'])) {
 		switch ($_SERVER['Shib-Identity-Provider']) {
 			case 'https://login.idp.eduid.se/idp.xml' :
-				#OK to not send eduPersonScopedAffiliation
+				#OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
 				break;
 			default :
 				$errors .= 'Missing eduPersonScopedAffiliation in SAML response<br>';
