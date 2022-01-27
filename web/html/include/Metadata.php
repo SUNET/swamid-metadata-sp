@@ -1432,7 +1432,7 @@ Class Metadata {
 			if ($type == 'IDPSSO')
 				$this->error .= "SWAMID Tech 5.1.20: Identity Providers there MUST have at least one signing certificate.\n";
 			else
-				$this->error .= "SWAMID Tech 6.1.14: Service Providers there MUST have at least one encryption certificate.\n";
+				$this->error .= "SWAMID Tech 6.1.14: Service Providers MUST have at least one encryption certificate.\n";
 		}
 		// 5.2.1 Identity Provider credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
 		if ((($SWAMID_5_2_1_Level['encryption'] < 2) || ($SWAMID_5_2_1_Level['signing'] < 2)) && ($SWAMID_5_2_1_Level['both'] < 2)) {

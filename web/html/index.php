@@ -361,12 +361,12 @@ function showList($entitys, $showRole) {
       <tr><th rowspan="3">&nbsp;Registered in</th><th>SWAMID-Production</th><td><?=$countSWAMID?></td></tr>
       <tr><th>eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr>
       <tr><th>SWAMID-Test only</th><td><?=$countTesting?></td></tr>
-      <tr><th rowspan="3">Entity Categorys in production<br><i>Excluding (X)</i></th><th>CoCo </th><td><?=$countECcoco?></td></tr>
+      <tr><th rowspan="3">Entity Categories in production<br><i>Excluding testing only (X)</i></th><th>CoCo </th><td><?=$countECcoco?></td></tr>
       <tr><th>R&S</th><td><?=$countECrs?></td></tr>
       <tr><th>DS-hide </th><td><?=$countHideFromDisc?></td></tr>
-      <tr><th rowspan="2">Support Categorys in production<br><i>Excluding (X)</i></th><th>CoCo </th><td><?=$countECScoco?></td></tr>
+      <tr><th rowspan="2">Support Categorys in production<br><i>Excluding testing only (X)</i></th><th>CoCo </th><td><?=$countECScoco?></td></tr>
       <tr><th>R&S</th><td><?=$countECSrs?></td></tr>
-      <tr><th rowspan="4">Assurance profiles in production<br><i>Excluding (X)</i></th><th>AL1</th><td><?=$countAL1?></td></tr>
+      <tr><th rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>AL1</th><td><?=$countAL1?></td></tr>
       <tr><th>AL2 </th><td><?=$countAL2?></td></tr>
       <tr><th>AL3 </th><td><?=$countAL3?></td></tr>
       <tr><th>SIRTFI </th><td><?=$countSIRTFI?></td></tr>
