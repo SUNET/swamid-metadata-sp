@@ -11,6 +11,7 @@ if ($import->getStatus()) {
 	$metadata = new Metadata('/var/www/html',$import->getEntityID(),'Prod');
 	$metadata->importXML($import->getXML());
 	$metadata->updateFeed($argv[2]);
+	$metadata->updateLastUpdated($argv[3]);
 
 	if ($metadata->getResult() <> "Updated in db")
 		printf ("Import -> %s\n" ,$metadata->getResult());

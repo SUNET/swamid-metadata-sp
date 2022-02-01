@@ -232,7 +232,7 @@ Class Metadata {
 			$entityHandlerInsert->bindValue(':Id', $this->entityID);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerInsert->execute();
-			$this->result = "Added to db.\n";
+			$this->result = "";
 			$this->dbIdNr = $this->metaDb->lastInsertId();
 			$this->status = 3;
 			return $this->dbIdNr;
@@ -1442,7 +1442,7 @@ Class Metadata {
 				if ($smalKeyFound) {
 					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				} else {
-					$this->warning .= sprintf("SWAMID Tech %s: Certificate is RECOMMENDED NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+					$this->warning .= sprintf("SWAMID Tech %s: Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				}
 			}
 		} else {
@@ -1760,6 +1760,16 @@ Class Metadata {
 		$userHandler->bindValue(':UserID', $EPPN);
 		$userHandler->bindValue(':Email', $mail);
 		$userHandler->execute();
+	}
+
+	#############
+	# Updates lastUpdated for an entity
+	#############
+	public function updateLastUpdated($date) {
+		$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `lastUpdated` = :Date WHERE `id` = :Id;');
+		$entityHandlerUpdate->bindValue(':Id', $this->dbIdNr);
+		$entityHandlerUpdate->bindValue(':Date', $date);
+		$entityHandlerUpdate->execute();
 	}
 
 	#############

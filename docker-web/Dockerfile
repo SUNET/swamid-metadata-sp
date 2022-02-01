@@ -3,7 +3,7 @@ MAINTAINER bjorn@sunet.se
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 RUN apt-get -q update && \
 	apt-get -y upgrade && \
-	apt-get -y install apache2 libapache2-mod-shib libapache2-mod-php php-mysql php-xml php-curl gettext-base && \
+	apt-get -y install apache2 libapache2-mod-shib libapache2-mod-php php-mysql php-xml php-curl gettext-base git && \
 	a2enmod ssl headers
 ENV SP_HOSTNAME sp.example.com
 ENV SP_CONTACT noc@sunet.se

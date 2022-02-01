@@ -309,7 +309,7 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="?%s&%s">OrganizationDisplayName%s</a></th><th>%s</th><th>lastValidated</th><th><a href="?%s&validationOutput">validationOutput%s</a></th><th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter, $orgOrder, $orgArrow, ($status == 1) ? 'lastUpdated' : 'created' , $filter, $validationArrow, $filter, $warningArrow, $filter, $errorArrow, "\n");
+	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="?%s&%s">OrganizationDisplayName%s</a></th><th>%s</th><th>lastValidated (UTC)</th><th><a href="?%s&validationOutput">validationOutput%s</a></th><th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter, $orgOrder, $orgArrow, ($status == 1) ? 'lastUpdated (UTC)' : 'created (UTC)' , $filter, $validationArrow, $filter, $warningArrow, $filter, $errorArrow, "\n");
 	showList($entitys, $minLevel);
 }
 
