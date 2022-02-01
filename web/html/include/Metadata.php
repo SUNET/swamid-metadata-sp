@@ -193,7 +193,7 @@ Class Metadata {
 		curl_close($ch);
 		$this->showProgress('validateURLs - done');
 		if ($limit > 10)
-			printf ('Checked %d URL:s', $count);
+			printf ("Checked %d URL:s\n", $count);
 	}
 
 	# Import an XML  -> metadata.db
