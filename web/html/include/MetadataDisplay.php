@@ -37,11 +37,11 @@ Class MetadataDisplay {
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$errors = '';
 			$warnings = '';
-			
+
 			if ($entity['isIdP']) {
 				$ECSTagged = array('http://refeds.org/category/research-and-scholarship' => false, 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => false);
 				$ECSTested = array('rands' => false, 'cocov1-1' => false);
-				
+
 				$entityAttributesHandler->execute();
 				while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
 					$ECSTagged[$attribute['attribute']] = true;
@@ -1024,17 +1024,77 @@ Class MetadataDisplay {
 					$entityHandler->execute();
 					if ($publishedEntity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 						if ($pendingXML == $publishedEntity['xml'] && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
-							$OKRemove = sprintf('<a href=".?action=CleanPending&entity_id=%d">%s</a>',$pendingEntity['id'], $entityID); 
+							$OKRemove = sprintf('<a href=".?action=CleanPending&entity_id=%d">%s</a>',$pendingEntity['id'], $entityID);
 						} else {
 							$OKRemove = $entityID;
 						}
-						printf('      <tr><td>%s</td><td>%s</td><td>%s</td></tr>', $OKRemove, ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '' );
+						printf('      <tr><td>%s</td><td>%s</td><td>%s</td></tr>%s', $OKRemove, ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
 					}
 				} else {
-					printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>',  $entityID, 'Diff in entityID');
+					printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>%s',  $entityID, 'Diff in entityID', "\n");
 				}
 			} else {
-				printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>',  $entityID, 'Problem with XML');
+				printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>%s',  $entityID, 'Problem with XML', "\n");
+			}
+		}
+		print "    </table>\n";
+	}
+
+	public function showSPwithOldCategory() {
+		$OldECHandler = $this->metaDb->prepare("SELECT `entity_id`, `entityID` FROM Entities, EntityAttributes WHERE Entities.`status` = 1 AND Entities.`id` = EntityAttributes.`entity_id` AND `type` = 'entity-category' AND `attribute` = :EC ORDER BY `entityID`");
+		$OldECHandler->bindValue(':EC', 'http://www.swamid.se/category/sfs-1993-1153');
+		$OldECHandler->execute();
+
+		$CoCoECHandler = $this->metaDb->prepare("SELECT `type` FROM EntityAttributes WHERE EntityAttributes.`entity_id` = :Id AND `type` = 'entity-category' AND `attribute` = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'");
+		$CoCoECHandler->BindParam(':Id', $entity_id);
+		$NewECHandler = $this->metaDb->prepare("SELECT `attribute` FROM EntityAttributes WHERE EntityAttributes.`entity_id` = :Id AND `type` = 'entity-category' AND `attribute` IN ('http://www.geant.net/uri/dataprotection-code-of-conduct/v1', 'http://refeds.org/category/research-and-scholarship', 'https://refeds.org/category/personalized')");
+		$NewECHandler->BindParam(':Id', $entity_id);
+		$NINHandler = $this->metaDb->prepare("SELECT `Service_index` FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id AND `Name` = 'urn:oid:1.3.6.1.4.1.2428.90.1.5'");
+		$NINHandler->BindParam(':Id', $entity_id);
+
+		printf ('    <h3>SFS-1993-1153</h3>%s    <p>Entites with sfs-1993-1153 but NOT CoCo and norEduPersonNIN</p>%s', "\n", "\n");
+		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
+		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entity_id = $Entity['entity_id'];
+			$CoCoECHandler->execute();
+			$CoCo = $CoCoECHandler->fetch(PDO::FETCH_ASSOC);
+			$NINHandler->execute();
+			$NIN = $NINHandler->fetch(PDO::FETCH_ASSOC);
+			if (! ($CoCo && $NIN)) {
+				printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td></tr>', $entity_id, $Entity['entityID'], ($CoCo) ? '' : 'X', ($NIN) ? '' : 'X');
+			}
+		}
+		print "    </table>\n";
+
+		$OldECHandler->bindValue(':EC', 'http://www.swamid.se/category/research-and-education');
+		$OldECHandler->execute();
+		printf ('    <h3>Research and Education</h3>%s    <p>Entites with research-and-education but NOT research-and-scholarship.<br>Entites with research-and-education might also be replaced with CoCo or Personalized. They are listed for verification</p>%s', "\n", "\n");
+		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
+		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing any new Categorys</th><th>Have CoCo</th><th>Have Personalized</th></tr>%s', "\n", "\n");
+		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entity_id = $Entity['entity_id'];
+			$CoCo = false;
+			$RandS = false;
+			$Personalized = false;
+			$NewECHandler->execute();
+			while ($EC = $NewECHandler->fetch(PDO::FETCH_ASSOC)) {
+				switch ($EC['attribute']) {
+					case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+						$CoCo = true;
+						break;
+					case 'http://refeds.org/category/research-and-scholarship' :
+						$RandS = true;
+						break;
+					default :
+						printf("Saknar : %s<br>", $EC['attribute']);
+				}
+			}
+			/*$NewECHandler->execute();
+			$CoCo = $CoCoECHandler->fetch(PDO::FETCH_ASSOC);
+			$NINHandler->execute();
+			$NIN = $NINHandler->fetch(PDO::FETCH_ASSOC);*/
+			if (! ($RandS)) {
+				printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>', $entity_id, $Entity['entityID'], ($CoCo || $RandS || $Personalized) ? '' : 'X', ($CoCo) ? 'X' : '', ($Personalized) ? 'X' : '');
 			}
 		}
 		print "    </table>\n";

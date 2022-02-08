@@ -11,9 +11,10 @@ include '../include/Html.php';
 $html = new HTML();
 
 $baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 2);
-include $baseDir  . '/config.php' ;
+include $baseDir . '/config.php' ;
 
 $errors = '';
+$filterFirst = true;
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
 	$EPPN = $_SERVER['eduPersonPrincipalName'];
@@ -44,9 +45,10 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 		switch ($_SERVER['Shib-Identity-Provider']) {
 			case 'https://login.idp.eduid.se/idp.xml' :
 				#OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
+				$filterFirst = false;
 				break;
 			default :
-			$errors .= 'Missing eduPersonScopedAffiliation and eduPersonAffiliation in SAML response<br>One of them is required<br>';
+				$errors .= 'Missing eduPersonScopedAffiliation and eduPersonAffiliation in SAML response<br>One of them is required<br>';
 		}
 
 	} else $errors .= 'Missing eduPersonScopedAffiliation and eduPersonAffiliation in SAML response<br>One of them is required<br>';
@@ -203,6 +205,12 @@ if (isset($_FILES['XMLfile'])) {
 					}
 					$display->showPendingListToRemove();
 					break;
+				case 'OldCategorys' :
+					$menuActive = 'OldCategorys';
+					$html->showHeaders('Metadata SWAMID - Errror status');
+					showMenu();
+					$display->showSPwithOldCategory();
+					break;
 				default :
 					showEntityList();
 			}
@@ -218,7 +226,7 @@ $html->showFooter($display->getCollapseIcons());
 # Shows EntityList
 ####
 function showEntityList($status = 1) {
-	global $db, $html, $EPPN;
+	global $db, $html, $EPPN, $filterFirst;
 
 	$showAll = true;
 
@@ -272,7 +280,7 @@ function showEntityList($status = 1) {
 
 	if (isset($_GET['query'])) {
 		$query = $_GET['query'];
-	} elseif (isset($_GET['first'])) {
+	} elseif (isset($_GET['first']) && $filterFirst) {
 		$query = '.'.explode('@',$EPPN)[1];
 	} else {
 		 $query = '';
@@ -513,19 +521,27 @@ function importXML(){
 	global $EPPN,$mail;
 
 	include '../include/NormalizeXML.php';
+	include '../include/ValidateXML.php';
 	$import = new NormalizeXML();
 	$import->fromFile($_FILES['XMLfile']['tmp_name']);
 	if ($import->getStatus()) {
 		$entityID = $import->getEntityID();
-		$metadata = new Metadata($baseDir, $import->getEntityID(), 'New');
-		$metadata->importXML($import->getXML());
-		$metadata->validateXML(true);
-		$metadata->validateSAML(true);
-		$metadata->updateResponsible($EPPN,$mail);
-		showEntity($metadata->dbIdNr);
+		$validate = new ValidateXML($import->getXML());
+		if ($validate->validateXML($baseDir . '/../schemas/schema.xsd')) {
+			$metadata = new Metadata($baseDir, $import->getEntityID(), 'New');
+			$metadata->importXML($import->getXML());
+			$metadata->validateXML(true);
+			$metadata->validateSAML(true);
+			$metadata->updateResponsible($EPPN,$mail);
+			showEntity($metadata->dbIdNr);
+		} else {
+			$html->showHeaders('Metadata SWAMID - Problem');
+			printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Error in XML-syntax:</b>%s        %s%s      </div>%s    </div>%s', "\n", "\n", "\n", "\n", $validate->getError(), "\n", "\n","\n");
+			$html->showFooter(array());
+		}
 	} else {
 		$html->showHeaders('Metadata SWAMID - Problem');
-		printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error in XML-file:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>%s', "\n", "\n", "\n", "\n", $import->getError(), "\n", "\n","\n");
+		printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Error in XML-file:</b>%s        %s%s      </div>%s    </div>%s', "\n", "\n", "\n", "\n", $import->getError(), "\n", "\n","\n");
 		$html->showFooter(array());
 	}
 }
@@ -572,6 +588,7 @@ function showMenu() {
 	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
+		printf('<a href=".?action=OldCategorys%s"><button type="button" class="btn btn%s-primary">Old EC:s</button></a>', $filter, $menuActive == 'OldCategorys' ? '' : '-outline');
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
 		printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
 	}

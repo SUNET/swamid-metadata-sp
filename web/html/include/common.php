@@ -18,7 +18,6 @@ $this->standardAttributes = array(
 		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/research-and-education', 'swamidStd' => false),
 		array('type' => 'SP', 'value' => 'http://www.swamid.se/category/sfs-1993-1153', 'swamidStd' => false),
 		array('type' => 'IdP', 'value' => 'http://refeds.org/category/hide-from-discovery', 'swamidStd' => true)),
-		
 
 	'entity-category-support' => array(
 		array('type' => 'IdP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
