@@ -55,7 +55,8 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 }
 
 if ( isset($_SERVER['mail'])) {
-	$mail = $_SERVER['mail'];
+	$mailArray= explode(';',$_SERVER['mail']);
+	$mail = $mailArray[0];
 } else {
 	$errors .= 'Missing mail in SAML response<br>';
 }
