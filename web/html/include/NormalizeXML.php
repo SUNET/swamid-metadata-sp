@@ -198,13 +198,20 @@ Class NormalizeXML {
 			$this->newDoc = new DOMDocument('1.0', 'UTF-8');
 			$this->newDoc->formatOutput = true;
 			$this->checkNode($this->newDoc, $doc, $this->newDoc);
-			$this->entityID = $this->newDoc->firstChild->getAttribute('entityID');
-			if ($this->entityID == '') {
-				$this->error = 'Cant find entityID in EntityDescriptor';
-				$this->status = false;
-			} else {
+			$this->entityID = false;
+			$child = $this->newDoc->firstChild;
+			while ($child && ! $this->entityID) {
+				if ($child->nodeName == "md:EntityDescriptor") {
+					$this->entityID = $child->getAttribute('entityID');
+				}
+				$child = $child->nextSibling;
+			}
+			if ($this->entityID) {
 				$this->error = '';
 				$this->status = true;
+			} else {
+				$this->error = 'Cant find entityID in EntityDescriptor';
+				$this->status = false;
 			}
 		}
 		restore_error_handler();
