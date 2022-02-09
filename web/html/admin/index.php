@@ -205,6 +205,15 @@ if (isset($_FILES['XMLfile'])) {
 					}
 					$display->showPendingListToRemove();
 					break;
+				case 'ShowDiff' :
+					$menuActive = 'CleanPending';
+					$html->showHeaders('Metadata SWAMID - Clean Pending');
+					showMenu();
+					if (isset($_GET['entity_id1']) && isset($_GET['entity_id2'])) {
+						$display->showXMLDiff($_GET['entity_id1'], $_GET['entity_id2']);
+					}
+					$display->showPendingListToRemove();
+					break;
 				case 'OldCategorys' :
 					$menuActive = 'OldCategorys';
 					$html->showHeaders('Metadata SWAMID - Errror status');

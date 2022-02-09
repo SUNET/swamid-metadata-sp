@@ -1002,9 +1002,33 @@ Class MetadataDisplay {
 		print "    </table>\n";
 	}
 
+	public function showXMLDiff($entity_id1, $entity_id2) {
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml` FROM Entities WHERE `id` = :ID');
+		$entityHandler->bindValue(':ID', $entity_id1);
+		$entityHandler->execute();
+		if ($entity1 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entityHandler->bindValue(':ID', $entity_id2);
+			$entityHandler->execute();
+			if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
+				require_once $this->basedDir . '/include/Diff.php';
+				require_once $this->basedDir . '/include/Diff/Renderer/Text/Unified.php';
+				$options = array(
+					//'ignoreWhitespace' => true,
+					//'ignoreCase' => true,
+				);
+				$diff = new Diff(explode("\n", $entity2['xml']), explode("\n", $entity1['xml']), $options);
+				$renderer = new Diff_Renderer_Text_Unified;
+				printf('<pre>%s</pre>', htmlspecialchars($diff->render($renderer)));
+			} else {
+
+			}
+		}
+	}
+
 	public function showPendingListToRemove() {
 		$entitiesHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 2 ORDER BY lastUpdated ASC, `entityID`');
-		$entityHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$entityHandler->bindParam(':EntityID', $entityID);
 		$entitiesHandler->execute();
 
@@ -1026,7 +1050,7 @@ Class MetadataDisplay {
 						if ($pendingXML == $publishedEntity['xml'] && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
 							$OKRemove = sprintf('<a href=".?action=CleanPending&entity_id=%d">%s</a>',$pendingEntity['id'], $entityID);
 						} else {
-							$OKRemove = $entityID;
+							$OKRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>', $entityID, $pendingEntity['id'], $publishedEntity['id']);
 						}
 						printf('      <tr><td>%s</td><td>%s</td><td>%s</td></tr>%s', $OKRemove, ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
 					}
