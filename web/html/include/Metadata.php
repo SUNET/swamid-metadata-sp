@@ -1802,33 +1802,36 @@ Class Metadata {
 		$publishedHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$publishedHandler->bindParam(':EntityID', $entityID);
 
-		if (! class_exists('NormalizeXML')) {
-			include $this->basedDir.'/include/NormalizeXML.php';
-		}
+		require_once $this->basedDir.'/include/NormalizeXML.php';
 		$normalize = new NormalizeXML();
 
 		if ($pendingEntity = $pendingHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entityID = $pendingEntity['entityID'];
 
 			$normalize->fromString($pendingEntity['xml']);
-			if ($normalize->getStatus()) {
-				if ($normalize->getEntityID() == $entityID) {
-					$pendingXML = $normalize->getXML();
-					$publishedHandler->execute();
-					if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)) {
-						if ($pendingXML == $publishedEntity['xml'] && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
+			if ($normalize->getStatus() && $normalize->getEntityID() == $entityID) {
+				$pendingXML = $normalize->getXML();
+				$publishedHandler->execute();
+				if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)) {
+					if ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
+						if ($pendingXML == $publishedEntity['xml']) {
 							return true;
 						} else {
-							return false;
+							// For new Entities remove RegistrationInfo and compare
+							$noRegistrationInfo = $normalize->cleanOutRegistrationInfo($publishedEntity['xml']);
+							$normalize->fromString($noRegistrationInfo);
+							if ($normalize->getStatus() && $normalize->getEntityID() == $entityID) {
+								$publishedXML = $normalize->getXML();
+								if ($pendingXML == $publishedXML) {
+									return true;
+								}
+							}
 						}
 					}
-				} else {
-					return false;
 				}
-			} else {
-				return false;
 			}
 		}
+		return false;
 	}
 
 	#############

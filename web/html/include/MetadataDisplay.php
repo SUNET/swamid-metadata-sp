@@ -1093,7 +1093,6 @@ Class MetadataDisplay {
 		$OldECHandler->bindValue(':EC', 'http://www.swamid.se/category/research-and-education');
 		$OldECHandler->execute();
 		printf ('    <h3>Research and Education</h3>%s    <p>Entites with research-and-education but NOT research-and-scholarship.<br>Entites with research-and-education might also be replaced with CoCo or Personalized. They are listed for verification</p>%s', "\n", "\n");
-		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
 		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing any new Categorys</th><th>Have CoCo</th><th>Have Personalized</th></tr>%s', "\n", "\n");
 		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entity_id = $Entity['entity_id'];
@@ -1113,10 +1112,6 @@ Class MetadataDisplay {
 						printf("Saknar : %s<br>", $EC['attribute']);
 				}
 			}
-			/*$NewECHandler->execute();
-			$CoCo = $CoCoECHandler->fetch(PDO::FETCH_ASSOC);
-			$NINHandler->execute();
-			$NIN = $NINHandler->fetch(PDO::FETCH_ASSOC);*/
 			if (! ($RandS)) {
 				printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>', $entity_id, $Entity['entityID'], ($CoCo || $RandS || $Personalized) ? '' : 'X', ($CoCo) ? 'X' : '', ($Personalized) ? 'X' : '');
 			}

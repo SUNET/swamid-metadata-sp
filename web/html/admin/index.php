@@ -55,7 +55,7 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 }
 
 if ( isset($_SERVER['mail'])) {
-	$mailArray= explode(';',$_SERVER['mail']);
+	$mailArray = explode(';',$_SERVER['mail']);
 	$mail = $mailArray[0];
 } else {
 	$errors .= 'Missing mail in SAML response<br>';
@@ -597,8 +597,8 @@ function showMenu() {
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
+	printf('<a href=".?action=OldCategorys%s"><button type="button" class="btn btn%s-primary">Deprecated EC:s</button></a>', $filter, $menuActive == 'OldCategorys' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
-		printf('<a href=".?action=OldCategorys%s"><button type="button" class="btn btn%s-primary">Old EC:s</button></a>', $filter, $menuActive == 'OldCategorys' ? '' : '-outline');
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
 		printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
 	}

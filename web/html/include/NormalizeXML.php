@@ -238,4 +238,40 @@ Class NormalizeXML {
 	public function getError() {
 		return $this->error;
 	}
+
+	public function cleanOutRegistrationInfo($xml2clean) {
+		$continue = true;
+		$xml = new DOMDocument;
+		$xml->preserveWhiteSpace = false;
+		$xml->formatOutput = true;
+		$xml->loadXML($xml2clean);
+		$xml->encoding = 'UTF-8';
+		$EntityDescriptor = false;
+
+		$child = $xml->firstChild;
+		while ($child && $continue) {
+			if ($child->nodeName == "md:EntityDescriptor") {
+				$EntityDescriptor = $child;
+				$Extensions = $child->firstChild;
+				while ($Extensions && $continue) {
+					if ($Extensions->nodeName == 'md:Extensions') {
+						$subchild = $Extensions->firstChild;
+						while ($subchild && $continue) {
+							if ($subchild->nodeName == 'mdrpi:RegistrationInfo') {
+								$remChild = $subchild;
+								$subchild = $subchild->nextSibling;
+								$Extensions->removeChild($remChild);
+								$continue = false;
+							} else
+								$subchild = $subchild->nextSibling;
+						}
+						$continue = false;
+					}
+					$Extensions = $Extensions->nextSibling;
+				}
+			}
+			$child = $child->nextSibling;
+		}
+		return $xml->saveXML();
+	}
 }
