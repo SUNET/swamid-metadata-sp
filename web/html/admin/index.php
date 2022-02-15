@@ -584,12 +584,12 @@ function removeKey($Entity_id, $type, $use, $serialNumber) {
 # Shows menu row
 ####
 function showMenu() {
-	global $userLevel, $menuActive, $EPPN;
+	global $userLevel, $menuActive, $EPPN, $filterFirst;
 	$filter='';
 	if (isset($_GET['query'])) {
 		$filter='&query='.$_GET['query'];
-	} elseif (isset($_GET['first'])) {
-		$filter='&query='. explode('@',$EPPN)[1];
+	} elseif (isset($_GET['first']) && $filterFirst) {
+		$filter='&query=.'. explode('@',$EPPN)[1];
 	}
 
 	print "\n    ";

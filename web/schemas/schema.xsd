@@ -1,3 +1,4 @@
 <xsd:schema targetNamespace="aggregate" xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="1.2">
     <xsd:import namespace="urn:oasis:names:tc:SAML:2.0:metadata" schemaLocation="saml-schema-metadata-2.0.xsd"/>
+    <xsd:import namespace="http://docs.oasis-open.org/wsfed/federation/200706" schemaLocation="ws-federation.xsd"/>
 </xsd:schema>
