@@ -555,8 +555,8 @@ function importXML(){
 		$validate = new ValidateXML($import->getXML());
 		if ($validate->validateXML($baseDir . '/../schemas/schema.xsd')) {
 			$metadata = new Metadata($baseDir, $entityID, 'New');
-			$metadata->updateResponsible($EPPN,$mail);
 			$metadata->importXML($import->getXML());
+			$metadata->updateResponsible($EPPN,$mail);
 			$metadata->validateXML(true);
 			$metadata->validateSAML(true);
 

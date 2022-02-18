@@ -69,7 +69,7 @@ CREATE TABLE AttributeConsumingService_RequestedAttribute (
 
 CREATE TABLE Organization (
 	`entity_id` INT UNSIGNED,
-	`lang` CHAR(2),
+	`lang` CHAR(10),
 	`element` VARCHAR(25),
 	`data` TEXT);
 
