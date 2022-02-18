@@ -313,6 +313,21 @@ function showEntityList($status = 1) {
 			$action = 'new';
 			$minLevel = 5;
 			break;
+		case 4:
+			$html->showHeaders('Metadata SWAMID - Deleted');
+			$action = 'pub';
+			$minLevel = 5;
+			break;
+		case 5:
+			$html->showHeaders('Metadata SWAMID - Pending already Published');
+			$action = 'pub';
+			$minLevel = 5;
+			break;
+		case 6:
+			$html->showHeaders('Metadata SWAMID - Published when added to Pending');
+			$action = 'pub';
+			$minLevel = 5;
+			break;
 		default:
 			$html->showHeaders('Metadata SWAMID');
 	}
@@ -532,18 +547,26 @@ function importXML(){
 
 	include '../include/NormalizeXML.php';
 	include '../include/ValidateXML.php';
+	include '../include/MetadataEdit.php';
 	$import = new NormalizeXML();
 	$import->fromFile($_FILES['XMLfile']['tmp_name']);
 	if ($import->getStatus()) {
 		$entityID = $import->getEntityID();
 		$validate = new ValidateXML($import->getXML());
 		if ($validate->validateXML($baseDir . '/../schemas/schema.xsd')) {
-			$metadata = new Metadata($baseDir, $import->getEntityID(), 'New');
+			$metadata = new Metadata($baseDir, $entityID, 'New');
+			$metadata->updateResponsible($EPPN,$mail);
 			$metadata->importXML($import->getXML());
 			$metadata->validateXML(true);
 			$metadata->validateSAML(true);
-			$metadata->updateResponsible($EPPN,$mail);
-			showEntity($metadata->dbIdNr);
+
+			$prodmetadata = new Metadata($baseDir, $entityID, 'Prod');
+			if ($prodmetadata->EntityExists()) {
+				$editMetadata = new MetadataEdit($baseDir, $metadata->ID(), $prodmetadata->ID());
+				$editMetadata->mergeRegistrationInfo();
+				$editMetadata->saveXML();
+			}
+			showEntity($metadata->ID());
 		} else {
 			$html->showHeaders('Metadata SWAMID - Problem');
 			printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Error in XML-syntax:</b>%s        %s%s      </div>%s    </div>%s', "\n", "\n", "\n", "\n", $validate->getError(), "\n", "\n","\n");
@@ -806,7 +829,7 @@ function move2Draft($Entity_id) {
 			$newMetadata->validateXML(true);
 			$newMetadata->validateSAML(true);
 			$menuActive = 'new';
-			showEntity($newMetadata->dbIdNr);
+			showEntity($newMetadata->ID());
 			$newMetadata->updateResponsible($EPPN,$mail);
 			$oldMetadata = new Metadata($baseDir, $Entity_id);
 			$oldMetadata->removeEntity();

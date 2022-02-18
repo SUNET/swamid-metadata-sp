@@ -17,7 +17,7 @@ $entitiesHandler->execute();
 while ($pendingEntity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
 	$metadata = new Metadata($baseDir, $pendingEntity['id']);
 	if ($metadata->checkPendingIfPublished()) {
-		$metadata->removeEntity();
+		$metadata->movePublishedPending();
 		printf ("Cleanup: %s removed from Pending\n", $pendingEntity['entityID']);
 	} else {
 		printf ("Cleanup: Keeping %s in Pending\n", $pendingEntity['entityID']);
