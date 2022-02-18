@@ -1053,6 +1053,8 @@ Class MetadataDisplay {
 							$OKRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>', $entityID, $pendingEntity['id'], $publishedEntity['id']);
 						}
 						printf('      <tr><td>%s</td><td>%s</td><td>%s</td></tr>%s', $OKRemove, ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
+					} else {
+						printf('      <tr><td>%s</td><td colspan="2">Not published</td></tr>%s', $entityID, "\n" );
 					}
 				} else {
 					printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>%s',  $entityID, 'Diff in entityID', "\n");
