@@ -154,8 +154,6 @@ Class MetadataEdit {
 				$child = $child->nextSibling;
 			}
 
-			$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-
 			switch ($_GET['action']) {
 				case 'Add' :
 					if (! $Extensions) {
@@ -218,9 +216,7 @@ Class MetadataEdit {
 						$entityAttributesAddHandler->bindParam(':Type', $_GET['type']);
 						$entityAttributesAddHandler->bindParam(':Attribute', $_GET['attribute']);
 						$entityAttributesAddHandler->execute();
-						$entityHandler->bindParam(':Id', $this->dbIdNr);
-						$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-						$entityHandler->execute();
+						$this->saveXML();
 					}
 					break;
 				case 'Delete' :
@@ -269,9 +265,7 @@ Class MetadataEdit {
 									$entityAttributesRemoveHandler->bindParam(':Type', $_GET['type']);
 									$entityAttributesRemoveHandler->bindParam(':Attribute', $_GET['attribute']);
 									$entityAttributesRemoveHandler->execute();
-									$entityHandler->bindParam(':Id', $this->dbIdNr);
-									$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-									$entityHandler->execute();
+									$this->saveXML();
 								}
 							}
 						}
@@ -454,10 +448,7 @@ Class MetadataEdit {
 					break;
 			}
 			if ($update) {
-				$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-				$entityHandler->bindParam(':Id', $this->dbIdNr);
-				$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-				$entityHandler->execute();
+				$this->saveXML();
 			}
 		}
 
@@ -613,10 +604,7 @@ Class MetadataEdit {
 					break;
 				}
 			if ($changed) {
-				$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-				$entityHandler->bindParam(':Id', $this->dbIdNr);
-				$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-				$entityHandler->execute();
+				$this->saveXML();
 			}
 		}
 
@@ -899,10 +887,7 @@ Class MetadataEdit {
 						break;
 				}
 				if ($changed) {
-					$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-					$entityHandler->bindParam(':Id', $this->dbIdNr);
-					$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-					$entityHandler->execute();
+					$this->saveXML();
 				}
 			}
 		} else {
@@ -1220,10 +1205,7 @@ Class MetadataEdit {
 						break;
 				}
 				if ($changed) {
-					$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-					$entityHandler->bindParam(':Id', $this->dbIdNr);
-					$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-					$entityHandler->execute();
+					$this->saveXML();
 				}
 			}
 		} else {
@@ -1659,10 +1641,7 @@ Class MetadataEdit {
 						break;
 				}
 				if ($changed) {
-					$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-					$entityHandler->bindParam(':Id', $this->dbIdNr);
-					$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-					$entityHandler->execute();
+					$this->saveXML();
 				}
 			}
 		} else {
@@ -1922,7 +1901,6 @@ Class MetadataEdit {
 					$child = $child->nextSibling;
 				}
 
-				$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
 				$changed = false;
 				switch ($_GET['action']) {
 					case 'Add' :
@@ -1937,7 +1915,7 @@ Class MetadataEdit {
 						$OrganizationElement = false;
 						$newOrg = true;
 						while ($child && ! $OrganizationElement) {
-							if ($child->getAttribute('xml:lang') == $lang && $child->nodeName == $elementmd) {
+							if (strtolower($child->getAttribute('xml:lang')) == $lang && $child->nodeName == $elementmd) {
 								$OrganizationElement = $child;
 								$newOrg = false;
 							} elseif (isset ($this->orderOrganization[$child->nodeName]) && $this->orderOrganization[$child->nodeName] <= $placement) {
@@ -1980,7 +1958,7 @@ Class MetadataEdit {
 							$OrganizationElement = false;
 							$moreOrganizationElements = false;
 							while ($child && ! $OrganizationElement) {
-								if ($child->getAttribute('xml:lang') == $lang && $child->nodeName == $elementmd) {
+								if (strtolower($child->getAttribute('xml:lang')) == $lang && $child->nodeName == $elementmd) {
 									$OrganizationElement = $child;
 								}
 								$child = $child->nextSibling;
@@ -2003,9 +1981,7 @@ Class MetadataEdit {
 						break;
 				}
 				if ($changed) {
-					$entityHandler->bindParam(':Id', $this->dbIdNr);
-					$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-					$entityHandler->execute();
+					$this->saveXML();
 				}
 			}
 		} else {
@@ -2149,8 +2125,6 @@ Class MetadataEdit {
 				$child = $child->nextSibling;
 			}
 
-			$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-
 			switch ($_GET['action']) {
 				case 'Add' :
 					if (! $ContactPerson) {
@@ -2200,9 +2174,7 @@ Class MetadataEdit {
 						$changed = true;
 					}
 					if ($changed) {
-						$entityHandler->bindParam(':Id', $this->dbIdNr);
-						$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-						$entityHandler->execute();
+						$this->saveXML();
 					}
 					break;
 				case 'Delete' :
@@ -2234,9 +2206,7 @@ Class MetadataEdit {
 								$contactPersonDeleteHandler->execute();
 							}
 
-							$entityHandler->bindParam(':Id', $this->dbIdNr);
-							$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-							$entityHandler->execute();
+							$this->saveXML();
 						}
 					}
 					break;
@@ -2450,15 +2420,12 @@ Class MetadataEdit {
 		}
 		$this->mergeOrganization();
 		$this->mergeContactPersons();
-		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-		$entityHandler->bindParam(':Id', $this->dbIdNr);
-		$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-		$entityHandler->execute();
 	}
-	private function mergeRegistrationInfo() {
+	public function mergeRegistrationInfo() {
 		# Skip if not same entityID. Only migrate if same!!!!
-		if ( !$this->oldExists || $this->entityID =! $this->oldentityID)
+		if ( !$this->oldExists || $this->entityID <> $this->oldentityID )
 			return;
+
 		$registrationInstantHandler = $this->metaDb->prepare('SELECT registrationInstant AS ts FROM Entities WHERE id = :Id;');
 		$registrationInstantHandler->bindParam(':Id', $this->dbOldIdNr);
 		$registrationInstantHandler->execute();
@@ -3377,10 +3344,7 @@ Class MetadataEdit {
 			}
 			$child = $child->nextSibling;
 		}
-		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-		$entityHandler->bindParam(':Id', $this->dbIdNr);
-		$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-		$entityHandler->execute();
+		$this->saveXML();
 	}
 	public function removeKey($type, $use, $serialNumber) {
 		switch ($type) {
@@ -3453,12 +3417,16 @@ Class MetadataEdit {
 				}
 			}
 			if ($changed) {
-				$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
-				$entityHandler->bindParam(':Id', $this->dbIdNr);
-				$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
-				$entityHandler->execute();
+				$this->saveXML();
 			}
 		}
+	}
+
+	public function saveXML() {
+		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
+		$entityHandler->bindParam(':Id', $this->dbIdNr);
+		$entityHandler->bindValue(':Xml', $this->newXml->saveXML());
+		$entityHandler->execute();
 	}
 
 	private function getEntityDescriptor($xml) {

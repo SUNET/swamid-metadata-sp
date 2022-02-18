@@ -1,37 +1,42 @@
 <?php
 Class Metadata {
 	# Setup
+	private $result = '';
+	private $warning = '';
+	private $error = '';
+	private $errorNB = '';
+
+	private $isIdP = false;
+	private $isSP = false;
+	private $registrationInstant = '';
+
+	private $entityID = 'Unknown';
+	private $entityExists = false;
+	private $dbIdNr = 0;
+	private $status = 0;
+	private $xml;
+
+	private $basedDir = '';
+	//$startTimer = time();
+
 	function __construct() {
-		$this->result = '';
-		$this->warning = '';
-		$this->error = '';
-		$this->errorNB = '';
-
-		$this->isIdP = false;
-		$this->isSP = false;
-		$this->registrationInstant = false;
-
 		$a = func_get_args();
 		$i = func_num_args();
+		if (isset($a[0])) {
+			include $a[0] . '/config.php';
+			include $a[0] . '/include/common.php';
+			$this->basedDir = $a[0];
+			try {
+				$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
+				// set the PDO error mode to exception
+				$this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+			} catch(PDOException $e) {
+				echo "Error: " . $e->getMessage();
+			}
+		}
 		if (method_exists($this,$f='__construct'.$i)) {
-				include $a[0] . '/config.php';
-				include $a[0] . '/include/common.php';
-				$this->basedDir = $a[0];
-				try {
-					$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-					// set the PDO error mode to exception
-					$this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-				} catch(PDOException $e) {
-					echo "Error: " . $e->getMessage();
-				}
 				call_user_func_array(array($this,$f),$a);
 		}
-		$this->startTimer = time();
-	}
-
-	private function __construct1($baseDir) {
-		$this->entityID = false;
-		$this->entityExists = false;
 	}
 
 	private function __construct2($baseDir, $entity_id) {
@@ -48,9 +53,6 @@ Class Metadata {
 			$this->dbIdNr = $entity['id'];
 			$this->status = $entity['status'];
 			$this->entityID = $entity['entityID'];
-		} else {
-			$this->entityExists = false;
-			$this->entityID = 'Unknown';
 		}
 	}
 
@@ -84,8 +86,6 @@ Class Metadata {
 			$this->xml->loadXML($entity['xml']);
 			$this->xml->encoding = 'UTF-8';
 			$this->dbIdNr = $entity['id'];
-		} else {
-			$this->entityExists = false;
 		}
 	}
 
@@ -1018,13 +1018,6 @@ Class Metadata {
 			$this->result = "$this->entityID doesn't exist!!";
 			return 1;
 		}
-		$entityHandler = $this->metaDb->prepare('SELECT `isIdP`, `isSP` FROM Entities WHERE `id` = :Id;');
-		$entityHandler->bindValue(':Id', $this->dbIdNr);
-
-		$entityHandler->execute();
-		$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
-		$this->isIdP = $entity['isIdP'];
-		$this->isSP = $entity['isSP'];
 
 		$this->isSP_RandS = false;
 		$this->isSP_CoCov1 = false;
@@ -1792,7 +1785,7 @@ Class Metadata {
 	}
 
 	#############
-	# Removes an entity from pendingQueue if exists with same XML in published
+	# Check if an entity from pendingQueue exists with same XML in published
 	#############
 	public function checkPendingIfPublished() {
 		$pendingHandler = $this->metaDb->prepare('SELECT `entityID`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 2 AND `id` = :Id');
@@ -1832,6 +1825,15 @@ Class Metadata {
 			}
 		}
 		return false;
+	}
+
+	#############
+	# Moves an entity from pendingQueue to publishedPending state
+	#############
+	public function movePublishedPending() {
+		$pendingHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5 WHERE `status` = 2 AND `id` = :Id');
+		$pendingHandler->bindParam(':Id', $this->dbIdNr);
+		$pendingHandler->execute();
 	}
 
 	#############
@@ -1886,6 +1888,18 @@ Class Metadata {
 			$child = $child->nextSibling;
 		}
 		return false;
+	}
+
+	public function EntityID() {
+		return $this->entityID;
+	}
+
+	public function EntityExists() {
+		return $this->entityExists;
+	}
+
+	public function ID() {
+		return $this->dbIdNr;
 	}
 
 	private function showProgress($info) {
