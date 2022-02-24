@@ -78,7 +78,7 @@ Class Metadata {
 		$entityHandler->bindValue(':Id', $entityId);
 		$entityHandler->bindValue(':Status', $this->status);
 		$entityHandler->execute();
-			if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$this->entityExists = true;
 			$this->xml = new DOMDocument;
 			$this->xml->preserveWhiteSpace = false;
@@ -540,6 +540,7 @@ Class Metadata {
 	# SPSSODescriptor
 	#############
 	private function parseSPSSODescriptor($data) {
+		$this->SWAMID_6_1_16_error = false;
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
 		$child = $data->firstChild;
 		while ($child) {
@@ -575,6 +576,8 @@ Class Metadata {
 			}
 			$child = $child->nextSibling;
 		}
+		if ($this->SWAMID_6_1_16_error)
+			$this->cleanOutAssertionConsumerServiceHTTPRedirect();
 	}
 
 	private function parseSPSSODescriptor_Extensions($data) {
@@ -1477,10 +1480,9 @@ Class Metadata {
 	// 6.1.16
 	private function checkAssertionConsumerService($data) {
 		$Binding = $data->getAttribute('Binding');
-		$Location =$data->getAttribute('Location');
-		$index = $data->getAttribute('index');
-		if ($Binding == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect')
-			$this->error .= sprintf("SWAMID Tech 6.1.16: Binding with value urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect is no allowed in SPSSODescriptor->AssertionConsumerService[index=%d].\n", $index);
+		if ($Binding == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect') {
+			$this->SWAMID_6_1_16_error = true;
+		}
 	}
 
 	// 5.1.22 / 6.1.21
@@ -1660,6 +1662,35 @@ Class Metadata {
 			} else
 				$child = $child->nextSibling;
 		}
+	}
+
+	#############
+	# Removes AssertionConsumerService with binding = HTTP-Redirect.
+	# SWAMID_6_1_16_error
+	#############
+	private function cleanOutAssertionConsumerServiceHTTPRedirect() {
+		$removed = false;
+		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
+		$child = $EntityDescriptor->firstChild;
+		while ($child) {
+			if ($child->nodeName == 'md:SPSSODescriptor') {
+				$subchild = $child->firstChild;
+				while ($subchild) {
+					if ($subchild->nodeName == 'md:AssertionConsumerService' && $subchild->getAttribute('Binding') == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect') {
+						$index = $subchild->getAttribute('index');
+						$remChild = $subchild;
+						$child->removeChild($remChild);
+						$subchild = false;
+						$child=false;
+						$removed = true;
+					} else
+						$subchild = $subchild->nextSibling;
+				}
+			} else
+				$child = $child->nextSibling;
+		}
+		if ($removed)
+			$this->error .= sprintf("SWAMID Tech 6.1.16: Binding with value urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect is no allowed in SPSSODescriptor->AssertionConsumerService[index=%d]. Have been removed.\n", $index);
 	}
 
 	#############
@@ -1909,5 +1940,44 @@ Class Metadata {
 		#	flush();
 		#}
 	}
+
+	public function saveStatus($date = '') {
+		if ($date == '') {
+			$date = gmdate('Y-m-d');
+		}
+		$ErrorsTotal = 0;
+		$ErrorsSPs = 0;
+		$ErrorsIdPs = 0;
+		$NrOfEntites = 0;
+		$NrOfSPs = 0;
+		$NrOfIdPs = 0;
+		$Changed = 0;
+		$entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `lastUpdated`, `errors` FROM Entities WHERE status = 1 AND publishIn > 2");
+		$entitys->execute();
+		while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+			$isIdP = $row['isIdP'];
+			$isSP = $row['isSP'];
+			switch ($row['publishIn']) {
+				case 1 :
+					break;
+				case 3 :
+				case 7 :
+					$NrOfEntites ++;
+					if ($row['isIdP']) $NrOfIdPs ++;
+					if ($row['isSP']) $NrOfSPs ++;
+					if ( $row['errors'] <> '' ) {
+						$ErrorsTotal ++;
+						if ($row['isIdP']) $ErrorsIdPs ++;
+						if ($row['isSP']) $ErrorsSPs ++;
+					}
+					if ($row['lastUpdated'] > '2021-12-31') $Changed ++;
+					break;
+				default :
+					printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
+			}
+		}
+		$statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatus (`date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed`) VALUES ('$date', $ErrorsTotal, $ErrorsSPs, $ErrorsIdPs, $NrOfEntites, $NrOfSPs, $NrOfIdPs, '$Changed')");
+		$statsUpdate->execute();
+	}
 }
-# vim:set ts=2:
+# vim:set ts=2

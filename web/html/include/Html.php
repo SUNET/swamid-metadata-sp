@@ -78,11 +78,11 @@ Class HTML {
 ###
 # Print footer on webpage
 ###
-public function showFooter($collapseIcons = array()) {
+public function showFooter($collapseIcons = array(), $seamless = false) {
 	$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
 	// printf('    <hr>%s    %d%s', "\n", time()-$this->startTimer, "\n");
 	?>
-  </div>
+  </div><?php if ($seamless) { ?>
   <!-- Include the Seamless Access Sign in Button & Discovery Service -->
   <script src="//service.seamlessaccess.org/thiss.js"></script>
   <script>
@@ -92,7 +92,7 @@ public function showFooter($collapseIcons = array()) {
         loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin/<?=$this->destination?>'
       }).render('#SWAMID-SeamlessAccess');
     };
-  </script>
+  </script><?php } ?>
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>

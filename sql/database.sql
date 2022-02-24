@@ -111,3 +111,13 @@ CREATE TABLE TestResults (
 	`time` DATETIME,
 	`result` VARCHAR(70),
 	UNIQUE(entityID, test));
+
+CREATE TABLE EntitiesStatus (
+	`date` DATETIME,
+	`ErrorsTotal` INT UNSIGNED,
+	`ErrorsSPs` INT UNSIGNED,
+	`ErrorsIdPs` INT UNSIGNED,
+	`NrOfEntites` INT UNSIGNED,
+	`NrOfSPs` INT UNSIGNED,
+	`NrOfIdPs` INT UNSIGNED,
+	`Changed` INT UNSIGNED);

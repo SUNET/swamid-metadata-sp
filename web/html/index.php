@@ -26,7 +26,7 @@ if (isset($_GET['showEntity'])) {
 	showEntityList();
 }
 
-$html->showFooter($display->getCollapseIcons());
+$html->showFooter($display->getCollapseIcons(),true);
 # End of page
 
 ####
