@@ -2271,7 +2271,7 @@ Class MetadataEdit {
 			print "        <ul>\n";
 			if (isset($oldContactPersons[$contactPerson['contactType']])) {
 				foreach (array('company', 'givenName', 'surName', 'emailAddress', 'telephoneNumber', 'extensions') as $oldPart) {
-					if ($oldContactPersons[$contactPerson['contactType']][$oldPart]['value'] == $contactPerson[$oldPart]) {
+					if (isset ($contactPerson[$oldPart]) && $oldContactPersons[$contactPerson['contactType']][$oldPart]['value'] == $contactPerson[$oldPart]) {
 						$oldContactPersons[$contactPerson['contactType']][$oldPart]['state'] = 'same';
 					} elseif ($contactPerson[$oldPart] == '' ) {
 						$oldContactPersons[$contactPerson['contactType']][$oldPart]['state'] = 'removed';

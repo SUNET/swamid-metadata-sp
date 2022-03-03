@@ -182,6 +182,18 @@ if (isset($_FILES['XMLfile'])) {
 					$menuActive = 'upload';
 					showUpload();
 					break;
+				case 'ErrorStatus' :
+					$menuActive = 'ErrorStatus';
+					$html->showHeaders('Metadata SWAMID - Errror status');
+					showMenu();
+					$display->showErrorStatus();
+					break;
+				case 'ErrorStatistics' :
+					$menuActive = 'ErrorStatistics';
+					$html->showHeaders('Metadata SWAMID - Error status');
+					showMenu();
+					$display->showErrorStatistics();
+					break;
 				case 'URLlist' :
 					$menuActive = 'URLlist';
 					$html->showHeaders('Metadata SWAMID - URL status');
@@ -214,12 +226,6 @@ if (isset($_FILES['XMLfile'])) {
 						$display->showXMLDiff($_GET['entity_id1'], $_GET['entity_id2']);
 					}
 					$display->showPendingListToRemove();
-					break;
-				case 'OldCategorys' :
-					$menuActive = 'OldCategorys';
-					$html->showHeaders('Metadata SWAMID - Errror status');
-					showMenu();
-					$display->showSPwithOldCategory();
 					break;
 				default :
 					showEntityList();
@@ -270,10 +276,10 @@ function showEntityList($status = 1) {
 	} elseif (isset($_GET['validationOutput'])) {
 		$sortOrder = '`validationOutput` DESC, `entityID`, `id`';
 		$validationArrow = '<i class="fa fa-arrow-down"></i>';
-	}elseif (isset($_GET['warnings'])) {
+	} elseif (isset($_GET['warnings'])) {
 		$sortOrder = '`warnings` DESC, `errors` DESC, `errorsNB` DESC, `entityID`, `id`';
 		$warningArrow = '<i class="fa fa-arrow-down"></i>';
-	}elseif (isset($_GET['errors'])) {
+	} elseif (isset($_GET['errors'])) {
 		$sortOrder = '`errors` DESC, `errorsNB` DESC, `warnings` DESC, `entityID`, `id`';
 		$errorArrow = '<i class="fa fa-arrow-down"></i>';
 	} elseif (isset($_GET['entityIDDesc'])) {
@@ -620,7 +626,8 @@ function showMenu() {
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
-	printf('<a href=".?action=OldCategorys%s"><button type="button" class="btn btn%s-primary">Deprecated EC:s</button></a>', $filter, $menuActive == 'OldCategorys' ? '' : '-outline');
+	printf('<a href=".?action=ErrorStatistics%s"><button type="button" class="btn btn%s-primary">Error statistics</button></a>', $filter, $menuActive == 'ErrorStatistics' ? '' : '-outline');
+	printf('<a href=".?action=ErrorStatus%s"><button type="button" class="btn btn%s-primary">Error status</button></a>', $filter, $menuActive == 'ErrorStatus' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
 		printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');

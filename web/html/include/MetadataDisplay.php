@@ -1066,7 +1066,15 @@ Class MetadataDisplay {
 		print "    </table>\n";
 	}
 
-	public function showSPwithOldCategory() {
+	public function showErrorStatus() {
+		$entitieHandler = $this->metaDb->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 1 AND `publishIn` > 1 ORDER BY `entityID`');
+		$entitieHandler->execute();
+
+		$organizationHandler = $this->metaDb->prepare("SELECT `data` FROM Organization WHERE `entity_id` = :Id AND `element` = 'OrganizationName' ORDER BY `lang` DESC");
+		$organizationHandler->BindParam(':Id', $entity_id);
+		$contactPersonHandler = $this->metaDb->prepare("SELECT * FROM ContactPerson WHERE `entity_id` = :Id AND (`contactType` = 'technical' OR `contactType` = 'administrative')");
+		$contactPersonHandler->BindParam(':Id', $entity_id);
+
 		$OldECHandler = $this->metaDb->prepare("SELECT `entity_id`, `entityID` FROM Entities, EntityAttributes WHERE Entities.`status` = 1 AND Entities.`id` = EntityAttributes.`entity_id` AND `type` = 'entity-category' AND `attribute` = :EC ORDER BY `entityID`");
 		$OldECHandler->bindValue(':EC', 'http://www.swamid.se/category/sfs-1993-1153');
 		$OldECHandler->execute();
@@ -1077,9 +1085,23 @@ Class MetadataDisplay {
 		$NewECHandler->BindParam(':Id', $entity_id);
 		$NINHandler = $this->metaDb->prepare("SELECT `Service_index` FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id AND `Name` = 'urn:oid:1.3.6.1.4.1.2428.90.1.5'");
 		$NINHandler->BindParam(':Id', $entity_id);
-
-		printf ('    <h3>SFS-1993-1153</h3>%s    <p>Entites with sfs-1993-1153 but NOT CoCo and norEduPersonNIN</p>%s', "\n", "\n");
-		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
+		printf ('    Description of the different error status tabs:%s    <ul>%s      <li>The tab Contacts shows all entities missing required contact information in metadata to get information from SWAMID.</li>%s      <li>The tab Entity category - SFS-1993-1153 shows all entities that has the old entity category SWAMID SFS-1993-1153 but has not start to transfer to the new entity categories.</li>%s      <li>The tab Entity category - R&E shows all entities that has the old entity category REFEDS Research and Scholarship but has not start to transfer to the new entity categories.</li>%s    </ul>%s', "\n", "\n", "\n", "\n", "\n", "\n");
+		printf ('    <ul class="nav nav-tabs" id="myTab" role="tablist">%s      <li class="nav-item">%s        <a class="nav-link active" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="true">Contacts</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="SFS-tab" data-toggle="tab" href="#SFS" role="tab" aria-controls="SFS" aria-selected="false">Entity category - SFS-1993-1153</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="RE-tab" data-toggle="tab" href="#RE" role="tab" aria-controls="RE" aria-selected="false">Entity category - R&E</a>%s      </li>%s    </ul>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		printf ('    <div class="tab-content" id="myTabContent">%s      <div class="tab-pane fade show active" id="contact" role="tabpanel" aria-labelledby="contact-tab">%s', "\n", "\n");
+		printf ('        <h3>Contacts missing</h3>%s        <p>Entites missing both technical and administrative contacts.</p>%s', "\n", "\n");
+		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>OrganizationName</th><th>Missing contacts</th></tr>%s', "\n", "\n");
+		while ($Entity = $entitieHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entity_id = $Entity['id'];
+			$contactPersonHandler->execute();
+			if (! $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
+				$organizationHandler->execute();
+				$OrganizationName = ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) ? $organization['data'] : 'Missing';
+				printf('          <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>X</td></tr>%s', $entity_id, $Entity['entityID'], $OrganizationName, "\n");
+			}
+		}
+		printf ('        </table>%s      </div><!-- End tab-pane contact -->%s      <div class="tab-pane fade" id="SFS" role="tabpanel" aria-labelledby="SFS-tab">%s', "\n", "\n", "\n", "\n");
+		printf ('        <h3>SFS-1993-1153</h3>%s        <p>Entites with sfs-1993-1153 but NOT CoCo and norEduPersonNIN</p>%s', "\n", "\n");
+		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
 		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entity_id = $Entity['entity_id'];
 			$CoCoECHandler->execute();
@@ -1087,15 +1109,15 @@ Class MetadataDisplay {
 			$NINHandler->execute();
 			$NIN = $NINHandler->fetch(PDO::FETCH_ASSOC);
 			if (! ($CoCo && $NIN)) {
-				printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td></tr>', $entity_id, $Entity['entityID'], ($CoCo) ? '' : 'X', ($NIN) ? '' : 'X');
+				printf('          <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td></tr>%s', $entity_id, $Entity['entityID'], ($CoCo) ? '' : 'X', ($NIN) ? '' : 'X', "\n");
 			}
 		}
-		print "    </table>\n";
+		printf ('        </table>%s      </div><!-- End tab-pane CoCo -->%s      <div class="tab-pane fade" id="RE" role="tabpanel" aria-labelledby="RE-tab">%s', "\n", "\n", "\n");
 
 		$OldECHandler->bindValue(':EC', 'http://www.swamid.se/category/research-and-education');
 		$OldECHandler->execute();
-		printf ('    <h3>Research and Education</h3>%s    <p>Entites with research-and-education but NOT research-and-scholarship.<br>Entites with research-and-education might also be replaced with CoCo or Personalized. They are listed for verification</p>%s', "\n", "\n");
-		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Missing any new Categorys</th><th>Have CoCo</th><th>Have Personalized</th></tr>%s', "\n", "\n");
+		printf ('        <h3>Research and Education</h3>%s        <p>Entites with research-and-education but NOT research-and-scholarship.<br>Entites with research-and-education might also be replaced with CoCo or Personalized. They are listed for verification</p>%s', "\n", "\n");
+		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>Missing any new Categorys</th><th>Have CoCo</th><th>Have Personalized</th></tr>%s', "\n", "\n");
 		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entity_id = $Entity['entity_id'];
 			$CoCo = false;
@@ -1115,12 +1137,133 @@ Class MetadataDisplay {
 				}
 			}
 			if (! ($RandS)) {
-				printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>', $entity_id, $Entity['entityID'], ($CoCo || $RandS || $Personalized) ? '' : 'X', ($CoCo) ? 'X' : '', ($Personalized) ? 'X' : '');
+				printf('          <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $entity_id, $Entity['entityID'], ($CoCo || $RandS || $Personalized) ? '' : 'X', ($CoCo) ? 'X' : '', ($Personalized) ? 'X' : '', "\n");
 			}
 		}
-		print "    </table>\n";
+		printf ('        </table>%s      </div><!-- End tab-pane RE -->%s    </div><!-- End tab-content -->%s', "\n", "\n", "\n");
 	}
 
+	public function showErrorStatistics() {
+		$statusRows = $this->metaDb->prepare("SELECT `date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed` FROM EntitiesStatus ORDER BY `date`");
+		$statusRows->execute();
+		$TotalMin = 1000;
+		$SPMin = 1000;
+		$IdPMin = 1000;
+		printf ('    <h3>Totalt entity errors</h3>    <p>Statistics on number of entities not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="total" width="200" height="50"></canvas>%s    <h3>Totalt SP errors</h3>%s    <p>Statistics on number of Service Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="SPs" width="200" height="50"></canvas>%s    <h3>Totalt IdP errors</h3>%s    <p>Statistics on number of Identity Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="IdPs" width="200" height="50"></canvas>%s    <br><br>%s    <h3>Statistics in numbers</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th><th>ErrorsTotal</th><th>ErrorsSPs</th><th>ErrorsIdPs</th></tr>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
+			$week = date('W',mktime(0, 0, 0, substr($row['date'],5,2), substr($row['date'],8,2), substr($row['date'],0,4)));
+			$dateLabel = substr($row['date'],2,8);
+			printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>%s', $dateLabel, $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], $row['ErrorsTotal'], $row['ErrorsSPs'], $row['ErrorsIdPs'], "\n");
+			$labelsArray[] = $dateLabel;
+			#substr($row['date'],8,2) . '-' . substr($row['date'],5,2) . '-' . substr($row['date'],2,2);
+			$totalArray[] = $row['ErrorsTotal'];
+			$totalOKArray[] = $row['NrOfEntites'] - $row['ErrorsTotal'];
+			$SPArray[] = $row['ErrorsSPs'];
+			$SPOKArray[] = $row['NrOfSPs'] - $row['ErrorsSPs'];
+			$IdPArray[] = $row['ErrorsIdPs'];
+			$IdPOKArray[] = $row['NrOfIdPs'] - $row['ErrorsIdPs'];
+			$TotalMin = ($row['ErrorsTotal'] < $TotalMin) ? $row['ErrorsTotal'] : $TotalMin;
+			$SPMin = ($row['ErrorsSPs'] < $SPMin) ? $row['ErrorsSPs'] : $SPMin;
+			$IdPMin = ($row['ErrorsIdPs'] < $IdPMin) ? $row['ErrorsIdPs'] : $IdPMin;
+		}
+		$labels = implode("','", $labelsArray);
+		$total = implode(',', $totalArray);
+		$totalOK = implode(',', $totalOKArray);
+		$SP = implode(',', $SPArray);
+		$SPOK = implode(',', $SPOKArray);
+		$IdP = implode(',', $IdPArray);
+		$IdPOK = implode(',', $IdPOKArray);
+
+		$TotalMin = ($TotalMin < 100) ? 0 : $TotalMin - 100;
+		$SPMin = ($SPMin < 100) ? 0 : $SPMin - 100;
+		$IdPMin = ($IdPMin < 100) ? 0 : $IdPMin - 100;
+		print "    </table>\n"; ?>
+    <script src="/include/chart/chart.min.js"></script>
+    <script>
+      const ctxTotal = document.getElementById('total').getContext('2d');
+      const ctxSP = document.getElementById('SPs').getContext('2d');
+      const ctxIdP = document.getElementById('IdPs').getContext('2d');
+
+      const myTotal = new Chart(ctxTotal, {
+        type: 'line',
+        data: {
+          labels: ['<?=$labels?>'],
+          datasets: [{
+            label: 'Errors',
+            backgroundColor: "rgb(220,0,0)",
+            data: [<?=$total?>],
+            fill: 'origin'
+          }, {
+            label: 'OK',
+            backgroundColor: "rgb(0,220,0)",
+            data: [<?=$totalOK?>],
+            fill: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            yAxes: {
+              stacked: true,
+              suggestedMin: <?= $TotalMin?>
+            }
+          }
+        }
+      });
+      const mySP = new Chart(ctxSP, {
+        type: 'line',
+        data: {
+          labels: ['<?=$labels?>'],
+          datasets: [{
+            label: 'Errors',
+            backgroundColor: "rgb(220,0,0)",
+            data: [<?=$SP?>],
+            fill: 'origin'
+          }, {
+            label: 'OK',
+            backgroundColor: "rgb(0,220,0)",
+            data: [<?=$SPOK?>],
+            fill: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            yAxes: {
+              stacked: true,
+              suggestedMin: <?= $SPMin?>
+            }
+          }
+        }
+      });
+      const myIdP = new Chart(ctxIdP, {
+        type: 'line',
+        data: {
+          labels: ['<?=$labels?>'],
+          datasets: [{
+            label: 'Errors',
+            backgroundColor: "rgb(220,0,0)",
+            data: [<?=$IdP?>],
+            fill: 'origin'
+          }, {
+            label: 'OK',
+            backgroundColor: "rgb(0,220,0)",
+            data: [<?=$IdPOK?>],
+			fill: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            yAxes: {
+              stacked: true,
+              suggestedMin: <?= $IdPMin?>
+            }
+          }
+        }
+      });
+    </script><?php print "\n";
+	}
 	#############
 	# Return collapseIcons
 	#############
