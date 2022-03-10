@@ -635,15 +635,16 @@ Class Metadata {
 
 		$child = $data->firstChild;
 		while ($child) {
-			$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
 			switch ($child->nodeName) {
 				case 'md:ServiceName' :
+					$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
 					$ServiceElementHandler->bindValue(':Element', 'ServiceName');
 					$ServiceElementHandler->bindValue(':Data', trim($child->textContent));
 					$ServiceElementHandler->execute();
 					$ServiceNameFound = true;
 					break;
 				case 'md:ServiceDescription' :
+					$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
 					$ServiceElementHandler->bindValue(':Element', 'ServiceDescription');
 					$ServiceElementHandler->bindValue(':Data', trim($child->textContent));
 					$ServiceElementHandler->execute();
