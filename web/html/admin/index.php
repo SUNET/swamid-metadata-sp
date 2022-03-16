@@ -7,11 +7,11 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require '../vendor/autoload.php';
 
-include '../include/Html.php';
-$html = new HTML();
-
 $baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 2);
 include $baseDir . '/config.php' ;
+
+include '../include/Html.php';
+$html = new HTML();
 
 $errors = '';
 $filterFirst = true;

@@ -880,11 +880,13 @@ Class MetadataDisplay {
 		$entityHandler = $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$entityHandler->execute();
-		$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
-		header('Content-Type: application/xml; charset=utf-8');
-		if (isset($_GET['download']))
-			header('Content-Disposition: attachment; filename=metadata.xml');
-		print $entity['xml'];
+		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+			header('Content-Type: application/xml; charset=utf-8');
+			if (isset($_GET['download']))
+				header('Content-Disposition: attachment; filename=metadata.xml');
+			print $entity['xml'];
+		} else
+			print "Not Found";
 		exit;
 	}
 

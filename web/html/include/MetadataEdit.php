@@ -2420,6 +2420,7 @@ Class MetadataEdit {
 		}
 		$this->mergeOrganization();
 		$this->mergeContactPersons();
+		$this->saveXML();
 	}
 	public function mergeRegistrationInfo() {
 		# Skip if not same entityID. Only migrate if same!!!!

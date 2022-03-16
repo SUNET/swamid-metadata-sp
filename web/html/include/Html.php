@@ -1,10 +1,23 @@
 <?php
 Class HTML {
 	# Setup
-	function __construct() {
+	function __construct($DS='seamless') {
 		$this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
 		$this->destination = '?first';
 		$this->startTimer = time();
+		switch ($DS) {
+			case 'seamless' :
+				$this->DS = '/DS/seamless-access';
+				$this->DSService= '//service.seamlessaccess.org/thiss.js';
+				break;
+			case 'thiss' :
+				$this->DS = '/DS/thiss.io';
+				$this->DSService= '//use.thiss.io/thiss.js';
+				break;
+			default :
+				$this->DS = '/DS/seamless-access';
+				$this->DSService= '//service.seamlessaccess.org/thiss.js';
+		}
 	}
 
 	###
@@ -85,12 +98,12 @@ public function showFooter($collapseIcons = array(), $seamless = false) {
 	?>
   </div><?php if ($seamless) { ?>
   <!-- Include the Seamless Access Sign in Button & Discovery Service -->
-  <script src="//service.seamlessaccess.org/thiss.js"></script>
+  <script src="<?=$this->DSService?>"></script>
   <script>
     window.onload = function() {
       // Render the Seamless Access button
       thiss.DiscoveryComponent({
-        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso/DS/seamless-access?target=<?=$hostURL?>/admin/<?=$this->destination?>'
+        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso<?=$this->DS?>?target=<?=$hostURL?>/admin/<?=$this->destination?>'
       }).render('#SWAMID-SeamlessAccess');
     };
   </script><?php } ?>

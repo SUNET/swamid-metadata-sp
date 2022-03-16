@@ -1,9 +1,9 @@
 <?php
-include 'include/Html.php';
-$html = new HTML();
-
 $baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 1);
 include $baseDir . '/config.php';
+
+include 'include/Html.php';
+$html = new HTML($DiscoveryService);
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -12,8 +12,6 @@ try {
 } catch(PDOException $e) {
   echo "Error: " . $e->getMessage();
 }
-
-$collapseIcons = [];
 
 include 'include/MetadataDisplay.php';
 $display = new MetadataDisplay($baseDir);

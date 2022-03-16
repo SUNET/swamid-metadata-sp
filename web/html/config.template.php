@@ -9,3 +9,5 @@ $SASLUser = 'SASL User';
 $SASLPassword = 'SASL Password';
 $MailFrom = 'Sending user/alias';
 $SendOut = false;   // Switch to true to start sending mails
+
+$DiscoveryService='seamless';
