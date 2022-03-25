@@ -846,32 +846,37 @@ Class Metadata {
 		$SSOUIIHandler->bindParam(':Height', $height);
 		$SSOUIIHandler->bindParam(':Width', $width);
 		$SSOUIIHandler->bindParam(':Element', $element);
+		$SSOUIIHandler->bindParam(':Value', $value);
 
 		# https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-ui/v1.0/os/sstc-saml-metadata-ui-v1.0-os.html
 		$child = $data->firstChild;
 		while ($child) {
-			$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
-			switch ($child->nodeName) {
-				case 'mdui:Logo' :
-				case 'mdui:InformationURL' :
-				case 'mdui:PrivacyStatementURL' :
-					$this->addURL(trim($child->textContent), 1);
-				case 'mdui:DisplayName' :
-				case 'mdui:Description' :
-				case 'mdui:Keywords' :
-					$element = substr($child->nodeName, 5);
-					$height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-					$width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
-					break;
-				default :
-					$this->result .= sprintf ("Unknown Element (%s) in %s->UIInfo.\n", $child->nodeName, $type);
-					$element = 'Unknown';
-			}
+			if ($child->nodeType != 8) {
+				$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
+				switch ($child->nodeName) {
+					case 'mdui:Logo' :
+					case 'mdui:InformationURL' :
+					case 'mdui:PrivacyStatementURL' :
+						$this->addURL(trim($child->textContent), 1);
+					case 'mdui:DisplayName' :
+					case 'mdui:Description' :
+					case 'mdui:Keywords' :
+						$element = substr($child->nodeName, 5);
+						$height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
+						$width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
+						break;
+					default :
+						$this->result .= sprintf ("Unknown Element (%s) in %s->UIInfo.\n", $child->nodeName, $type);
+						$element = 'Unknown';
+				}
 
-			$SSOUIIHandler->bindValue(':Value', trim($child->textContent));
-			$SSOUIIHandler->execute();
+				$value = trim($child->textContent);
+				$SSOUIIHandler->execute();
+				if ($value == '') {
+					$this->error .= sprintf ("Missing value for element %s in %s->MDUI.\n", $element, $type);
+				}
+			}
 			$child = $child->nextSibling;
-			while ($child && $child->nodeType == 8) $child = $child->nextSibling;
 		}
 	}
 
