@@ -13,13 +13,27 @@ include $baseDir . '/config.php' ;
 include '../include/Html.php';
 $html = new HTML();
 
+$errorURL = isset($_SERVER['Meta-errorURL']) ? '<a href="' . $_SERVER['Meta-errorURL'] . '">Mer information</a><br>' : '<br>';
+$errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'), array(time(), 'https://verify.sunet.se/shibboleth', $_SERVER['Shib-Session-ID']), $errorURL);
+
 $errors = '';
 $filterFirst = true;
+
+if (isset($_SERVER['Meta-Assurance-Certification'])) {
+	$AssuranceCertificationFound = false;
+	foreach (explode(';',$_SERVER['Meta-Assurance-Certification']) as $AssuranceCertification) {
+		if ($AssuranceCertification == 'http://www.swamid.se/policy/assurance/al1')
+			$AssuranceCertificationFound = true;
+	}
+	if (! $AssuranceCertificationFound) {
+		$errors .= sprintf('%s has no AssuranceCertification (http://www.swamid.se/policy/assurance/al1) ', $_SERVER['Shib-Identity-Provider']);
+	}
+}
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
 	$EPPN = $_SERVER['eduPersonPrincipalName'];
 } else {
-	$errors .= 'Missing eduPersonPrincipalName in SAML response<br>';
+	$errors .= 'Missing eduPersonPrincipalName in SAML response ' . str_replace(array('ERRORURL_CODE', 'ERRORURL_CTX'), array('IDENTIFICATION_FAILURE', 'eduPersonPrincipalName'), $errorURL);
 }
 
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
@@ -58,7 +72,7 @@ if ( isset($_SERVER['mail'])) {
 	$mailArray = explode(';',$_SERVER['mail']);
 	$mail = $mailArray[0];
 } else {
-	$errors .= 'Missing mail in SAML response<br>';
+	$errors .= 'Missing mail in SAML response ' . str_replace(array('ERRORURL_CODE', 'ERRORURL_CTX'), array('IDENTIFICATION_FAILURE', 'mail'), $errorURL);
 }
 
 if (isset($_SERVER['displayName'])) {
@@ -205,6 +219,10 @@ if (isset($_FILES['XMLfile'])) {
 					$html->showHeaders('Metadata SWAMID - Errror status');
 					showMenu();
 					$display->showErrorList();
+					break;
+				case 'ErrorListDownload' :
+					$display->showErrorList(true);
+					exit;
 					break;
 				case 'CleanPending' :
 					$menuActive = 'CleanPending';

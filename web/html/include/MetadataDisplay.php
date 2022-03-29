@@ -975,12 +975,19 @@ Class MetadataDisplay {
 		}
 	}
 
-	public function showErrorList() {
+	public function showErrorList($download = false) {
 		$emails = array();
-		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
+		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
 		$EntityHandler->execute();
 		$contactPersonHandler = $this->metaDb->prepare('SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
-		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
+		if ($download) {
+			header('Content-Type: text/csv; charset=utf-8');
+			header('Content-Disposition: attachment; filename=errorlog.csv');
+			print "Type,Feed,Entity,Contact address\n";
+		} else {
+			printf ('    <a href=".?action=ErrorListDownload"><button type="button" class="btn btn-primary">Download CSV</button></a><br>%s', "\n");
+			printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Type</th><th>Feed</th><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
+		}
 		while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$contactPersonHandler->bindValue(':Id', $Entity['id']);
 			$contactPersonHandler->execute();
@@ -998,10 +1005,30 @@ Class MetadataDisplay {
 				$email = $emails['support'];
 			} else
 				$email = 'Missing';
-			printf ('      <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors'].$Entity['errorsNB']), "\n");
+			$type = ($Entity['isIdP']) ? ($Entity['isSP']) ? 'IdP & SP' : 'IdP' : 'SP';
+			switch ($Entity['publishIn']) {
+				case 1 :
+					$feed = 'T';
+					break;
+				case 3 :
+					$feed = 'S';
+					break;
+				case 7 :
+					$feed = 'E';
+					break;
+				default : 
+					$feed = '?';
+			}
+			if ($download) {
+				printf ('%s,%s,%s,%s%s', $type, $feed, $Entity['entityID'], $email, "\n");
+			} else {
+				printf ('      <tr><td>%s</td><td>%s</td><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $type, $feed, $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors'].$Entity['errorsNB']), "\n");
+			}
 			$missing = false;
 		}
-		print "    </table>\n";
+		if (! $download) {
+			print "    </table>\n";
+		}
 	}
 
 	public function showXMLDiff($entity_id1, $entity_id2) {

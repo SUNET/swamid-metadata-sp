@@ -97,6 +97,7 @@ public function showFooter($collapseIcons = array(), $seamless = false) {
 	// printf('    <hr>%s    %d%s', "\n", time()-$this->startTimer, "\n");
 	?>
   </div><?php if ($seamless) { ?>
+
   <!-- Include the Seamless Access Sign in Button & Discovery Service -->
   <script src="<?=$this->DSService?>"></script>
   <script>
