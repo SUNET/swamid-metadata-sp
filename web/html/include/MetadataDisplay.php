@@ -977,7 +977,7 @@ Class MetadataDisplay {
 
 	public function showErrorList() {
 		$emails = array();
-		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1");
+		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
 		$EntityHandler->execute();
 		$contactPersonHandler = $this->metaDb->prepare('SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
 		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
