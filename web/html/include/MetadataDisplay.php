@@ -1011,7 +1011,7 @@ Class MetadataDisplay {
 					$feed = 'T';
 					break;
 				case 3 :
-					$feed = 'S';
+					$feed = 'ES';
 					break;
 				case 7 :
 					$feed = 'E';

@@ -2794,14 +2794,16 @@ Class MetadataEdit {
 				# Find mdui:* in XML
 				$child = $UUInfo->firstChild;
 				while ($child) {
-					$lang = $child->getAttribute('xml:lang');
-					$height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-					$width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
-					$element = $child->nodeName;
-					if (isset($oldMDUIElements[$element][$lang])) {
-						$size = $height.'x'.$width;
-						if (isset($oldMDUIElements[$element][$lang][$size])) {
-							unset($oldMDUIElements[$element][$lang][$size]);
+					if ($child->nodeType != 8) {
+						$lang = $child->getAttribute('xml:lang');
+						$height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
+						$width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
+						$element = $child->nodeName;
+						if (isset($oldMDUIElements[$element][$lang])) {
+							$size = $height.'x'.$width;
+							if (isset($oldMDUIElements[$element][$lang][$size])) {
+								unset($oldMDUIElements[$element][$lang][$size]);
+							}
 						}
 					}
 					$child = $child->nextSibling;
@@ -3182,28 +3184,30 @@ Class MetadataEdit {
 			$child = $Organization->firstChild;
 			$nextOrder = 1;
 			while ($child) {
-				$order = $this->orderOrganization[$child->nodeName];
-				while ($order > $nextOrder) {
-					if (isset($oldElements[$nextOrder])) {
-						foreach ($oldElements[$nextOrder] as $index => $element) {
-							$lang = $element['lang'];
-							$elementmd = 'md:'.$element['element'];
-							$value = $element['data'];
-							$OrganizationElement = $this->newXml->createElement($elementmd);
-							$OrganizationElement->setAttribute('xml:lang', $lang);
-							$OrganizationElement->nodeValue = $value;
-							$Organization->insertBefore($OrganizationElement, $child);
-							unset($oldElements[$nextOrder][$index]);
+				if ($child->nodeType != 8) {
+					$order = $this->orderOrganization[$child->nodeName];
+					while ($order > $nextOrder) {
+						if (isset($oldElements[$nextOrder])) {
+							foreach ($oldElements[$nextOrder] as $index => $element) {
+								$lang = $element['lang'];
+								$elementmd = 'md:'.$element['element'];
+								$value = $element['data'];
+								$OrganizationElement = $this->newXml->createElement($elementmd);
+								$OrganizationElement->setAttribute('xml:lang', $lang);
+								$OrganizationElement->nodeValue = $value;
+								$Organization->insertBefore($OrganizationElement, $child);
+								unset($oldElements[$nextOrder][$index]);
+							}
 						}
+						$nextOrder++;
 					}
-					$nextOrder++;
-				}
-				$lang = $child->getAttribute('xml:lang');
-				$elementmd = $child->nodeName;
-				if (isset($oldElements[$order])) {
-					foreach ($oldElements[$order] as $index => $element) {
-						if ($element['lang'] == $lang && 'md:'.$element['element'] == $elementmd) {
-							unset ($oldElements[$order][$index]);
+					$lang = $child->getAttribute('xml:lang');
+					$elementmd = $child->nodeName;
+					if (isset($oldElements[$order])) {
+						foreach ($oldElements[$order] as $index => $element) {
+							if ($element['lang'] == $lang && 'md:'.$element['element'] == $elementmd) {
+								unset ($oldElements[$order][$index]);
+							}
 						}
 					}
 				}
