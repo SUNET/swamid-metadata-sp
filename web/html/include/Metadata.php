@@ -1867,10 +1867,19 @@ Class Metadata {
 	#############
 	# Moves an entity from pendingQueue to publishedPending state
 	#############
+	public function move2SoftDelete() {
+		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 4 WHERE `status` = 1 AND `id` = :Id');
+		$entityHandler->bindParam(':Id', $this->dbIdNr);
+		$entityHandler->execute();
+	}
+
+	#############
+	# Moves an entity from pendingQueue to publishedPending state
+	#############
 	public function movePublishedPending() {
-		$pendingHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5 WHERE `status` = 2 AND `id` = :Id');
-		$pendingHandler->bindParam(':Id', $this->dbIdNr);
-		$pendingHandler->execute();
+		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5 WHERE `status` = 2 AND `id` = :Id');
+		$entityHandler->bindParam(':Id', $this->dbIdNr);
+		$entityHandler->execute();
 	}
 
 	#############
