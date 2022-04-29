@@ -1832,7 +1832,7 @@ Class Metadata {
 		$publishedHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$publishedHandler->bindParam(':EntityID', $entityID);
 
-		require_once $this->basedDir.'/include/NormalizeXML.php';
+		require_once $this->baseDir.'/include/NormalizeXML.php';
 		$normalize = new NormalizeXML();
 
 		if ($pendingEntity = $pendingHandler->fetch(PDO::FETCH_ASSOC)) {
