@@ -414,6 +414,7 @@ Class MetadataEdit {
 	private function editIdPErrorURL() {
 		if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
+			$errorURLValue = urldecode($_GET['errorURL']);
 
 			# Find md:IDPSSODescriptor in XML
 			$child = $EntityDescriptor->firstChild;
@@ -428,16 +429,15 @@ Class MetadataEdit {
 			switch ($_GET['action']) {
 				case 'Update' :
 					if ($IDPSSODescriptor) {
-						$newURL = urldecode($_GET['errorURL']);
-						$IDPSSODescriptor->setAttribute('errorURL', $newURL);
+						$IDPSSODescriptor->setAttribute('errorURL', $errorURLValue);
 						$errorURLUpdateHandler = $this->metaDb->prepare("REPLACE INTO EntityURLs (entity_id, URL, type ) VALUES (:Id, :URL, 'error');");
 						$errorURLUpdateHandler->bindParam(':Id', $this->dbIdNr);
-						$errorURLUpdateHandler->bindParam(':URL', $newURL);
+						$errorURLUpdateHandler->bindParam(':URL', $errorURLValue);
 						$errorURLUpdateHandler->execute();
 						$update = true;
 					}
 					break;
-				case 'Delete':
+				case 'Delete' :
 					if ($IDPSSODescriptor) {
 						$IDPSSODescriptor->removeAttribute('errorURL');
 						$errorURLUpdateHandler = $this->metaDb->prepare("DELETE FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
@@ -445,11 +445,14 @@ Class MetadataEdit {
 						$errorURLUpdateHandler->execute();
 						$update = true;
 					}
+					$errorURLValue = '';
 					break;
 			}
 			if ($update) {
 				$this->saveXML();
 			}
+		} else {
+			$errorURLValue = '';
 		}
 
 		$errorURLHandler = $this->metaDb->prepare("SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
@@ -469,18 +472,24 @@ Class MetadataEdit {
 			$newstate = ($newURL == 'Missing') ? 'dark' : 'success';
 			$oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
 		}
-		$newURL = ($newURL == 'Missing') ? 'Missing' : sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $newURL, $newstate, $newURL);
 		$oldURL = ($oldURL == 'Missing') ? 'Missing' : sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $oldURL, $oldstate, $oldURL);
+		if ($newURL != 'Missing') {
+			$baseLink = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&errorURL=%s&action=', $this->dbIdNr, $this->dbOldIdNr, urlencode($newURL));
+			$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
+			$newURL = sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $newURL, $newstate, $newURL);
+		} else {
+			$links = '';
+		}
 
 		printf('%s    <div class="row">%s      <div class="col">', "\n", "\n");
-		printf('%s        <b>errorURL</b>%s        <ul><li><a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&errorURL=None&action=Delete"><i class="fas fa-trash"></i></a> <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">%s</p></li></ul>', "\n", "\n", $this->dbIdNr, $this->dbOldIdNr, $newstate, $newURL);
+		printf('%s        <b>errorURL</b>%s        <ul><li>%s<p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">%s</p></li></ul>', "\n", "\n", $links, $newstate, $newURL);
 		print '
         <form>
           <input type="hidden" name="edit" value="IdPErrorURL">
           <input type="hidden" name="Entity" value="' . $this->dbIdNr . '">
           <input type="hidden" name="oldEntity" value="' . $this->dbOldIdNr . '">
           New errorURL :
-          <input type="text" name="errorURL">
+          <input type="text" name="errorURL" value="' . $errorURLValue . '">
           <br>
           <input type="submit" name="action" value="Update">
         </form>
@@ -495,6 +504,7 @@ Class MetadataEdit {
 		if (isset($_GET['action']) && isset($_GET['value']) && $_GET['value'] != '') {
 			$changed = false;
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
+			$scopeValue = $_GET['value'];
 
 			# Find md:IDPSSODescriptor in XML
 			$child = $EntityDescriptor->firstChild;
@@ -536,7 +546,7 @@ Class MetadataEdit {
 							switch ($child->nodeName) {
 								case 'shibmd:Scope' :
 									$shibmdFound = true;
-									if ($child->textContent == $_GET['value'])
+									if ($child->textContent == $scopeValue)
 										$Scope = $child;
 									break;
 								case 'mdui:UIInfo' :
@@ -547,7 +557,7 @@ Class MetadataEdit {
 							$child = $child->nextSibling;
 						}
 						if (! $Scope ) {
-							$Scope = $this->newXml->createElement('shibmd:Scope', $_GET['value']);
+							$Scope = $this->newXml->createElement('shibmd:Scope', $scopeValue);
 							$Scope->setAttribute('regexp', 'false');
 							if ($beforeChild)
 								$Extensions->insertBefore($Scope, $beforeChild);
@@ -563,7 +573,7 @@ Class MetadataEdit {
 						if ($changed) {
 							$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, 0);');
 							$scopesInsertHandler->bindParam(':Id', $this->dbIdNr);
-							$scopesInsertHandler->bindParam(':Scope', $_GET['value']);
+							$scopesInsertHandler->bindParam(':Scope', $scopeValue);
 							$scopesInsertHandler->execute();
 						}
 					}
@@ -584,7 +594,7 @@ Class MetadataEdit {
 							$child = $Extensions->firstChild;
 							$Scope = false;
 							while ($child && ! $Scope) {
-								if ($child->nodeName == 'shibmd:Scope' && $child->textContent == $_GET['value']) {
+								if ($child->nodeName == 'shibmd:Scope' && $child->textContent == $scopeValue) {
 									$Extensions->removeChild($child);
 									$changed = true;
 								} else $moreElements = true;
@@ -596,11 +606,12 @@ Class MetadataEdit {
 							if ($changed) {
 								$scopesDeleteHandler = $this->metaDb->prepare('DELETE FROM Scopes WHERE entity_id = :Id AND scope = :Scope;');
 								$scopesDeleteHandler->bindParam(':Id', $this->dbIdNr);
-								$scopesDeleteHandler->bindParam(':Scope', $_GET['value']);
+								$scopesDeleteHandler->bindParam(':Scope', $scopeValue);
 								$scopesDeleteHandler->execute();
 							}
 						}
 					}
+					$scopeValue = '';
 					break;
 				}
 			if ($changed) {
@@ -625,8 +636,9 @@ Class MetadataEdit {
 			} else {
 				$state = 'success';
 			}
-			$removeLink = '<a href="?edit=IdPScopes&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&value='.$scope['scope'].'&action=Delete"><i class="fas fa-trash"></i></a> ';
-			printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s', $removeLink, $state, $scope['scope'], $scope['regexp'] ? 'true' : 'false', "\n");
+			$baseLink = '<a href="?edit=IdPScopes&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&value='.$scope['scope'].'&action=';
+			$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
+			printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s', $links, $state, $scope['scope'], $scope['regexp'] ? 'true' : 'false', "\n");
 		}
 		print '        </ul>
         <form>
@@ -634,7 +646,7 @@ Class MetadataEdit {
           <input type="hidden" name="Entity" value="' . $this->dbIdNr . '">
           <input type="hidden" name="oldEntity" value="' . $this->dbOldIdNr . '">
           New Scope :
-          <input type="text" name="value">
+          <input type="text" name="value" value="' . $scopeValue . '">
           <br>
           <input type="submit" name="action" value="Add">
         </form>
@@ -884,6 +896,11 @@ Class MetadataEdit {
 								}
 							}
 						}
+						$elementValue = '';
+						$langvalue = '';
+						$value = '';
+						$heightValue = 0;
+						$widthValue = 0;
 						break;
 				}
 				if ($changed) {
@@ -947,9 +964,11 @@ Class MetadataEdit {
 					$state = 'success';
 					$oldMDUIElements[$lang][$element]['state'] = 'changed';
 				}
-			} else
+			} else {
 				$state = 'success';
-			$removeLink = '<a href="?edit='.$edit.'&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$element.'&height='.$height.'&width='.$width.'&lang='.$lang.'&value='.urlencode($data).'&action=Delete"><i class="fas fa-trash"></i></a> ';
+			}
+			$baseLink = '<a href="?edit='.$edit.'&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$element.'&height='.$height.'&width='.$width.'&lang='.$lang.'&value='.urlencode($data).'&action=';
+			$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
 			switch ($element) {
 				case 'InformationURL' :
 				case 'Logo' :
@@ -958,9 +977,9 @@ Class MetadataEdit {
 					break;
 			}
 			if ($element == 'Logo') {
-				printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>', "\n", $removeLink, $state, $element, $height, $width, $data);
+				printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>', "\n", $links, $state, $element, $height, $width, $data);
 			} else {
-				printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $removeLink, $state, $element, $data);
+				printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $links, $state, $element, $data);
 			}
 		}
 		if ($showEndUL) {
@@ -1119,7 +1138,7 @@ Class MetadataEdit {
 							}
 							if (! $DiscoHints ) {
 								$DiscoHints = $this->newXml->createElement('mdui:DiscoHints');
-								$Extensions->appendChild($UUInfo);
+								$Extensions->appendChild($DiscoHints);
 							}
 							if (! $mduiFound) {
 								$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:mdui', 'urn:oasis:names:tc:SAML:metadata:ui');
@@ -1202,6 +1221,8 @@ Class MetadataEdit {
 								}
 							}
 						}
+						$elementValue = '';
+						$value = '';
 						break;
 				}
 				if ($changed) {
@@ -1238,8 +1259,9 @@ Class MetadataEdit {
 				$state = 'dark';
 			} else
 				$state = 'success';
-			$removeLink = '<a href="?edit=DiscoHints&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$element.'&value='.$data.'&action=Delete"><i class="fas fa-trash"></i></a> ';
-			printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $removeLink, $state, $data);
+			$baseLink = '<a href="?edit=DiscoHints&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$element.'&value='.$data.'&action=';
+			$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
+			printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $links, $state, $data);
 		}
 		if ($showEndUL) {
 			print "\n        </ul>";
@@ -1638,6 +1660,13 @@ Class MetadataEdit {
 								}
 							}
 						}
+						$elementValue = '';
+						$langvalue = '';
+						$value = '';
+						$name = '';
+						$friendlyName = '';
+						$nameFormat = '';
+						$isRequired = '';
 						break;
 				}
 				if ($changed) {
@@ -1698,8 +1727,9 @@ Class MetadataEdit {
 					$oldServiceElements[$index][$serviceElement['element']][$serviceElement['lang']]['state'] = 'same';
 				} else
 					$state = 'success';
-				$removeLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=%s&lang=%s&value=%s&action=Delete"><i class="fas fa-trash"></i></a> ', $this->dbIdNr, $this->dbOldIdNr, $index, $serviceElement['element'], $serviceElement['lang'], urlencode($serviceElement['data']));
-				printf('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>', "\n", $removeLink, $state, $serviceElement['element'], $serviceElement['lang'], $serviceElement['data']);
+				$baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=%s&lang=%s&value=%s&action=', $this->dbIdNr, $this->dbOldIdNr, $index, $serviceElement['element'], $serviceElement['lang'], urlencode($serviceElement['data']));
+				$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
+				printf('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>', "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], $serviceElement['data']);
 			}
 			print "\n        </ul>";
 			if ($indexValue == $index) {
@@ -1757,11 +1787,13 @@ Class MetadataEdit {
 				if (isset($oldRequestedAttributes[$index][$requestedAttribute['Name']]) && $oldRequestedAttributes[$index][$requestedAttribute['Name']]['isRequired'] == $requestedAttribute['isRequired']) {
 					$state = 'dark';
 					$oldRequestedAttributes[$index][$requestedAttribute['Name']]['state'] = 'same';
-				} else
+				} else {
 					$state = 'success';
-				$removeLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%d&action=Delete"><i class="fas fa-trash"></i></a> ', $this->dbIdNr, $this->dbOldIdNr, $index, $requestedAttribute['Name'], $requestedAttribute['isRequired']);
+				}
+				$baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%d&action=', $this->dbIdNr, $this->dbOldIdNr, $index, $requestedAttribute['Name'], $requestedAttribute['isRequired']);
+				$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
 				$existingRequestedAttribute[$requestedAttribute['Name']] = true;
-				printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>', "\n", $error, $removeLink, $state, $FriendlyNameDisplay, $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+				printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>', "\n", $error, $links, $state, $FriendlyNameDisplay, $requestedAttribute['Name'], $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
 			}
 			print "\n        </ul>";
 
@@ -1978,6 +2010,10 @@ Class MetadataEdit {
 								$changed = true;
 							}
 						}
+						$element = '';
+						$elementmd = '';
+						$lang = '';
+						$value = '';
 						break;
 				}
 				if ($changed) {
@@ -2012,8 +2048,9 @@ Class MetadataEdit {
 				$state = 'dark';
 				$oldOrganizationElements[$organization['element']][$organization['lang']]['state'] = 'same';
 			} else $state = 'success';
-			$removeLink = '<a href="?edit=Organization&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$organization['element'].'&lang='.$organization['lang'].'&value='.$organization['data'].'&action=Delete"><i class="fas fa-trash"></i></a> ';
-			printf ('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>', "\n", $removeLink, $state, $organization['element'], $organization['lang'], $organization['data']);
+			$baseLink = '<a href="?edit=Organization&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&element='.$organization['element'].'&lang='.$organization['lang'].'&value='.$organization['data'].'&action=';
+			$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
+			printf ('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>', "\n", $links, $state, $organization['element'], $organization['lang'], $organization['data']);
 			$existingOrganizationElements[$organization['element']][$organization['lang']] = true;
 		}
 		printf('
@@ -2209,13 +2246,14 @@ Class MetadataEdit {
 							$this->saveXML();
 						}
 					}
+					$type = '';
+					$part = '';
+					$value = '';
 					break;
 			}
 		} else {
 			$type = '';
-			$subType = false;
 			$part = '';
-			$partmd = '';
 			$value = '';
 		}
 		print "\n";
@@ -2262,8 +2300,9 @@ Class MetadataEdit {
 			if (! isset($existingContactPersons[$contactPerson['contactType']]))
 				$existingContactPersons[$contactPerson['contactType']] = array();
 
-			$removeLink = '<a href="?edit=ContactPersons&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&type='.$contactPerson['contactType'] . '&value=';
-			$removeLink2 = '&action=Delete"><i class="fas fa-trash"></i></a> ';
+			$baseLink = '<a href="?edit=ContactPersons&Entity='.$this->dbIdNr.'&oldEntity='.$this->dbOldIdNr.'&type='.$contactPerson['contactType'] . '&value=';
+			$copyLink = '&action=Copy"><i class="fas fa-pencil-alt"></i></a> ';
+			$removeLink = '&action=Delete"><i class="fas fa-trash"></i></a> ';
 			if ($contactPerson['subcontactType'] == '')
 				printf ("\n        <b>%s</b><br>\n", $contactPerson['contactType']);
 			else
@@ -2291,32 +2330,44 @@ Class MetadataEdit {
 			}
 			if ($contactPerson['company']) {
 				$state = ($oldContactPersons[$contactPerson['contactType']]['company']['state'] == 'same') ? 'dark' : 'success';
-				printf ('          <li>%s%s&part=Company%s<span class="text-%s">Company = %s</span></li>%s', $removeLink, $contactPerson['company'], $removeLink2, $state, $contactPerson['company'], "\n");
+				$baseLink2 = $baseLink . $contactPerson['company'] . '&part=Company';
+				$links = $baseLink2 . $copyLink . $baseLink2 . $removeLink;
+				printf ('          <li>%s<span class="text-%s">Company = %s</span></li>%s', $links, $state, $contactPerson['company'], "\n");
 				$existingContactPersons[$contactPerson['contactType']]['company'] = true;
 			}
 			if ($contactPerson['givenName']) {
 				$state = ($oldContactPersons[$contactPerson['contactType']]['givenName']['state'] == 'same') ? 'dark' : 'success';
-				printf ('          <li>%s%s&part=GivenName%s<span class="text-%s">GivenName = %s</span></li>%s', $removeLink, $contactPerson['givenName'], $removeLink2, $state, $contactPerson['givenName'], "\n");
+				$baseLink2 = $baseLink . $contactPerson['givenName'] . '&part=GivenName';
+				$links = $baseLink2 . $copyLink . $baseLink2 . $removeLink;
+				printf ('          <li>%s<span class="text-%s">GivenName = %s</span></li>%s', $links, $state, $contactPerson['givenName'], "\n");
 				$existingContactPersons[$contactPerson['contactType']]['givenName'] = true;
 			}
 			if ($contactPerson['surName']) {
 				$state = ($oldContactPersons[$contactPerson['contactType']]['surName']['state'] == 'same') ? 'dark' : 'success';
-				printf ('          <li>%s%s&part=SurName%s<span class="text-%s">SurName = %s</span></li>%s', $removeLink, $contactPerson['surName'], $removeLink2, $state, $contactPerson['surName'], "\n");
+				$baseLink2 = $baseLink . $contactPerson['surName'] . '&part=SurName';
+				$links = $baseLink2 . $copyLink . $baseLink2 . $removeLink;
+				printf ('          <li>%s<span class="text-%s">SurName = %s</span></li>%s', $links, $state, $contactPerson['surName'], "\n");
 				$existingContactPersons[$contactPerson['contactType']]['surName'] = true;
 			}
 			if ($contactPerson['emailAddress']) {
 				$state = ($oldContactPersons[$contactPerson['contactType']]['emailAddress']['state'] == 'same') ? 'dark' : 'success';
-				printf ('          <li>%s%s&part=EmailAddress%s<span class="text-%s">EmailAddress = %s</span></li>%s', $removeLink, $contactPerson['emailAddress'], $removeLink2, $state, $contactPerson['emailAddress'], "\n");
+				$baseLink2 = $baseLink . $contactPerson['emailAddress'] . '&part=EmailAddress';
+				$links = $baseLink2 . $copyLink . $baseLink2 . $removeLink;
+				printf ('          <li>%s<span class="text-%s">EmailAddress = %s</span></li>%s', $links, $state, $contactPerson['emailAddress'], "\n");
 				$existingContactPersons[$contactPerson['contactType']]['emailAddress'] = true;
 			}
 			if ($contactPerson['telephoneNumber']) {
 				$state = ($oldContactPersons[$contactPerson['contactType']]['telephoneNumber']['state'] == 'same') ? 'dark' : 'success';
-				printf ('          <li>%s%s&part=TelephoneNumber%s<span class="text-%s">TelephoneNumber = %s</span></li>%s', $removeLink, $contactPerson['telephoneNumber'], $removeLink2, $state, $contactPerson['telephoneNumber'], "\n");
+				$baseLink2 = $baseLink . urlencode($contactPerson['telephoneNumber']) . '&part=TelephoneNumber';
+				$links = $baseLink2 . $copyLink . $baseLink2 . $removeLink;
+				printf ('          <li>%s<span class="text-%s">TelephoneNumber = %s</span></li>%s', $links, $state, $contactPerson['telephoneNumber'], "\n");
 				$existingContactPersons[$contactPerson['contactType']]['telephoneNumber'] = true;
 			}
 			if ($contactPerson['extensions']) {
 				$state = ($oldContactPersons[$contactPerson['contactType']]['extensions']['state'] == 'same') ? 'dark' : 'success';
-				printf ('          <li>%s%s&part=Extensions%s<span class="text-%s">Extensions = %s</span></li>%s', $removeLink, $contactPerson['extensions'], $removeLink2, $state, $contactPerson['extensions'], "\n");
+				$baseLink2 = $baseLink . $contactPerson['extensions'] . '&part=Extensions';
+				$links = $baseLink2 . $copyLink . $baseLink2 . $removeLink;
+				printf ('          <li>%s<span class="text-%s">Extensions = %s</span></li>%s', $links, $state, $contactPerson['extensions'], "\n");
 				$existingContactPersons[$contactPerson['contactType']]['extensions'] = true;
 			}
 			print '        </ul>';
