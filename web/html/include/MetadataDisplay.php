@@ -4,6 +4,7 @@ Class MetadataDisplay {
 	function __construct($baseDir) {
 		include $baseDir . '/config.php';
 		include $baseDir . '/include/common.php';
+		$this->baseDir = $baseDir;
 
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -1059,17 +1060,17 @@ Class MetadataDisplay {
 	}
 
 	public function showPendingListToRemove() {
-		$entitiesHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 2 ORDER BY lastUpdated ASC, `entityID`');
+		$entitiesHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml`, `lastUpdated`, `email` FROM Entities, Users WHERE `status` = 2 AND `id` = `entity_id` ORDER BY lastUpdated ASC, `entityID`');
 		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$entityHandler->bindParam(':EntityID', $entityID);
 		$entitiesHandler->execute();
 
 		if (! class_exists('NormalizeXML')) {
-			include $this->basedDir.'/include/NormalizeXML.php';
+			include $this->baseDir.'/include/NormalizeXML.php';
 		}
 		$normalize = new NormalizeXML();
 
-		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", "\n");
+		printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Updater</th><th>Time</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", "\n");
 		while ($pendingEntity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entityID = $pendingEntity['entityID'];
 
@@ -1084,15 +1085,15 @@ Class MetadataDisplay {
 						} else {
 							$OKRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>', $entityID, $pendingEntity['id'], $publishedEntity['id']);
 						}
-						printf('      <tr><td>%s</td><td>%s</td><td>%s</td></tr>%s', $OKRemove, ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
+						printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $OKRemove, $pendingEntity['email'], $pendingEntity['lastUpdated'], ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
 					} else {
-						printf('      <tr><td>%s</td><td colspan="2">Not published</td></tr>%s', $entityID, "\n" );
+						printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">Not published</td></tr>%s', $entityID, $pendingEntity['email'], $pendingEntity['lastUpdated'], "\n" );
 					}
 				} else {
-					printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>%s',  $entityID, 'Diff in entityID', "\n");
+					printf('      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',  $entityID, 'Diff in entityID', "\n");
 				}
 			} else {
-				printf('      <tr><td>%s</td><td colspan="2">%s</td></tr>%s',  $entityID, 'Problem with XML', "\n");
+				printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">%s</td></tr>%s',  $entityID, 'Problem with XML', "\n");
 			}
 		}
 		print "    </table>\n";
