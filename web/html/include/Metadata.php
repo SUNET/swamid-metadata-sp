@@ -26,7 +26,6 @@ Class Metadata {
 			$this->baseDir = array_shift($a);
 			include $this->baseDir . '/config.php';
 			include $this->baseDir . '/include/common.php';
-			$this->basedDir = $a[0];
 			try {
 				$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
 				// set the PDO error mode to exception
