@@ -1177,8 +1177,16 @@ Class MetadataDisplay {
 	}
 
 	public function showErrorStatistics() {
-		$statusRows = $this->metaDb->prepare("SELECT `date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed` FROM EntitiesStatus ORDER BY `date`");
+		$statusRows = $this->metaDb->prepare("SELECT `date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed` FROM EntitiesStatus ORDER BY `date` DESC");
 		$statusRows->execute();
+		$labelsArray = array();
+		$totalArray = array();
+		$totalOKArray = array();
+		$SPArray = array();
+		$SPOKArray = array();
+		$IdPArray = array();
+		$IdPOKArray = array();
+
 		$TotalMin = 1000;
 		$SPMin = 1000;
 		$IdPMin = 1000;
@@ -1187,14 +1195,14 @@ Class MetadataDisplay {
 			$week = date('W',mktime(0, 0, 0, substr($row['date'],5,2), substr($row['date'],8,2), substr($row['date'],0,4)));
 			$dateLabel = substr($row['date'],2,8);
 			printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>%s', $dateLabel, $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], $row['ErrorsTotal'], $row['ErrorsSPs'], $row['ErrorsIdPs'], "\n");
-			$labelsArray[] = $dateLabel;
-			#substr($row['date'],8,2) . '-' . substr($row['date'],5,2) . '-' . substr($row['date'],2,2);
-			$totalArray[] = $row['ErrorsTotal'];
-			$totalOKArray[] = $row['NrOfEntites'] - $row['ErrorsTotal'];
-			$SPArray[] = $row['ErrorsSPs'];
-			$SPOKArray[] = $row['NrOfSPs'] - $row['ErrorsSPs'];
-			$IdPArray[] = $row['ErrorsIdPs'];
-			$IdPOKArray[] = $row['NrOfIdPs'] - $row['ErrorsIdPs'];
+			array_unshift($labelsArray, $dateLabel);
+			array_unshift($totalArray, $row['ErrorsTotal']);
+			array_unshift($totalOKArray, $row['NrOfEntites'] - $row['ErrorsTotal']);
+			array_unshift($SPArray, $row['ErrorsSPs']);
+			array_unshift($SPOKArray, $row['NrOfSPs'] - $row['ErrorsSPs']);
+			array_unshift($IdPArray, $row['ErrorsIdPs']);
+			array_unshift($IdPOKArray, $row['NrOfIdPs'] - $row['ErrorsIdPs']);
+
 			$TotalMin = ($row['ErrorsTotal'] < $TotalMin) ? $row['ErrorsTotal'] : $TotalMin;
 			$SPMin = ($row['ErrorsSPs'] < $SPMin) ? $row['ErrorsSPs'] : $SPMin;
 			$IdPMin = ($row['ErrorsIdPs'] < $IdPMin) ? $row['ErrorsIdPs'] : $IdPMin;
