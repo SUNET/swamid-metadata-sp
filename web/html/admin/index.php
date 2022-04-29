@@ -181,6 +181,9 @@ if (isset($_FILES['XMLfile'])) {
 						$metadata->updateResponsible($EPPN,$mail);
 						showEntity($newEntity_id);
 					break;
+				case 'Request removal' :
+					requestRemoval($Entity_id);
+					break;
 			}
 		} else {
 			switch($_GET['action']) {
@@ -398,14 +401,33 @@ function showEntity($Entity_id)  {
 			} else {
 				$oldEntity_id = 0;
 			}
-			if ($entity['status'] == 3 ) {
-				$headerCol1 = 'New metadata';
-				$menuActive = 'new';
-				$allowEdit = checkAccess($Entity_id, $EPPN, $userLevel, 10, false);
-			} else {
-				$headerCol1 = 'Waiting for publishing';
-				$menuActive = 'wait';
-				$allowEdit = checkAccess($Entity_id, false, $userLevel, 10, false);
+			switch ($entity['status']) {
+				case 3:
+					# Draft
+					$headerCol1 = 'New metadata';
+					$menuActive = 'new';
+					$allowEdit = checkAccess($Entity_id, $EPPN, $userLevel, 10, false);
+					break;
+				case 4:
+					# Soft Delete
+					$headerCol1 = 'Deleted metadata';
+					$menuActive = 'publ';
+					$allowEdit = false;
+					$oldEntity_id = 0;
+					break;
+				case 5:
+					# Pending that have been published
+				case 6:
+					# Copy of published used to compare Pending
+					$headerCol1 = 'Already published metadata (might not be the latest!)';
+					$menuActive = 'publ';
+					$allowEdit = false;
+					$oldEntity_id = 0;
+					break;
+				default:
+					$headerCol1 = 'Waiting for publishing';
+					$menuActive = 'wait';
+					$allowEdit = checkAccess($Entity_id, false, $userLevel, 10, false);
 			}
 		} else {
 			$headerCol1 = 'Published metadata';
@@ -424,10 +446,11 @@ function showEntity($Entity_id)  {
 		switch ($entity['status']) {
 			case 1:
 				printf('%s      <a href=".?action=createDraft&Entity=%d"><button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $Entity_id);
+				printf('%s      <a href=".?action=Request+removal&Entity=%d"><button type="button" class="btn btn-outline-danger">Request removal</button></a>', "\n", $Entity_id);
 				break;
 			case 2:
 				if (checkAccess($Entity_id, false, $userLevel, 10, false)) {
-					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Remove</button></a>', "\n", $Entity_id);
+					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Delete Pending</button></a>', "\n", $Entity_id);
 				}
 				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
 						printf('%s      <a href=".?move2Draft=%d"><button type="button" class="btn btn-outline-danger">Cancel publication request</button></a>', "\n", $Entity_id);
@@ -435,17 +458,18 @@ function showEntity($Entity_id)  {
 				break;
 			case 3:
 				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
-					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Remove</button></a>', "\n", $Entity_id);
 					$errors = getBlockingErrors($Entity_id);
 					if ($errors == '') {
 						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Request publication</button></a>', "\n", $Entity_id);
 					} else {
 						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-danger">Request publication</button></a>', "\n", $Entity_id);
 					}
+					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Discard Draft</button></a>', "\n", $Entity_id);
+					print "\n      <br>";
 					if ($oldEntity_id > 0) {
-						printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d"><button type="button" class="btn btn-outline-primary">Merge missing from published</button></a>', "\n", $Entity_id, $oldEntity_id);
+						printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d"><button type="button" class="btn btn-outline-primary">Merge from published</button></a>', "\n", $Entity_id, $oldEntity_id);
 					}
-					printf ('%s      <form>%s        <input type="hidden" name="mergeEntity" value="%d">%s        Merge missing from : %s        <select name="oldEntity">', "\n", "\n", $Entity_id, "\n", "\n");
+					printf ('%s      <form>%s        <input type="hidden" name="mergeEntity" value="%d">%s        Merge from other entity : %s        <select name="oldEntity">', "\n", "\n", $Entity_id, "\n", "\n");
 					if ($entity['isIdP'] ) {
 						if ($entity['isSP'] ) {
 							// is both SP and IdP
@@ -640,9 +664,9 @@ function showMenu() {
 	}
 
 	print "\n    ";
+	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
-	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	printf('<a href=".?action=ErrorStatistics%s"><button type="button" class="btn btn%s-primary">Error statistics</button></a>', $filter, $menuActive == 'ErrorStatistics' ? '' : '-outline');
 	printf('<a href=".?action=ErrorStatus%s"><button type="button" class="btn btn%s-primary">Error status</button></a>', $filter, $menuActive == 'ErrorStatus' ? '' : '-outline');
@@ -666,7 +690,7 @@ function validateEntity($Entity_id) {
 function move2Pending($Entity_id) {
 	global $db, $html, $display, $userLevel, $menuActive;
 	global $EPPN, $mail, $fullName;
-	global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut;
+	global $mailContacts, $mailRequetser, $SendOut;
 	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP FROM Entities WHERE status = 3 AND id = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
@@ -702,38 +726,10 @@ function move2Pending($Entity_id) {
 
 				$fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
 
-				$mailContacts = new PHPMailer(true);
-				$mailRequetser = new PHPMailer(true);
-				/*$mailContacts->SMTPDebug = 2;
-				$mailRequetser->SMTPDebug = 2;*/
-				$mailContacts->isSMTP();
-				$mailRequetser->isSMTP();
-				$mailContacts->Host = $SMTPHost;
-				$mailRequetser->Host = $SMTPHost;
-				$mailContacts->SMTPAuth = true;
-				$mailRequetser->SMTPAuth = true;
-				$mailContacts->SMTPAutoTLS = true;
-				$mailRequetser->SMTPAutoTLS = true;
-				$mailContacts->Port = 587;
-				$mailRequetser->Port = 587;
-				$mailContacts->SMTPAuth = true;
-				$mailRequetser->SMTPAuth = true;
-				$mailContacts->Username = $SASLUser;
-				$mailRequetser->Username = $SASLUser;
-				$mailContacts->Password = $SASLPassword;
-				$mailRequetser->Password = $SASLPassword;
-				$mailContacts->SMTPSecure = 'tls';
-				$mailRequetser->SMTPSecure = 'tls';
+				setupMail();
 
-				//Recipients
-				$mailContacts->setFrom($MailFrom, 'Metadata - Admin');
-				$mailRequetser->setFrom($MailFrom, 'Metadata - Admin');
 				if ($SendOut)
 					$mailRequetser->addAddress($mail);
-				$mailContacts->addBCC('bjorn@sunet.se');
-				$mailRequetser->addBCC('bjorn@sunet.se');
-				$mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
-				$mailRequetser->addReplyTo('operations@swamid.se', 'SWAMID Operations');
 				$addresses = array();
 				$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE entity_id = id AND entityID=:EntityID AND (contactType='technical' OR contactType='administrative')");
 				$contactHandler->bindParam(':EntityID',$entity['entityID']);
@@ -841,6 +837,129 @@ function move2Pending($Entity_id) {
 	}
 	print "\n";
 }
+
+function requestRemoval($Entity_id) {
+	global $db, $html, $display, $userLevel, $menuActive;
+	global $EPPN, $mail, $fullName;
+	global $mailContacts, $mailRequetser, $SendOut;
+	$entityHandler = $db->prepare('SELECT `entityID`, `publishIn` FROM Entities WHERE status = 1 AND id = :Id;');
+	$entityHandler->bindParam(':Id', $Entity_id);
+	$entityHandler->execute();
+	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+		if (isset($_GET['confirmRemoval'])) {
+			$menuActive = 'publ';
+			showMenu();
+			$fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
+
+			setupMail();
+
+			if ($SendOut)
+				$mailRequetser->addAddress($mail);
+
+			$addresses = array();
+			$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE entity_id = id AND entityID=:EntityID AND (contactType='technical' OR contactType='administrative')");
+			$contactHandler->bindParam(':EntityID',$entity['entityID']);
+			$contactHandler->execute();
+			while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
+				if ($SendOut)
+					$mailContacts->addAddress(substr($address['emailAddress'],7));
+				$addresses[] = substr($address['emailAddress'],7);
+			}
+
+			$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+
+			//Content
+			$mailContacts->isHTML(true);
+			$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested removal of the entity with the entityID %s from the SWAMID metadata.</p>\n<p>You have received this mail because you are either the technical and/or administrative contact.</p>\n<p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve request please forward this mail to SWAMID Operations (operations@swamid.se) and request for the removal to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
+			$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested removal of the entity with the entityID %s from the SWAMID metadata.\n\nYou have received this mail because you are either the technical and/or administrative contact.\n\nYou can see the current metadata at %s/?showEntity=%d\n\nIf you do not approve this request please forward this mail to SWAMID Operations (operations@swamid.se) and request for the removal to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
+
+			$mailRequetser->isHTML(true);
+			$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested removal of the entity with the entityID %s from the SWAMID metadata.</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
+			$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested removal of the entity with the entityID %s from the SWAMID metadata.\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe current metadata can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
+
+			$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entity['entityID']);
+			$mailContacts->Subject	= 'Info : Request to remove SWAMID metadata for ' . $short_entityid;
+			$mailRequetser->Subject	= 'Request to remove SWAMID metadata for ' . $short_entityid;
+
+			try {
+				$mailContacts->send();
+			} catch (Exception $e) {
+				echo 'Message could not be sent to contacts.<br>';
+				echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+			}
+
+			try {
+				$mailRequetser->send();
+			} catch (Exception $e) {
+				echo 'Message could not be sent to requester.<br>';
+				echo 'Mailer Error: ' . $mailRequetser->ErrorInfo . '<br>';
+			}
+
+			printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
+			printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);
+		} else {
+			$menuActive = 'publ';
+			showMenu();
+			printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $entity['entityID']);
+			if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
+			if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
+			if ($entity['publishIn'] == 1) $publishArray[] = 'SWAMID-testing';
+			printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArray));
+			printf('    <form>
+      <input type="hidden" name="Entity" value="%d">
+      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">
+      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>
+      <br>
+      <input type="submit" name="action" value="Request removal">
+    </form>
+    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $Entity_id, $Entity_id);
+		}
+	} else {
+		$html->showHeaders('Metadata SWAMID - NotFound');
+		$menuActive = 'publ';
+		showMenu();
+		print "Can't find Entity";
+	}
+	print "\n";
+}
+
+function setupMail() {
+	global $mailContacts, $mailRequetser;
+	global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
+
+	$mailContacts = new PHPMailer(true);
+	$mailRequetser = new PHPMailer(true);
+	/*$mailContacts->SMTPDebug = 2;
+	$mailRequetser->SMTPDebug = 2;*/
+	$mailContacts->isSMTP();
+	$mailRequetser->isSMTP();
+	$mailContacts->Host = $SMTPHost;
+	$mailRequetser->Host = $SMTPHost;
+	$mailContacts->SMTPAuth = true;
+	$mailRequetser->SMTPAuth = true;
+	$mailContacts->SMTPAutoTLS = true;
+	$mailRequetser->SMTPAutoTLS = true;
+	$mailContacts->Port = 587;
+	$mailRequetser->Port = 587;
+	$mailContacts->SMTPAuth = true;
+	$mailRequetser->SMTPAuth = true;
+	$mailContacts->Username = $SASLUser;
+	$mailRequetser->Username = $SASLUser;
+	$mailContacts->Password = $SASLPassword;
+	$mailRequetser->Password = $SASLPassword;
+	$mailContacts->SMTPSecure = 'tls';
+	$mailRequetser->SMTPSecure = 'tls';
+
+	//Recipients
+	$mailContacts->setFrom($MailFrom, 'Metadata - Admin');
+	$mailRequetser->setFrom($MailFrom, 'Metadata - Admin');
+	$mailContacts->addBCC('bjorn@sunet.se');
+	$mailRequetser->addBCC('bjorn@sunet.se');
+	$mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+	$mailRequetser->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+}
+
 function move2Draft($Entity_id) {
 	global $db, $html, $display, $menuActive, $baseDir;
 	global $EPPN,$mail;

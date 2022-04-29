@@ -4,7 +4,6 @@ Class MetadataDisplay {
 	function __construct($baseDir) {
 		include $baseDir . '/config.php';
 		include $baseDir . '/include/common.php';
-		$this->basedDir = $baseDir;
 
 		try {
 			$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -20,7 +19,7 @@ Class MetadataDisplay {
 	# Shows menu row
 	####
 	function showStatusbar($Entity_id, $admin = false){
-		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 		$urlHandler1->bindParam(':Id', $Entity_id);
@@ -106,7 +105,7 @@ Class MetadataDisplay {
 			if ($entity['validationOutput'] != '')
 				printf('%s    <div class="row alert alert-primary" role="alert">%s</div>', "\n", str_ireplace("\n", "<br>", $entity['validationOutput']));
 		}
-		if ($admin)
+		if ($admin && $entity['status'] < 4)
 			printf('%s    <div class="row"><a href=".?validateEntity=%d"><button type="button" class="btn btn-outline-primary">Validate</button></a></div>', "\n", $Entity_id);
 	}
 
@@ -977,7 +976,11 @@ Class MetadataDisplay {
 
 	public function showErrorList($download = false) {
 		$emails = array();
-		$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
+		if (isset($_GET['showTesting'])) {
+			$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
+		} else {
+			$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 ORDER BY entityID");
+		}
 		$EntityHandler->execute();
 		$contactPersonHandler = $this->metaDb->prepare('SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
 		if ($download) {
@@ -985,7 +988,7 @@ Class MetadataDisplay {
 			header('Content-Disposition: attachment; filename=errorlog.csv');
 			print "Type,Feed,Entity,Contact address\n";
 		} else {
-			printf ('    <a href=".?action=ErrorListDownload"><button type="button" class="btn btn-primary">Download CSV</button></a><br>%s', "\n");
+			printf ('    <a href=".?action=ErrorListDownload"><button type="button" class="btn btn-primary">Download CSV</button></a>%s    <a href=".?action=ErrorList&showTesting"><button type="button" class="btn btn-primary">Include testing</button></a><br>%s', "\n", "\n");
 			printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Type</th><th>Feed</th><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
 		}
 		while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1016,7 +1019,7 @@ Class MetadataDisplay {
 				case 7 :
 					$feed = 'E';
 					break;
-				default : 
+				default :
 					$feed = '?';
 			}
 			if ($download) {

@@ -23,8 +23,9 @@ Class Metadata {
 		$a = func_get_args();
 		$i = func_num_args();
 		if (isset($a[0])) {
-			include $a[0] . '/config.php';
-			include $a[0] . '/include/common.php';
+			$this->baseDir = array_shift($a);
+			include $this->baseDir . '/config.php';
+			include $this->baseDir . '/include/common.php';
 			$this->basedDir = $a[0];
 			try {
 				$this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -39,7 +40,7 @@ Class Metadata {
 		}
 	}
 
-	private function __construct2($baseDir, $entity_id) {
+	private function __construct2($entity_id) {
 		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindValue(':Id', $entity_id);
 		$entityHandler->execute();
@@ -56,7 +57,7 @@ Class Metadata {
 		}
 	}
 
-	private function __construct3($baseDir, $entityId = '', $entityStatus = '') {
+	private function __construct3($entityId = '', $entityStatus = '') {
 		$this->entityID = $entityId;
 
 		switch (strtolower($entityStatus)) {
@@ -1868,7 +1869,7 @@ Class Metadata {
 	# Moves an entity from pendingQueue to publishedPending state
 	#############
 	public function move2SoftDelete() {
-		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 4 WHERE `status` = 1 AND `id` = :Id');
+		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id');
 		$entityHandler->bindParam(':Id', $this->dbIdNr);
 		$entityHandler->execute();
 	}
@@ -1877,7 +1878,7 @@ Class Metadata {
 	# Moves an entity from pendingQueue to publishedPending state
 	#############
 	public function movePublishedPending() {
-		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5 WHERE `status` = 2 AND `id` = :Id');
+		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
 		$entityHandler->bindParam(':Id', $this->dbIdNr);
 		$entityHandler->execute();
 	}
@@ -1936,14 +1937,23 @@ Class Metadata {
 		return false;
 	}
 
+	#############
+	# Return entityID for this entity
+	#############
 	public function EntityID() {
 		return $this->entityID;
 	}
 
+	#############
+	# Return if this entity exists in the database
+	#############
 	public function EntityExists() {
 		return $this->entityExists;
 	}
 
+	#############
+	# Return ID for this entity in the database
+	#############
 	public function ID() {
 		return $this->dbIdNr;
 	}
