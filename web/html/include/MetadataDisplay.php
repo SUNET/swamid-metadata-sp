@@ -1194,7 +1194,7 @@ Class MetadataDisplay {
 		while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
 			$week = date('W',mktime(0, 0, 0, substr($row['date'],5,2), substr($row['date'],8,2), substr($row['date'],0,4)));
 			$dateLabel = substr($row['date'],2,8);
-			printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td></tr>%s', $dateLabel, $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], $row['ErrorsTotal'], $row['ErrorsSPs'], $row['ErrorsIdPs'], "\n");
+			printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', $dateLabel, $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], $row['ErrorsTotal'], ($row['ErrorsTotal'] / $row['NrOfEntites'] * 100), $row['ErrorsSPs'],($row['ErrorsSPs'] / $row['NrOfSPs'] * 100), $row['ErrorsIdPs'], ($row['ErrorsIdPs'] / $row['NrOfIdPs'] * 100), "\n");
 			array_unshift($labelsArray, $dateLabel);
 			array_unshift($totalArray, $row['ErrorsTotal']);
 			array_unshift($totalOKArray, $row['NrOfEntites'] - $row['ErrorsTotal']);
