@@ -56,17 +56,18 @@ Class Metadata {
 		}
 	}
 
-	private function __construct3($entityId = '', $entityStatus = '') {
-		$this->entityID = $entityId;
+	private function __construct3($entityID = '', $entityStatus = '') {
+		$this->entityID = $entityID;
 
 		switch (strtolower($entityStatus)) {
 			case 'prod' :
 				# In production metadata
 				$this->status = 1;
 				break;
-			case 'requested' :
+			case 'shadow' :
 				# Request sent to OPS to be added.
-				$this->status = 2;
+				# Create a shadow entiry
+				$this->status = 6;
 				break;
 			case 'new' :
 			default :
@@ -74,8 +75,8 @@ Class Metadata {
 				$this->status = 3;
 		}
 
-		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml` FROM Entities WHERE `entityId` = :Id AND `status` = :Status;');
-		$entityHandler->bindValue(':Id', $entityId);
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml` FROM Entities WHERE `entityID` = :Id AND `status` = :Status;');
+		$entityHandler->bindValue(':Id', $entityID);
 		$entityHandler->bindValue(':Status', $this->status);
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -91,20 +92,21 @@ Class Metadata {
 
 	private function addURL($url, $type) {
 		//type
-		// 1 Check reachable
-		// 2 Check CoCo privacy
+		// 1 Check reachable (OK If reachable)
+		// 2 Check reachable (NEED to be reachable)
+		// 3 Check CoCo privacy
 		$urlHandler = $this->metaDb->prepare('SELECT `type` FROM URLs WHERE `URL` = :Url;');
 		$urlHandler->bindValue(':Url', $url);
 		$urlHandler->execute();
 
 		if ($currentType = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-			if ($currentType['type'] > $type) {
-				$type = $currentType['type'];
+			$update = false;
+			if ($currentType['type'] < $type) {
+				$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `type` = :Type, `lastValidated` = '1972-01-01', `lastSeen` = NOW() WHERE `URL` = :Url;");
+				$urlUpdateHandler->bindParam(':Url', $url);
+				$urlUpdateHandler->bindParam(':Type', $type);
+				$urlUpdateHandler->execute();
 			}
-			$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `type` = :Type, `lastSeen` = NOW() WHERE `URL` = :Url;");
-			$urlUpdateHandler->bindParam(':Url', $url);
-			$urlUpdateHandler->bindParam(':Type', $type);
-			$urlUpdateHandler->execute();
 		} else {
 			$urlAddHandler = $this->metaDb->prepare("INSERT INTO URLs (`URL`, `type`, `status`, `lastValidated`, `lastSeen`) VALUES (:Url, :Type, 10, '1972-01-01', NOW());");
 			$urlAddHandler->bindParam(':Url', $url);
@@ -125,11 +127,11 @@ Class Metadata {
 
 		curl_setopt($ch, CURLINFO_HEADER_OUT, 1);
 
-		$URLUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = NOW(), `status` = :Status, `validationOutput` = :Result WHERE `URL` = :Url;");
+		$URLUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status, `validationOutput` = :Result WHERE `URL` = :Url;");
 		if ($limit > 10) {
-			$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
+			$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0') OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-6:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
 		} else {
-			$sql = "SELECT `URL`, `type` FROM URLs WHERE `status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-8:0:0') ORDER BY `lastValidated` LIMIT $limit;";
+			$sql = "SELECT `URL`, `type` FROM URLs WHERE `lastValidated` < ADDTIME(NOW(), '-20 0:0:0') OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-8:0:0')) ORDER BY `lastValidated` LIMIT $limit;";
 		}
 		$URLHandler = $this->metaDb->prepare($sql);
 		$URLHandler->execute();
@@ -144,22 +146,27 @@ Class Metadata {
 				if (curl_errno($ch)) {
 					$URLUpdateHandler->bindValue(':Result', curl_error($ch));
 					$URLUpdateHandler->bindValue(':Status', 3);
+					$URLUpdateHandler->bindValue(':Cocov1Status', 1);
 					$continue = false;
 				} else {
 					switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
 						case 200 :
 							switch ($URL['type']) {
 								case 1 :
+								case 2 :
 									$URLUpdateHandler->bindValue(':Result', 'Reachable');
 									$URLUpdateHandler->bindValue(':Status', 0);
+									$URLUpdateHandler->bindValue(':Cocov1Status', 0);
 									break;
-								case 2 :
+								case 3 :
 									if (strpos ( $output, 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') > 1 ) {
 										$URLUpdateHandler->bindValue(':Result', 'Policy OK');
 										$URLUpdateHandler->bindValue(':Status', 0);
+										$URLUpdateHandler->bindValue(':Cocov1Status', 0);
 									} else {
 										$URLUpdateHandler->bindValue(':Result', 'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1');
-										$URLUpdateHandler->bindValue(':Status', 1);
+										$URLUpdateHandler->bindValue(':Status', 0);
+										$URLUpdateHandler->bindValue(':Cocov1Status', 1);
 									}
 									break;
 							}
@@ -168,21 +175,25 @@ Class Metadata {
 						case 403 :
 							$URLUpdateHandler->bindValue(':Result', "Access denied. Can't check URL.");
 							$URLUpdateHandler->bindValue(':Status', 2);
+							$URLUpdateHandler->bindValue(':Cocov1Status', 1);
 							$continue = false;
 							break;
 						case 404 :
 							$URLUpdateHandler->bindValue(':Result', 'Page not found.');
 							$URLUpdateHandler->bindValue(':Status', 2);
+							$URLUpdateHandler->bindValue(':Cocov1Status', 1);
 							$continue = false;
 							break;
 						case 503 :
 							$URLUpdateHandler->bindValue(':Result', "Service Unavailable. Can't check URL.");
 							$URLUpdateHandler->bindValue(':Status', 2);
+							$URLUpdateHandler->bindValue(':Cocov1Status', 1);
 							$continue = false;
 							break;
 						default :
 							$URLUpdateHandler->bindValue(':Result', "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
 							$URLUpdateHandler->bindValue(':Status', 2);
+							$URLUpdateHandler->bindValue(':Cocov1Status', 1);
 							$continue = false;
 					}
 				}
@@ -196,6 +207,13 @@ Class Metadata {
 			printf ("Checked %d URL:s\n", $count);
 	}
 
+	public function revalidateURL($url) {
+		$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = '1972-01-01' WHERE `URL` = :Url;");
+		$urlUpdateHandler->bindParam(':Url', $url);
+		$urlUpdateHandler->execute();
+		$this->validateURLs(5);
+	}
+
 	# Import an XML  -> metadata.db
 	public function importXML($xml) {
 		$this->xml = new DOMDocument;
@@ -207,14 +225,14 @@ Class Metadata {
 		$this->cleanOutAttribuesInIDPSSODescriptor();
 		if ($this->entityExists && $this->status == 1) {
 			# Update entity in database
-			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml , `lastUpdated` = NOW() WHERE `entityId` = :Id AND `status` = :Status;');
+			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml , `lastUpdated` = NOW() WHERE `entityID` = :Id AND `status` = :Status;');
 			$entityHandlerUpdate->bindValue(':Id', $this->entityID);
 			$entityHandlerUpdate->bindValue(':Status', $this->status);
 			$entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerUpdate->execute();
 		} else {
 			# Add new entity into database
-			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW());');
+			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW());');
 			$entityHandlerInsert->bindValue(':Id', $this->entityID);
 			$entityHandlerInsert->bindValue(':Status', $this->status);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
@@ -228,7 +246,7 @@ Class Metadata {
 	public function createDraft() {
 		if ($this->entityExists && $this->status == 1) {
 			# Add new entity into database
-			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityId`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, 3, :Xml, NOW());');
+			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, 3, :Xml, NOW());');
 			$entityHandlerInsert->bindValue(':Id', $this->entityID);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerInsert->execute();
@@ -853,11 +871,13 @@ Class Metadata {
 		while ($child) {
 			if ($child->nodeType != 8) {
 				$lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
+				$URLtype = 1;
 				switch ($child->nodeName) {
 					case 'mdui:Logo' :
+						$URLtype = 2;
 					case 'mdui:InformationURL' :
 					case 'mdui:PrivacyStatementURL' :
-						$this->addURL(trim($child->textContent), 1);
+						$this->addURL(trim($child->textContent), $URLtype);
 					case 'mdui:DisplayName' :
 					case 'mdui:Description' :
 					case 'mdui:Keywords' :
@@ -1077,7 +1097,7 @@ Class Metadata {
 			// 5.1.15, 5.1.16 Scope
 			$this->checkIDPScope();
 			// 5.1.17
-			$this->checkRequiredMDUIelements('IDPSSO');
+			$this->checkRequiredMDUIelementsIdP();
 			// 5.1.20, 5.2.x
 			$this->checkRequiredSAMLcertificates('IDPSSO');
 		}
@@ -1085,7 +1105,7 @@ Class Metadata {
 			// 6.1.9 -> 6.1.11
 			$this->checkEntityAttributes('SPSSO');
 			// 6.1.12
-			$this->checkRequiredMDUIelements('SPSSO');
+			$this->checkRequiredMDUIelementsSP();
 			// 6.1.14, 6.2.x
 			$this->checkRequiredSAMLcertificates('SPSSO');
 		}
@@ -1280,7 +1300,7 @@ Class Metadata {
 			while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
 				foreach ($this->standardAttributes['entity-category'] as $data) {
 					if ($data['value'] == $entityAttribute['attribute'] && ! $data['swamidStd']) {
-						$this->errorNB .= sprintf ("Entity Category Error: (Non breaking) The entity category %s is deprecated.\n", $entityAttribute['attribute']);
+						$this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n", $entityAttribute['attribute']);
 					}
 				}
 			}
@@ -1311,16 +1331,56 @@ Class Metadata {
 			$this->error .= "SWAMID Tech 5.1.15: IdP:s MUST have at least one Scope registered.\n";
 	}
 
-	// 5.1.17 / 6.1.12
-	private function checkRequiredMDUIelements($type) {
-		if ($type == 'IDPSSO') {
-			$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false, 'Logo' => false);
-		} elseif ($type == 'SPSSO') {
-			$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false);
-		}
-		$mduiHandler = $this->metaDb->prepare('SELECT DISTINCT `element` FROM Mdui WHERE `entity_id` = :Id AND `type`  = :Type ;');
+	// 5.1.17
+	private function checkRequiredMDUIelementsIdP() {
+		$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false, 'Logo' => false);
+		$mduiDNUniqHandler = $this->metaDb->prepare("SELECT `entityID` FROM Entities, Mdui WHERE `id` = `entity_id` AND `type`  = 'IDPSSO' AND `element` = 'DisplayName' AND `data` = :Data AND `lang` = :Lang AND `status` = 1 AND `entityID` <> :EntityID;");
+		$mduiDNUniqHandler->bindParam(':Data', $data);
+		$mduiDNUniqHandler->bindParam(':Lang', $lang);
+		$mduiDNUniqHandler->bindParam(':EntityID', $entityID);
+		$mduiHandler = $this->metaDb->prepare('SELECT `entityID`, `element`, `data`, `lang` FROM Entities, Mdui WHERE `id` = `entity_id` AND `entity_id` = :Id AND `type`  = :Type ;');
 		$mduiHandler->bindValue(':Id', $this->dbIdNr);
-		$mduiHandler->bindValue(':Type', $type);
+		$mduiHandler->bindValue(':Type', 'IDPSSO');
+		$mduiHandler->execute();
+		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
+			$elementArray[$mdui['element']] = true;
+			switch($mdui['element']) {
+				case 'DisplayName' :
+					$data = $mdui['data'];
+					$lang = $mdui['lang'];
+					$entityID = $mdui['entityID'];
+					$mduiDNUniqHandler->execute();
+					while ($duplicate = $mduiDNUniqHandler->fetch(PDO::FETCH_ASSOC)) {
+						$this->error .= sprintf("SWAMID Tech 5.1.17: DisplayName for lang %s is also set on %s.\n", $lang, $duplicate['entityID']);
+					}
+					break;
+				case 'Logo' :
+					if (substr($mdui['data'],0,8) != 'https://') {
+						$this->error .= "SWAMID Tech 5.1.17: Logo must start with <b>https://</b> .\n";
+					}
+					break;
+				case 'InformationURL' :
+				case 'PrivacyStatementURL' :
+				case 'Description' :
+				case 'Keywords' :
+					break;
+				default :
+					printf ("Missing %s<br>\n", $mdui['element']);
+			}
+		}
+
+		foreach ($elementArray as $element => $value) {
+			if (! $value) {
+				$this->error .= sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
+			}
+		}
+	}
+
+	// 6.1.12
+	private function checkRequiredMDUIelementsSP() {
+		$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false);
+		$mduiHandler = $this->metaDb->prepare("SELECT DISTINCT `element` FROM Mdui WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
+		$mduiHandler->bindValue(':Id', $this->dbIdNr);
 		$mduiHandler->execute();
 		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
 			$elementArray[$mdui['element']] = true;
@@ -1328,10 +1388,7 @@ Class Metadata {
 
 		foreach ($elementArray as $element => $value) {
 			if (! $value) {
-				if ($type == 'IDPSSO')
-					$this->error .= sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
-				else
-					$this->error .= sprintf("SWAMID Tech 6.1.12: Missing mdui:%s in SPSSODecriptor.\n", $element);
+				$this->error .= sprintf("SWAMID Tech 6.1.12: Missing mdui:%s in SPSSODecriptor.\n", $element);
 			}
 		}
 	}
@@ -1609,7 +1666,7 @@ Class Metadata {
 			$mduiArray[$lang][$element] = $data;
 			$mduiElementArray[$element] = true;
 			if ($element == 'PrivacyStatementURL' ) {
-				$this->addURL($data, 2);
+				$this->addURL($data, 3);
 			}
 		}
 

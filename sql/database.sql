@@ -1,5 +1,6 @@
 CREATE TABLE Entities (
 	`id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	`publishedId` INT UNSIGNED NOT NULL,
 	`entityID` VARCHAR(256), 
 	`registrationInstant` VARCHAR(256),
 	`isIdP` TINYINT UNSIGNED,
@@ -95,6 +96,7 @@ CREATE TABLE URLs (
 	`URL` TEXT,
 	`type` TINYINT UNSIGNED,
 	`status` TINYINT UNSIGNED,
+	`cocov1Status` TINYINT UNSIGNED,
 	`lastSeen` DATETIME,
 	`lastValidated` DATETIME,
 	`validationOutput` TEXT);

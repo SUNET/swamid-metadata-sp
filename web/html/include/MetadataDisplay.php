@@ -20,17 +20,17 @@ Class MetadataDisplay {
 	# Shows menu row
 	####
 	function showStatusbar($Entity_id, $admin = false){
-		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $this->metaDb->prepare('SELECT `entityID`, `isIdP`, `isSP`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
-		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
+		$urlHandler1 = $this->metaDb->prepare('SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 		$urlHandler1->bindParam(':Id', $Entity_id);
-		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id)");
+		$urlHandler2 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id AND type = 'error')");
 		$urlHandler2->bindParam(':Id', $Entity_id);
 		$urlHandler3 = $this->metaDb->prepare("SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
 		$urlHandler3->bindParam(':Id', $Entity_id);
 
 		$testResults = $this->metaDb->prepare('SELECT `test`, `result`, `time` FROM TestResults WHERE entityID = :EntityID');
-		$entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute` FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category-support';");
+		$entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute` FROM EntityAttributes WHERE `entity_id` = :Id AND type = :Type;");
 		$entityAttributesHandler->bindParam(':Id', $Entity_id);
 
 		$entityHandler->execute();
@@ -42,6 +42,7 @@ Class MetadataDisplay {
 				$ECSTagged = array('http://refeds.org/category/research-and-scholarship' => false, 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => false);
 				$ECSTested = array('rands' => false, 'cocov1-1' => false);
 
+				$entityAttributesHandler->bindValue(':Type', 'entity-category-support');
 				$entityAttributesHandler->execute();
 				while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
 					$ECSTagged[$attribute['attribute']] = true;
@@ -79,22 +80,37 @@ Class MetadataDisplay {
 				foreach ($ECSTested AS $tag => $tested) {
 					$warnings .= ($ECSTested[$tag]) ? '' : sprintf('SWAMID Release-check: Updated test missing please rerun at <a href="https://%s.release-check.swamid.se/">Release-check</a>%s', $tag, "\n");
 				}
+				// Error URLs
+				$urlHandler2->execute();
+				while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
+					if ($url['status'] > 0)
+						$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+				}
 			}
 
+			$CoCov1SP = false;
+			if ($entity['isSP']) {
+				$entityAttributesHandler->bindValue(':Type', 'entity-category');
+				$entityAttributesHandler->execute();
+				while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+					if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1')
+						$CoCov1SP = true;
+				}
+			}
+
+			// MDUI
 			$urlHandler1->execute();
 			while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
 				if ($url['status'] > 0)
-					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+					$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+				if ($CoCov1SP  && $url['cocov1Status'] > 0)
+					$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
 			}
-			$urlHandler2->execute();
-			while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
-				if ($url['status'] > 0)
-					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
-			}
+			// OrganizationURL
 			$urlHandler3->execute();
 			while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
 				if ($url['status'] > 0)
-					$errors .= sprintf("%s - %s\n", $url['validationOutput'], $url['URL']);
+					$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
 			}
 			$errors .= $entity['errors'] . $entity['errorsNB'];
 			if ($errors != '') {
@@ -261,7 +277,7 @@ Class MetadataDisplay {
 		$this->showCollapse('IdP data', 'IdP', true, 0, true, $removable, $Entity_id);
 		print '
           <div class="row">
-            <div class="col">';
+            <div class="col-6">';
 		$this->showErrorURL($Entity_id, $oldEntity_id, true, $allowEdit);
 		$this->showScopes($Entity_id, $oldEntity_id, true, $allowEdit);
 		if ($oldEntity_id != 0 ) {
@@ -270,8 +286,8 @@ Class MetadataDisplay {
 			$this->showScopes($oldEntity_id, $Entity_id);
 		}
 		print '
-            </div>
-          </div>';
+            </div><!-- end col -->
+          </div><!-- end row -->';
 		if ($allowEdit)
 			$this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 1, true, 'IdPMDUI', $Entity_id, $oldEntity_id);
 		else
@@ -903,41 +919,50 @@ Class MetadataDisplay {
 		$this->showCollapseEnd('Editors', 0);
 	}
 
-	public function showURLStatus(){
-		if(isset($_GET['URL'])) {
+	public function showURLStatus($url = false){
+		if($url) {
 			$missing = true;
-			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
-			$EntityHandler->bindValue(':URL', $_GET['URL']);
+			$URLHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated` FROM URLs WHERE `URL` = :URL');
+			$URLHandler->bindValue(':URL', $url);
+			$URLHandler->execute();
+			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
+			$EntityHandler->bindValue(':URL', $url);
 			$EntityHandler->execute();
-			$SSOUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID` FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL');
-			$SSOUIIHandler->bindValue(':URL', $_GET['URL']);
+			$SSOUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status` FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL');
+			$SSOUIIHandler->bindValue(':URL', $url);
 			$SSOUIIHandler->execute();
-			$OrganizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID` FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
-			$OrganizationHandler->bindValue(':URL', $_GET['URL']);
+			$OrganizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status` FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
+			$OrganizationHandler->bindValue(':URL', $url);
 			$OrganizationHandler->execute();
-			printf ('    <h3>URL : %s</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Part</th><th></tr>%s', $_GET['URL'], "\n", "\n", "\n");
+			printf ('    <table class="table table-striped table-bordered">%s', "\n");
+			printf ('      <tr><th>URL</th><td>%s</td></tr>%s', $url, "\n");
+			if ($URLInfo = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
+				printf ('      <tr><th>Checked</th><td>%s (UTC) <a href=".?action=%s&URL=%s&recheck"><button type="button" class="btn btn-primary">Recheck now</button></a></td></tr>%s', $URLInfo['lastValidated'], $_GET['action'] ,urlencode($url), "\n");
+				printf ('      <tr><th>Status</th><td>%s</td></tr>%s', $URLInfo['validationOutput'] , "\n");
+			}
+			printf ('    </table>%s    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Part</th><th></tr>%s', "\n", "\n", "\n");
 			while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
 				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], 'ErrorURL', "\n");
 				$missing = false;
 			}
 			while ($Entity = $SSOUIIHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s:%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], substr($Entity['type'],0,-3), $Entity['element'], $Entity['lang'], "\n");
+				printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $this->getEntityStatusType($Entity['status']), substr($Entity['type'],0,-3), $Entity['element'], $Entity['lang'], "\n");
 				$missing = false;
 			}
 			while ($Entity = $OrganizationHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $Entity['element'], $Entity['lang'], "\n");
+				printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $this->getEntityStatusType($Entity['status']),  $Entity['element'], $Entity['lang'], "\n");
 				$missing = false;
 			}
 			print "    </table>\n";
 			if ($missing) {
 				$URLHandler = $this->metaDb->prepare('DELETE FROM URLs WHERE `URL` = :URL');
-				$URLHandler->bindValue(':URL', $_GET['URL']);
+				$URLHandler->bindValue(':URL', $url);
 				$URLHandler->execute();
 				print "Not used anymore, removed";
 			}
 		} else {
 			$oldType = 0;
-			$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE Status > 0 ORDER BY type DESC, `URL`;");
+			$URLHandler = $this->metaDb->prepare("SELECT `URL`, `type`, `status`, `cocov1Status`, `lastValidated`, `lastSeen`, `validationOutput` FROM URLs WHERE `status` > 0 OR `cocov1Status` > 0 ORDER BY type DESC, `URL`;");
 			$URLHandler->execute();
 
 			while ($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -947,6 +972,9 @@ Class MetadataDisplay {
 							$typeInfo = 'URL check';
 							break;
 						case 2:
+							$typeInfo = 'URL check - Needs to be reachable';
+							break;
+						case 3:
 							$typeInfo = 'CoCo - PrivacyURL';
 							break;
 						default :
@@ -972,6 +1000,25 @@ Class MetadataDisplay {
 			}
 			print "    </table>\n";
 
+		}
+	}
+
+	private function getEntityStatusType($status) {
+		switch ($status) {
+			case 1 :
+				return 'Published';
+			case 2 :
+				return 'Pending';
+			case 3 :
+				return 'Draft';
+			case 4 :
+				return 'Deleted';
+			case 5 :
+				return 'POST Pending';
+			case 6 :
+				return 'Shadow Pending';
+			default :
+				return $status . ' unknown status';
 		}
 	}
 
@@ -1304,6 +1351,99 @@ Class MetadataDisplay {
         }
       });
     </script><?php print "\n";
+	}
+
+	public function showHelp() {
+		print "    <p>The SWAMID Metadata Tool is the place where you can see, register, update and remove metadata for Identity Providers and Service Providers in the Academic Identity Federation SWAMID.</p>\n";
+		$this->showCollapse('Register a new entity in SWAMID', 'RegisterNewEntity', false, 0, false);?>
+
+          <ol>
+            <li>Go to the tab "Upload new XML".</li>
+            <li>Upload the metadata file by clicking "Browse" and selecting the file on your local file system. Press "Submit".</li>
+            <li>If the new entity is a new version of a existing entity select the EntityId from the "Merge from other entity:" dropdown and click "Merge".</li>
+            <li>Add or update metadata information by clicking on the pencil for each metadata section. Continue adding and changing information in the metadata until the information is correct and there are no errors left.<ul>
+              <li>For a Service Provider remember to add metadata attributes for entity categories, otherwise you will not get any attributes from Identity Providers without manual configuration in the Identity Providers. For more information on entity categories see the wiki page "Entity Categories for Service Providers".</li>
+              <li>It is highly recommended that the service adheres to the security profile <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+              <li>You have up to two weeks to work on your draft. Every change is automatically saved. To find out how to pick up where you left off, see the help topic "Continue working on a draft".</li>
+            </ul></li>
+            <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
+            <li>Follow the instructions on the next web page and choose if the entity shall be published in SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+            <li>Continue to the next step by pressing on the button ”Request publication”.</li>
+            <li>An e-mail will be sent to your registered address. Forward this to SWAMID operations as described in the e-mail.</li>
+            <li>SWAMID Operations will now check and publish the request.</li>
+          </ol><?php
+		$this->showCollapseEnd('RegisterNewEntity', 0);
+		$this->showCollapse('Update SAML certificates for a published entity in SWAMID', 'UpdateCertificates', false, 0, false);?>
+
+          <ol>
+            <li>Go to the tab "Upload new XML".</li>
+            <li>Upload the metadata file containing the new certificates by clicking "Browse" and selecting the file on your local file system. Press "Submit".</li>
+            <li>Merge the published metadata with the uploaded metadata by pressing the button "Merge from published". By doing this you get all current metadata for the entity merged into the draft.</li>
+            <li>Add or update metadata information by clicking on the pencil for each metadata section. Continue adding and changing information in the metadata until the information is correct and there are no errors left.<ul>
+              <li>For a Service Provider remember to add metadata attributes for entity categories, otherwise you will not get any attributes from Identity Providers without manual configuration in the Identity Providers. For more information on entity categories see the wiki page "Entity Categories for Service Providers".</li>
+              <li>It is highly recommended that the service adheres to the security profile <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+              <li>You have up to two weeks to work on your draft. Every change is automatically saved. To find out how to pick up where you left off, see the help topic "Continue working on a draft".</li>
+            </ul></li>
+            <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
+            <li>Follow the instructions on the next web page and choose if the entity shall be published in SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+            <li>Continue to the next step by pressing on the button ”Request publication”.</li>
+            <li>An e-mail will be sent to your registered address. Forward this to SWAMID operations as described in the e-mail.</li>
+            <li>SWAMID Operations will now check and publish the request.</li>
+          </ol><?php
+		$this->showCollapseEnd('UpdateCertificates', 0);
+		$this->showCollapse('Update published entity in SWAMID (except SAML certificates)', 'UpdateEntity', false, 0, false);?>
+
+          <ol>
+            <li>Go to the tab "Published".</li>
+            <li>Choose the entity you want to  update by clicking on its entityID.</li>
+            <li>Click on the button "Create draft" to start updating the entity.</li>
+            <li>Add or update metadata information by clicking on the pencil for each metadata section. Continue adding and changing information in the metadata until the information is correct and there are no errors left.<ul>
+              <li>For a Service Provider remember to add metadata attributes for entity categories, otherwise you will not get any attributes from Identity Providers without manual configuration in the Identity Providers. For more information on entity categories see the wiki page "Entity Categories for Service Providers".</li>
+              <li>It is highly recommended that the service adheres to the security profile <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+              <li>You have up to two weeks to work on your draft. Every change is automatically saved. To find out how to pick up where you left off, see the help topic "Continue working on a draft".</li>
+            </ul></li>
+            <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
+            <li>Follow the instructions on the next web page and choose if the entity shall be published in SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+            <li>Continue to the next step by pressing on the button ”Request publication”.</li>
+            <li>An e-mail will be sent to your registered address. Forward this to SWAMID operations as described in the e-mail.</li>
+            <li>SWAMID Operations will now check and publish the request.</li>
+          </ol><?php
+		$this->showCollapseEnd('UpdateEntity', 0);
+		$this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);?>
+
+          <ol>
+            <li>Go to the tab "Drafts".</li>
+            <li>Select the entity you want to continue to update by clicking on its entityID. You can only remove drafts for entities that you personally have previously started to update.</li>
+            <li>Add or update metadata information by clicking on the pencil for each metadata section. Continue adding and changing information in the metadata until the information is correct and there are no errors left.<ul>
+              <li>For a Service Provider remember to add metadata attributes for entity categories, otherwise you will not get any attributes from Identity Providers without manual configuration in the Identity Providers. For more information on entity categories see the wiki page "Entity Categories for Service Providers".</li>
+              <li>It is highly recommended that the service adheres to the security profile <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+            </ul></li>
+            <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
+            <li>Follow the instructions on the next web page and choose if the entity shall be published in SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+            <li>Continue to the next step by pressing on the button ”Request publication”.</li>
+            <li>An e-mail will be sent to your registered address. Forward this to SWAMID operations as described in the e-mail.</li>
+            <li>SWAMID Operations will now check and publish the request.</li>
+          </ol><?php
+		$this->showCollapseEnd('ContinueUpdateEntity', 0);
+		$this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);?>
+
+          <ol>
+            <li>Go to the tab "Drafts".</li>
+            <li>Select the entity for which you want to remove the draft by clicking on its entityID. You can only remove drafts for entities that you personally have previously started to update.</li>
+            <li>Press the button ”Discard Draft”.</li>
+            <li>Confirm the action by pressing the button ”Remove”.</li>
+          </ol><?php
+		$this->showCollapseEnd('DiscardDraft', 0);
+		$this->showCollapse('Withdraw a publication request', 'WithdrawPublicationRequest', false, 0, false);?>
+
+          <ol>
+            <li>Go to the tab "Pending".</li>
+            <li>Choose the entity for which you want to withdraw the publication request. You can only withdraw a publication request for entites where you earlier have requested publication.</li>
+            <li>To withdraw the request press the button ”Cancel publication request”.</li>
+            <li>To ensure that you are sure of the withdrawel you need to press the button ”Cancel request” before the request is processed.</li>
+            <li>The entity is now back in draft mode so that you can continue to update, if you want to to cancel the update press the buton "Discard Draft" and "Remove" on next page.</li>
+          </ol><?php
+		$this->showCollapseEnd('WithdrawPublicationRequest', 0);
 	}
 	#############
 	# Return collapseIcons

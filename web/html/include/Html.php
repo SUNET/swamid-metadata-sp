@@ -5,6 +5,7 @@ Class HTML {
 		$this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
 		$this->destination = '?first';
 		$this->startTimer = time();
+		$this->loggedIn = false;
 		switch ($DS) {
 			case 'seamless' :
 				$this->DS = '/DS/seamless-access';
@@ -83,8 +84,9 @@ Class HTML {
     <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
       <h3 class="my-0 mr-md-auto font-weight-normal"><a href="."><img src="https://release-check.swamid.se/swamid-logo-2-100x115.png" width="55"></a> Metadata</h3>
       <nav class="my-2 my-md-0 mr-md-3">
-        <a class="p-2 text-dark"href="https://www.sunet.se/swamid/">About SWAMID</a>
-        <a class="p-2 text-dark"href="https://www.sunet.se/swamid/kontakt/">Contact us</a>
+        <a class="p-2 text-dark" href="https://www.sunet.se/swamid/">About SWAMID</a>
+        <a class="p-2 text-dark" href="https://www.sunet.se/swamid/kontakt/">Contact us</a>
+        <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
       </nav>
       <?=$this->displayName?>
 
@@ -145,6 +147,7 @@ public function showFooter($collapseIcons = array(), $seamless = false) {
 
 	public function setDisplayName($name) {
 		$this->displayName = $name;
+		$this->loggedIn = true;
 	}
 
 	public function setDestination($destination) {

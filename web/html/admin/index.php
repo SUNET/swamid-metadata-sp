@@ -14,7 +14,7 @@ include '../include/Html.php';
 $html = new HTML();
 
 $errorURL = isset($_SERVER['Meta-errorURL']) ? '<a href="' . $_SERVER['Meta-errorURL'] . '">Mer information</a><br>' : '<br>';
-$errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'), array(time(), 'https://verify.sunet.se/shibboleth', $_SERVER['Shib-Session-ID']), $errorURL);
+$errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'), array(time(), 'https://metadata.swamid.se/shibboleth', $_SERVER['Shib-Session-ID']), $errorURL);
 
 $errors = '';
 $filterFirst = true;
@@ -166,6 +166,8 @@ if (isset($_FILES['XMLfile'])) {
 		removeKey($_GET['removeKey'], $_GET['type'], $_GET['use'], $_GET['serialNumber']);
 } elseif (isset($_GET['rawXML'])) {
 	$display->showRawXML($_GET['rawXML']);
+} elseif (isset($_GET['showHelp'])) {
+	showHelp();
 } else {
 	$menuActive = 'publ';
 	if (isset($_GET['action'])) {
@@ -211,33 +213,60 @@ if (isset($_FILES['XMLfile'])) {
 					showMenu();
 					$display->showErrorStatistics();
 					break;
-				case 'URLlist' :
-					$menuActive = 'URLlist';
+				case 'showURL' :
+					$menuActive = '';
 					$html->showHeaders('Metadata SWAMID - URL status');
 					showMenu();
-					$display->showURLStatus();
+					if (isset($_GET['URL'])) {
+						if (isset($_GET['recheck'])) {
+							$metadata = new Metadata($baseDir);
+							$metadata->revalidateURL($_GET['URL']);
+						}
+						$display->showURLStatus($_GET['URL']);
+					}
+					break;
+				case 'URLlist' :
+					if ($userLevel > 4) {
+						$menuActive = 'URLlist';
+						$html->showHeaders('Metadata SWAMID - URL status');
+						showMenu();
+						if (isset($_GET['URL'])) {
+							if (isset($_GET['recheck'])) {
+								$metadata = new Metadata($baseDir);
+								$metadata->revalidateURL($_GET['URL']);
+							}
+							$display->showURLStatus($_GET['URL']);
+						} else
+							$display->showURLStatus();
+					}
 					break;
 				case 'ErrorList' :
-					$menuActive = 'Errors';
-					$html->showHeaders('Metadata SWAMID - Errror status');
-					showMenu();
-					$display->showErrorList();
+					if ($userLevel > 4) {
+						$menuActive = 'Errors';
+						$html->showHeaders('Metadata SWAMID - Errror status');
+						showMenu();
+						$display->showErrorList();
+					}
 					break;
 				case 'ErrorListDownload' :
-					$display->showErrorList(true);
-					exit;
+					if ($userLevel > 4) {
+						$display->showErrorList(true);
+						exit;
+					}
 					break;
 				case 'CleanPending' :
-					$menuActive = 'CleanPending';
-					$html->showHeaders('Metadata SWAMID - Clean Pending');
-					showMenu();
-					if (isset($_GET['entity_id'])) {
-						$metadata = new Metadata($baseDir, $_GET['entity_id']);
-						if ($metadata->checkPendingIfPublished()) {
-							$metadata->removeEntity();
+					if ($userLevel > 10) {
+						$menuActive = 'CleanPending';
+						$html->showHeaders('Metadata SWAMID - Clean Pending');
+						showMenu();
+						if (isset($_GET['entity_id'])) {
+							$metadata = new Metadata($baseDir, $_GET['entity_id']);
+							if ($metadata->checkPendingIfPublished()) {
+								$metadata->removeEntity();
+							}
 						}
+						$display->showPendingListToRemove();
 					}
-					$display->showPendingListToRemove();
 					break;
 				case 'ShowDiff' :
 					$menuActive = 'CleanPending';
@@ -378,8 +407,7 @@ function showEntityList($status = 1) {
 ####
 function showEntity($Entity_id)  {
 	global $db, $html, $display, $userLevel, $menuActive, $EPPN;
-	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP, publishIn, status FROM Entities WHERE id = :Id;');
-	$entityHandlerOld = $db->prepare('SELECT id, isIdP, isSP, publishIn FROM Entities WHERE entityID = :Id AND status = 1;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE `id` = :Id;');
 	$publishArray = array();
 	$publishArrayOld = array();
 	$allowEdit = false;
@@ -390,8 +418,16 @@ function showEntity($Entity_id)  {
 		if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
 		if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
 		if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
-		if ($entity['status'] > 1) {
-			$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+		if ($entity['status'] > 1 && $entity['status'] < 6) {
+			if ($entity['publishedId'] > 0) {
+				$entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
+				$entityHandlerOld->bindParam(':Id', $entity['publishedId']);
+				$headerCol2 = 'Old metadata - when requested publication';
+			} else {
+				$entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
+				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+				$headerCol2 = 'Old metadata - published now';
+			}
 			$entityHandlerOld->execute();
 			if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
 				$oldEntity_id = $entityOld['id'];
@@ -503,7 +539,7 @@ function showEntity($Entity_id)  {
 
       </div>
       <div class="col">
-        <h3>Old metadata</h3>
+        <h3><?=$headerCol2?></h3>
         Published in : <?php
 			print (implode (', ', $publishArrayOld));
 		} ?>
@@ -688,7 +724,7 @@ function validateEntity($Entity_id) {
 }
 
 function move2Pending($Entity_id) {
-	global $db, $html, $display, $userLevel, $menuActive;
+	global $db, $html, $display, $userLevel, $menuActive, $baseDir;
 	global $EPPN, $mail, $fullName;
 	global $mailContacts, $mailRequetser, $SendOut;
 	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP FROM Entities WHERE status = 3 AND id = :Id;');
@@ -752,15 +788,21 @@ function move2Pending($Entity_id) {
 				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
 
 				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entity['entityID']);
-				$entityHandlerOld = $db->prepare('SELECT publishIn FROM Entities WHERE entityID = :Id AND status = 1;');
+				$entityHandlerOld = $db->prepare('SELECT `id`, `xml` FROM Entities WHERE entityID = :Id AND status = 1;');
 				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
 				$entityHandlerOld->execute();
 				if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
 					$mailContacts->Subject	= 'Info : Updated SWAMID metadata for ' . $short_entityid;
 					$mailRequetser->Subject	= 'Updated SWAMID metadata for ' . $short_entityid;
+					$newMetadata = new Metadata($baseDir, $entity['entityID'], 'Shadow');
+					$newMetadata->importXML($entityOld['xml']);
+					$newMetadata->validateXML();
+					$newMetadata->validateSAML();
+					$oldEntity_id = $newMetadata->ID();
 				} else {
 					$mailContacts->Subject	= 'Info : New SWAMID metadata for ' . $short_entityid;
 					$mailRequetser->Subject	= 'New SWAMID metadata for ' . $short_entityid;
+					$oldEntity_id = 0;
 				}
 
 				try {
@@ -779,8 +821,9 @@ function move2Pending($Entity_id) {
 
 				printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following new or old technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
 				printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);
-				$entityPublishHandler = $db->prepare('UPDATE Entities SET status = 2, publishIn = :PublishIn WHERE status = 3 AND id = :Id;');
+				$entityPublishHandler = $db->prepare('UPDATE Entities SET `status` = 2, `publishedId` = :PublishedId, `publishIn` = :PublishIn WHERE `status` = 3 AND `id` = :Id;');
 				$entityPublishHandler->bindParam(':Id', $Entity_id);
+				$entityPublishHandler->bindParam(':PublishedId', $oldEntity_id);
 				$entityPublishHandler->bindParam(':PublishIn', $_GET['publishedIn']);
 				$entityPublishHandler->execute();
 			} else {
@@ -823,8 +866,8 @@ function move2Pending($Entity_id) {
 			printf('
     <div class="row alert alert-danger" role="alert">
       <div class="col">
-        <div class="row"><b>Please fix the following errors before requesting publication:</b></div>
-        <div class="row">%s</div>
+        <b>Please fix the following errors before requesting publication:</b><br>
+        %s
       </div>
     </div>
     <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>', str_ireplace("\n", "<br>", $errors), $Entity_id);
@@ -973,8 +1016,8 @@ function move2Draft($Entity_id) {
 			$newMetadata->validateXML(true);
 			$newMetadata->validateSAML(true);
 			$menuActive = 'new';
-			showEntity($newMetadata->ID());
 			$newMetadata->updateResponsible($EPPN,$mail);
+			showEntity($newMetadata->ID());
 			$oldMetadata = new Metadata($baseDir, $Entity_id);
 			$oldMetadata->removeEntity();
 		} else {
@@ -984,7 +1027,7 @@ function move2Draft($Entity_id) {
 			printf('%s    <p>You are about to cancel your request for publication of <b>%s</b></p>', "\n", $entity['entityID']);
 			printf('    <form>
       <input type="hidden" name="move2Draft" value="%d">
-      <input type="submit" name="action" value="Cancel request">
+      <input type="submit" name="action" value="Confirm cancel publication request">
     </form>
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $Entity_id, $Entity_id);
 		}
@@ -1011,27 +1054,32 @@ function removeEntity($Entity_id) {
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+		$OK2Remove = true;
 		switch($entity['status']) {
-			case 1:
-				$menuActive = 'publ';
-				$from = 'Published';
-				break;
-			case 2:
+			case 2 :
 				$menuActive = 'wait';
-				$from = 'Pending';
+				$button = 'Confirm delete pending';
+				$from = 'delete the pending entity';
 				break;
-			case 3:
+			case 3 :
 				$menuActive = 'new';
-				$from = 'Drafts';
+				$button = 'Confirm discard draft';
+				$from = 'discard the draft';
 				break;
+			default :
+				$OK2Remove = false;
 		}
 		showMenu();
-		if (isset($_GET['action']) && $_GET['action'] == 'Remove' ) {
-			$metadata = new Metadata($baseDir, $Entity_id);
-			$metadata->removeEntity();
-			printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
+		if ($OK2Remove) {
+			if (isset($_GET['action']) && $_GET['action'] == $button ) {
+				$metadata = new Metadata($baseDir, $Entity_id);
+				$metadata->removeEntity();
+				printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
+			} else {
+				printf('    <p>You are about to %s of <b>%s</b></p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $from, $entity['entityID'], "\n", "\n", $Entity_id, "\n", $button, "\n", "\n",  $Entity_id);
+			}
 		} else {
-			printf('    <p>You are about to request removal of <b>%s</b> from %s</p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="Remove">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $entity['entityID'], $from, "\n", "\n", $Entity_id, "\n", "\n", "\n",  $Entity_id);
+			print "You can't Remove / Discard this entity";
 		}
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');
@@ -1096,4 +1144,12 @@ function getBlockingErrors($Entity_id) {
 		$errors .= $entity['errors'];
 	}
 	return $errors;
+}
+
+function showHelp() {
+	global $html, $display, $menuActive;
+	$html->showHeaders('Metadata SWAMID');
+	$menuActive = '';
+	showMenu();
+	$display->showHelp();
 }
