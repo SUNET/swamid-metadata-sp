@@ -101,9 +101,7 @@ Class MetadataDisplay {
 			// MDUI
 			$urlHandler1->execute();
 			while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
-				if ($url['status'] > 0)
-					$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
-				if ($CoCov1SP  && $url['cocov1Status'] > 0)
+				if ($url['status'] > 0 || ($CoCov1SP  && $url['cocov1Status'] > 0)) 
 					$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
 			}
 			// OrganizationURL
@@ -1091,8 +1089,8 @@ Class MetadataDisplay {
 			$entityHandler->execute();
 			if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 				printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
-				require_once $this->basedDir . '/include/Diff.php';
-				require_once $this->basedDir . '/include/Diff/Renderer/Text/Unified.php';
+				require_once $this->baseDir . '/include/Diff.php';
+				require_once $this->baseDir . '/include/Diff/Renderer/Text/Unified.php';
 				$options = array(
 					//'ignoreWhitespace' => true,
 					//'ignoreCase' => true,
