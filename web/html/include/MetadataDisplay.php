@@ -1082,7 +1082,7 @@ Class MetadataDisplay {
 				$URLHandler->execute();
 				if ($verbose) print "Removing URL. Not in use any more\n";
 			}
-			if ($URLInfo['type'] > 2 && !$CoCoV1 ) {
+			elseif ($URLInfo['type'] > 2 && !$CoCoV1 ) {
 				if ($Logo)
 					$URLHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 2 WHERE `URL` = :URL');
 				else
