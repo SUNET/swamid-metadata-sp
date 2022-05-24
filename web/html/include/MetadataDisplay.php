@@ -922,6 +922,7 @@ Class MetadataDisplay {
 			$missing = true;
 			$CoCoV1 = false;
 			$Logo = false;
+			$URLType = 0;
 			$URLHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated` FROM URLs WHERE `URL` = :URL');
 			$URLHandler->bindValue(':URL', $url);
 			$URLHandler->execute();
@@ -941,6 +942,7 @@ Class MetadataDisplay {
 			if ($URLInfo = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
 				printf ('      <tr><th>Checked</th><td>%s (UTC) <a href=".?action=%s&URL=%s&recheck"><button type="button" class="btn btn-primary">Recheck now</button></a></td></tr>%s', $URLInfo['lastValidated'], $_GET['action'] ,urlencode($url), "\n");
 				printf ('      <tr><th>Status</th><td>%s</td></tr>%s', $URLInfo['validationOutput'] , "\n");
+				$URLType = $URLInfo['type'];
 			}
 			printf ('    </table>%s    <table class="table table-striped table-bordered">%s      <tr><th>Entity</th><th>Part</th><th></tr>%s', "\n", "\n", "\n");
 			while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -959,14 +961,21 @@ Class MetadataDisplay {
 						}
 					}
 				}
-				if ($Entity['element'] == 'Logo')
-					$Logo = true;
-				printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $this->getEntityStatusType($Entity['status']), substr($Entity['type'],0,-3), $Entity['element'], $Entity['lang'], $ECInfo, "\n");
-				$missing = false;
+				switch ($Entity['element']) {
+					case 'Logo' :
+						$Logo = true;
+					case 'InformationURL' :
+					case 'PrivacyStatementURL' :
+						printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $this->getEntityStatusType($Entity['status']), substr($Entity['type'],0,-3), $Entity['element'], $Entity['lang'], $ECInfo, "\n");
+						$missing = false;
+						break;
+				}
 			}
 			while ($Entity = $OrganizationHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $this->getEntityStatusType($Entity['status']),  $Entity['element'], $Entity['lang'], "\n");
-				$missing = false;
+				if ($Entity['element'] == 'OrganizationURL') {
+					printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s', $Entity['entity_id'], $Entity['entityID'], $this->getEntityStatusType($Entity['status']),  $Entity['element'], $Entity['lang'], "\n");
+					$missing = false;
+				}
 			}
 			print "    </table>\n";
 			if ($missing) {
@@ -975,7 +984,7 @@ Class MetadataDisplay {
 				$URLHandler->execute();
 				print "Not used anymore, removed";
 			}
-			if ($URLInfo['type'] > 2 && !$CoCoV1 ) {
+			if ($URLType > 2 && !$CoCoV1 ) {
 				if ($Logo)
 					$URLHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 2 WHERE `URL` = :URL');
 				else
@@ -1024,74 +1033,6 @@ Class MetadataDisplay {
 			}
 			print "    </table>\n";
 
-		}
-	}
-
-	public function checkOldURLS($age = 30, $verbose = false) {
-		$sql = sprintf("SELECT URL, lastSeen from URLs where lastSeen < ADDTIME(NOW(), '-%d 0:0:0')", $age);
-		$URLHandler = $this->metaDb->prepare($sql);
-		$URLHandler->execute();
-		while ($URLInfo = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
-			if ($verbose) printf ("Checking : %s last seen %s\n", $URLInfo['URL'], $URLInfo['lastSeen']);
-			$this->checkURLStatus($URLInfo['URL'], $verbose);
-		}
-
-	}
-
-	private function checkURLStatus($url, $verbose = false){
-		$URLHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated` FROM URLs WHERE `URL` = :URL');
-		$URLHandler->bindValue(':URL', $url);
-		$URLHandler->execute();
-		if ($URLInfo = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
-			$missing = true;
-			$CoCoV1 = false;
-			$Logo = false;
-			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
-			$EntityHandler->bindValue(':URL', $url);
-			$EntityHandler->execute();
-			$SSOUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status` FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL');
-			$SSOUIIHandler->bindValue(':URL', $url);
-			$SSOUIIHandler->execute();
-			$OrganizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status` FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
-			$OrganizationHandler->bindValue(':URL', $url);
-			$OrganizationHandler->execute();
-			$entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute` FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category'");
-			if ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
-				$missing = false;
-			}
-			while ($Entity = $SSOUIIHandler->fetch(PDO::FETCH_ASSOC)) {
-				if ($Entity['type'] == 'SPSSO' && $Entity['element'] == 'PrivacyStatementURL') {
-					$entityAttributesHandler->bindParam(':Id', $Entity['entity_id']);
-					$entityAttributesHandler->execute();
-					while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-						if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') {
-							$CoCoV1 = true;
-						}
-					}
-				}
-				if ($Entity['element'] == 'Logo')
-					$Logo = true;
-				$missing = false;
-			}
-			if ($Entity = $OrganizationHandler->fetch(PDO::FETCH_ASSOC)) {
-				$missing = false;
-			}
-			if ($missing) {
-				$URLHandler = $this->metaDb->prepare('DELETE FROM URLs WHERE `URL` = :URL');
-				$URLHandler->bindValue(':URL', $url);
-				$URLHandler->execute();
-				if ($verbose) print "Removing URL. Not in use any more\n";
-			}
-			elseif ($URLInfo['type'] > 2 && !$CoCoV1 ) {
-				if ($Logo)
-					$URLHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 2 WHERE `URL` = :URL');
-				else
-					$URLHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 1 WHERE `URL` = :URL');
-				$URLHandler->bindValue(':URL', $url);
-				$URLHandler->execute();
-				if ($verbose) print "Not CoCo v1 any more. Removes that flag.\n";
-
-			}
 		}
 	}
 

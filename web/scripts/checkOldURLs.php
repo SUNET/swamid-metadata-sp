@@ -1,6 +1,6 @@
 <?php
-include "/var/www/html/include/MetadataDisplay.php";
+include "/var/www/html/include/Metadata.php";
 
-$metadataDisplay = new MetadataDisplay('/var/www/html');
-$metadataDisplay->checkOldURLS(30,true);
+$metadata = new Metadata('/var/www/html');
+$metadata->checkOldURLS(30,true);
 ?>
