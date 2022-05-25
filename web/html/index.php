@@ -141,8 +141,7 @@ EOF;
 ####
 function showEntity($Entity_id)  {
 	global $db, $html, $display;
-	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `publishIn`, `status` FROM Entities WHERE id = :Id;');
-	$entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE entityID = :Id AND status = 1;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE id = :Id;');
 	$publishArray = array();
 	$publishArrayOld = array();
 
@@ -153,8 +152,16 @@ function showEntity($Entity_id)  {
 		if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
 		if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
 		if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
-		if ($entity['status'] > 1) {
-			$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+		if ($entity['status'] > 1 && $entity['status'] < 6) {
+			if ($entity['publishedId'] > 0) {
+				$entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
+				$entityHandlerOld->bindParam(':Id', $entity['publishedId']);
+				$headerCol2 = 'Old metadata - when requested publication';
+			} else {
+				$entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
+				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
+				$headerCol2 = 'Old metadata - published now';
+			}
 			$entityHandlerOld->execute();
 			if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
 				$oldEntity_id = $entityOld['id'];
@@ -164,7 +171,29 @@ function showEntity($Entity_id)  {
 			} else {
 				$oldEntity_id = 0;
 			}
+			switch ($entity['status']) {
+				case 3:
+					# Draft
+					$headerCol1 = 'New metadata';
+					$allowEdit = checkAccess($Entity_id, $EPPN, $userLevel, 10, false);
+					break;
+				case 4:
+					# Soft Delete
+					$headerCol1 = 'Deleted metadata';
+					$oldEntity_id = 0;
+					break;
+				case 5:
+					# Pending that have been published
+				case 6:
+					# Copy of published used to compare Pending
+					$headerCol1 = 'Already published metadata (might not be the latest!)';
+					$oldEntity_id = 0;
+					break;
+				default:
+					$headerCol1 = 'Waiting for publishing';
+			}
 		} else {
+			$headerCol1 = '';
 			$oldEntity_id = 0;
 		}
 		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']); ?>
@@ -177,14 +206,14 @@ function showEntity($Entity_id)  {
 
     <div class="row">
       <div class="col">
-        <?=($oldEntity_id > 0) ? "<h3>New metadata</h3>\n" : ''; ?>
+        <?=($oldEntity_id > 0) ? "<h3>" . $headerCol1 . "</h3>\n" : ''; ?>
         Published in : <?php
 		print (implode (', ', $publishArray));
 		if ($oldEntity_id > 0) { ?>
 
       </div>
       <div class="col">
-        <h3>Old metadata</h3>
+        <h3><?=$headerCol2?></h3>
         Published in : <?php
 			print (implode (', ', $publishArrayOld));
 		} ?>
