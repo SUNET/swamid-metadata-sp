@@ -105,6 +105,9 @@ switch ($EPPN) {
 	case 'toylon98@umu.se' :
 		$userLevel = 5;
 		break;
+	case 'pontus.fagerstrom@sunet.se' :
+		$userLevel = 2;
+		break;
 	default :
 		$userLevel = 1;
 }
@@ -241,7 +244,7 @@ if (isset($_FILES['XMLfile'])) {
 					}
 					break;
 				case 'ErrorList' :
-					if ($userLevel > 4) {
+					if ($userLevel > 1) {
 						$menuActive = 'Errors';
 						$html->showHeaders('Metadata SWAMID - Errror status');
 						showMenu();
@@ -249,7 +252,7 @@ if (isset($_FILES['XMLfile'])) {
 					}
 					break;
 				case 'ErrorListDownload' :
-					if ($userLevel > 4) {
+					if ($userLevel > 1) {
 						$display->showErrorList(true);
 						exit;
 					}
@@ -458,7 +461,6 @@ function showEntity($Entity_id)  {
 					$headerCol1 = 'Already published metadata (might not be the latest!)';
 					$menuActive = 'publ';
 					$allowEdit = false;
-					$oldEntity_id = 0;
 					break;
 				default:
 					$headerCol1 = 'Waiting for publishing';
@@ -708,7 +710,9 @@ function showMenu() {
 	printf('<a href=".?action=ErrorStatus%s"><button type="button" class="btn btn%s-primary">Error status</button></a>', $filter, $menuActive == 'ErrorStatus' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
-		printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
+	}
+	if ( $userLevel > 1 ) {
+			printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
 	}
 	if ( $userLevel > 10 ) {
 		printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>', $filter, $menuActive == 'CleanPending' ? '' : '-outline');
@@ -751,8 +755,6 @@ function move2Pending($Entity_id) {
 					$errors .= "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n";
 					$publish = false;
 				}
-
-				//if ()
 			} else
 				$publish = false;
 
@@ -788,7 +790,7 @@ function move2Pending($Entity_id) {
 				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
 
 				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entity['entityID']);
-				$entityHandlerOld = $db->prepare('SELECT `id`, `xml` FROM Entities WHERE entityID = :Id AND status = 1;');
+				$entityHandlerOld = $db->prepare('SELECT `xml`, `publishIn` FROM Entities WHERE entityID = :Id AND status = 1;');
 				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
 				$entityHandlerOld->execute();
 				if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
@@ -796,6 +798,7 @@ function move2Pending($Entity_id) {
 					$mailRequetser->Subject	= 'Updated SWAMID metadata for ' . $short_entityid;
 					$newMetadata = new Metadata($baseDir, $entity['entityID'], 'Shadow');
 					$newMetadata->importXML($entityOld['xml']);
+					$newMetadata->updateFeedByValue($entityOld['publishIn']);
 					$newMetadata->validateXML();
 					$newMetadata->validateSAML();
 					$oldEntity_id = $newMetadata->ID();

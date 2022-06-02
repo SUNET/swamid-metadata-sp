@@ -1913,6 +1913,16 @@ Class Metadata {
 	}
 
 	#############
+	# Updates which feeds by value
+	#############
+	public function updateFeedByValue($publishIn) {
+		$publishedHandler = $this->metaDb->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id;');
+		$publishedHandler->bindValue(':Id', $this->dbIdNr);
+		$publishedHandler->bindValue(':PublishIn', $publishIn);
+		$publishedHandler->execute();
+	}
+
+	#############
 	# Updates which user that is responsible for an entity
 	#############
 	public function updateResponsible($EPPN,$mail) {
