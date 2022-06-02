@@ -1270,7 +1270,47 @@ Class MetadataDisplay {
 		$TotalMin = 1000;
 		$SPMin = 1000;
 		$IdPMin = 1000;
+
+		$ErrorsTotal = 0;
+		$ErrorsSPs = 0;
+		$ErrorsIdPs = 0;
+		$NrOfEntites = 0;
+		$NrOfSPs = 0;
+		$NrOfIdPs = 0;
+		$entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `errors` FROM Entities WHERE status = 1 AND publishIn > 2");
+		$entitys->execute();
+		while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+			$isIdP = $row['isIdP'];
+			$isSP = $row['isSP'];
+			switch ($row['publishIn']) {
+				case 1 :
+					break;
+				case 3 :
+				case 7 :
+					$NrOfEntites ++;
+					if ($row['isIdP']) $NrOfIdPs ++;
+					if ($row['isSP']) $NrOfSPs ++;
+					if ( $row['errors'] <> '' ) {
+						$ErrorsTotal ++;
+						if ($row['isIdP']) $ErrorsIdPs ++;
+						if ($row['isSP']) $ErrorsSPs ++;
+					}
+					break;
+				default :
+					printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
+			}
+		}
+
 		printf ('    <h3>Totalt entity errors</h3>    <p>Statistics on number of entities not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="total" width="200" height="50"></canvas>%s    <h3>Totalt SP errors</h3>%s    <p>Statistics on number of Service Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="SPs" width="200" height="50"></canvas>%s    <h3>Totalt IdP errors</h3>%s    <p>Statistics on number of Identity Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="IdPs" width="200" height="50"></canvas>%s    <br><br>%s    <h3>Statistics in numbers</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th><th>ErrorsTotal</th><th>ErrorsSPs</th><th>ErrorsIdPs</th></tr>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', 'Now', $NrOfEntites, $NrOfSPs, $NrOfIdPs, $ErrorsTotal, ($ErrorsTotal / $NrOfEntites * 100), $ErrorsSPs, ($ErrorsSPs / $NrOfSPs * 100), $ErrorsIdPs, ($ErrorsIdPs / $NrOfIdPs * 100), "\n");
+		array_unshift($labelsArray, 'Now');
+		array_unshift($totalArray, $ErrorsTotal);
+		array_unshift($totalOKArray, $NrOfEntites - $ErrorsTotal);
+		array_unshift($SPArray, $ErrorsSPs);
+		array_unshift($SPOKArray, $NrOfSPs - $ErrorsSPs);
+		array_unshift($IdPArray, $ErrorsIdPs);
+		array_unshift($IdPOKArray, $NrOfIdPs - $ErrorsIdPs);
+
 		while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
 			$week = date('W',mktime(0, 0, 0, substr($row['date'],5,2), substr($row['date'],8,2), substr($row['date'],0,4)));
 			$dateLabel = substr($row['date'],2,8);
