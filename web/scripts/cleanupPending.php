@@ -1,4 +1,5 @@
 <?php
+# Cleanup pending queue and moves out from queue if published.
 $baseDir = '/var/www/html';
 include $baseDir.'/config.php';
 include $baseDir.'/include/Metadata.php';
