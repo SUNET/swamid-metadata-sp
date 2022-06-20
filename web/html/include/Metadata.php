@@ -1096,7 +1096,7 @@ Class Metadata {
 						$KeyInfoHandler->bindParam(':Hash', $cert_info['hash']);
 						$KeyInfoHandler->bindParam(':SerialNumber', $cert_info['serialNumber']);
 					} else {
-						$KeyInfoHandler->bindValue(':NotValidAfter', date('Y-m-d H:i:s', $cert_info['validTo_time_t']));
+						$KeyInfoHandler->bindValue(':NotValidAfter', '1970-01-01 00:00:00');
 						$KeyInfoHandler->bindValue(':Subject', '?');
 						$KeyInfoHandler->bindValue(':Issuer', '?');
 						$KeyInfoHandler->bindValue(':Bits', 0);
@@ -1435,11 +1435,10 @@ Class Metadata {
 					break;
 				case 'InformationURL' :
 				case 'PrivacyStatementURL' :
-				case 'Description' :
-				case 'Keywords' :
+					if (substr($mdui['data'],0,8) != 'https://' && substr($mdui['data'],0,7) != 'http://') {
+						$this->error .= sprintf('SWAMID Tech 5.1.17: %s must be a URL%s', $mdui['element'], ".\n");
+					}
 					break;
-				default :
-					printf ("Missing %s<br>\n", $mdui['element']);
 			}
 		}
 
@@ -1453,11 +1452,24 @@ Class Metadata {
 	// 6.1.12
 	private function checkRequiredMDUIelementsSP() {
 		$elementArray = array ('DisplayName' => false, 'Description' => false, 'InformationURL' => false, 'PrivacyStatementURL' => false);
-		$mduiHandler = $this->metaDb->prepare("SELECT DISTINCT `element` FROM Mdui WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
+		$mduiHandler = $this->metaDb->prepare("SELECT DISTINCT `element`, `data` FROM Mdui WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
 		$mduiHandler->bindValue(':Id', $this->dbIdNr);
 		$mduiHandler->execute();
 		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
 			$elementArray[$mdui['element']] = true;
+			switch($mdui['element']) {
+				case 'Logo' :
+					if (substr($mdui['data'],0,8) != 'https://') {
+						$this->error .= "SWAMID Tech 6.1.13: Logo must start with <b>https://</b> .\n";
+					}
+					break;
+				case 'InformationURL' :
+				case 'PrivacyStatementURL' :
+					if (substr($mdui['data'],0,8) != 'https://' && substr($mdui['data'],0,7) != 'http://') {
+						$this->error .= sprintf('SWAMID Tech 6.1.12: %s must be a URL%s', $mdui['element'], ".\n");
+					}
+					break;
+			}
 		}
 
 		foreach ($elementArray as $element => $value) {
