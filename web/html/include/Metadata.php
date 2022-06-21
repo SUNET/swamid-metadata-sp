@@ -1488,6 +1488,7 @@ Class Metadata {
 		$keyInfoHandler->execute();
 
 		$SWAMID_5_2_1_Level = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
+		$SWAMID_5_2_1_error = 0;
 		$SWAMID_5_2_2_error = false;
 		$SWAMID_5_2_2_errorNB = false;
 		$SWAMID_5_2_3_warning = false;
@@ -1495,6 +1496,7 @@ Class Metadata {
 		$validSigningFound = false;
 		$oldCertFound = false;
 		$smalKeyFound = false;
+		$keyFound = false;
 		$timeNow = date('Y-m-d H:i:00');
 		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
 		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1539,23 +1541,23 @@ Class Metadata {
 			switch ($keyInfo['key_type']) {
 				case 'RSA' :
 				case 'DSA' :
-					//if ($keyInfo['bits'] >= 4096 && $keyInfo['notValidAfter'] >= $timeNow ) {
 					if ($keyInfo['bits'] >= 4096 ) {
+						$SWAMID_5_2_1_Level[$keyInfo['use']] = 3;
+					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 2 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
-					//} elseif ($keyInfo['bits'] >= 2048 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
-					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+					} elseif ($SWAMID_5_2_1_Level[$keyInfo['use']] < 1) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
 					}
 					if ($keyInfo['bits'] < 2048) $smalKeyFound = true;
 					break;
 				case 'EC' :
-					//if ($keyInfo['bits'] >= 384 && $keyInfo['notValidAfter'] >= $timeNow ) {
 					if ($keyInfo['bits'] >= 384 ) {
+							$SWAMID_5_2_1_Level[$keyInfo['use']] = 3;
+					} elseif ($keyInfo['bits'] >= 256 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 2 ) {
 							$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
-					//} elseif ($keyInfo['bits'] >= 256 && $keyInfo['notValidAfter'] >= $timeNow && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
-					} elseif ($keyInfo['bits'] >= 256 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 1 ) {
+						} else {
 							$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
-					}
+						}
 					if ($keyInfo['bits'] < 256) $smalKeyFound = true;
 					break;
 			}
@@ -1580,22 +1582,69 @@ Class Metadata {
 				$this->error .= "SWAMID Tech 6.1.14: Service Providers MUST have at least one encryption certificate.\n";
 		}
 		// 5.2.1 Identity Provider credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
-		if ((($SWAMID_5_2_1_Level['encryption'] < 2) || ($SWAMID_5_2_1_Level['signing'] < 2)) && ($SWAMID_5_2_1_Level['both'] < 2)) {
-			if ((($SWAMID_5_2_1_Level['encryption'] < 1) && ($SWAMID_5_2_1_Level['signing'] < 1)) && ($SWAMID_5_2_1_Level['both'] < 1)) {
-				$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
-			} else {
+		// 6.2.1 Relying Party credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than 2048-bit RSA/DSA keysor 256-bit ECC keys. 4096-bit RSA/DSAkeysor 384-bitECC keys are RECOMMENDED
+		// At least one cert exist that is used for either signing or encryption, Error = code for cert with lowest # of bits
+		foreach (array('encryption', 'signing') as $use) {
+			if ($SWAMID_5_2_1_Level[$use] > 0) {
+				switch ($SWAMID_5_2_1_Level[$use]) {
+					case 3 :
+						// Key >= 4096 or >= 384
+						// Do nothing. Keep current level.
+						break;
+					case 2 :
+						// Key >= 2048 and < 4096  // >= 256 and <384
+						$SWAMID_5_2_1_error = $SWAMID_5_2_1_error == 0 ? 1 : $SWAMID_5_2_1_error;
+						break;
+					case 1:
+						// To small key
+						$SWAMID_5_2_1_error = 2;
+				}
+				$keyFound = true;
+			}
+		}
+
+		// Cert exist that is used for both signing and encryption
+		if ($SWAMID_5_2_1_Level['both'] > 0) {
+			// Error code could get better if both is better than encryption/signing
+			switch ($SWAMID_5_2_1_Level['both']) {
+				case 3 :
+					// Key >= 4096 or >= 384
+					$SWAMID_5_2_1_error = 0;
+					break;
+				case 2 :
+					// Key >= 2048 and < 4096  // >= 256 and <384
+					if ($keyFound) {
+						// If already checked enc/signing lower if we are better
+						$SWAMID_5_2_1_error = $SWAMID_5_2_1_error > 1 ? 1 : $SWAMID_5_2_1_error;
+					} else {
+						// No enc/siging found set warning
+						$SWAMID_5_2_1_error = 1;
+					}
+					break;
+				case 1:
+					// To small key
+					// Flagg if no enc/signing was found
+					if (! $keyFound) {
+						$SWAMID_5_2_1_error = 2;
+					}
+			}
+		}
+
+		if ($SWAMID_5_2_1_error) {
+			if ($SWAMID_5_2_1_error == 1) {
 				if ($smalKeyFound) {
 					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				} else {
 					$this->warning .= sprintf("SWAMID Tech %s: Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				}
+			} elseif ($SWAMID_5_2_1_error == 2) {
+				$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			}
 		} else {
 			if ($smalKeyFound) {
 				$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			}
 		}
-
 		if ($SWAMID_5_2_2_error) {
 			$this->error .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
 		} elseif ($SWAMID_5_2_2_errorNB) {

@@ -175,7 +175,6 @@ function showEntity($Entity_id)  {
 				case 3:
 					# Draft
 					$headerCol1 = 'New metadata';
-					$allowEdit = checkAccess($Entity_id, $EPPN, $userLevel, 10, false);
 					break;
 				case 4:
 					# Soft Delete
