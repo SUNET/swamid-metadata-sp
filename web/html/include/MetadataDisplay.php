@@ -1179,6 +1179,64 @@ Class MetadataDisplay {
 		print "    </table>\n";
 	}
 
+	private function showErrorEntities($type) {
+		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>MDUI:displayName</th><th>Organization:displayName</th></tr>%s', "\n", "\n");
+		switch ($type) {
+			case 'IDPSSO' :
+				$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `entityID` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 AND isIdP = 1 ORDER BY entityID");
+				break;
+			case 'SPSSO' :
+				$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `entityID` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 AND isSP = 1 ORDER BY entityID");
+				break;
+			default :
+				$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `entityID` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 ORDER BY entityID");
+				break;
+
+		}
+		$EntityHandler->execute();
+		$MduiDisplayNameHandler = $this->metaDb->prepare("SELECT lang, data FROM Mdui WHERE type = :Type AND element = 'DisplayName' AND entity_id = :Id");
+		$MduiDisplayNameHandler->bindValue(':Type', $type);
+		$OrganizationDisplayNameHandler = $this->metaDb->prepare("SELECT lang, data from Organization WHERE element = 'OrganizationDisplayName' AND entity_id = :Id");
+		while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
+			$MduiDisplayNameHandler->bindValue(':Id', $Entity['id']);
+			$MduiDisplayNameHandler->execute();
+			$OrganizationDisplayNameHandler->bindValue(':Id', $Entity['id']);
+			$OrganizationDisplayNameHandler->execute();
+			$MduiDisplayName = 'Missing';
+			$foundSV = false;
+			while ($displayName = $MduiDisplayNameHandler->fetch(PDO::FETCH_ASSOC)) {
+				switch($displayName['lang']) {
+					case 'sv' :
+						$MduiDisplayName = $displayName['data'];
+						$foundSV = true;
+						break;
+					case 'en' :
+						$MduiDisplayName = $foundSV ? $MduiDisplayName : $displayName['data'];
+						break;
+					default :
+						$MduiDisplayName = $MduiDisplayName == 'Missing' ? $MduiDisplayName : $displayName['data'];
+				}
+			}
+			$OrganizationDisplayName = 'Missing';
+			$foundSV = false;
+			while ($displayName = $OrganizationDisplayNameHandler->fetch(PDO::FETCH_ASSOC)) {
+				switch($displayName['lang']) {
+					case 'sv' :
+						$OrganizationDisplayName = $displayName['data'];
+						$foundSV = true;
+						break;
+					case 'en' :
+						$OrganizationDisplayName = $foundSV ? $OrganizationDisplayName : $displayName['data'];
+						break;
+					default :
+						$OrganizationDisplayName = $OrganizationDisplayName == 'Missing' ? $OrganizationDisplayName : $displayName['data'];
+				}
+			}
+			printf ('          <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $MduiDisplayName, $OrganizationDisplayName, "\n");
+		}
+		printf ('        </table>%s', "\n");
+	}
+
 	public function showErrorStatus() {
 		$entitieHandler = $this->metaDb->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 1 AND `publishIn` > 1 ORDER BY `entityID`');
 		$entitieHandler->execute();
@@ -1198,9 +1256,16 @@ Class MetadataDisplay {
 		$NewECHandler->BindParam(':Id', $entity_id);
 		$NINHandler = $this->metaDb->prepare("SELECT `Service_index` FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id AND `Name` = 'urn:oid:1.3.6.1.4.1.2428.90.1.5'");
 		$NINHandler->BindParam(':Id', $entity_id);
-		printf ('    Description of the different error status tabs:%s    <ul>%s      <li>The tab Contacts shows all entities missing required contact information in metadata to get information from SWAMID.</li>%s      <li>The tab Entity category - SFS-1993-1153 shows all entities that has the old entity category SWAMID SFS-1993-1153 but has not start to transfer to the new entity categories.</li>%s      <li>The tab Entity category - R&E shows all entities that has the old entity category REFEDS Research and Scholarship but has not start to transfer to the new entity categories.</li>%s    </ul>%s', "\n", "\n", "\n", "\n", "\n", "\n");
-		printf ('    <ul class="nav nav-tabs" id="myTab" role="tablist">%s      <li class="nav-item">%s        <a class="nav-link active" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="true">Contacts</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="SFS-tab" data-toggle="tab" href="#SFS" role="tab" aria-controls="SFS" aria-selected="false">Entity category - SFS-1993-1153</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="RE-tab" data-toggle="tab" href="#RE" role="tab" aria-controls="RE" aria-selected="false">Entity category - R&E</a>%s      </li>%s    </ul>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
-		printf ('    <div class="tab-content" id="myTabContent">%s      <div class="tab-pane fade show active" id="contact" role="tabpanel" aria-labelledby="contact-tab">%s', "\n", "\n");
+		printf ('    Description of the different error status tabs:%s    <ul>%s      <li>The tab IdP shows all Identity Providers that not  in metadata fulfil all requirements in the SWAMID SAML WebSSO Tecnology Profile.</li>%s      <li>The tab SP shows all Service Providers that not  in metadata fulfil all requirements in the SWAMID SAML WebSSO Tecnology Profile.</li>%s      <li>The tab Contacts shows all entities missing required contact information in metadata to get information from SWAMID.</li>%s      <li>The tab Entity category - SFS-1993-1153 shows all entities that has the old entity category SWAMID SFS-1993-1153 but has not start to transfer to the new entity categories.</li>%s      <li>The tab Entity category - R&E shows all entities that has the old entity category REFEDS Research and Scholarship but has not start to transfer to the new entity categories.</li>%s    </ul>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		printf ('    <ul class="nav nav-tabs" id="myTab" role="tablist">%s      <li class="nav-item">%s        <a class="nav-link active" id="IdP-tab" data-toggle="tab" href="#IdP" role="tab" aria-controls="IdP" aria-selected="true">IdP</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="SP-tab" data-toggle="tab" href="#SP" role="tab" aria-controls="SP" aria-selected="false">SP</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="false">Contacts</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="SFS-tab" data-toggle="tab" href="#SFS" role="tab" aria-controls="SFS" aria-selected="false">Entity category - SFS-1993-1153</a>%s      </li>%s      <li class="nav-item">%s        <a class="nav-link" id="RE-tab" data-toggle="tab" href="#RE" role="tab" aria-controls="RE" aria-selected="false">Entity category - R&E</a>%s      </li>%s    </ul>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		printf ('    <div class="tab-content" id="myTabContent">%s', "\n");
+		printf ('      <div class="tab-pane fade show active" id="IdP" role="tabpanel" aria-labelledby="IdP-tab">%s', "\n");
+		printf ('        <h3>IdP</h3>%s        <p>IdP entites with errors</p>%s', "\n", "\n");
+		$this->showErrorEntities('IDPSSO');
+		printf ('      </div><!-- End tab-pane IdP -->%s      <div class="tab-pane fade" id="SP" role="tabpanel" aria-labelledby="SP-tab">%s', "\n", "\n", "\n");
+		printf ('        <h3>SP</h3>%s        <p>SP entites with errors</p>%s', "\n", "\n");
+		$this->showErrorEntities('SPSSO');
+		printf ('      </div><!-- End tab-pane SP -->%s      <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">%s', "\n", "\n");
 		printf ('        <h3>Contacts missing</h3>%s        <p>Entites missing both technical and administrative contacts.</p>%s', "\n", "\n");
 		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>OrganizationName</th><th>Missing contacts</th></tr>%s', "\n", "\n");
 		while ($Entity = $entitieHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1212,7 +1277,7 @@ Class MetadataDisplay {
 				printf('          <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>X</td></tr>%s', $entity_id, $Entity['entityID'], $OrganizationName, "\n");
 			}
 		}
-		printf ('        </table>%s      </div><!-- End tab-pane contact -->%s      <div class="tab-pane fade" id="SFS" role="tabpanel" aria-labelledby="SFS-tab">%s', "\n", "\n", "\n", "\n");
+		printf ('        </table>%s      </div><!-- End tab-pane contact -->%s      <div class="tab-pane fade" id="SFS" role="tabpanel" aria-labelledby="SFS-tab">%s', "\n", "\n", "\n");
 		printf ('        <h3>SFS-1993-1153</h3>%s        <p>Entites with sfs-1993-1153 but NOT CoCo and norEduPersonNIN</p>%s', "\n", "\n");
 		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
 		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
