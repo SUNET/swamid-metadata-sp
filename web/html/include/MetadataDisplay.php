@@ -1180,7 +1180,7 @@ Class MetadataDisplay {
 	}
 
 	private function showErrorEntities($type) {
-		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>MDUI:displayName</th><th>Organization:displayName</th></tr>%s', "\n", "\n");
+		printf ('        <table id="%s-table" class="table table-striped table-bordered">%s          <thead><tr><th>Entity</th><th>MDUI:displayName</th><th>Organization:displayName</th></tr></thead>%s', $type, "\n", "\n");
 		switch ($type) {
 			case 'IDPSSO' :
 				$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `entityID` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 AND isIdP = 1 ORDER BY entityID");
@@ -1232,7 +1232,7 @@ Class MetadataDisplay {
 						$OrganizationDisplayName = $OrganizationDisplayName == 'Missing' ? $OrganizationDisplayName : $displayName['data'];
 				}
 			}
-			printf ('          <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $Entity['id'], $Entity['entityID'], $MduiDisplayName, $OrganizationDisplayName, "\n");
+			printf ('          <tr><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td></tr>%s', $Entity['id'], $Entity['entityID'], $MduiDisplayName, $OrganizationDisplayName, "\n");
 		}
 		printf ('        </table>%s', "\n");
 	}
@@ -1267,7 +1267,7 @@ Class MetadataDisplay {
 		$this->showErrorEntities('SPSSO');
 		printf ('      </div><!-- End tab-pane SP -->%s      <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">%s', "\n", "\n");
 		printf ('        <h3>Contacts missing</h3>%s        <p>Entites missing both technical and administrative contacts.</p>%s', "\n", "\n");
-		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>OrganizationName</th><th>Missing contacts</th></tr>%s', "\n", "\n");
+		printf ('        <table id="contact-table" class="table table-striped table-bordered">%s          <thead><tr><th>Entity</th><th>OrganizationName</th><th>Missing contacts</th></tr></thead>%s', "\n", "\n");
 		while ($Entity = $entitieHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entity_id = $Entity['id'];
 			$contactPersonHandler->execute();
@@ -1279,7 +1279,7 @@ Class MetadataDisplay {
 		}
 		printf ('        </table>%s      </div><!-- End tab-pane contact -->%s      <div class="tab-pane fade" id="SFS" role="tabpanel" aria-labelledby="SFS-tab">%s', "\n", "\n", "\n");
 		printf ('        <h3>SFS-1993-1153</h3>%s        <p>Entites with sfs-1993-1153 but NOT CoCo and norEduPersonNIN</p>%s', "\n", "\n");
-		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr>%s', "\n", "\n");
+		printf ('        <table id="SFS-table" class="table table-striped table-bordered">%s          <thead><tr><th>Entity</th><th>Missing CoCo</th><th>Missing norEduPersonNIN</th></tr></thead>%s', "\n", "\n");
 		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entity_id = $Entity['entity_id'];
 			$CoCoECHandler->execute();
@@ -1290,12 +1290,12 @@ Class MetadataDisplay {
 				printf('          <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s</td></tr>%s', $entity_id, $Entity['entityID'], ($CoCo) ? '' : 'X', ($NIN) ? '' : 'X', "\n");
 			}
 		}
-		printf ('        </table>%s      </div><!-- End tab-pane CoCo -->%s      <div class="tab-pane fade" id="RE" role="tabpanel" aria-labelledby="RE-tab">%s', "\n", "\n", "\n");
+		printf ('        </table>%s      </div><!-- End tab-pane SFS -->%s      <div class="tab-pane fade" id="RE" role="tabpanel" aria-labelledby="RE-tab">%s', "\n", "\n", "\n");
 
 		$OldECHandler->bindValue(':EC', 'http://www.swamid.se/category/research-and-education');
 		$OldECHandler->execute();
 		printf ('        <h3>Research and Education</h3>%s        <p>Entites with research-and-education but NOT research-and-scholarship.<br>Entites with research-and-education might also be replaced with CoCo or Personalized. They are listed for verification</p>%s', "\n", "\n");
-		printf ('        <table class="table table-striped table-bordered">%s          <tr><th>Entity</th><th>Missing any new Categorys</th><th>Have CoCo</th><th>Have Personalized</th></tr>%s', "\n", "\n");
+		printf ('        <table id="RE-table" class="table table-striped table-bordered">%s          <thead><tr><th>Entity</th><th>Missing any new Categorys</th><th>Have CoCo</th><th>Have Personalized</th></tr></thead>%s', "\n", "\n");
 		while ($Entity = $OldECHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entity_id = $Entity['entity_id'];
 			$CoCo = false;

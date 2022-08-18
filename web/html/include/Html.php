@@ -6,6 +6,7 @@ Class HTML {
 		$this->destination = '?first';
 		$this->startTimer = time();
 		$this->loggedIn = false;
+		$this->tableToSort = array();
 		switch ($DS) {
 			case 'seamless' :
 				$this->DS = '/DS/seamless-access';
@@ -32,7 +33,8 @@ Class HTML {
   <title><?=$title?></title>
   <link href="/fontawesome/css/fontawesome.min.css" rel="stylesheet">
   <link href="/fontawesome/css/solid.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
@@ -91,13 +93,13 @@ Class HTML {
       <?=$this->displayName?>
 
     </div><?php	}
-###
-# Print footer on webpage
-###
-public function showFooter($collapseIcons = array(), $seamless = false) {
-	$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-	// printf('    <hr>%s    %d%s', "\n", time()-$this->startTimer, "\n");
-	?>
+	###
+	# Print footer on webpage
+	###
+	public function showFooter($collapseIcons = array(), $seamless = false) {
+		$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+		// printf('    <hr>%s    %d%s', "\n", time()-$this->startTimer, "\n");
+		?>
   </div><?php if ($seamless) { ?>
 
   <!-- Include the Seamless Access Sign in Button & Discovery Service -->
@@ -109,16 +111,16 @@ public function showFooter($collapseIcons = array(), $seamless = false) {
         loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso<?=$this->DS?>?target=<?=$hostURL?>/admin/<?=$this->destination?>'
       }).render('#SWAMID-SeamlessAccess');
     };
-  </script><?php } ?>
-
-  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-  <script>
-    $(function () {<?php
-	if (isset($collapseIcons)) {
-		foreach ($collapseIcons as $collapseIcon) { ?>
+  </script><?php }
+		printf('  <!-- jQuery first, then Popper.js, then Bootstrap JS -->%s  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>%s  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>%s  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>%s', "\n", "\n", "\n", "\n");
+		if (isset($this->tableToSort[0]) || isset($collapseIcons[0]) ) {
+			if (isset($this->tableToSort[0]))
+				# Add JS script to be able to use later
+				printf('  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>%s', "\n");
+			print "  <script>\n";
+			if (isset($collapseIcons[0])) {
+				print "    $(function () {";
+				foreach ($collapseIcons as $collapseIcon) { ?>
 
       $('#<?=$collapseIcon?>').on('show.bs.collapse', function (event) {
         var tag_id = document.getElementById('<?=$collapseIcon?>-icon');
@@ -129,10 +131,21 @@ public function showFooter($collapseIcons = array(), $seamless = false) {
         var tag_id = document.getElementById('<?=$collapseIcon?>-icon');
         tag_id.className = "fas fa-chevron-circle-right";
         event.stopPropagation();
-      })<?php		}
-	} ?>
+      })<?php
+			}
+			print "    })\n";
+			}
 
-    })
+			# Add function to sort if needed
+			if (isset($this->tableToSort[0])) {
+				print "    $(document).ready(function () {\n";
+				foreach ($this->tableToSort as $table) {
+					printf ("      $('#%s').DataTable( {paging: false});\n", $table);
+				}
+				print "    });\n";
+
+			}
+		}?>
     // Add the following code if you want the name of the file appear on select
     $(".custom-file-input").on("change", function() {
       //var fileName = $(this).val().split("\\").pop();
@@ -152,5 +165,9 @@ public function showFooter($collapseIcons = array(), $seamless = false) {
 
 	public function setDestination($destination) {
 		$this->destination = $destination;
+	}
+
+	public function addTableSort($tableId) {
+		$this->tableToSort[] = $tableId;
 	}
 }

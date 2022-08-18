@@ -210,6 +210,11 @@ if (isset($_FILES['XMLfile'])) {
 					$html->showHeaders('Metadata SWAMID - Errror status');
 					showMenu();
 					$display->showErrorStatus();
+					$html->addTableSort('IDPSSO-table');
+					$html->addTableSort('SPSSO-table');
+					$html->addTableSort('contact-table');
+					$html->addTableSort('SFS-table');
+					$html->addTableSort('RE-table');
 					break;
 				case 'ErrorStatistics' :
 					$menuActive = 'ErrorStatistics';
