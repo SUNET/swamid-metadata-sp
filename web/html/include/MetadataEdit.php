@@ -70,7 +70,7 @@ Class MetadataEdit {
       <div class="col">
         <h3>New metadata</h3>
       </div>', $this->entityID);
-		if ($this->oldExists) {
+		if ($this->oldExists && $part <> "AddIdPKeyInfo" && $part <> "AddSPKeyInfo") {
 			printf ('%s      <div class="col">%s        <h3>Old metadata</h3>%s      </div>', "\n", "\n", "\n");
 	  	}
 		printf('%s    </div>', "\n");
@@ -89,6 +89,18 @@ Class MetadataEdit {
 				break;
 			case 'SPMDUI' :
 				$this->editMDUI('SPSSO');
+				break;
+			case 'IdPKeyInfo' :
+				$this->editKeyInfo('IDPSSO');
+				break;
+			case 'SPKeyInfo' :
+				$this->editKeyInfo('SPSSO');
+				break;
+			case 'AddIdPKeyInfo' :
+				$this->addKeyInfo('IDPSSO');
+				break;
+			case 'AddSPKeyInfo' :
+				$this->addKeyInfo('SPSSO');
 				break;
 			case 'AttributeConsumingService' :
 				$this->editAttributeConsumingService();
@@ -921,7 +933,7 @@ Class MetadataEdit {
 		$mduiHandler->execute();
 		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
 			if (! isset($oldMDUIElements[$mdui['lang']]) )
-			$oldMDUIElements[$mdui['lang']] = array();
+				$oldMDUIElements[$mdui['lang']] = array();
 			$oldMDUIElements[$mdui['lang']][$mdui['element']] = array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width'], 'state' => 'removed');
 		}
 		$oldLang = 'xxxxxxx';
@@ -1313,8 +1325,532 @@ Class MetadataEdit {
 		}
 		print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
 	}
-	private function editAttributeConsumingService() {
+	private function addKeyInfo($type) {
+		$edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
+		$added = false;
+		if (isset($_POST['certificate']) && isset($_POST['use'])) {
+			$certificate = $_POST['certificate'];
+			$use = $_POST['use'];
+			$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($certificate)),64) . "-----END CERTIFICATE-----\n";
+			if ($cert_info = openssl_x509_parse( $cert)) {
+				$key_info = openssl_pkey_get_details(openssl_pkey_get_public($cert));
+				switch ($key_info['type']) {
+					case OPENSSL_KEYTYPE_RSA :
+						$keyType = 'RSA';
+						break;
+					case OPENSSL_KEYTYPE_DSA :
+						$keyType = 'DSA';
+						break;
+					case OPENSSL_KEYTYPE_DH :
+						$keyType = 'DH';
+						break;
+					case OPENSSL_KEYTYPE_EC :
+						$keyType = 'EC';
+						break;
+					default :
+						$keyType = 'Unknown';
+				}
+				$subject = '';
+				$first = true;
+				foreach ($cert_info['subject'] as $key => $value){
+					if ($first) {
+						$first = false;
+						$sep = '';
+					} else
+						$sep = ', ';
+					if (is_array($value)) {
+						foreach ($value as $subvalue)
+							$subject .= $sep . $key . '=' . $subvalue;
+					} else
+						$subject .= $sep . $key . '=' . $value;
+				}
+				$issuer = '';
+				$first = true;
+				foreach ($cert_info['issuer'] as $key => $value){
+					if ($first) {
+						$first = false;
+						$sep = '';
+					} else
+						$sep = ', ';
+					if (is_array($value)) {
+						foreach ($value as $subvalue)
+							$issuer .= $sep . $key . '=' . $subvalue;
+					} else
+						$issuer .= $sep . $key . '=' . $value;
+				}
 
+				$Descriptor = 'md:'.$type.'Descriptor';
+				$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
+
+				# Find md:SSODescriptor in XML
+				$child = $EntityDescriptor->firstChild;
+				$SSODescriptor = false;
+				while ($child && ! $SSODescriptor) {
+					if ($child->nodeName == $Descriptor)
+						$SSODescriptor = $child;
+					$child = $child->nextSibling;
+				}
+				if ($SSODescriptor) {
+					$child = $SSODescriptor->firstChild;
+					$beforeChild = false;
+					$xmlOrder = 0;
+					while ($child && !$beforeChild) {
+						if ($child->nodeName == 'md:Extensions') {
+							$child = $child->nextSibling;
+						} else {
+							$beforeChild = $child;
+						}
+					}
+
+					$KeyDescriptor = $this->newXml->createElement('md:KeyDescriptor');
+					if ($use <> "both") $KeyDescriptor->setAttribute('use', $use);
+
+					if ($beforeChild)
+						$SSODescriptor->insertBefore($KeyDescriptor, $beforeChild);
+					else
+						$SSODescriptor->appendChild($KeyDescriptor);
+
+					$KeyInfo = $this->newXml->createElement('ds:KeyInfo');
+					$KeyDescriptor->appendChild($KeyInfo);
+
+					$X509Data = $this->newXml->createElement('ds:X509Data');
+					$KeyInfo->appendChild($X509Data);
+
+					$X509Certificate = $this->newXml->createElement('ds:X509Certificate');
+					$X509Certificate->nodeValue = $certificate;
+					$X509Data->appendChild($X509Certificate);
+
+					$this->saveXML();
+
+					$reorderKeyOrderHandler = $this->metaDb->prepare('UPDATE KeyInfo SET `order` = `order` +1  WHERE entity_id = :Id;');
+					$reorderKeyOrderHandler->bindParam(':Id', $this->dbIdNr);
+					$reorderKeyOrderHandler->execute();
+
+					$KeyInfoHandler = $this->metaDb->prepare('INSERT INTO KeyInfo (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber`) VALUES (:Id, :Type, :Use, 0, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :SerialNumber);');
+					$KeyInfoHandler->bindValue(':Id', $this->dbIdNr);
+					$KeyInfoHandler->bindValue(':Type', $type);
+					$KeyInfoHandler->bindValue(':Use', $use);
+					$KeyInfoHandler->bindValue(':Name', '');
+					$KeyInfoHandler->bindValue(':NotValidAfter', date('Y-m-d H:i:s', $cert_info['validTo_time_t']));
+					$KeyInfoHandler->bindParam(':Subject', $subject);
+					$KeyInfoHandler->bindParam(':Issuer', $issuer);
+					$KeyInfoHandler->bindParam(':Bits', $key_info['bits']);
+					$KeyInfoHandler->bindParam(':Key_type', $keyType);
+					$KeyInfoHandler->bindParam(':SerialNumber', $cert_info['serialNumber']);
+					$added = $KeyInfoHandler->execute();
+				}
+			} else {
+				print '<div class="row alert alert-danger" role="alert">Error: Invalid Certificate</div>';
+			}
+		} else {
+			$certificate = '';
+			$use = '';
+		}
+		if ($added) {
+			$this->editKeyInfo($type);
+		} else {
+			printf('    <form action="?edit=Add%s&Entity=%d&oldEntity=%d" method="POST" enctype="multipart/form-data">%s      <p><label for="certificate">Certificate:<br><i>Add the part from certificate <b>BETWEN</b> -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- tags<br>-----BEGIN and -----END should not be included in this form</i></label></p>%s      <textarea id="certificate" name="certificate" rows="10" cols="90" placeholder="MIIGMjCCBRqgAwIBAgISBMpHeMtDoua9sjLy4Rcagh+tMA0GCSqGSIb3DQEBCwUA%sMDIxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQD%sEwJSMzAeFw0yMjA2MTgxMTI5NDVaFw0yMjA5MTYxMTI5NDRaMCExHzAdBgNVBAMT%sFm1ldGFkYXRhLmxhYi5zd2FtaWQuc2UwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAw%sggIKAoICAQDED9gxnL+2CVtcwzwTcveVYV4fAQs8KT/wVYPCBFGfxaek9Rl30ZdZ%sHe6HPpFey545PkHwH2RRmHzWCILZrQ692w6kBfgmhl+h1FViWXRJL0/C6HVadj/T%sMvBrS8m6r42oSdp5p3VDmCkHW5ZkHeieVLEEvhjgGwWGXF1BIWxPeiJX5zmQy8HF%sVHnpylWc5T1gkdmuDkNQX4v4nXw7KGl9apyi5ArKy6/J7JeCtsMDsylatfGcaQim%s34ogVeE8MtaHX8LjyjYRKdEZUMQWp9dhD4d2Yp0hAuADV2ybyWbJrc5CPM4C6gof%s......">%s</textarea>%s      <p><label for="use">Type of certificate</label></p>%s      <select id="use" name="use">%s        <option %svalue="encryption">Encryption</option>%s        <option %svalue="signing">Signing</option>%s        <option %svalue="both">Encryption & Signing</option>%s      </select><br>%s      <button type="submit" class="btn btn-primary">Submit</button>%s    </form>', $edit, $this->dbIdNr, $this->dbOldIdNr, "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", $certificate, "\n", "\n", "\n", $use == "encryption" ? 'selected ' : '', "\n", $use == "signing" ? 'selected ' : '', "\n", $use == "both" ? 'selected ' : '', "\n", "\n", "\n");
+			printf('    <a href="?edit=%s&Entity=%d&oldEntity=%d"><button>Back</button></a>%s', $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
+		}
+	}
+	private function editKeyInfo($type) {
+		$timeNow = date('Y-m-d H:i:00');
+		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
+
+		printf ('%s    <div class="row">%s      <div class="col">', "\n", "\n");
+		$edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
+		$addLink = sprintf('<a href="?edit=Add%s&Entity=%d&oldEntity=%d"><button>Add new certificate</button></a><br>', $edit, $this->dbIdNr, $this->dbOldIdNr);
+		if (isset($_GET['action'])) {
+			$error = '';
+			if ($_GET['action'] == 'Delete' || $_GET['action'] == 'MoveUp' || $_GET['action'] == 'MoveDown') {
+				if (isset($_GET['use'])) {
+					$use = $_GET['use'];
+				} else {
+					$error .= '<br>Missing use';
+				}
+				if (isset($_GET['serialNumber'])) {
+					$serialNumber = $_GET['serialNumber'];
+				} else {
+					$error .= '<br>Missing serialNumber';
+				}
+				if (isset($_GET['order'])) {
+					$order = $_GET['order'];
+				} else {
+					$error .= '<br>Missing order';
+				}
+			}
+			if ($error) {
+				printf ('<div class="row alert alert-danger" role="alert">Error:%s</div>', $error);
+			} else {
+				$changed = false;
+				$Descriptor = 'md:'.$type.'Descriptor';
+				$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
+
+				# Find md:SSODescriptor in XML
+				$child = $EntityDescriptor->firstChild;
+				$SSODescriptor = false;
+				while ($child && ! $SSODescriptor) {
+					if ($child->nodeName == $Descriptor)
+						$SSODescriptor = $child;
+					$child = $child->nextSibling;
+				}
+				switch ($_GET['action']) {
+					case 'MoveUp' :
+						if ($SSODescriptor) {
+							$child = $SSODescriptor->firstChild;
+							$moveKeyDescriptor = false;
+							$xmlOrder = 0;
+							$changed = false;
+							$previusKeyDescriptor = false;
+							while ($child) {
+								// Loop thrue all KeyDescriptor:s not just the first one!
+								if ($child->nodeName == 'md:KeyDescriptor') {
+									$usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
+									if ( $usage == $use && $order == $xmlOrder) {
+										$KeyDescriptor = $child; // Save to be able to move this KeyDescriptor
+										$descriptorChild = $KeyDescriptor->firstChild;
+										while ($descriptorChild && !$moveKeyDescriptor) {
+											if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+												$infoChild = $descriptorChild->firstChild;
+												while ($infoChild && !$moveKeyDescriptor) {
+													if ($infoChild->nodeName == 'ds:X509Data') {
+														$x509Child = $infoChild->firstChild;
+														while ($x509Child&& !$moveKeyDescriptor) {
+															if ($x509Child->nodeName == 'ds:X509Certificate') {
+																$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
+																if ($cert_info = openssl_x509_parse( $cert)) {
+																	if ($cert_info['serialNumber'] == $serialNumber)
+																		$moveKeyDescriptor = true;
+																}
+															}
+															$x509Child = $x509Child->nextSibling;
+														}
+													}
+													$infoChild = $infoChild->nextSibling;
+												}
+											}
+											$descriptorChild = $descriptorChild->nextSibling;
+										}
+									}
+									$xmlOrder ++;
+								}
+								// Move
+								if ($moveKeyDescriptor && $previusKeyDescriptor) {
+									$SSODescriptor->insertBefore($KeyDescriptor, $previusKeyDescriptor);
+
+									$reorderKeyOrderHandler = $this->metaDb->prepare('UPDATE KeyInfo SET `order` = :NewOrder WHERE entity_id = :Id AND `order` = :OldOrder;');
+									$reorderKeyOrderHandler->bindParam(':Id', $this->dbIdNr);
+									#Move key out of way
+									$reorderKeyOrderHandler->bindValue(':OldOrder', $order);
+									$reorderKeyOrderHandler->bindValue(':NewOrder', 255);
+									$reorderKeyOrderHandler->execute();
+									# Move previus
+									$reorderKeyOrderHandler->bindValue(':OldOrder', $order-1);
+									$reorderKeyOrderHandler->bindValue(':NewOrder', $order);
+									$reorderKeyOrderHandler->execute();
+									#Move into previus place
+									$reorderKeyOrderHandler->bindValue(':OldOrder', 255);
+									$reorderKeyOrderHandler->bindValue(':NewOrder', $order-1);
+									$reorderKeyOrderHandler->execute();
+
+									// Reset flag for next KeyDescriptor
+									$child = false;
+									$changed = true;
+								} else {
+									$previusKeyDescriptor = $child;
+									$child = $child->nextSibling;
+								}
+							}
+						}
+						break;
+					case 'MoveDown' :
+						if ($SSODescriptor) {
+							$child = $SSODescriptor->firstChild;
+							$moveKeyDescriptor = false;
+							$xmlOrder = 0;
+							$changed = false;
+							while ($child && !$changed) {
+								// Loop thrue all KeyDescriptor:s not just the first one!
+								if ($child->nodeName == 'md:KeyDescriptor') {
+									// Move if found in previus round
+									if ($moveKeyDescriptor) {
+										$SSODescriptor->insertBefore($child, $KeyDescriptor);
+
+										$reorderKeyOrderHandler = $this->metaDb->prepare('UPDATE KeyInfo SET `order` = :NewOrder WHERE entity_id = :Id AND `order` = :OldOrder;');
+										$reorderKeyOrderHandler->bindParam(':Id', $this->dbIdNr);
+										#Move key out of way
+										$reorderKeyOrderHandler->bindValue(':OldOrder', $order);
+										$reorderKeyOrderHandler->bindValue(':NewOrder', 255);
+										$reorderKeyOrderHandler->execute();
+										# Move previus
+										$reorderKeyOrderHandler->bindValue(':OldOrder', $order+1);
+										$reorderKeyOrderHandler->bindValue(':NewOrder', $order);
+										$reorderKeyOrderHandler->execute();
+										#Move into previus place
+										$reorderKeyOrderHandler->bindValue(':OldOrder', 255);
+										$reorderKeyOrderHandler->bindValue(':NewOrder', $order+1);
+										$reorderKeyOrderHandler->execute();
+
+										// Reset flag for next KeyDescriptor
+										$changed = true;
+									} else {
+										$usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
+										if ( $usage == $use && $order == $xmlOrder) {
+											$KeyDescriptor = $child; // Save to be able to move this KeyDescriptor
+											$descriptorChild = $KeyDescriptor->firstChild;
+											while ($descriptorChild && !$moveKeyDescriptor) {
+												if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+													$infoChild = $descriptorChild->firstChild;
+													while ($infoChild && !$moveKeyDescriptor) {
+														if ($infoChild->nodeName == 'ds:X509Data') {
+															$x509Child = $infoChild->firstChild;
+															while ($x509Child&& !$moveKeyDescriptor) {
+																if ($x509Child->nodeName == 'ds:X509Certificate') {
+																	$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
+																	if ($cert_info = openssl_x509_parse( $cert)) {
+																		if ($cert_info['serialNumber'] == $serialNumber)
+																			$moveKeyDescriptor = true;
+																	}
+																}
+																$x509Child = $x509Child->nextSibling;
+															}
+														}
+														$infoChild = $infoChild->nextSibling;
+													}
+												}
+												$descriptorChild = $descriptorChild->nextSibling;
+											}
+										}
+										$xmlOrder ++;
+									}
+								}
+								$child = $child->nextSibling;
+							}
+						}
+						break;
+					case 'Delete' :
+						if ($SSODescriptor) {
+							$child = $SSODescriptor->firstChild;
+							$removeKeyDescriptor = false;
+							$xmlOrder = 0;
+							$changed = false;
+							while ($child) {
+								// Loop thrue all KeyDescriptor:s not just the first one!
+								if ($child->nodeName == 'md:KeyDescriptor') {
+									$usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
+									if ( $usage == $use && $order == $xmlOrder) {
+										$KeyDescriptor = $child; // Save to be able to remove this KeyDescriptor
+										$descriptorChild = $KeyDescriptor->firstChild;
+										while ($descriptorChild && !$removeKeyDescriptor) {
+											if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+												$infoChild = $descriptorChild->firstChild;
+												while ($infoChild && !$removeKeyDescriptor) {
+													if ($infoChild->nodeName == 'ds:X509Data') {
+														$x509Child = $infoChild->firstChild;
+														while ($x509Child&& !$removeKeyDescriptor) {
+															if ($x509Child->nodeName == 'ds:X509Certificate') {
+																$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
+																if ($cert_info = openssl_x509_parse( $cert)) {
+																	if ($cert_info['serialNumber'] == $serialNumber)
+																		$removeKeyDescriptor = true;
+																}
+															}
+															$x509Child = $x509Child->nextSibling;
+														}
+													}
+													$infoChild = $infoChild->nextSibling;
+												}
+											}
+											$descriptorChild = $descriptorChild->nextSibling;
+										}
+									}
+									$xmlOrder ++;
+								}
+								$child = $child->nextSibling;
+								// Remove
+								if ($removeKeyDescriptor) {
+									$SSODescriptor->removeChild($KeyDescriptor);
+									$keyInfoDeleteHandler = $this->metaDb->prepare('DELETE FROM KeyInfo WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `serialNumber` = :SerialNumber ORDER BY `order` LIMIT 1;');
+									$keyInfoDeleteHandler->bindParam(':Id', $this->dbIdNr);
+									$keyInfoDeleteHandler->bindParam(':Type', $type);
+									$keyInfoDeleteHandler->bindParam(':Use', $use);
+									$keyInfoDeleteHandler->bindParam(':SerialNumber', $serialNumber);
+									$keyInfoDeleteHandler->execute();
+
+									$reorderKeyOrderHandler = $this->metaDb->prepare('UPDATE KeyInfo SET `order` = `order` -1  WHERE entity_id = :Id AND `order` > :Order;');
+									$reorderKeyOrderHandler->bindParam(':Id', $this->dbIdNr);
+									$reorderKeyOrderHandler->bindParam(':Order', $order);
+									$reorderKeyOrderHandler->execute();
+
+
+									// Reset flag for next KeyDescriptor
+									$child = false;
+									$changed = true;
+								}
+							}
+						}
+						break;
+				}
+				if ($changed) {
+					$this->saveXML();
+				}
+			}
+		} else {
+			/*$indexValue = 0;
+			$elementValue = '';
+			$langvalue = '';
+			$value = '';
+			$name = '';
+			$friendlyName = '';
+			$nameFormat = '';
+			$isRequired = '';*/
+		}
+
+		$KeyInfoStatusHandler = $this->metaDb->prepare('SELECT `use`, `order`, `notValidAfter` FROM KeyInfo WHERE entity_id = :Id AND type = :Type ORDER BY `order`');
+		$KeyInfoStatusHandler->bindParam(':Type', $type);
+		$KeyInfoStatusHandler->bindParam(':Id', $this->dbIdNr);
+		$KeyInfoStatusHandler->execute();
+		$encryptionFound = false;
+		$signingFound = false;
+		$extraEncryptionFound = false;
+		$extraSigningFound = false;
+		$validEncryptionFound = false;
+		$validSigningFound = false;
+		$maxOrder = 0;
+		while ($keyInfoStatus = $KeyInfoStatusHandler->fetch(PDO::FETCH_ASSOC)) {
+			switch ($keyInfoStatus['use']) {
+				case 'encryption' :
+					$extraEncryptionFound = $encryptionFound;
+					$encryptionFound = true;
+					if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+					}
+					break;
+				case 'signing' :
+					$extraSigningFound = $signingFound;
+					$signingFound = true;
+					if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+						$validSigningFound = true;
+					}
+					break;
+				case 'both' :
+					$extraEncryptionFound = $encryptionFound;
+					$extraSigningFound = $signingFound;
+					$encryptionFound = true;
+					$signingFound = true;
+					if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+						$validSigningFound = true;
+					}
+					break;
+			}
+			$maxOrder = $keyInfoStatus['order'];
+		}
+		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `order`;');
+		$keyInfoHandler->bindParam(':Type', $type);
+		$oldKeyInfos = array();
+		if ($this->oldExists) {
+			$keyInfoHandler->bindParam(':Id', $this->dbOldIdNr);
+			$keyInfoHandler->execute();
+
+			while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+				$oldKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']] = 'removed';
+			}
+		}
+
+		$keyInfoHandler->bindParam(':Id', $this->dbIdNr);
+		$keyInfoHandler->execute();
+		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+			$okRemove = false;
+			$error = '';
+			$validCertExists = false;
+			switch ($keyInfo['use']) {
+				case 'encryption' :
+					$use = 'encryption';
+					$okRemove = $extraEncryptionFound;
+					if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound) {
+						$validCertExists = true;
+					}
+					break;
+				case 'signing' :
+					$use = 'signing';
+					$okRemove = $extraSigningFound;
+					if ($keyInfo['notValidAfter'] <= $timeNow && $validSigningFound) {
+						$validCertExists = true;
+					}
+					break;
+				case 'both' :
+					$use = 'encryption & signing';
+					$okRemove = ($extraEncryptionFound && $extraSigningFound);
+					if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound &&  $validSigningFound) {
+						$validCertExists = true;
+					}
+					break;
+			}
+			$name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+
+			if ($keyInfo['notValidAfter'] <= $timeNow ) {
+				$error = ($validCertExists) ? ' class="alert-warning" role="alert"' : ' class="alert-danger" role="alert"';
+			} elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
+				$error = ' class="alert-warning" role="alert"';
+			}
+
+			if (($keyInfo['bits'] < 2048 && $keyInfo['key_type'] == "RSA") || $keyInfo['bits'] < 256) {
+				$error = ' class="alert-danger" role="alert"';
+			}
+
+			if (isset($oldKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']])) {
+				$state = 'dark';
+				$oldKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']] = 'same';
+			} else {
+				$state = 'success';
+			}
+			$baseLink = sprintf('<a href="?edit=%s&Entity=%d&oldEntity=%d&type=%s&use=%s&serialNumber=%s&order=%d&action=', $edit, $this->dbIdNr, $this->dbOldIdNr, $type, $keyInfo['use'], $keyInfo['serialNumber'], $keyInfo['order']);
+			$extraButtons = $okRemove ? sprintf('%sDelete"><i class="fas fa-trash"></i></a> ', $baseLink) : '';
+			$extraButtons .= $keyInfo['order'] > 0 ? sprintf('%sMoveUp"><i class="fas fa-arrow-up"></i></a> ', $baseLink) : '';
+			$extraButtons .= $keyInfo['order'] < $maxOrder ? sprintf('%sMoveDown"><i class="fas fa-arrow-down"></i></a> ', $baseLink) : '';
+			printf('%s        %s<span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
+        <ul%s>
+          <li>notValidAfter = %s</li>
+          <li>Subject = %s</li>
+          <li>Issuer = %s</li>
+          <li>Type / bits = %s / %d</li>
+          <li>Serial Number = %s</li>
+        </ul>', "\n", $extraButtons, $state, $use, $name, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+		}
+
+		printf('%s        %s%s        <a href="./?validateEntity=%d"><button>Back</button></a>%s      </div><!-- end col -->%s      <div class="col">', "\n", $addLink, "\n", $this->dbIdNr, "\n", "\n");
+		if ($this->oldExists) {
+			$keyInfoHandler->bindParam(':Id', $this->dbOldIdNr);
+			$keyInfoHandler->execute();
+
+			while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+				switch ($keyInfo['use']) {
+					case 'encryption' :
+						$use = 'encryption';
+						break;
+					case 'signing' :
+						$use = 'signing';
+						break;
+					case 'both' :
+						$use = 'encryption & signing';
+						break;
+				}
+				$name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+				$state = $oldKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']] == "same" ? 'dark' : 'danger';
+				printf('%s        <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
+        <ul>
+          <li>notValidAfter = %s</li>
+          <li>Subject = %s</li>
+          <li>Issuer = %s</li>
+          <li>Type / bits = %s / %d</li>
+          <li>Serial Number = %s</li>
+        </ul>', "\n", $state, $use, $name, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+			}
+		}
+		print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+	}
+	private function editAttributeConsumingService() {
 		if (isset($_GET['action'])) {
 			$name = '';
 			$friendlyName = '';
@@ -3461,11 +3997,11 @@ Class MetadataEdit {
 				// Remove
 				if ($removeKeyDescriptor) {
 					$SSODescriptor->removeChild($KeyDescriptor);
-					$keyInfoDeleteHandler = $this->metaDb->prepare('DELETE FROM KeyInfo WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `hash` = :Hash;');
+					$keyInfoDeleteHandler = $this->metaDb->prepare('DELETE FROM KeyInfo WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `serialNumber` = :SerialNumber;');
 					$keyInfoDeleteHandler->bindParam(':Id', $this->dbIdNr);
 					$keyInfoDeleteHandler->bindParam(':Type', $type);
 					$keyInfoDeleteHandler->bindParam(':Use', $use);
-					$keyInfoDeleteHandler->bindParam(':Hash', $hash);
+					$keyInfoDeleteHandler->bindParam(':SerialNumber', $serialNumber);
 					$keyInfoDeleteHandler->execute();
 					// Reset flag for next KeyDescriptor
 					$removeKeyDescriptor = false;

@@ -39,13 +39,13 @@ CREATE TABLE KeyInfo (
 	`entity_id` INT UNSIGNED,
 	`type` ENUM('SPSSO', 'IDPSSO', 'AttributeAuthority'),
 	`use` ENUM('both', 'signing', 'encryption'),
+	`order` TINYINT UNSIGNED,
 	`name` VARCHAR(256),
 	`notValidAfter` DATETIME,
 	`subject` VARCHAR(256),
 	`issuer` VARCHAR(256),
 	`bits` SMALLINT UNSIGNED,
 	`key_type` VARCHAR(256),
-	`hash` VARCHAR(8),
 	`serialNumber` VARCHAR(44));
 
 CREATE TABLE AttributeConsumingService (

@@ -461,7 +461,7 @@ Class Metadata {
 
 	# Extensions -> EntityAttributes -> Attribute
 	private function parseExtensions_EntityAttributes_Attribute($data) {
-		$entityAttributeHandler = $this->metaDb->prepare('INSERT INTO EntityAttributes (`entity_id`, `type`, `attribute`) VALUES (:Id, :Type, :Value);');
+		$entityAttributesHandler = $this->metaDb->prepare('INSERT INTO EntityAttributes (`entity_id`, `type`, `attribute`) VALUES (:Id, :Type, :Value);');
 
 		if ($data->getAttribute('NameFormat') == 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri') {
 			switch ($data->getAttribute('Name')) {
@@ -485,14 +485,14 @@ Class Metadata {
 					$attributeType = $data->getAttribute('Name');
 			}
 
-			$entityAttributeHandler->bindValue(':Id', $this->dbIdNr);
-			$entityAttributeHandler->bindValue(':Type', $attributeType);
+			$entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
+			$entityAttributesHandler->bindValue(':Type', $attributeType);
 
 			$child = $data->firstChild;
 			while ($child) {
 				if ($child->nodeName == 'samla:AttributeValue') {
-					$entityAttributeHandler->bindValue(':Value', trim($child->textContent));
-					$entityAttributeHandler->execute();
+					$entityAttributesHandler->bindValue(':Value', trim($child->textContent));
+					$entityAttributesHandler->execute();
 				} else {
 					$this->result .= 'Extensions -> EntityAttributes -> Attribute -> ' . $child->nodeName . " saknas.\n";
 				}
@@ -510,6 +510,7 @@ Class Metadata {
 			$this->addEntityUrl('error', $data->getAttribute('errorURL'));
 
 		$SWAMID_5_1_31_error = false;
+		$keyOrder = 0;
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
 		$child = $data->firstChild;
 		while ($child) {
@@ -520,7 +521,7 @@ Class Metadata {
 					$this->parseIDPSSODescriptor_Extensions($child);
 					break;
 				case 'md:KeyDescriptor' :
-					$this->parseKeyDescriptor($child, 'IDPSSO');
+					$this->parseKeyDescriptor($child, 'IDPSSO', $keyOrder++);
 					break;
 				# 2.4.2
 				case 'md:ArtifactResolutionService' :
@@ -633,6 +634,7 @@ Class Metadata {
 	#############
 	private function parseSPSSODescriptor($data) {
 		$this->SWAMID_6_1_16_error = false;
+		$keyOrder = 0;
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
 		$child = $data->firstChild;
 		while ($child) {
@@ -644,7 +646,7 @@ Class Metadata {
 					$this->parseSPSSODescriptor_Extensions($child);
 					break;
 				case 'md:KeyDescriptor' :
-					$this->parseKeyDescriptor($child, 'SPSSO');
+					$this->parseKeyDescriptor($child, 'SPSSO', $keyOrder++);
 					break;
 				# 2.4.2
 				case 'md:ArtifactResolutionService' :
@@ -781,6 +783,7 @@ Class Metadata {
 	# AttributeAuthorityDescriptor
 	#############
 	private function parseAttributeAuthorityDescriptor($data) {
+		$keyOrder = 0;
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.7
 		$child = $data->firstChild;
 		while ($child) {
@@ -791,7 +794,7 @@ Class Metadata {
 					# Skippar då SWAMID inte använder denna del
 					break;
 				case 'md:KeyDescriptor' :
-					$this->parseKeyDescriptor($child, 'AttributeAuthority');
+					$this->parseKeyDescriptor($child, 'AttributeAuthority', $keyOrder++);
 					break;
 				# 2.4.2
 				#case 'md:ArtifactResolutionService' :
@@ -978,14 +981,14 @@ Class Metadata {
 	# KeyDescriptor
 	# Used by AttributeAuthority, IDPSSODescriptor and SPSSODescriptor
 	#############
-	private function parseKeyDescriptor($data, $type) {
+	private function parseKeyDescriptor($data, $type, $order) {
 		$use = $data->getAttribute('use') ? $data->getAttribute('use') : 'both';
 		#'{urn:oasis:names:tc:SAML:2.0:metadata}EncryptionMethod':
 		$child = $data->firstChild;
 		while ($child) {
 			switch ($child->nodeName) {
 				case 'ds:KeyInfo' :
-					$this->parseKeyDescriptor_KeyInfo($child, $type, $use);
+					$this->parseKeyDescriptor_KeyInfo($child, $type, $use, $order);
 					break;
 				case 'md:EncryptionMethod' :
 					break;
@@ -999,7 +1002,7 @@ Class Metadata {
 	#############
 	# KeyDescriptor KeyInfo
 	#############
-	private function parseKeyDescriptor_KeyInfo($data, $type, $use) {
+	private function parseKeyDescriptor_KeyInfo($data, $type, $use, $order) {
 		$name = '';
 		$child = $data->firstChild;
 		while ($child) {
@@ -1008,7 +1011,7 @@ Class Metadata {
 					$name = trim($child->textContent);
 					break;
 				case 'ds:X509Data' :
-					$this->parseKeyDescriptor_KeyInfo_X509Data($child, $type, $use, $name);
+					$this->parseKeyDescriptor_KeyInfo_X509Data($child, $type, $use, $order, $name);
 					break;
 				default :
 					$this->result .= $child->nodeType == 8 ? '' : sprintf("%sDescriptor->KeyDescriptor->KeyInfo->%s missing in validator.\n", $type, $child->nodeName);
@@ -1021,12 +1024,13 @@ Class Metadata {
 	# KeyDescriptor KeyInfo X509Data
 	# Extract Certs and check dates
 	#############
-	private function parseKeyDescriptor_KeyInfo_X509Data($data, $type, $use, $name) {
-		$KeyInfoHandler = $this->metaDb->prepare('INSERT INTO KeyInfo (`entity_id`, `type`, `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash`, `serialNumber`) VALUES (:Id, :Type, :Use, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :Hash, :SerialNumber);');
+	private function parseKeyDescriptor_KeyInfo_X509Data($data, $type, $use, $order, $name) {
+		$KeyInfoHandler = $this->metaDb->prepare('INSERT INTO KeyInfo (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber`) VALUES (:Id, :Type, :Use, :Order, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :SerialNumber);');
 
 		$KeyInfoHandler->bindValue(':Id', $this->dbIdNr);
 		$KeyInfoHandler->bindValue(':Type', $type);
 		$KeyInfoHandler->bindValue(':Use', $use);
+		$KeyInfoHandler->bindValue(':Order', $order);
 		$KeyInfoHandler->bindParam(':Name', $name);
 
 		$child = $data->firstChild;
@@ -1093,7 +1097,6 @@ Class Metadata {
 						$KeyInfoHandler->bindParam(':Issuer', $issuer);
 						$KeyInfoHandler->bindParam(':Bits', $key_info['bits']);
 						$KeyInfoHandler->bindParam(':Key_type', $keyType);
-						$KeyInfoHandler->bindParam(':Hash', $cert_info['hash']);
 						$KeyInfoHandler->bindParam(':SerialNumber', $cert_info['serialNumber']);
 					} else {
 						$KeyInfoHandler->bindValue(':NotValidAfter', '1970-01-01 00:00:00');
@@ -1101,7 +1104,6 @@ Class Metadata {
 						$KeyInfoHandler->bindValue(':Issuer', '?');
 						$KeyInfoHandler->bindValue(':Bits', 0);
 						$KeyInfoHandler->bindValue(':Key_type', '?');
-						$KeyInfoHandler->bindValue(':Hash', '?');
 						$KeyInfoHandler->bindValue(':SerialNumber', '?');
 						$name = 'Invalid Certificate';
 					}
@@ -1124,6 +1126,7 @@ Class Metadata {
 
 		$this->isSP_RandS = false;
 		$this->isSP_CoCov1 = false;
+		$this->isSP_CoCov2 = false;
 		$this->isSIRTFI = false;
 
 		$entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute` FROM EntityAttributes WHERE `entity_id` = :Id;');
@@ -1141,6 +1144,10 @@ Class Metadata {
 				case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
 					if ($entityAttribute['type'] == 'entity-category' && $this->isSP)
 						$this->isSP_CoCov1 = true;
+					break;
+				case 'https://refeds.org/category/code-of-conduct/v2' :
+					if ($entityAttribute['type'] == 'entity-category' && $this->isSP)
+						$this->isSP_CoCov2 = true;
 					break;
 				case 'https://refeds.org/sirtfi' :
 					if ($entityAttribute['type'] == 'assurance-certification' )
@@ -1202,6 +1209,7 @@ Class Metadata {
 		if ($this->isSP_RandS) $this->validateSPRandS();
 
 		if ($this->isSP_CoCov1) $this->validateSPCoCov1();
+		if ($this->isSP_CoCov2) $this->validateSPCoCov2();
 
 		$resultHandler = $this->metaDb->prepare("UPDATE Entities SET `validationOutput` = :validationOutput, `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `lastValidated` = NOW() WHERE `id` = :Id;");
 		$resultHandler->bindValue(':Id', $this->dbIdNr);
@@ -1577,9 +1585,9 @@ Class Metadata {
 
 		if (! $keyInfoArray[$type]) {
 			if ($type == 'IDPSSO')
-				$this->error .= "SWAMID Tech 5.1.20: Identity Providers there MUST have at least one signing certificate.\n";
+				$this->error .= "SWAMID Tech 5.1.20: Identity Providers there MUST have at least one valid signing certificate.\n";
 			else
-				$this->error .= "SWAMID Tech 6.1.14: Service Providers MUST have at least one encryption certificate.\n";
+				$this->error .= "SWAMID Tech 6.1.14: Service Providers MUST have at least one valid encryption certificate.\n";
 		}
 		// 5.2.1 Identity Provider credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
 		// 6.2.1 Relying Party credentials (i.e. entity keys) MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than 2048-bit RSA/DSA keysor 256-bit ECC keys. 4096-bit RSA/DSAkeysor 384-bitECC keys are RECOMMENDED
@@ -1750,8 +1758,12 @@ Class Metadata {
 		}
 
 		// 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
-		if (!isset ($usedContactTypes['other/security']))
-			$this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
+		if (!isset ($usedContactTypes['other/security'])) {
+			if ($this->isSIRTFI) {
+				$this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
+			} else
+				$this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
+		}
 	}
 
 	# Validate R&S SP
@@ -1822,6 +1834,65 @@ Class Metadata {
 		$requestedAttributeHandler->execute();
 		if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC))
 			$this->error .= "GÉANT Data Protection Code of Conduct Require at least one RequestedAttribute.\n";
+	}
+
+	# Validate CoCoSP v2
+	private function validateSPCoCov2() {
+		$mduiArray = array();
+		$mduiElementArray = array();
+		$mduiHandler = $this->metaDb->prepare("SELECT `lang`, `element`, `data` FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
+		$requestedAttributeHandler = $this->metaDb->prepare('SELECT DISTINCT `Service_index` FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id;');
+		$entityAttributesHandler =  $this->metaDb->prepare('SELECT attribute FROM EntityAttributes WHERE `type` = :Type AND `entity_id` = :Id;');
+		$mduiHandler->bindValue(':Id', $this->dbIdNr);
+		$requestedAttributeHandler->bindValue(':Id', $this->dbIdNr);
+		$entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
+		$mduiHandler->execute();
+		while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
+			$lang = $mdui['lang'];
+			$element = $mdui['element'];
+			$data = $mdui['data'];
+			if (! isset ($mduiArray[$lang]))
+				$mduiArray[$lang] = array();
+			$mduiArray[$lang][$element] = $data;
+			$mduiElementArray[$element] = true;
+			if ($element == 'PrivacyStatementURL' ) {
+				$this->addURL($data, 2);
+			}
+		}
+
+		$entityAttributesHandler->bindValue(':Type', 'assurance-certification');
+		$entityAttributesHandler->execute();
+		$sirtfiNotFound = true;
+		while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+			if ($entityAttribute['attribute'] == 'https://refeds.org/sirtfi')
+				$sirtfiNotFound = false;
+		}
+
+		if (isset($mduiArray['en'])) {
+			if (! isset($mduiArray['en']['PrivacyStatementURL']))
+				$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require a MDUI - PrivacyStatementURL with at least lang=en.\n";
+			if (! isset($mduiArray['en']['DisplayName']))
+				$this->warning .= "GÉANT Data Protection Code of Conduct (v2) Recomend a MDUI - DisplayName with at least lang=en.\n";
+			if (! isset($mduiArray['en']['Description']))
+				$this->warning .= "GÉANT Data Protection Code of Conduct (v2) Recomend a MDUI - Description with at least lang=en.\n";
+			foreach ($mduiElementArray as $element => $value) {
+				if (! isset($mduiArray['en'][$element]))
+					$this->error .= sprintf("GÉANT Data Protection Code of Conduct (v2) Require a MDUI - %s with lang=en for all present elements.\n", $element);
+			}
+		} else {
+			$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require MDUI with lang=en.\n";
+		}
+
+		$requestedAttributeHandler->execute();
+		if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entityAttributesHandler->bindValue(':Type', 'subject-id:req');
+			$entityAttributesHandler->execute();
+			if (! $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+				$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
+			}
+		}
+		if ($sirtfiNotFound)
+			$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require SIRTFI on entity.\n";
 	}
 
 	#############

@@ -255,6 +255,7 @@ if (isset($_FILES['XMLfile'])) {
 						$html->showHeaders('Metadata SWAMID - Errror status');
 						showMenu();
 						$display->showErrorList();
+						$html->addTableSort('error-table');
 					}
 					break;
 				case 'ErrorListDownload' :

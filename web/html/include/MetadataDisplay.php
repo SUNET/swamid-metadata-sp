@@ -101,7 +101,7 @@ Class MetadataDisplay {
 			// MDUI
 			$urlHandler1->execute();
 			while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
-				if ($url['status'] > 0 || ($CoCov1SP  && $url['cocov1Status'] > 0)) 
+				if ($url['status'] > 0 || ($CoCov1SP  && $url['cocov1Status'] > 0))
 					$errors .= sprintf('%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s', $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
 			}
 			// OrganizationURL
@@ -148,6 +148,8 @@ Class MetadataDisplay {
 			case 'IdPMDUI' :
 			case 'SPMDUI' :
 			case 'DiscoHints' :
+			case 'IdPKeyInfo' :
+			case 'SPKeyInfo' :
 			case 'AttributeConsumingService' :
 			case 'Organization' :
 			case 'ContactPersons' :
@@ -286,28 +288,22 @@ Class MetadataDisplay {
 		print '
             </div><!-- end col -->
           </div><!-- end row -->';
-		if ($allowEdit)
-			$this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 1, true, 'IdPMDUI', $Entity_id, $oldEntity_id);
-		else
-			$this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 1, true, false, $Entity_id, $oldEntity_id);
+		$this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 1, true, $allowEdit ? 'IdPMDUI' : false, $Entity_id, $oldEntity_id);
 		$this->showMDUI($Entity_id, 'IDPSSO', $oldEntity_id, true);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
 			$this->showMDUI($oldEntity_id, 'IDPSSO', $Entity_id);
 		}
 		$this->showCollapseEnd('UIInfo_IdPSSO', 1);
-		if ($allowEdit)
-			$this->showCollapse('DiscoHints', 'DiscoHints', false, 1, true, 'DiscoHints', $Entity_id, $oldEntity_id);
-		else
-			$this->showCollapse('DiscoHints', 'DiscoHints', false, 1, true, false, $Entity_id, $oldEntity_id);
+		$this->showCollapse('DiscoHints', 'DiscoHints', false, 1, true, $allowEdit ? 'DiscoHints' : false, $Entity_id, $oldEntity_id);
 		$this->showDiscoHints($Entity_id, $oldEntity_id, true);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
 			$this->showDiscoHints($oldEntity_id, $Entity_id);
 		}
 		$this->showCollapseEnd('DiscoHints', 1);
-		$this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 1, true, false, $Entity_id, $oldEntity_id);
-		$this->showKeyInfo($Entity_id, 'IDPSSO', $oldEntity_id, true, $allowEdit);
+		$this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 1, true, $allowEdit ? 'IdPKeyInfo' : false, $Entity_id, $oldEntity_id);
+		$this->showKeyInfo($Entity_id, 'IDPSSO', $oldEntity_id, true);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
 			$this->showKeyInfo($oldEntity_id, 'IDPSSO', $Entity_id);
@@ -323,10 +319,7 @@ Class MetadataDisplay {
 		if ($removable)
 			$removable = 'SSO';
 		$this->showCollapse('SP data', 'SP', true, 0, true, $removable, $Entity_id);
-		if ($allowEdit)
-			$this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 1, true, 'SPMDUI', $Entity_id, $oldEntity_id);
-		else
-			$this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 1, true, false, $Entity_id, $oldEntity_id);
+		$this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 1, true, $allowEdit ? 'SPMDUI' : false, $Entity_id, $oldEntity_id);
 		$this->showMDUI($Entity_id, 'SPSSO', $oldEntity_id, true);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
@@ -334,18 +327,14 @@ Class MetadataDisplay {
 		}
 		$this->showCollapseEnd('UIInfo_SPSSO', 1);
 
-		$this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true, false, $Entity_id, $oldEntity_id);
-		$this->showKeyInfo($Entity_id, 'SPSSO', $oldEntity_id, true, $allowEdit);
+		$this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true, $allowEdit ? 'SPKeyInfo' : false, $Entity_id, $oldEntity_id);
+		$this->showKeyInfo($Entity_id, 'SPSSO', $oldEntity_id, true);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
 			$this->showKeyInfo($oldEntity_id, 'SPSSO', $Entity_id);
 		}
 		$this->showCollapseEnd('KeyInfo_SPSSO', 1);
-		if ($allowEdit)
-			$this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 1, true, 'AttributeConsumingService', $Entity_id, $oldEntity_id);
-		else
-			$this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 1, true, false, $Entity_id, $oldEntity_id);
-
+		$this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 1, true, $allowEdit ? 'AttributeConsumingService' : false, $Entity_id, $oldEntity_id);
 		$this->showAttributeConsumingService($Entity_id, $oldEntity_id, true);
 		if ($oldEntity_id != 0 ) {
 			$this->showNewCol(1);
@@ -536,31 +525,37 @@ Class MetadataDisplay {
 	####
 	# Shows KeyInfo for IdP or SP
 	####
-	function showKeyInfo($Entity_id, $type, $otherEntity_id=0, $added = false, $removable = false) {
-		$KeyInfoCountHandler = $this->metaDb->prepare('SELECT `use`, COUNT(`use`) AS count FROM KeyInfo WHERE entity_id = :Id AND type = :Type GROUP BY `use`');
-		$KeyInfoCountHandler->bindParam(':Type', $type);
-		$KeyInfoCountHandler->bindParam(':Id', $Entity_id);
-		$KeyInfoCountHandler->execute();
-		$extraEncryptionFound = false;
-		$extraSigningFound = false;
-		while ($keyInfoCount = $KeyInfoCountHandler->fetch(PDO::FETCH_ASSOC)) {
-			if ($keyInfoCount['count'] > 1) {
-				switch ($keyInfoCount['use']) {
-					case 'encryption' :
-						$extraEncryptionFound = true;
-						break;
-					case 'signing' :
-						$extraSigningFound = true;
-						break;
-					case 'both' :
-						$extraEncryptionFound = true;
-						$extraSigningFound = true;
-						break;
-				}
+	function showKeyInfo($Entity_id, $type, $otherEntity_id=0, $added = false) {
+		$KeyInfoStatusHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter` FROM KeyInfo WHERE entity_id = :Id AND type = :Type');
+		$KeyInfoStatusHandler->bindParam(':Type', $type);
+		$KeyInfoStatusHandler->bindParam(':Id', $Entity_id);
+		$KeyInfoStatusHandler->execute();
+		$validEncryptionFound = false;
+		$validSigningFound = false;
+		$timeNow = date('Y-m-d H:i:00');
+		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
+		while ($keyInfoStatus = $KeyInfoStatusHandler->fetch(PDO::FETCH_ASSOC)) {
+			switch ($keyInfoStatus['use']) {
+				case 'encryption' :
+					if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+					}
+					break;
+				case 'signing' :
+					if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+						$validSigningFound = true;
+					}
+					break;
+				case 'both' :
+					if ($keyInfoStatus['notValidAfter'] > $timeNow ) {
+						$validEncryptionFound = true;
+						$validSigningFound = true;
+					}
+					break;
 			}
 		}
 
-		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `hash`, `serialNumber` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY notValidAfter DESC;');
+		$keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber` FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `order`;');
 		$keyInfoHandler->bindParam(':Type', $type);
 		if ($otherEntity_id) {
 			$otherKeyInfos = array();
@@ -568,47 +563,31 @@ Class MetadataDisplay {
 			$keyInfoHandler->execute();
 
 			while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-				$otherKeyInfos[$keyInfo['hash']][$keyInfo['use']] = 'removed';
+				$otherKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']] = 'removed';
 			}
 		}
 
 		$keyInfoHandler->bindParam(':Id', $Entity_id);
 		$keyInfoHandler->execute();
-
-		$validEncryptionFound = false;
-		$validSigningFound = false;
-		$timeNow = date('Y-m-d H:i:00');
-		$timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
 		while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-			$okRemove = false;
 			$error = '';
 			$validCertExists = false;
 			switch ($keyInfo['use']) {
 				case 'encryption' :
 					$use = 'encryption';
-					$okRemove = $extraEncryptionFound;
-					if ($keyInfo['notValidAfter'] > $timeNow ) {
-						$validEncryptionFound = true;
-					} elseif ($validEncryptionFound) {
+					if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound) {
 						$validCertExists = true;
 					}
 					break;
 				case 'signing' :
 					$use = 'signing';
-					$okRemove = $extraSigningFound;
-					if ($keyInfo['notValidAfter'] > $timeNow ) {
-						$validSigningFound = true;
-					} elseif ($validSigningFound) {
+					if ($keyInfo['notValidAfter'] <= $timeNow && $validSigningFound) {
 						$validCertExists = true;
 					}
 					break;
 				case 'both' :
 					$use = 'encryption & signing';
-					$okRemove = ($extraEncryptionFound && $extraSigningFound);
-					if ($keyInfo['notValidAfter'] > $timeNow ) {
-						$validEncryptionFound = true;
-						$validSigningFound = true;
-					} else if ($validEncryptionFound &&  $validSigningFound) {
+					if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound &&  $validSigningFound) {
 						$validCertExists = true;
 					}
 					break;
@@ -627,21 +606,19 @@ Class MetadataDisplay {
 
 			if ($otherEntity_id) {
 				$state = ($added) ? 'success' : 'danger';
-				if (isset($otherKeyInfos[$keyInfo['hash']][$keyInfo['use']])) {
+				if (isset($otherKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']])) {
 					$state = 'dark';
 				}
 			} else
 				$state = 'dark';
-				$extraButton = $okRemove && $removable ? sprintf(' <a href="?removeKey=%d&type=%s&use=%s&serialNumber=%s"><i class="fas fa-trash"></i></a>', $Entity_id, $type, $keyInfo['use'], $keyInfo['serialNumber']) : '';
-			printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s%s</span>
+			printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
                 <ul%s>
                   <li>notValidAfter = %s</li>
                   <li>Subject = %s</li>
                   <li>Issuer = %s</li>
                   <li>Type / bits = %s / %d</li>
-                  <li>Key Hash = %s</li>
                   <li>Serial Number = %s</li>
-                </ul>', "\n", $state, $use, $name, $extraButton, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['hash'], $keyInfo['serialNumber']);
+                </ul>', "\n", $state, $use, $name, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
 		}
 	}
 
@@ -1070,7 +1047,7 @@ Class MetadataDisplay {
 			print "Type,Feed,Entity,Contact address\n";
 		} else {
 			printf ('    <a href=".?action=ErrorListDownload"><button type="button" class="btn btn-primary">Download CSV</button></a>%s    <a href=".?action=ErrorList&showTesting"><button type="button" class="btn btn-primary">Include testing</button></a><br>%s', "\n", "\n");
-			printf ('    <table class="table table-striped table-bordered">%s      <tr><th>Type</th><th>Feed</th><th>Entity</th><th>Contact address</th><th>Error</th></tr>%s', "\n", "\n");
+			printf ('    <table id="error-table" class="table table-striped table-bordered">%s      <thead><tr><th>Type</th><th>Feed</th><th>Entity</th><th>Contact address</th><th>Error</th></tr></thead>%s', "\n", "\n");
 		}
 		while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$contactPersonHandler->bindValue(':Id', $Entity['id']);
@@ -1095,7 +1072,7 @@ Class MetadataDisplay {
 					$feed = 'T';
 					break;
 				case 3 :
-					$feed = 'ES';
+					$feed = 'S';
 					break;
 				case 7 :
 					$feed = 'E';
@@ -1106,7 +1083,7 @@ Class MetadataDisplay {
 			if ($download) {
 				printf ('%s,%s,%s,%s%s', $type, $feed, $Entity['entityID'], $email, "\n");
 			} else {
-				printf ('      <tr><td>%s</td><td>%s</td><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td><tr>%s', $type, $feed, $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors'].$Entity['errorsNB']), "\n");
+				printf ('      <tr><td>%s</td><td>%s</td><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td><td>%s</td></tr>%s', $type, $feed, $Entity['id'], $Entity['entityID'], $email, str_ireplace("\n", "<br>",$Entity['errors'].$Entity['errorsNB']), "\n");
 			}
 			$missing = false;
 		}
