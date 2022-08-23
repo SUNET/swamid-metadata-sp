@@ -325,11 +325,11 @@ function showEntityList($status = 1) {
 		$sort = 'feedAsc';
 		$feedArrow = '<i class="fa fa-arrow-down"></i>';
 	} elseif (isset($_GET['orgDesc'])) {
-		$sortOrder = '`OrganizationDisplayName` DESC, `entityID`';
+		$sortOrder = '`OrganizationName` DESC, `entityID`';
 		$sort = 'orgDesc';
 		$orgArrow = '<i class="fa fa-arrow-up"></i>';
 	} elseif (isset($_GET['orgAsc'])) {
-		$sortOrder = '`OrganizationDisplayName` ASC, `entityID`';
+		$sortOrder = '`OrganizationName` ASC, `entityID`';
 		$sort = 'orgAsc';
 		$orgOrder = 'orgDesc';
 		$orgArrow = '<i class="fa fa-arrow-down"></i>';
@@ -400,7 +400,7 @@ function showEntityList($status = 1) {
 	showMenu();
 	if (isset($_GET['action']))
 		$filter .= '&action='.$_GET['action'];
-	$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationDisplayName, `lastUpdated`, `lastValidated`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationDisplayName' AND lang = 'en' WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
+	$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName, `lastUpdated`, `lastValidated`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationName' AND lang = 'en' WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
 	$entitys->bindValue(':Query', "%".$query."%");
 
 	print '
@@ -408,7 +408,7 @@ function showEntityList($status = 1) {
       <tr>
 	  	<th>IdP</th><th>SP</th>';
 
-	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="?%s&%s">OrganizationDisplayName%s</a></th><th>%s</th><th>lastValidated (UTC)</th><th><a href="?%s&validationOutput">validationOutput%s</a></th><th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter, $orgOrder, $orgArrow, ($status == 1) ? 'lastUpdated (UTC)' : 'created (UTC)' , $filter, $validationArrow, $filter, $warningArrow, $filter, $errorArrow, "\n");
+	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="action" value="%s"><input type="submit" value="Filter"></form></th><th><a href="?%s&%s">OrganizationName%s</a></th><th>%s</th><th>lastValidated (UTC)</th><th><a href="?%s&validationOutput">validationOutput%s</a></th><th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter, $orgOrder, $orgArrow, ($status == 1) ? 'lastUpdated (UTC)' : 'created (UTC)' , $filter, $validationArrow, $filter, $warningArrow, $filter, $errorArrow, "\n");
 	showList($entitys, $minLevel);
 }
 
@@ -604,7 +604,7 @@ function showList($entitys, $minLevel) {
 			$validationStatus = ($row['warnings'] == '') ? '' : '<i class="fas fa-exclamation-triangle"></i>';
 			$validationStatus .= ($row['errors'] == '' && $row['errorsNB'] == '') ? '' : '<i class="fas fa-exclamation"></i>';
 			$validationOutput = ($row['validationOutput'] == '') ? '' : '<i class="fas fa-question"></i>';
-			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td><a href="?showEntity=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>', $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationDisplayName'], $row['lastUpdated'], $row['lastValidated'], $validationOutput, $validationStatus);
+			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td><a href="?showEntity=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>', $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationName'], $row['lastUpdated'], $row['lastValidated'], $validationOutput, $validationStatus);
 			print "</tr>\n";
 		}
 	} ?>
