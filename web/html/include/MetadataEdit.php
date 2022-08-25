@@ -1462,7 +1462,7 @@ Class MetadataEdit {
 		$addLink = sprintf('<a href="?edit=Add%s&Entity=%d&oldEntity=%d"><button>Add new certificate</button></a><br>', $edit, $this->dbIdNr, $this->dbOldIdNr);
 		if (isset($_GET['action'])) {
 			$error = '';
-			if ($_GET['action'] == 'Delete' || $_GET['action'] == 'MoveUp' || $_GET['action'] == 'MoveDown') {
+			if ($_GET['action'] == 'Delete' || $_GET['action'] == 'MoveUp' || $_GET['action'] == 'MoveDown' || $_GET['action'] == 'Change' || $_GET['action'] == 'UpdateUse') {
 				if (isset($_GET['use'])) {
 					$use = $_GET['use'];
 				} else {
@@ -1477,6 +1477,13 @@ Class MetadataEdit {
 					$order = $_GET['order'];
 				} else {
 					$error .= '<br>Missing order';
+				}
+			}
+			if ($_GET['action'] == 'Change') {
+				if (isset($_GET['newUse'])) {
+					$newUse = $_GET['newUse'];
+				} else {
+					$error .= '<br>Missing new use';
 				}
 			}
 			if ($error) {
@@ -1669,6 +1676,7 @@ Class MetadataEdit {
 								$child = $child->nextSibling;
 								// Remove
 								if ($removeKeyDescriptor) {
+
 									$SSODescriptor->removeChild($KeyDescriptor);
 									$keyInfoDeleteHandler = $this->metaDb->prepare('DELETE FROM KeyInfo WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `serialNumber` = :SerialNumber ORDER BY `order` LIMIT 1;');
 									$keyInfoDeleteHandler->bindParam(':Id', $this->dbIdNr);
@@ -1682,6 +1690,68 @@ Class MetadataEdit {
 									$reorderKeyOrderHandler->bindParam(':Order', $order);
 									$reorderKeyOrderHandler->execute();
 
+									// Reset flag for next KeyDescriptor
+									$child = false;
+									$changed = true;
+								}
+							}
+						}
+						break;
+					case 'Change' :
+						if ($SSODescriptor) {
+							$child = $SSODescriptor->firstChild;
+							$changeKeyDescriptor = false;
+							$xmlOrder = 0;
+							$changed = false;
+							while ($child) {
+								// Loop thrue all KeyDescriptor:s not just the first one!
+								if ($child->nodeName == 'md:KeyDescriptor') {
+									$usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
+									if ( $usage == $use && $order == $xmlOrder) {
+										$KeyDescriptor = $child; // Save to be able to update this KeyDescriptor
+										$descriptorChild = $KeyDescriptor->firstChild;
+										while ($descriptorChild && !$changeKeyDescriptor) {
+											if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+												$infoChild = $descriptorChild->firstChild;
+												while ($infoChild && !$changeKeyDescriptor) {
+													if ($infoChild->nodeName == 'ds:X509Data') {
+														$x509Child = $infoChild->firstChild;
+														while ($x509Child&& !$changeKeyDescriptor) {
+															if ($x509Child->nodeName == 'ds:X509Certificate') {
+																$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
+																if ($cert_info = openssl_x509_parse( $cert)) {
+																	if ($cert_info['serialNumber'] == $serialNumber)
+																		$changeKeyDescriptor = true;
+																}
+															}
+															$x509Child = $x509Child->nextSibling;
+														}
+													}
+													$infoChild = $infoChild->nextSibling;
+												}
+											}
+											$descriptorChild = $descriptorChild->nextSibling;
+										}
+									}
+									$xmlOrder ++;
+								}
+								$child = $child->nextSibling;
+								// Change ?
+								if ($changeKeyDescriptor) {
+									if ($newUse == "encryption & signing") {
+										$KeyDescriptor->removeAttribute('use');
+										$newUse = 'both';
+									} else {
+										$KeyDescriptor->setAttribute('use', $newUse);
+									}
+									$keyInfoUpdateHandler = $this->metaDb->prepare('UPDATE KeyInfo SET `use` = :NewUse WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `serialNumber` = :SerialNumber AND `order` = :Order;');
+									$keyInfoUpdateHandler->bindParam(':NewUse', $newUse);
+									$keyInfoUpdateHandler->bindParam(':Id', $this->dbIdNr);
+									$keyInfoUpdateHandler->bindParam(':Type', $type);
+									$keyInfoUpdateHandler->bindParam(':Use', $use);
+									$keyInfoUpdateHandler->bindParam(':SerialNumber', $serialNumber);
+									$keyInfoUpdateHandler->bindParam(':Order', $order);
+									$keyInfoUpdateHandler->execute();
 
 									// Reset flag for next KeyDescriptor
 									$child = false;
@@ -1695,15 +1765,6 @@ Class MetadataEdit {
 					$this->saveXML();
 				}
 			}
-		} else {
-			/*$indexValue = 0;
-			$elementValue = '';
-			$langvalue = '';
-			$value = '';
-			$name = '';
-			$friendlyName = '';
-			$nameFormat = '';
-			$isRequired = '';*/
 		}
 
 		$KeyInfoStatusHandler = $this->metaDb->prepare('SELECT `use`, `order`, `notValidAfter` FROM KeyInfo WHERE entity_id = :Id AND type = :Type ORDER BY `order`');
@@ -1805,18 +1866,28 @@ Class MetadataEdit {
 			} else {
 				$state = 'success';
 			}
-			$baseLink = sprintf('<a href="?edit=%s&Entity=%d&oldEntity=%d&type=%s&use=%s&serialNumber=%s&order=%d&action=', $edit, $this->dbIdNr, $this->dbOldIdNr, $type, $keyInfo['use'], $keyInfo['serialNumber'], $keyInfo['order']);
-			$extraButtons = $okRemove ? sprintf('%sDelete"><i class="fas fa-trash"></i></a> ', $baseLink) : '';
-			$extraButtons .= $keyInfo['order'] > 0 ? sprintf('%sMoveUp"><i class="fas fa-arrow-up"></i></a> ', $baseLink) : '';
-			$extraButtons .= $keyInfo['order'] < $maxOrder ? sprintf('%sMoveDown"><i class="fas fa-arrow-down"></i></a> ', $baseLink) : '';
-			printf('%s        %s<span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
+			$baseLink = sprintf('%s        <a href="?edit=%s&Entity=%d&oldEntity=%d&type=%s&use=%s&serialNumber=%s&order=%d&action=', "\n", $edit, $this->dbIdNr, $this->dbOldIdNr, $type, $keyInfo['use'], $keyInfo['serialNumber'], $keyInfo['order']);
+			$links = $baseLink . 'UpdateUse"><i class="fas fa-pencil-alt"></i></a> ';
+			$links .= $okRemove ? sprintf('%sDelete"><i class="fas fa-trash"></i></a> ', $baseLink) : '';
+			$links .= $keyInfo['order'] > 0 ? sprintf('%sMoveUp"><i class="fas fa-arrow-up"></i></a> ', $baseLink) : '';
+			$links .= $keyInfo['order'] < $maxOrder ? sprintf('%sMoveDown"><i class="fas fa-arrow-down"></i></a> ', $baseLink) : '';
+
+			if (isset($_GET['action']) && $_GET['action'] == 'UpdateUse' && $keyInfo['order'] == $order) {
+				$useLink = sprintf ('%s          <form>%s            <input type="hidden" name="edit" value="%s">%s            <input type="hidden" name="Entity" value="%d">%s            <input type="hidden" name="oldEntity" value="%d">%s            <input type="hidden" name="type" value="%s">%s            <input type="hidden" name="use" value="%s">%s            <input type="hidden" name="serialNumber" value="%s">%s            <input type="hidden" name="order" value="%d">%s            <b>KeyUse = <select name="newUse">', "\n", "\n", $edit, "\n", $this->dbIdNr, "\n", $this->dbOldIdNr, "\n", $type, "\n", $keyInfo['use'], "\n", $keyInfo['serialNumber'], "\n", $keyInfo['order'], "\n");
+				$useLink .= sprintf ('%s              <option value="encryption"%s>encryption</option>%s              <option value="signing"%s>signing</option>%s              <option value="encryption & signing"%s>encryption & signing</option>', "\n", $use == 'encryption' ? ' selected' : '', "\n", $use == 'signing' ? ' selected' : '', "\n", $use == 'encryption & signing' ? ' selected' : '');
+                $useLink .= sprintf ('%s            </select></b>%s            <input type="submit" name="action" value="Change">%s          </form>%s       ', "\n", "\n", "\n", "\n");
+			} else {
+				$useLink = sprintf ('<b>KeyUse = "%s"</b>', $use);
+			}
+
+			printf('%s%s        <span class="text-%s text-truncate">%s %s</span>
         <ul%s>
           <li>notValidAfter = %s</li>
           <li>Subject = %s</li>
           <li>Issuer = %s</li>
           <li>Type / bits = %s / %d</li>
           <li>Serial Number = %s</li>
-        </ul>', "\n", $extraButtons, $state, $use, $name, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+        </ul>', $links, "\n", $state, $useLink, $name, $error, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
 		}
 
 		printf('%s        %s%s        <a href="./?validateEntity=%d"><button>Back</button></a>%s      </div><!-- end col -->%s      <div class="col">', "\n", $addLink, "\n", $this->dbIdNr, "\n", "\n");

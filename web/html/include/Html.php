@@ -93,7 +93,8 @@ Class HTML {
       </nav>
       <?=$this->displayName?>
 
-    </div><?php	}
+    </div>
+<?php	}
 	###
 	# Print footer on webpage
 	###
@@ -152,8 +153,7 @@ Class HTML {
       //var fileName = $(this).val().split("\\").pop();
       var fileName = $(this).val().split("\\\\").pop();
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
-    });
-	<?php print "  </script>\n"; } ?>
+    });<?php print "  </script>\n"; } ?>
 </body>
 </html>
 <?php

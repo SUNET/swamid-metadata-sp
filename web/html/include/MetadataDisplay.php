@@ -1488,25 +1488,7 @@ Class MetadataDisplay {
             <li>SWAMID Operations will now check and publish the request.</li>
           </ol><?php
 		$this->showCollapseEnd('RegisterNewEntity', 0);
-		$this->showCollapse('Update SAML certificates for a published entity in SWAMID', 'UpdateCertificates', false, 0, false);?>
-
-          <ol>
-            <li>Go to the tab "Upload new XML".</li>
-            <li>Upload the metadata file containing the new certificates by clicking "Browse" and selecting the file on your local file system. Press "Submit".</li>
-            <li>Merge the published metadata with the uploaded metadata by pressing the button "Merge from published". By doing this you get all current metadata for the entity merged into the draft.</li>
-            <li>Add or update metadata information by clicking on the pencil for each metadata section. Continue adding and changing information in the metadata until the information is correct and there are no errors left.<ul>
-              <li>For a Service Provider remember to add metadata attributes for entity categories, otherwise you will not get any attributes from Identity Providers without manual configuration in the Identity Providers. For more information on entity categories see the wiki page "Entity Categories for Service Providers".</li>
-              <li>It is highly recommended that the service adheres to the security profile <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
-              <li>You have up to two weeks to work on your draft. Every change is automatically saved. To find out how to pick up where you left off, see the help topic "Continue working on a draft".</li>
-            </ul></li>
-            <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
-            <li>Follow the instructions on the next web page and choose if the entity shall be published in SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
-            <li>Continue to the next step by pressing on the button ”Request publication”.</li>
-            <li>An e-mail will be sent to your registered address. Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
-          </ol><?php
-		$this->showCollapseEnd('UpdateCertificates', 0);
-		$this->showCollapse('Update published entity in SWAMID (except SAML certificates)', 'UpdateEntity', false, 0, false);?>
+		$this->showCollapse('Update published entity in SWAMID', 'UpdateEntity', false, 0, false);?>
 
           <ol>
             <li>Go to the tab "Published".</li>
