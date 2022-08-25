@@ -1157,7 +1157,7 @@ Class MetadataDisplay {
 	}
 
 	private function showErrorEntities($type) {
-		printf ('        <table id="%s-table" class="table table-striped table-bordered">%s          <thead><tr><th>Entity</th><th>MDUI:displayName</th><th>Organization:displayName</th></tr></thead>%s', $type, "\n", "\n");
+		printf ('        <table id="%s-table" class="table table-striped table-bordered">%s          <thead><tr><th>Entity</th><th>DisplayName</th><th>OrganizationName</th></tr></thead>%s', $type, "\n", "\n");
 		switch ($type) {
 			case 'IDPSSO' :
 				$EntityHandler = $this->metaDb->prepare("SELECT `id`, `publishIn`, `entityID` FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 AND isIdP = 1 ORDER BY entityID");
@@ -1173,7 +1173,7 @@ Class MetadataDisplay {
 		$EntityHandler->execute();
 		$MduiDisplayNameHandler = $this->metaDb->prepare("SELECT lang, data FROM Mdui WHERE type = :Type AND element = 'DisplayName' AND entity_id = :Id");
 		$MduiDisplayNameHandler->bindValue(':Type', $type);
-		$OrganizationDisplayNameHandler = $this->metaDb->prepare("SELECT lang, data from Organization WHERE element = 'OrganizationDisplayName' AND entity_id = :Id");
+		$OrganizationDisplayNameHandler = $this->metaDb->prepare("SELECT lang, data from Organization WHERE element = 'OrganizationName' AND entity_id = :Id");
 		while ($Entity = $EntityHandler->fetch(PDO::FETCH_ASSOC)) {
 			$MduiDisplayNameHandler->bindValue(':Id', $Entity['id']);
 			$MduiDisplayNameHandler->execute();
