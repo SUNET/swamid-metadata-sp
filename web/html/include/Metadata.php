@@ -1860,14 +1860,6 @@ Class Metadata {
 			}
 		}
 
-		$entityAttributesHandler->bindValue(':Type', 'assurance-certification');
-		$entityAttributesHandler->execute();
-		$sirtfiNotFound = true;
-		while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-			if ($entityAttribute['attribute'] == 'https://refeds.org/sirtfi')
-				$sirtfiNotFound = false;
-		}
-
 		if (isset($mduiArray['en'])) {
 			if (! isset($mduiArray['en']['PrivacyStatementURL']))
 				$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require a MDUI - PrivacyStatementURL with at least lang=en.\n";
@@ -1891,8 +1883,6 @@ Class Metadata {
 				$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
 			}
 		}
-		if ($sirtfiNotFound)
-			$this->error .= "GÉANT Data Protection Code of Conduct (v2) Require SIRTFI on entity.\n";
 	}
 
 	#############
