@@ -71,10 +71,7 @@ Class NormalizeXML {
 						}
 						break;
 					case 3 :
-						break;
 					case 8 :
-						$newComment = $doc->createComment($child->nodeValue);
-						$new->appendChild($newComment);
 						break;
 					default :
 						printf ('-----> Okänd typ %s<br>%s', $child->nodeType, $child->nodeValue);
