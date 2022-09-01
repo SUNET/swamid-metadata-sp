@@ -20,8 +20,22 @@ if (isset($_GET['showEntity'])) {
 	showEntity($_GET['showEntity']);
 } elseif (isset($_GET['rawXML'])) {
 	$display->showRawXML($_GET['rawXML']);
+} elseif (isset($_GET['show'])) {
+	switch($_GET['show']) {
+		case 'Info' :
+			showInfo();
+			break;
+		case 'InterIdP' :
+			showInterfederation('IDP');
+			break;
+		case 'InterSP' :
+			showInterfederation('SP');
+			break;
+		default :
+			showEntityList($_GET['show']);
+	}
 } else {
-	showEntityList();
+	showInfo();
 }
 
 $html->showFooter($display->getCollapseIcons(),true);
@@ -30,110 +44,51 @@ $html->showFooter($display->getCollapseIcons(),true);
 ####
 # Shows EntityList
 ####
-function showEntityList() {
+function showEntityList($show) {
 	global $db, $html;
 
-	$showAll = true;
+	$query = isset($_GET['query']) ? $_GET['query'] : '';
 
-	$query = '';
-
-	$feedOrder = 'feedDesc';
-	$orgOrder = 'orgAsc';
-	$entityIDOrder = 'entityIDAsc';
-	$feedArrow = '';
-	$orgArrow = '';
-	$entityIDArrow = '';
-	$ALArrow = '';
-	$SIRTFIArrow = '';
-	if (isset($_GET['feedDesc'])) {
-		$sortOrder = '`publishIn` DESC, `entityID`';
-		$sort = 'feedDesc';
-		$feedOrder = 'feedAsc';
-		$feedArrow = '<i class="fa fa-arrow-up"></i>';
-	} elseif (isset($_GET['feedAsc'])) {
-		$sortOrder = '`publishIn` ASC, `entityID`';
-		$sort = 'feedAsc';
-		$feedArrow = '<i class="fa fa-arrow-down"></i>';
-	} elseif (isset($_GET['orgDesc'])) {
-		$sortOrder = '`OrganizationName` DESC, `entityID`';
-		$sort = 'orgDesc';
-		$orgArrow = '<i class="fa fa-arrow-up"></i>';
-	} elseif (isset($_GET['orgAsc'])) {
-		$sortOrder = '`OrganizationName` ASC, `entityID`';
-		$sort = 'orgAsc';
-		$orgOrder = 'orgDesc';
-		$orgArrow = '<i class="fa fa-arrow-down"></i>';
-	} elseif (isset($_GET['entityIDDesc'])) {
-		$sortOrder = '`entityID` DESC';
-		$sort = 'entityIDDesc';
-		$entityIDOrder = 'entityIDAsc';
-		$entityIDArrow = '<i class="fa fa-arrow-up"></i>';
-	} else {
-		$sortOrder = '`entityID` ASC';
-		$sort = 'entityIDAsc';
-		$entityIDOrder = 'entityIDDesc';
-		$entityIDArrow = '<i class="fa fa-arrow-down"></i>';
-	}
-
-	if (isset($_GET['query'])) {
-		$query = $_GET['query'];
-	}
-	$csort=$sort;
-	$sort .= '&query='.$query;
-
-	if (isset($_GET['showIdP'])) {
+	if ($show == 'IdP') {
 		$html->showHeaders('Metadata SWAMID - IdP:s');
-		$filter = 'showIdP';
-		if (isset($_GET['AL'])) {
-			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName, MAX(attribute) AS attribute FROM Entities LEFT JOIN Organization ON Organization.`entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute LIKE '%AL%' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query GROUP BY id ORDER BY `attribute` DESC, $sortOrder");
-			$sort = 'AL&query='.$query;;
-			$csort='AL';
-			$ALArrow = '<i class="fa fa-arrow-down"></i>';
-			$entityIDOrder = 'entityIDAsc';
-			$entityIDArrow = '';
-		} elseif (isset($_GET['SIRTFI'])) {
-			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName, MAX(attribute) AS attribute FROM Entities LEFT JOIN Organization ON Organization.`entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute = 'https://refeds.org/sirtfi' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query GROUP BY `id` ORDER BY `attribute` DESC,  $sortOrder");
-			$sort = 'SIRTFI&query='.$query;;
-			$csort='SIRTFI';
-			$SIRTFIArrow = '<i class="fa fa-arrow-down"></i>';
-			$entityIDOrder = 'entityIDAsc';
-			$entityIDArrow = '';
-		} else
-			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query ORDER BY $sortOrder");
-
-		print "         <a href=\"./?$sort\">All in SWAMID</a> | <b>IdP in SWAMID</b> | <a href=\".?showSP&$sort\">SP in SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
-		$extraTH = sprintf('<th><a href="?showIdP&AL">AL1%s</a></th><th><a href="?showIdP&AL">AL2%s</a></th><th><a href="?showIdP&AL">AL3%s</a></th><th><a href="?showIdP&SIRTFI">SIRTFI%s</a></th><th>Hide</th>', $ALArrow, $ALArrow, $ALArrow, $SIRTFIArrow);
-		$showAll = false;
-	} elseif (isset($_GET['showSP'])) {
+		$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+		showMenu('IdPs', $query);
+		$extraTH = sprintf('<th>AL1</a></th><th>AL2</a></th><th>AL3</a></th><th>SIRTFI</a></th><th>Hide</th>');
+	} elseif ($show == 'SP') {
 		$html->showHeaders('Metadata SWAMID - SP:s');
-		$filter = 'showSP';
-		if (isset($_GET['SIRTFI'])) {
-			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName, `attribute` FROM Entities LEFT JOIN Organization ON Organization.`entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' LEFT JOIN EntityAttributes ON EntityAttributes.entity_id=Entities.id AND type = 'assurance-certification' AND attribute = 'https://refeds.org/sirtfi' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query GROUP BY `id` ORDER BY `attribute` DESC, $sortOrder");
-			$sort = 'SIRTFI&query='.$query;;
-			$csort='SIRTFI';
-			$SIRTFIArrow = '<i class="fa fa-arrow-down"></i>';
-			$entityIDOrder = 'entityIDAsc';
-			$entityIDArrow = '';
-		} else
-			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY $sortOrder");
-		print "         <a href=\"./?$sort\">All in SWAMID</a> | <a href=\".?showIdP&$sort\">IdP in SWAMID</a> | <b>SP in SWAMID</b> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
-		$extraTH = sprintf('<th>CoCo</th><th>R&S</th><th><a href="?showSP&SIRTFI">SIRTFI%s</a></th>', $SIRTFIArrow);
-		$showAll = false;
+		$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+		showMenu('SPs', $query);
+		$extraTH = sprintf('<th>CoCo</th><th>R&S</th><th>SIRTFI</a></th>');
 	} else {
 		$html->showHeaders('Metadata SWAMID - All');
-		$filter = 'all';
-		$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `entityID` LIKE :Query ORDER BY $sortOrder");
-		print "	  <b>All in SWAMID</b> | <a href=\".?showIdP&$sort\">IdP in SWAMID</a> | <a href=\".?showSP&$sort\">SP in SWAMID</a> | <a href=\"/all-idp.php\">IdP via interfederation</a> | <a href=\"/all-sp.php\">SP via interfederation</a>\n";
+		$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+		showMenu('all', $query);
 		$extraTH = '';
 	}
 	echo <<<EOF
-    <table class="table table-striped table-bordered">
-      <tr>
+    <table id="entities-table" class="table table-striped table-bordered">
+      <thead><tr>
 EOF;
-	if ($showAll)	print '<th>IdP</th><th>SP</th>';
-	printf('<th>Registered in</th> <th><a href="?%s&%s">eduGAIN%s</a></th> <th><form><a href="?%s&%s">entityID%s</a> <input type="text" name="query" value="%s"><input type="hidden" name="%s"><input type="hidden" name="%s"> <input type="submit" value="Filtrera"></form></th><th>DisplayName</th><th><a href="?%s&%s">OrganizationName%s</a></th>%s</tr>%s', $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $csort, $filter, $filter, $orgOrder, $orgArrow, $extraTH, "\n");
+	$html->addTableSort('entities-table');
+	if ($show == 'All')	print '<th>IdP</th><th>SP</th>';
+	printf('<th>Published in</th> <th><form>entityID <input type="text" name="query" value="%s"><input type="hidden" name="show" value="%s"><input type="submit" value="Filter"></form></th><th>DisplayName</th><th>OrganizationName</th>%s</tr></thead>%s', $query, $show, $extraTH, "\n");
 	$entitys->bindValue(':Query', "%".$query."%");
-	showList($entitys, $showAll);
+	showList($entitys, $show);
+}
+
+####
+# Shows menu row
+####
+function showMenu($menuActive, $query = '') {
+	print "\n    ";
+	$query = $query == '' ? '' : '&query=' . $query;
+	printf('<a href="./?show=All%s"><button type="button" class="btn btn%s-primary">All in SWAMID</button></a>', $query, $menuActive == 'all' ? '' : '-outline');
+	printf('<a href="./?show=IdP%s"><button type="button" class="btn btn%s-primary">IdP in SWAMID</button></a>', $query, $menuActive == 'IdPs' ? '' : '-outline');
+	printf('<a href="./?show=SP%s"><button type="button" class="btn btn%s-primary">SP in SWAMID</button></a>', $query, $menuActive == 'SPs' ? '' : '-outline');
+	printf('<a href="./?show=InterIdP"><button type="button" class="btn btn%s-primary">IdP via interfederation</button></a>', $menuActive == 'fedIdPs' ? '' : '-outline');
+	printf('<a href="./?show=InterSP"><button type="button" class="btn btn%s-primary">SP via interfederation</button></a>', $menuActive == 'fedSPs' ? '' : '-outline');
+	printf('<a href="./?show=Info%s"><button type="button" class="btn btn%s-primary">Info</button></a>', $query, $menuActive == 'info' ? '' : '-outline');
+	print "\n";
 }
 
 ####
@@ -234,7 +189,7 @@ function showEntity($Entity_id)  {
 ####
 # Shows a list of entitys
 ####
-function showList($entitys, $showRole) {
+function showList($entitys, $show) {
 	global $db;
 	$entityAttributesHandler = $db->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
 	$mduiHandler = $db->prepare("SELECT data FROM Mdui WHERE element = 'DisplayName' AND entity_id = :Id ORDER BY type,lang;");
@@ -343,7 +298,7 @@ function showList($entitys, $showRole) {
 			}
 		}
 		printf ('      <tr>');
-		if ($showRole) {
+		if ($show == 'All') {
 			print $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>';
 			print $row['isSP'] ? '<td class="text-center">X</td>' : '<td></td>';
 		}
@@ -351,32 +306,26 @@ function showList($entitys, $showRole) {
 			case 1 :
 				$countTesting ++;
 				$registerdIn = 'Test-only';
-				$export2Edugain = '';
 				break;
 			case 3 :
 				$countSWAMID ++;
 				//$countTesting ++;
 				$registerdIn = 'SWAMID';
-				$export2Edugain = '';
 				break;
 			case 7 :
 				$countSWAMID ++;
 				$counteduGAIN ++;
 				//$countTesting ++;
-				$registerdIn = 'SWAMID';
-				$export2Edugain = 'X';
+				$registerdIn = ' SWAMID + eduGAIN';
 				break;
 			default :
 				$registerdIn = '';
-				$export2Edugain = '';
-
-
 		}
-		printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td><a href=".?showEntity=%s">%s</a></td><td>%s</td><td>%s</td>', $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $DisplayName, $row['OrganizationName']);
+		printf ('<td>%s</td><td><a href=".?showEntity=%s">%s</a></td><td>%s</td><td>%s</td>', $registerdIn, $row['id'], $row['entityID'], $DisplayName, $row['OrganizationName']);
 
-		if (isset($_GET['showIdP'])) {
+		if ($show == 'IdP') {
 			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
-		} elseif (isset($_GET['showSP'])) {
+		} elseif ($show == 'SP') {
 			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isCoco, $isRS, $isSIRTFI);
 		}
 		print "</tr>\n";
@@ -399,4 +348,234 @@ function showList($entitys, $showRole) {
     </table>
 
 <?php
+}
+
+function showInfo() {
+	global $html;
+	$html->showHeaders('Metadata SWAMID - Info');
+	showMenu('info',''); ?>
+    <div class="row">
+      <div class="col">
+        <br>
+        <h3>SWAMID Metadata Tool</h3>
+        <p>Welcome to the SWAMID Metadata Tool. Within this tool you can browse and look look closer on metadata availabe through SWAMID.
+        <h4>Public available information</h4>
+        <p>To view entities, i.e. Identiy Providers and Service Providers, available in SWAMID click on a button:<ul>
+          <li><b>All in SWAMID</b> contains all entities registered in SWAMID.</li>
+          <li><b>IdP in SWAMID</b> contains all Identity Providers registered in SWAMID including fulfilled SWAMID assurance profiles.</li>
+          <li><b>SP in SWAMID</b> contains all Service Providers registered in SWAMID including requested entity categories.</li>
+          <li><b>IdP via interfederation</b> contains all Identity Providers imported into SWAMID from interfederated federations.</li>
+          <li><b>SP via interfederation</b> contains all Service Providers imported into SWAMID from interfederated federations.</li>
+        </ul></p>
+        <p>You can sort and filter the tables in all tabs by either clicking on linked headers or write part of an entity and press the filter button.</p>
+        <h4>Update metadata for your Identity Provider or Service Provider</h4>
+        <p>If you're a technical contact for an entity registered in, or should be added to, SWAMID you can login and add, update and request removal of the an entity via the login buttom in the top right corner. SWAMID Operations authenticate and validate all updates before changes are published to SWAMID metadata. Do you need any help there is an help link at the top right corner after you've logged in.</p>
+        <p>Do you not have an active user account in a SWAMID registered Identity Provider you can create and use an personal eduID.se account at <a href="https://eduid.se">eduID.se</a> to update your entities. When registering an eduID.se account you must use an email address associated with the entity.</p>
+<?php
+}
+
+function showInterfederation($type){
+	global $html;
+	if ($type == 'IDP') {
+		$html->showHeaders('Metadata SWAMID - eduGAIN - IdP:s');
+		showMenu('fedIdPs','');
+		printf ('    <table  id="IdP-table" class="table table-striped table-bordered">%s      <thead><tr><th>entityID</th><th>Organization</th><th>Contacts</th><th>Scopes</th><th>Entity category support</th><th>Assurance Certification</th><th>Registration Authority</th></tr></thead>', "\n");
+		$html->addTableSort('IdP-table');
+	} else {
+		$html->showHeaders('Metadata SWAMID - eduGAIN - SP:s');
+		showMenu('fedSPs','');
+		printf ('    <table id="SP-table" class="table table-striped table-bordered">%s      <thead><tr><th>entityID</th><th>Service Name</th><th>Organization</th><th>Contacts</th><th>Entity Categories</th><th>Assurance Certification</th><th>Registration Authority</th></tr></thead>', "\n");
+
+		$html->addTableSort('SP-table');
+	}
+
+	$xml = new DOMDocument;
+	$xml->preserveWhiteSpace = false;
+	$xml->formatOutput = true;
+	$xml->load('/opt/swamid-metadata/swamid-2.0.xml');
+	$xml->encoding = 'UTF-8';
+
+	checkEntities($xml, $type);
+}
+
+function checkEntities($xml, $type) {
+	foreach ($xml->childNodes as $child) {
+		switch (nodeName($child->nodeName)) {
+			case 'EntitiesDescriptor' :
+				checkEntities($child, $type);
+				break;
+			case 'EntityDescriptor' :
+				checkEntity($child, $type);
+				break;
+			case 'Signature' :
+			case 'Extensions' :
+			case '#comment' :
+				break;
+			default:
+				printf ('%s<br>', $child->nodeName);
+		}
+	}
+}
+
+function checkEntity($xml, $type) {
+	$show = false;
+	$EC = '';
+	$ECS = '';
+	$AC = '';
+	foreach ($xml->childNodes as $child) {
+		switch (nodeName($child->nodeName)) {
+			case 'Extensions' :
+				foreach ($child->childNodes as $extChild) {
+					switch (nodeName($extChild->nodeName)) {
+						case 'RegistrationInfo' :
+							$registrationAuthority = $extChild->getAttribute('registrationAuthority');
+							$hideSwamid = ($registrationAuthority == 'http://www.swamid.se/') ? false : true;
+							$hideSwamid = ($registrationAuthority == 'http://www.swamid.se/loop') ? false : $hideSwamid;
+							break;
+						case 'EntityAttributes' :
+							foreach ($extChild->childNodes as $entAttrChild) {
+								if (nodeName($entAttrChild->nodeName) == 'Attribute') {
+									switch ($entAttrChild->getAttribute('Name')){
+										case 'http://macedir.org/entity-category' :
+											foreach ($entAttrChild->childNodes as $attrChild) {
+												if (nodeName($attrChild->nodeName) == 'AttributeValue')
+													$EC .= $attrChild->nodeValue . ' ';
+											}
+											break;
+										case 'http://macedir.org/entity-category-support' :
+											foreach ($entAttrChild->childNodes as $attrChild) {
+												if (nodeName($attrChild->nodeName) == 'AttributeValue')
+													$ECS .= $attrChild->nodeValue . ' ';
+											}
+											break;
+										case 'urn:oasis:names:tc:SAML:attribute:assurance-certification' :
+											foreach ($entAttrChild->childNodes as $attrChild) {
+												if (nodeName($attrChild->nodeName) == 'AttributeValue')
+													$AC .= $attrChild->nodeValue . ' ';
+											}
+											break;
+									}
+								}
+							}
+					}
+				}
+				break;
+			case 'IDPSSODescriptor' :
+				if ($type == 'IDP') {
+					$entityID = $xml->getAttribute('entityID');
+					$show = true;
+				}
+				break;
+			case 'SPSSODescriptor' :
+				if ($type == 'SP') {
+					$entityID = $xml->getAttribute('entityID');
+					$show = true;
+				}
+				break;
+		}
+	}
+
+	if ($show && $hideSwamid) {
+		$scope = '';
+		$orgURL = '';
+		$orgName = '';
+		$contacts = array();
+		$displayName = '';
+		$serviceName = '';
+		foreach ($xml->childNodes as $child) {
+			switch (nodeName($child->nodeName)) {
+				case 'Extensions' :
+					break;
+				case 'IDPSSODescriptor' :
+					foreach ($child->childNodes as $SSOChild) {
+						if (nodeName($SSOChild->nodeName) == 'Extensions') {
+							foreach ($SSOChild->childNodes as $extChild) {
+								if (nodeName($extChild->nodeName) == 'Scope')
+									$scope .= $extChild->nodeValue . ' ';
+							}
+						}
+					}
+					break;
+				case 'SPSSODescriptor' :
+					foreach ($child->childNodes as $SSOChild) {
+						switch (nodeName($SSOChild->nodeName)) {
+							case 'Extensions' :
+								foreach ($SSOChild->childNodes as $extChild) {
+									if (nodeName($extChild->nodeName) == 'UIInfo') {
+										foreach ($extChild->childNodes as $UUIChild) {
+											if (nodeName($UUIChild->nodeName) == 'DisplayName') {
+												if ($displayName == '')
+													$displayName = $UUIChild->nodeValue;
+												elseif ($UUIChild->getAttribute('xml:lang') == 'en')
+													$displayName = $UUIChild->nodeValue;
+											}
+										}
+									}
+								}
+								break;
+							case 'AttributeConsumingService' :
+								foreach ($SSOChild->childNodes as $acsChild) {
+									if (nodeName($acsChild->nodeName) == 'ServiceName') {
+										if ($serviceName == '')
+											$serviceName = $acsChild->nodeValue;
+										elseif ($acsChild->getAttribute('xml:lang') == 'en')
+											$serviceName = $acsChild->nodeValue;
+									}
+								}
+								break;
+						}
+					}
+					break;
+				case 'AttributeAuthorityDescriptor' :
+					break;
+				case 'Organization' :
+					foreach ($child->childNodes as $orgChild) {
+						if (nodeName($orgChild->nodeName) == 'OrganizationURL')
+							if ($orgURL == '')
+								$orgURL = $orgChild->nodeValue;
+							elseif ($orgChild->getAttribute('xml:lang') == 'en')
+								$orgURL = $orgChild->nodeValue;
+						if (nodeName($orgChild->nodeName) == 'OrganizationDisplayName')
+							if ($orgName == '')
+								$orgName = $orgChild->nodeValue;
+							elseif ($orgChild->getAttribute('xml:lang') == 'en')
+								$orgName = $orgChild->nodeValue;
+					}
+					break;
+				case 'ContactPerson' :
+					$email = '';
+					foreach ($child->childNodes as $contactChild) {
+						if (nodeName($contactChild->nodeName) == 'EmailAddress')
+							$email = $contactChild->nodeValue;
+					}
+					array_push($contacts, array ('type' => $child->getAttribute('contactType'), 'email' => $email));
+					break;
+				case '#comment' :
+					break;
+				default:
+					printf ('%s<br>', $child->nodeName);
+			}
+		}
+		if ($type == 'IDP') {
+			printf ('<tr><td>%s</td><td><a href="%s">%s</a></td><td>', $entityID, $orgURL, $orgName);
+			foreach ($contacts as $contact) {
+				printf ('<a href="%s">%s<a><br>', $contact['email'], $contact['type']);
+			}
+			printf ('</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $scope, $ECS, $AC, $registrationAuthority, "\n");
+		} elseif ($type == 'SP') {
+			printf ('<tr><td>%s</td><td>%s<br>%s</td><td><a href="%s">%s</a></td><td>', $entityID, $displayName, $serviceName, $orgURL, $orgName);
+			foreach ($contacts as $contact) {
+				printf ('<a href="%s">%s<a><br>', $contact['email'], $contact['type']);
+			}
+			printf ('</td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $EC, $AC, $registrationAuthority, "\n");
+		}
+	}
+}
+
+function nodeName($str) {
+	$array = explode(':', $str);
+	if (isset($array[1]))
+		return $array[1];
+	else
+		return $array[0];
 }
