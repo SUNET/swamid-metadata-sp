@@ -1407,6 +1407,7 @@ Class MetadataDisplay {
           responsive: true,
           scales: {
             yAxes: {
+              beginAtZero: true,
               stacked: true,
               suggestedMin: <?= $TotalMin?>
             }
