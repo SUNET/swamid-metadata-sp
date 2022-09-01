@@ -358,19 +358,19 @@ function showInfo() {
       <div class="col">
         <br>
         <h3>SWAMID Metadata Tool</h3>
-        <p>Welcome to the SWAMID Metadata Tool. Within this tool you can browse and look look closer on metadata availabe through SWAMID.
+        <p>Welcome to the SWAMID Metadata Tool. With this tool you can browse and examine metadata availabe through SWAMID.
         <h4>Public available information</h4>
-        <p>To view entities, i.e. Identiy Providers and Service Providers, available in SWAMID click on a button:<ul>
-          <li><b>All in SWAMID</b> contains all entities registered in SWAMID.</li>
-          <li><b>IdP in SWAMID</b> contains all Identity Providers registered in SWAMID including fulfilled SWAMID assurance profiles.</li>
-          <li><b>SP in SWAMID</b> contains all Service Providers registered in SWAMID including requested entity categories.</li>
-          <li><b>IdP via interfederation</b> contains all Identity Providers imported into SWAMID from interfederated federations.</li>
-          <li><b>SP via interfederation</b> contains all Service Providers imported into SWAMID from interfederated federations.</li>
+        <p>To view entities, i.e. Identiy Providers and Service Providers, available in SWAMID, select a tab:<ul>
+          <li><b>All in SWAMID</b> lists all entities registered in SWAMID.</li>
+          <li><b>IdP in SWAMID</b> lists Identity Providers registered in SWAMID including identity assurance profiles.</li>
+          <li><b>SP in SWAMID</b> lists Service Providers registered in SWAMID including requested entity categories.</li>
+          <li><b>IdP via interfederation</b> lists Identity Providers imported into SWAMID from interfederations.</li>
+          <li><b>SP via interfederation</b> lists Service Providers imported into SWAMID from interfederations.</li>
         </ul></p>
-        <p>You can sort and filter the tables in all tabs by either clicking on linked headers or write part of an entity and press the filter button.</p>
-        <h4>Update metadata for your Identity Provider or Service Provider</h4>
-        <p>If you're a technical contact for an entity registered in, or should be added to, SWAMID you can login and add, update and request removal of the an entity via the login buttom in the top right corner. SWAMID Operations authenticate and validate all updates before changes are published to SWAMID metadata. Do you need any help there is an help link at the top right corner after you've logged in.</p>
-        <p>Do you not have an active user account in a SWAMID registered Identity Provider you can create and use an personal eduID.se account at <a href="https://eduid.se">eduID.se</a> to update your entities. When registering an eduID.se account you must use an email address associated with the entity.</p>
+        <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form. E.g entering "umu.se" in the entityID search form will list all entities including "umu.se" in their entityID.</p>
+        <h4>Update Identity Provider or Service Provider metadata</h4>
+        <p>Login using the blue button at the top right corner of this page to add or update your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
+        <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduid.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
 <?php
 }
 
