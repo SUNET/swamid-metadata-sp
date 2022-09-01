@@ -136,7 +136,11 @@ Class MetadataEdit {
 				case 'subject-id:req' :
 					$attributeType = 'urn:oasis:names:tc:SAML:profiles:subject-id:req';
 					break;
+				case 'swamid/assurance-requirement' :
+					$attributeType ='http://www.swamid.se/assurance-requirement';
+					break;
 				default :
+					printf ('Missing type (%s)', $_GET['type']);
 					exit;
 			}
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
