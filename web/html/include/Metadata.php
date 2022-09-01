@@ -100,11 +100,16 @@ Class Metadata {
 		$urlHandler->execute();
 
 		if ($currentType = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-			$update = false;
 			if ($currentType['type'] < $type) {
+				// Update type and lastSeen + force revalidate
 				$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `type` = :Type, `lastValidated` = '1972-01-01', `lastSeen` = NOW() WHERE `URL` = :Url;");
 				$urlUpdateHandler->bindParam(':Url', $url);
 				$urlUpdateHandler->bindParam(':Type', $type);
+				$urlUpdateHandler->execute();
+			} else {
+				// Update lastSeen
+				$urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastSeen` = NOW() WHERE `URL` = :Url;");
+				$urlUpdateHandler->bindParam(':Url', $url);
 				$urlUpdateHandler->execute();
 			}
 		} else {
