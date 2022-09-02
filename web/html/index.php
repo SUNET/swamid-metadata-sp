@@ -49,29 +49,33 @@ function showEntityList($show) {
 
 	$query = isset($_GET['query']) ? $_GET['query'] : '';
 
-	if ($show == 'IdP') {
-		$html->showHeaders('Metadata SWAMID - IdP:s');
-		$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
-		showMenu('IdPs', $query);
-		$extraTH = sprintf('<th>AL1</a></th><th>AL2</a></th><th>AL3</a></th><th>SIRTFI</a></th><th>Hide</th>');
-	} elseif ($show == 'SP') {
-		$html->showHeaders('Metadata SWAMID - SP:s');
-		$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
-		showMenu('SPs', $query);
-		$extraTH = sprintf('<th>CoCo</th><th>R&S</th><th>SIRTFI</a></th>');
-	} else {
-		$html->showHeaders('Metadata SWAMID - All');
-		$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
-		showMenu('all', $query);
-		$extraTH = '';
+	switch ($show) {
+		case 'IdP' :
+			$html->showHeaders('Metadata SWAMID - IdP:s');
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+			showMenu('IdPs', $query);
+			$extraTH = sprintf('<th>AL1</a></th><th>AL2</a></th><th>AL3</a></th><th>SIRTFI</a></th><th>Hide</th>');
+			break;
+		case 'SP' :
+			$html->showHeaders('Metadata SWAMID - SP:s');
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+			showMenu('SPs', $query);
+			$extraTH = sprintf('<th>CoCo</th><th>R&S</th><th>SIRTFI</a></th>');
+			break;
+		case 'All' :
+			$html->showHeaders('Metadata SWAMID - All');
+			$entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+			showMenu('all', $query);
+			$extraTH = '<th>IdP</th><th>SP</th>';
+			break;
+		default :
+			$html->showHeaders('Metadata SWAMID - Error');
+			print 'Show what ??????';
+			return;
 	}
-	echo <<<EOF
-    <table id="entities-table" class="table table-striped table-bordered">
-      <thead><tr>
-EOF;
+	printf ('    <table id="entities-table" class="table table-striped table-bordered">%s      <thead><tr><th><form>entityID <input type="text" name="query" value="%s"><input type="hidden" name="show" value="%s"><input type="submit" value="Filter"></form></th><th>Published in</th><th>DisplayName</th><th>OrganizationName</th>%s</tr></thead>%s'
+		, "\n", $query, $show, $extraTH, "\n");
 	$html->addTableSort('entities-table');
-	if ($show == 'All')	print '<th>IdP</th><th>SP</th>';
-	printf('<th>Published in</th> <th><form>entityID <input type="text" name="query" value="%s"><input type="hidden" name="show" value="%s"><input type="submit" value="Filter"></form></th><th>DisplayName</th><th>OrganizationName</th>%s</tr></thead>%s', $query, $show, $extraTH, "\n");
 	$entitys->bindValue(':Query', "%".$query."%");
 	showList($entitys, $show);
 }
@@ -298,10 +302,6 @@ function showList($entitys, $show) {
 			}
 		}
 		printf ('      <tr>');
-		if ($show == 'All') {
-			print $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>';
-			print $row['isSP'] ? '<td class="text-center">X</td>' : '<td></td>';
-		}
 		switch ($row['publishIn']) {
 			case 1 :
 				$countTesting ++;
@@ -321,12 +321,19 @@ function showList($entitys, $show) {
 			default :
 				$registerdIn = '';
 		}
-		printf ('<td>%s</td><td><a href=".?showEntity=%s">%s</a></td><td>%s</td><td>%s</td>', $registerdIn, $row['id'], $row['entityID'], $DisplayName, $row['OrganizationName']);
+		printf ('<td><a href=".?showEntity=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td>', $row['id'], $row['entityID'], $registerdIn, $DisplayName, $row['OrganizationName']);
 
-		if ($show == 'IdP') {
-			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
-		} elseif ($show == 'SP') {
-			printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isCoco, $isRS, $isSIRTFI);
+		switch ($show) {
+			case 'IdP' :
+				printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
+				break;
+			case 'SP' :
+				printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isCoco, $isRS, $isSIRTFI);
+				break;
+			case 'All' :
+				print $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>';
+				print $row['isSP'] ? '<td class="text-center">X</td>' : '<td></td>';
+				break;
 		}
 		print "</tr>\n";
 	} ?>
@@ -369,8 +376,8 @@ function showInfo() {
         </ul></p>
         <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form. E.g entering "umu.se" in the entityID search form will list all entities including "umu.se" in their entityID.</p>
         <h4>Update Identity Provider or Service Provider metadata</h4>
-        <p>Login using the blue button at the top right corner of this page to add or update your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
-        <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduid.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
+        <p>Login using the blue button at the top right corner of this page to add, update or request removal of your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
+        <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduID.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
 <?php
 }
 
