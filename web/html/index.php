@@ -22,6 +22,9 @@ if (isset($_GET['showEntity'])) {
 	$display->showRawXML($_GET['rawXML']);
 } elseif (isset($_GET['show'])) {
 	switch($_GET['show']) {
+		case 'Pending' :
+			showPendingQueue();
+			break;
 		case 'Info' :
 			showInfo();
 			break;
@@ -379,6 +382,15 @@ function showInfo() {
         <p>Login using the blue button at the top right corner of this page to add, update or request removal of your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
         <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduID.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
 <?php
+}
+
+function showPendingQueue() {
+	global $db;
+	$entitys = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
+	$entitys->execute();
+	while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+		printf ('%d	%s%s',$row['id'], $row['entityID'], "\n");
+	}
 }
 
 function showInterfederation($type){
