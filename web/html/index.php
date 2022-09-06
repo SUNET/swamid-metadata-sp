@@ -391,6 +391,7 @@ function showPendingQueue() {
 	while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
 		printf ('%d	%s%s',$row['id'], $row['entityID'], "\n");
 	}
+	exit;
 }
 
 function showInterfederation($type){
