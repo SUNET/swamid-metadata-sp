@@ -107,10 +107,10 @@ function showEntity($Entity_id)  {
 	$publishArray = array();
 	$publishArrayOld = array();
 
-	$html->setDestination('?showEntity='.$Entity_id);
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		$html->setDestination('?showEntity='.$Entity_id);
 		if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
 		if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
 		if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
