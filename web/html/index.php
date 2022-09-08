@@ -412,7 +412,7 @@ function showInterfederation($type){
 	$xml = new DOMDocument;
 	$xml->preserveWhiteSpace = false;
 	$xml->formatOutput = true;
-	$xml->load('/opt/swamid-metadata/swamid-2.0.xml');
+	$xml->load('/opt/metadata/swamid-2.0.xml');
 	$xml->encoding = 'UTF-8';
 
 	checkEntities($xml, $type);
