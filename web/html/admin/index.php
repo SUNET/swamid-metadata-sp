@@ -776,7 +776,7 @@ function move2Pending($Entity_id) {
 				if ($SendOut)
 					$mailRequetser->addAddress($mail);
 				$addresses = array();
-				$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE entity_id = id AND entityID=:EntityID AND (contactType='technical' OR contactType='administrative')");
+				$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE entity_id = id AND entityID=:EntityID AND (contactType='technical' OR contactType='administrative') AND (status = 1 OR status = 3)");
 				$contactHandler->bindParam(':EntityID',$entity['entityID']);
 				$contactHandler->execute();
 				while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
