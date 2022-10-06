@@ -2133,7 +2133,7 @@ Class Metadata {
 	}
 
 	#############
-	# Moves an entity from pendingQueue to publishedPending state
+	# Moves an entity from Published to SoftDelete state
 	#############
 	public function move2SoftDelete() {
 		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id');
