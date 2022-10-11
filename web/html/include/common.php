@@ -21,6 +21,9 @@ $this->standardAttributes = array(
 		array('type' => 'IdP', 'value' => 'http://refeds.org/category/hide-from-discovery', 'swamidStd' => true)),
 
 	'entity-category-support' => array(
+		array('type' => 'IdP', 'value' => 'https://refeds.org/category/anonymous', 'swamidStd' => true),
+		array('type' => 'IdP', 'value' => 'https://refeds.org/category/pseudonymous', 'swamidStd' => true),
+		array('type' => 'IdP', 'value' => 'https://refeds.org/category/personalized', 'swamidStd' => true),
 		array('type' => 'IdP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
 		array('type' => 'IdP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', 'swamidStd' => true),
 		array('type' => 'IdP', 'value' => 'https://refeds.org/category/code-of-conduct/v2', 'swamidStd' => true)),
