@@ -5,7 +5,7 @@ if [ -r $file ]; then
 	fileName=$(basename $file)
 	SWAMIDDir=$(dirname $file)
 	cd $SWAMIDDir
-	date=$(/usr/bin/git log -n 1 --pretty=format:"%ad" --date=format-local:'%Y-%m-%d %H:%M:%S' $file)
+	date=$(ls -l -D '%Y-%m-%d %H:%M:%S' $file | awk '{print $6,$7}')
 	feed="Testing Swamid"
 
 	php /var/www/scripts/importAndValidateXML.php $file "$feed" "$date"
