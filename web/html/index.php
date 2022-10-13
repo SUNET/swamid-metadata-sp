@@ -3,7 +3,7 @@ $baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 1);
 include $baseDir . '/config.php';
 
 include 'include/Html.php';
-$html = new HTML($DiscoveryService);
+$html = new HTML($DiscoveryService, $Mode);
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);

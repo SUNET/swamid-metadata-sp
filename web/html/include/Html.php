@@ -1,7 +1,7 @@
 <?php
 Class HTML {
 	# Setup
-	function __construct($DS='seamless') {
+	function __construct($DS='seamless', $Mode='Prod') {
 		$this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
 		$this->destination = '?first';
 		$this->startTimer = time();
@@ -21,6 +21,7 @@ Class HTML {
 				$this->DS = '/DS/seamless-access';
 				$this->DSService= '//service.seamlessaccess.org/thiss.js';
 		}
+		$this->mode = $Mode;
 	}
 
 	###
@@ -50,8 +51,12 @@ Class HTML {
     body {
       padding-top: 20px;
       padding-bottom: 20px;
+      <?= $this->mode == 'QA' ? 'background-color: #F05523;' : ''?><?= $this->mode == 'Lab' ? 'background-color: #EE0000;' : ''?>
     }
 
+    .container {
+      <?= ($this->mode == 'QA' || $this->mode == 'Lab') ? 'background-color: #FFFFFF;' : ''?>
+    }
     .text-truncate {
       white-space: nowrap;
       overflow: hidden;
@@ -85,7 +90,7 @@ Class HTML {
 <body>
   <div class="container">
     <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
-      <h3 class="my-0 mr-md-auto font-weight-normal"><a href="."><img src="https://release-check.swamid.se/swamid-logo-2-100x115.png" width="55"></a> Metadata</h3>
+      <h3 class="my-0 mr-md-auto font-weight-normal"><a href="."><img src="https://release-check.swamid.se/swamid-logo-2-100x115.png" width="55"></a> Metadata <?= $this->mode == 'Prod' ? '' : $this->mode?></h3>
       <nav class="my-2 my-md-0 mr-md-3">
         <a class="p-2 text-dark" href="https://www.sunet.se/swamid/">About SWAMID</a>
         <a class="p-2 text-dark" href="https://www.sunet.se/swamid/kontakt/">Contact us</a>

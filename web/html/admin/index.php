@@ -11,7 +11,7 @@ $baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 2);
 include $baseDir . '/config.php' ;
 
 include '../include/Html.php';
-$html = new HTML();
+$html = new HTML('', $Mode);
 
 $errorURL = isset($_SERVER['Meta-errorURL']) ? '<a href="' . $_SERVER['Meta-errorURL'] . '">Mer information</a><br>' : '<br>';
 $errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'), array(time(), 'https://metadata.swamid.se/shibboleth', $_SERVER['Shib-Session-ID']), $errorURL);
