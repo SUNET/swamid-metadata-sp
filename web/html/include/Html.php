@@ -115,7 +115,8 @@ Class HTML {
     window.onload = function() {
       // Render the Seamless Access button
       thiss.DiscoveryComponent({
-        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso<?=$this->DS?>?target=<?=$hostURL?>/admin/<?=$this->destination?>'
+        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso<?=$this->DS?>?target=<?=$hostURL?>/admin/<?=$this->destination?>',
+        color: '#F05523'
       }).render('#SWAMID-SeamlessAccess');
     };
   </script><?php }
