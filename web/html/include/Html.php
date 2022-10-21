@@ -51,7 +51,7 @@ Class HTML {
     body {
       padding-top: 20px;
       padding-bottom: 20px;
-      <?= $this->mode == 'QA' ? 'background-color: #F05523;' : ''?><?= $this->mode == 'Lab' ? 'background-color: #EE0000;' : ''?>
+      <?= $this->mode == 'QA' ? 'background-color: #F05523;' : ''?><?= $this->mode == 'Lab' ? 'background-color: #8B0000;' : ''?>
     }
 
     .container {
