@@ -39,8 +39,19 @@ Class MetadataDisplay {
 			$warnings = '';
 
 			if ($entity['isIdP']) {
-				$ECSTagged = array('http://refeds.org/category/research-and-scholarship' => false, 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => false);
-				$ECSTested = array('rands' => false, 'cocov1-1' => false);
+				$ECSTagged = array('http://refeds.org/category/research-and-scholarship' => false,
+					'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => false,
+					'https://refeds.org/category/anonymous' => false,
+					'https://refeds.org/category/code-of-conduct/v2' => false,
+					'https://refeds.org/category/personalized' => false,
+					'https://refeds.org/category/pseudonymous' => false);
+				$ECSTested = array(
+					'anonymous' => false,
+					'cocov1-1' => false,
+					'cocov2-1' => false,
+					'personalized' => false,
+					'pseudonymous' => false,
+					'rands' => false);
 
 				$entityAttributesHandler->bindValue(':Type', 'entity-category-support');
 				$entityAttributesHandler->execute();
@@ -59,18 +70,41 @@ Class MetadataDisplay {
 						case 'cocov1-1' :
 							$tag = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1';
 							break;
+						case 'anonymous':
+							$tag = 'https://refeds.org/category/anonymous';
+							break;
+						case 'cocov2-1':
+							$tag = 'https://refeds.org/category/code-of-conduct/v2';
+							break;
+						case 'personalized':
+							$tag = 'https://refeds.org/category/personalized';
+							break;
+						case 'pseudonymous':
+							$tag = 'https://refeds.org/category/pseudonymous';
+							break;
+						default:
+							printf('Unknown test : %s', $testResult['test']);
 					}
 					switch ($testResult['result']) {
 						case 'CoCo OK, Entity Category Support OK' :
 						case 'R&S attributes OK, Entity Category Support OK' :
 						case 'CoCo OK, Entity Category Support missing' :
 						case 'R&S attributes OK, Entity Category Support missing' :
+						case 'Anonymous attributes OK, Entity Category Support OK' :
+						case 'Personalized attributes OK, Entity Category Support OK' :
+						case 'Pseudonymous attributes OK, Entity Category Support OK' :
+						case 'Anonymous attributes OK, Entity Category Support missing' :
+						case 'Personalized attributes OK, Entity Category Support missing' :
+						case 'Pseudonymous attributes OK, Entity Category Support missing' :
 							$warnings .= ($ECSTagged[$tag]) ? '' : sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']);
 							break;
 						case 'Support for CoCo missing, Entity Category Support missing' :
 						case 'R&S attribute missing, Entity Category Support missing' :
 						case 'CoCo is not supported, BUT Entity Category Support is claimed' :
 						case 'R&S attributes missing, BUT Entity Category Support claimed' :
+						case 'Anonymous attribute missing, Entity Category Support missing' :
+						case 'Personalized attribute missing, Entity Category Support missing' :
+						case 'Pseudonymous attribute missing, Entity Category Support missing' :
 							$errors .= ($ECSTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']) : '';
 							break;
 						default:
