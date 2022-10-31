@@ -901,8 +901,8 @@ Class MetadataDisplay {
 		printf ('%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s" target="_blank">Show XML</a></h4>%s    <h4><i class="fas fa-chevron-circle-right"></i> <a href=".?rawXML=%s&download" target="_blank">Download XML</a></h4>%s', "\n", $Entity_id, "\n", $Entity_id, "\n");
 	}
 
-	public function showRawXML($Entity_id) {
-		$entityHandler = $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
+	public function showRawXML($Entity_id, $URN = false) {
+		$entityHandler = $URN ? $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND status = 1;') : $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {

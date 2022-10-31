@@ -18,8 +18,12 @@ $display = new MetadataDisplay($baseDir);
 
 if (isset($_GET['showEntity'])) {
 	showEntity($_GET['showEntity']);
+}elseif (isset($_GET['showEntityID'])) {
+	showEntity($_GET['showEntityID'],true);
 } elseif (isset($_GET['rawXML'])) {
 	$display->showRawXML($_GET['rawXML']);
+} elseif (isset($_GET['rawXMLEntityID'])) {
+	$display->showRawXML($_GET['rawXMLEntityID'], true);
 } elseif (isset($_GET['show'])) {
 	switch($_GET['show']) {
 		case 'Pending' :
@@ -101,16 +105,17 @@ function showMenu($menuActive, $query = '') {
 ####
 # Shows Entity information
 ####
-function showEntity($Entity_id)  {
+function showEntity($Entity_id, $URN = false)  {
 	global $db, $html, $display;
-	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE id = :Id;');
+	$entityHandler = $URN ? $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE entityID = :Id AND status = 1;') : $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE id = :Id;');
 	$publishArray = array();
 	$publishArrayOld = array();
 
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-		$html->setDestination('?showEntity='.$Entity_id);
+		$Entities_id = $entity['id'];
+		$html->setDestination('?showEntity='.$Entities_id);
 		if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
 		if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
 		if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
@@ -163,7 +168,7 @@ function showEntity($Entity_id)  {
       <div class="col">
         <h3>entityID = <?=$entity['entityID']?></h3>
       </div>
-    </div><?php $display->showStatusbar($Entity_id); ?>
+    </div><?php $display->showStatusbar($Entities_id); ?>
 
     <div class="row">
       <div class="col">
@@ -181,12 +186,12 @@ function showEntity($Entity_id)  {
 
       </div>
     </div><?php
-		$display->showEntityAttributes($Entity_id, $oldEntity_id);
-		if ($entity['isIdP'] ) $display->showIdP($Entity_id, $oldEntity_id);
-		if ($entity['isSP'] ) $display->showSp($Entity_id, $oldEntity_id);
-		$display->showOrganization($Entity_id, $oldEntity_id);
-		$display->showContacts($Entity_id, $oldEntity_id);
-		$display->showXML($Entity_id);
+		$display->showEntityAttributes($Entities_id, $oldEntity_id);
+		if ($entity['isIdP'] ) $display->showIdP($Entities_id, $oldEntity_id);
+		if ($entity['isSP'] ) $display->showSp($Entities_id, $oldEntity_id);
+		$display->showOrganization($Entities_id, $oldEntity_id);
+		$display->showContacts($Entities_id, $oldEntity_id);
+		$display->showXML($Entities_id);
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');
 		print "Can't find Entity";
