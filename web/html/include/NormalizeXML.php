@@ -57,7 +57,7 @@ Class NormalizeXML {
 						$newChild = $doc->createElement($name);
 						$new->appendChild($newChild);
 						if ($child->nodeValue) {
-							$newText = $doc->createTextNode($child->nodeValue);
+							$newText = $doc->createTextNode(trim($child->nodeValue));
 							$newChild->appendChild($newText);
 						}
 						if ($child->hasAttributes() )  {

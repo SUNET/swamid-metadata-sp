@@ -1487,7 +1487,7 @@ Class Metadata {
 
 		foreach ($elementArray as $element => $value) {
 			if (! $value) {
-				$this->error .= sprintf("SWAMID Tech 6.1.12: Missing mdui:%s in SPSSODecriptor.\n", $element);
+				$this->error .= sprintf("SWAMID Tech 6.1.12: Missing mdui:%s in SPSSODescriptor.\n", $element);
 			}
 		}
 	}

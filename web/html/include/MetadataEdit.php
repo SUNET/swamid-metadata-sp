@@ -122,7 +122,7 @@ Class MetadataEdit {
 	private function editEntityAttributes() {
 		$entityAttributesHandler = $this->metaDb->prepare('SELECT type, attribute FROM EntityAttributes WHERE entity_id = :Id ORDER BY type, attribute;');
 
-		if (isset($_GET['action']) && isset($_GET['attribute']) && $_GET['attribute'] != '' ) {
+		if (isset($_GET['action']) && isset($_GET['attribute']) && trim($_GET['attribute']) != '' ) {
 			switch ($_GET['type']) {
 				case 'assurance-certification' :
 					$attributeType = 'urn:oasis:names:tc:SAML:attribute:assurance-certification';
@@ -216,7 +216,7 @@ Class MetadataEdit {
 					$child = $Attribute->firstChild;
 					$AttributeValue = false;
 					while ($child && ! $AttributeValue) {
-						if ($child->nodeValue == $_GET['attribute']) {
+						if ($child->nodeValue == trim($_GET['attribute'])) {
 							$AttributeValue = $child;
 						} else
 							$child = $child->nextSibling;
@@ -224,13 +224,13 @@ Class MetadataEdit {
 					if (! $AttributeValue) {
 						# Add if missing
 						$AttributeValue = $this->newXml->createElement('samla:AttributeValue');
-						$AttributeValue->nodeValue = $_GET['attribute'];
+						$AttributeValue->nodeValue = trim($_GET['attribute']);
 						$Attribute->appendChild($AttributeValue);
 
 						$entityAttributesAddHandler = $this->metaDb->prepare('INSERT INTO EntityAttributes (entity_id, type, attribute) VALUES (:Id, :Type, :Attribute) ;');
 						$entityAttributesAddHandler->bindParam(':Id', $this->dbIdNr);
 						$entityAttributesAddHandler->bindParam(':Type', $_GET['type']);
-						$entityAttributesAddHandler->bindParam(':Attribute', $_GET['attribute']);
+						$entityAttributesAddHandler->bindParam(':Attribute', trim($_GET['attribute']));
 						$entityAttributesAddHandler->execute();
 						$this->saveXML();
 					}
@@ -430,7 +430,7 @@ Class MetadataEdit {
 	private function editIdPErrorURL() {
 		if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
-			$errorURLValue = urldecode($_GET['errorURL']);
+			$errorURLValue = trim(urldecode($_GET['errorURL']));
 
 			# Find md:IDPSSODescriptor in XML
 			$child = $EntityDescriptor->firstChild;
@@ -517,10 +517,10 @@ Class MetadataEdit {
 		print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
 	}
 	private function editIdPScopes() {
-		if (isset($_GET['action']) && isset($_GET['value']) && $_GET['value'] != '') {
+		if (isset($_GET['action']) && isset($_GET['value']) && trim($_GET['value']) != '') {
 			$changed = false;
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
-			$scopeValue = $_GET['value'];
+			$scopeValue = trim($_GET['value']);
 
 			# Find md:IDPSSODescriptor in XML
 			$child = $EntityDescriptor->firstChild;
@@ -692,21 +692,21 @@ Class MetadataEdit {
 		$edit = $type == 'IDPSSO' ? 'IdPMDUI' : 'SPMDUI';
 		if (isset($_GET['action'])) {
 			$error = '';
-			if (isset($_GET['element']) && $_GET['element'] != '') {
-				$elementValue = $_GET['element'];
+			if (isset($_GET['element']) && trim($_GET['element']) != '') {
+				$elementValue = trim($_GET['element']);
 				$elementmd = 'mdui:'.$elementValue;
 			} else {
 				$error .= '<br>No Element selected';
 				$elementValue = '';
 			}
-			if (isset($_GET['lang']) && $_GET['lang'] != '') {
-				$langvalue = strtolower($_GET['lang']);
+			if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
+				$langvalue = strtolower(trim($_GET['lang']));
 			} else {
 				$error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
 				$langvalue = '';
 			}
-			if (isset($_GET['value']) && $_GET['value'] != '') {
-				$value = $_GET['value'];
+			if (isset($_GET['value']) && trim($_GET['value']) != '') {
+				$value = trim($_GET['value']);
 			} else {
 				$error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
 				$value = '';
@@ -1086,15 +1086,15 @@ Class MetadataEdit {
 		printf ('%s    <div class="row">%s      <div class="col">', "\n", "\n");
 		if (isset($_GET['action'])) {
 			$error = '';
-			if (isset($_GET['element']) && $_GET['element'] != '') {
-				$elementValue = $_GET['element'];
+			if (isset($_GET['element']) && trim($_GET['element']) != '') {
+				$elementValue = trim($_GET['element']);
 				$elementmd = 'mdui:'.$elementValue;
 			} else {
 				$error .= '<br>No Element selected';
 				$elementValue = '';
 			}
-			if (isset($_GET['value']) && $_GET['value'] != '') {
-				$value = $_GET['value'];
+			if (isset($_GET['value']) && trim($_GET['value']) != '') {
+				$value = trim($_GET['value']);
 			} else {
 				$error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
 				$value = '';
@@ -1333,9 +1333,9 @@ Class MetadataEdit {
 		$edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
 		$added = false;
 		if (isset($_POST['certificate']) && isset($_POST['use'])) {
-			$certificate = $_POST['certificate'];
+			$certificate = str_replace(array("\r") ,array(''), $_POST['certificate']);
 			$use = $_POST['use'];
-			$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($certificate)),64) . "-----END CERTIFICATE-----\n";
+			$cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n",'&#13;') ,array('','',''),$certificate),64) . "-----END CERTIFICATE-----\n";
 			if ($cert_info = openssl_x509_parse( $cert)) {
 				$key_info = openssl_pkey_get_details(openssl_pkey_get_public($cert));
 				switch ($key_info['type']) {
@@ -1960,8 +1960,8 @@ Class MetadataEdit {
 					$error .= '<br>No Index';
 					$indexValue = -1;
 				}
-				if (isset($_GET['element']) && $_GET['element'] != '') {
-					$elementValue = $_GET['element'];
+				if (isset($_GET['element']) && trim($_GET['element']) != '') {
+					$elementValue = trim($_GET['element']);
 					$elementmd = 'md:'.$elementValue;
 				} else {
 					$error .= '<br>No Element selected';
@@ -1972,31 +1972,31 @@ Class MetadataEdit {
 					$error .= '<br>Unknown element selected';
 				}
 				if ($placement < 3 ) {
-					if (isset($_GET['lang']) && $_GET['lang'] != '') {
-						$langvalue = strtolower($_GET['lang']);
+					if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
+						$langvalue = strtolower(trim($_GET['lang']));
 					} else {
 						$error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
 					}
-					if (isset($_GET['value']) && $_GET['value'] != '') {
-						$value = $_GET['value'];
+					if (isset($_GET['value']) && trim($_GET['value']) != '') {
+						$value = trim($_GET['value']);
 					} else {
 						$error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
 					}
 				} else {
-					if (isset($_GET['name']) && $_GET['name'] != '') {
-						$name = $_GET['name'];
+					if (isset($_GET['name']) && trim($_GET['name']) != '') {
+						$name = trim($_GET['name']);
 					} else {
 						$error .= '<br>Name is empty';
 					}
-					if (isset($_GET['friendlyName']) && $_GET['friendlyName'] != '') {
-						$friendlyName = $_GET['friendlyName'];
+					if (isset($_GET['friendlyName']) && trim($_GET['friendlyName']) != '') {
+						$friendlyName = trim($_GET['friendlyName']);
 					} else {
 						if (isset($this->FriendlyNames[$name])) {
 							$friendlyName = $this->FriendlyNames[$name]['desc'];
 						}
 					}
-					if (isset($_GET['NameFormat']) && $_GET['NameFormat'] != '') {
-						$nameFormat = $_GET['NameFormat'];
+					if (isset($_GET['NameFormat']) && trim($_GET['NameFormat']) != '') {
+						$nameFormat = trim($_GET['NameFormat']);
 					} else {
 						$error .= $_GET['action'] == "Add" ? $error .= '<br>NameFormat is empty' : '';
 					}
@@ -2498,8 +2498,8 @@ Class MetadataEdit {
 
 		if (isset($_GET['action'])) {
 			$error = '';
-			if (isset($_GET['element']) && $_GET['element'] != '') {
-				$element = $_GET['element'];
+			if (isset($_GET['element']) && trim($_GET['element']) != '') {
+				$element = trim($_GET['element']);
 				$elementmd = 'md:'.$element;
 				if (isset($this->orderOrganization[$elementmd])) {
 					$placement = $this->orderOrganization[$elementmd];
@@ -2510,14 +2510,14 @@ Class MetadataEdit {
 				$error .= '<br>No Element selected';
 				$elementValue = '';
 			}
-			if (isset($_GET['lang']) && $_GET['lang'] != '') {
-				$lang = strtolower($_GET['lang']);
+			if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
+				$lang = strtolower(trim($_GET['lang']));
 			} else {
 				$error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
 				$lang = '';
 			}
 			if (isset($_GET['value']) && $_GET['value'] != '') {
-				$value = $_GET['value'];
+				$value = trim($_GET['value']);
 			} else {
 				$error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
 				$value = '';
@@ -2711,7 +2711,7 @@ Class MetadataEdit {
 	private function editContactPersons(){
 		$contactPersonHandler = $this->metaDb->prepare('SELECT * FROM ContactPerson WHERE entity_id = :Id ORDER BY contactType;');
 
-		if (isset($_GET['action']) && isset($_GET['type']) && isset($_GET['part']) && isset($_GET['value']) && $_GET['value'] != '' ) {
+		if (isset($_GET['action']) && isset($_GET['type']) && isset($_GET['part']) && isset($_GET['value']) && trim($_GET['value']) != '' ) {
 			switch ($_GET['type']) {
 				case 'administrative' :
 				case 'technical' :
@@ -2737,7 +2737,7 @@ Class MetadataEdit {
 				exit();
 			}
 
-			$value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:') ? 'mailto:'.$_GET['value'] : $_GET['value'];
+			$value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:') ? 'mailto:'.trim($_GET['value']) : trim($_GET['value']);
 
 			$EntityDescriptor = $this->getEntityDescriptor($this->newXml);
 
@@ -2745,36 +2745,37 @@ Class MetadataEdit {
 			$child = $EntityDescriptor->firstChild;
 			$ContactPerson = false;
 			$moreContactPersons = false;
-			while ($child && ! $ContactPerson) {
-				switch ($child->nodeName) {
-					case 'md:ContactPerson' :
-						if ($child->getAttribute('contactType') == $type) {
-							if ($subType) {
-								if ($child->getAttribute('remd:contactType') == $subType)
-										$ContactPerson = $child;
-									else
-										$moreContactPersons = true;
-							} else {
-								$ContactPerson = $child;
-							}
-						} else
-							$moreContactPersons = true;
-						break;
-					case 'md:AdditionalMetadataLocation' :
-						$ContactPerson = $this->newXml->createElement('md:ContactPerson');
-						$ContactPerson->setAttribute('contactType', $type);
-						if ($subType) {
-							$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:remd', 'http://refeds.org/metadata');
-							$ContactPerson->setAttribute('remd:contactType', $subType);
-						}
-						$EntityDescriptor->insertBefore($ContactPerson, $child);
-						break;
-				}
-				$child = $child->nextSibling;
-			}
 
 			switch ($_GET['action']) {
 				case 'Add' :
+					$value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:') ? 'mailto:'.trim($_GET['value']) : trim($_GET['value']);
+					while ($child && ! $ContactPerson) {
+						switch ($child->nodeName) {
+							case 'md:ContactPerson' :
+								if ($child->getAttribute('contactType') == $type) {
+									if ($subType) {
+										if ($child->getAttribute('remd:contactType') == $subType)
+												$ContactPerson = $child;
+											else
+												$moreContactPersons = true;
+									} else {
+										$ContactPerson = $child;
+									}
+								} else
+									$moreContactPersons = true;
+								break;
+							case 'md:AdditionalMetadataLocation' :
+								$ContactPerson = $this->newXml->createElement('md:ContactPerson');
+								$ContactPerson->setAttribute('contactType', $type);
+								if ($subType) {
+									$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:remd', 'http://refeds.org/metadata');
+									$ContactPerson->setAttribute('remd:contactType', $subType);
+								}
+								$EntityDescriptor->insertBefore($ContactPerson, $child);
+								break;
+						}
+						$child = $child->nextSibling;
+					}
 					if (! $ContactPerson) {
 						# Add if missing
 						$ContactPerson = $this->newXml->createElement('md:ContactPerson');
@@ -2826,36 +2827,58 @@ Class MetadataEdit {
 					}
 					break;
 				case 'Delete' :
-					if ($ContactPerson) {
-						$child = $ContactPerson->firstChild;
-						$ContactPersonElement = false;
-						$moreContactPersonElements = false;
-						while ($child && ! $ContactPersonElement) {
-							if ($child->nodeName == $partmd) {
-								$ContactPersonElement = $child;
-							}
-							$child = $child->nextSibling;
-							$moreContactPersonElements = ($moreContactPersonElements) ? true : $child;
+					$value = trim($_GET['value']);
+					while ($child && ! $ContactPerson) {
+						switch ($child->nodeName) {
+							case 'md:ContactPerson' :
+								if ($child->getAttribute('contactType') == $type) {
+									if ($subType) {
+										if ($child->getAttribute('remd:contactType') == $subType)
+												$ContactPerson = $child;
+											else
+												$moreContactPersons = true;
+									} else {
+										$ContactPerson = $child;
+									}
+								} else
+									$moreContactPersons = true;
+								break;
 						}
+						if ($ContactPerson) {
+							$childContactPerson = $ContactPerson->firstChild;
+							$ContactPersonElement = false;
+							$moreContactPersonElements = false;
+							while ($childContactPerson && ! $ContactPersonElement) {
+								if ($childContactPerson->nodeName == $partmd && $childContactPerson->nodeValue == $value ) {
+									$ContactPersonElement = $childContactPerson;
+								}
+								$childContactPerson = $childContactPerson->nextSibling;
+								$moreContactPersonElements = ($moreContactPersonElements) ? true : $childContactPerson;
+							}
 
-						if ($ContactPersonElement) {
-							$ContactPerson->removeChild($ContactPersonElement);
-							if ($moreContactPersonElements) {
-								$sql="UPDATE ContactPerson SET $part = '' WHERE entity_id = :Id AND contactType = :ContactType ;";
-								$contactPersonUpdateHandler = $this->metaDb->prepare($sql);
-								$contactPersonUpdateHandler->bindParam(':Id', $this->dbIdNr);
-								$contactPersonUpdateHandler->bindParam(':ContactType', $type);
-								$contactPersonUpdateHandler->execute();
+							if ($ContactPersonElement) {
+								$ContactPerson->removeChild($ContactPersonElement);
+								if ($moreContactPersonElements) {
+									$sql="UPDATE ContactPerson SET $part = '' WHERE entity_id = :Id AND contactType = :ContactType AND $part = :Value;";
+									$contactPersonUpdateHandler = $this->metaDb->prepare($sql);
+									$contactPersonUpdateHandler->bindParam(':Id', $this->dbIdNr);
+									$contactPersonUpdateHandler->bindParam(':ContactType', $type);
+									$contactPersonUpdateHandler->bindParam(':Value', $value);
+									$contactPersonUpdateHandler->execute();
+								} else {
+									$EntityDescriptor->removeChild($ContactPerson);
+									$contactPersonDeleteHandler = $this->metaDb->prepare('DELETE FROM ContactPerson WHERE entity_id = :Id AND contactType = :ContactType ;');
+									$contactPersonDeleteHandler->bindParam(':Id', $this->dbIdNr);
+									$contactPersonDeleteHandler->bindParam(':ContactType', $type);
+									$contactPersonDeleteHandler->execute();
+								}
+
+								$this->saveXML();
 							} else {
-								$EntityDescriptor->removeChild($ContactPerson);
-								$contactPersonDeleteHandler = $this->metaDb->prepare('DELETE FROM ContactPerson WHERE entity_id = :Id AND contactType = :ContactType ;');
-								$contactPersonDeleteHandler->bindParam(':Id', $this->dbIdNr);
-								$contactPersonDeleteHandler->bindParam(':ContactType', $type);
-								$contactPersonDeleteHandler->execute();
+								$ContactPerson = false;
 							}
-
-							$this->saveXML();
 						}
+						$child = $child->nextSibling;
 					}
 					$type = '';
 					$part = '';
@@ -3301,6 +3324,8 @@ Class MetadataEdit {
 		$scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
 		$scopesHandler->bindParam(':Id', $this->dbOldIdNr);
 		$scopesHandler->execute();
+		$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
+		$scopesInsertHandler->bindParam(':Id', $this->dbIdNr);
 		while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
 			$oldScopes[$scope['scope']] = true;
 		}
@@ -3317,7 +3342,6 @@ Class MetadataEdit {
 			}
 
 			if ($IDPSSODescriptor) {
-				$changed = false;
 				$child = $IDPSSODescriptor->firstChild;
 				$Extensions = false;
 				while ($child && ! $Extensions) {
@@ -3357,22 +3381,18 @@ Class MetadataEdit {
 				}
 				foreach ($oldScopes as $scopevalue => $value) {
 					$Scope = $this->newXml->createElement('shibmd:Scope', $scopevalue);
-					$Scope->setAttribute('regexp', 'false');
+					$Scope->setAttribute('regexp', $value);
 					if ($beforeChild)
 						$Extensions->insertBefore($Scope, $beforeChild);
 					else
 						$Extensions->appendChild($Scope);
-					$changed = true;
+					$scopesInsertHandler->bindParam(':Scope', $scopevalue);
+					$scopesInsertHandler->bindParam(':Regexp', $value);
+					$scopesInsertHandler->execute();
 				}
 
 				if (! $shibmdFound) {
 					$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
-				}
-				if ($changed) {
-					$scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, 0);');
-					$scopesInsertHandler->bindParam(':Id', $this->dbIdNr);
-					$scopesInsertHandler->bindParam(':Scope', $_GET['value']);
-					$scopesInsertHandler->execute();
 				}
 			}
 		}
