@@ -153,7 +153,7 @@ function showEntity($Entity_id, $URN = false)  {
 				case 6:
 					# Copy of published used to compare Pending
 					$headerCol1 = 'Already published metadata (might not be the latest!)';
-					$oldEntity_id = 0;
+					//$oldEntity_id = 0;
 					break;
 				default:
 					$headerCol1 = 'Waiting for publishing';
