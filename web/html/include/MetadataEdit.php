@@ -230,7 +230,7 @@ Class MetadataEdit {
 						$entityAttributesAddHandler = $this->metaDb->prepare('INSERT INTO EntityAttributes (entity_id, type, attribute) VALUES (:Id, :Type, :Attribute) ;');
 						$entityAttributesAddHandler->bindParam(':Id', $this->dbIdNr);
 						$entityAttributesAddHandler->bindParam(':Type', $_GET['type']);
-						$entityAttributesAddHandler->bindParam(':Attribute', trim($_GET['attribute']));
+						$entityAttributesAddHandler->bindValue(':Attribute', trim($_GET['attribute']));
 						$entityAttributesAddHandler->execute();
 						$this->saveXML();
 					}
