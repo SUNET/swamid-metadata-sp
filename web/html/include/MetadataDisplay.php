@@ -82,6 +82,9 @@ Class MetadataDisplay {
 						case 'pseudonymous':
 							$tag = 'https://refeds.org/category/pseudonymous';
 							break;
+						case 'esi':
+							$tag = 'https://myacademicid.org/entity-categories/esi';
+							break;
 						default:
 							printf('Unknown test : %s', $testResult['test']);
 					}
@@ -96,6 +99,7 @@ Class MetadataDisplay {
 						case 'Anonymous attributes OK, Entity Category Support missing' :
 						case 'Personalized attributes OK, Entity Category Support missing' :
 						case 'Pseudonymous attributes OK, Entity Category Support missing' :
+						case 'schacPersonalUniqueCode OK' :
 							$warnings .= ($ECSTagged[$tag]) ? '' : sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']);
 							break;
 						case 'Support for CoCo missing, Entity Category Support missing' :
@@ -105,6 +109,7 @@ Class MetadataDisplay {
 						case 'Anonymous attribute missing, Entity Category Support missing' :
 						case 'Personalized attribute missing, Entity Category Support missing' :
 						case 'Pseudonymous attribute missing, Entity Category Support missing' :
+						case 'Missing schacPersonalUniqueCode' :
 							$errors .= ($ECSTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']) : '';
 							break;
 						default:
@@ -1501,6 +1506,120 @@ Class MetadataDisplay {
         }
       });
     </script><?php print "\n";
+	}
+
+	public function showEcsStatistics() {
+		$ECSTagged = array(
+			'http://refeds.org/category/research-and-scholarship' => 'rands',
+			'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => 'cocov1-1',
+			'https://myacademicid.org/entity-categories/esi' => 'esi',
+			'https://refeds.org/category/anonymous' => 'anonymous',
+			'https://refeds.org/category/code-of-conduct/v2' => 'cocov2-1',
+			'https://refeds.org/category/personalized' => 'personalized',
+			'https://refeds.org/category/pseudonymous' => 'pseudonymous');
+		$ECSTested = array(
+			'anonymous' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
+			'pseudonymous' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
+			'personalized' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
+			'rands' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
+			'cocov1-1' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
+			'cocov2-1' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
+			'esi' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0));
+		$ECS = array(
+			'anonymous' => 'REFEDS Anonymous Access',
+			'pseudonymous' => 'REFEDS Pseudonymous Access',
+			'personalized' => 'REFEDS Personalized Access',
+			'rands' => 'REFEDS R&S',
+			'cocov1-1' => 'GÉANT CoCo (v1)',
+			'cocov2-1' => 'REFEDS CoCo (v2)',
+			'esi' => 'European Student Identifier');
+
+		$IdPHandler = $this->metaDb->prepare("SELECT COUNT(`id`) AS `count` FROM Entities WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1");
+		$IdPHandler->execute();
+		if ($IdPs = $IdPHandler->fetch(PDO::FETCH_ASSOC)) {
+			$NrOfIdPs = $IdPs['count'];
+		} else {
+			$NrOfIdPs = 0;
+		}
+		$entityAttributesHandler = $this->metaDb->prepare("SELECT COUNT(`attribute`) AS `count`, `attribute` FROM EntityAttributes, Entities WHERE type = 'entity-category-support' AND `entity_id` = `id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1 GROUP BY `attribute`");
+		$entityAttributesHandler->execute();
+		while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+			$ECSTested[$ECSTagged[$attribute['attribute']]]['MarkedWithECS'] = $attribute['count'];
+		}
+
+		$testResultsHandeler = $this->metaDb->prepare("SELECT COUNT(entityID) AS `count`, `test`, `result` FROM TestResults WHERE TestResults.`entityID` IN (SELECT `entityID` FROM Entities WHERE `isIdP` = 1 AND `publishIn` > 1) GROUP BY `test`, `result`;");
+		$testResultsHandeler->execute();
+		while ($testResult = $testResultsHandeler->fetch(PDO::FETCH_ASSOC)) {
+			switch ($testResult['result']) {
+				case 'CoCo OK, Entity Category Support OK' :
+				case 'R&S attributes OK, Entity Category Support OK' :
+				case 'CoCo OK, Entity Category Support missing' :
+				case 'R&S attributes OK, Entity Category Support missing' :
+				case 'Anonymous attributes OK, Entity Category Support OK' :
+				case 'Personalized attributes OK, Entity Category Support OK' :
+				case 'Pseudonymous attributes OK, Entity Category Support OK' :
+				case 'Anonymous attributes OK, Entity Category Support missing' :
+				case 'Personalized attributes OK, Entity Category Support missing' :
+				case 'Pseudonymous attributes OK, Entity Category Support missing' :
+				case 'schacPersonalUniqueCode OK' :
+					$ECSTested[$testResult['test']]['OK'] += $testResult['count'];
+					break;
+				case 'Support for CoCo missing, Entity Category Support missing' :
+				case 'R&S attribute missing, Entity Category Support missing' :
+				case 'CoCo is not supported, BUT Entity Category Support is claimed' :
+				case 'R&S attributes missing, BUT Entity Category Support claimed' :
+				case 'Anonymous attribute missing, Entity Category Support missing' :
+				case 'Personalized attribute missing, Entity Category Support missing' :
+				case 'Pseudonymous attribute missing, Entity Category Support missing' :
+				case 'Missing schacPersonalUniqueCode' :
+					$ECSTested[$testResult['test']]['Fail'] += $testResult['count'];
+					break;
+				default:
+					printf('Unknown result : %s', $testResult['result']);
+			}
+		}
+
+		$count = 1;
+		foreach ($ECS as $ec => $descr) {
+			if ($count == 1)
+				printf ('    <div class="row">%s      <div class="col">%s', "\n", "\n");
+			else
+				printf ('      <div class="col">%s', "\n");
+			printf ('        <h3>%s</h3>%s        <canvas id="%s"></canvas>%s', $descr, "\n", str_replace('-','', $ec), "\n");
+			if ($count == 4) {
+				printf ('      </div>%s    </div>%s', "\n", "\n");
+				$count = 1;
+			} else {
+				printf ('      </div>%s', "\n");
+				$count ++;
+			}
+		}
+		if ($count > 1) {
+			while ($count < 5) {
+				printf ('      <div class="col"></div>%s', "\n");
+				$count ++;
+			}
+			printf ('    </div>%s', "\n");
+		}
+		printf ('    <br><br>%s    <h3>Statistics in numbers</h3>%s    <p>Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.<br>Out of %d IdPs in swamid:</p>%s    <table class="table table-striped table-bordered">%s      <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s', "\n", "\n", $NrOfIdPs, "\n", "\n", "\n");
+		foreach ($ECS as $ec => $descr) {
+			$MarkedECS = $ECSTested[$ec]['MarkedWithECS'];
+			$OK = $ECSTested[$ec]['OK'] > $ECSTested[$ec]['MarkedWithECS'] ? $ECSTested[$ec]['OK'] - $ECSTested[$ec]['MarkedWithECS'] : 0;
+			$Fail = $ECSTested[$ec]['Fail'] > $NrOfIdPs ? 0 : $ECSTested[$ec]['Fail'];
+			$NotTested = $NrOfIdPs - $MarkedECS - $OK - $Fail;
+			printf('      <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', $descr, $MarkedECS, ($MarkedECS/$NrOfIdPs*100), $OK, ($OK/$NrOfIdPs*100), $Fail, ($Fail/$NrOfIdPs*100), $NotTested, ($NotTested/$NrOfIdPs*100), "\n");	
+		}
+		printf('    </table>%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', "\n", "\n", "\n");
+		foreach ($ECS as $ec => $descr) {
+			$MarkedECS = $ECSTested[$ec]['MarkedWithECS'];
+			$OK = $ECSTested[$ec]['OK'] > $ECSTested[$ec]['MarkedWithECS'] ? $ECSTested[$ec]['OK'] - $ECSTested[$ec]['MarkedWithECS'] : 0;
+			$Fail = $ECSTested[$ec]['Fail'] > $NrOfIdPs ? 0 : $ECSTested[$ec]['Fail'];
+			$NotTested = $NrOfIdPs - $MarkedECS - $OK - $Fail;
+			$ecdiv = str_replace('-','', $ec);
+			printf ("      const ctx%s = document.getElementById('%s').getContext('2d');%s", $ecdiv, $ecdiv, "\n");
+			printf ("      const my%s = new Chart(ctx%s, {%s        width: 200,%s        type: 'pie',%s        data: {%s          labels: ['OK + ECS', 'OK no ECS', 'Fail', 'Not tested'],%s          datasets: [{%s            label: 'Errors',%s            data: [%d, %d, %d, %d],%s            backgroundColor: [%s              'rgb(99, 255, 132)',%s              'rgb(255, 205, 86)',%s              'rgb(255, 99, 132)',%s              'rgb(255, 255, 255)',%s            ],%s            borderColor : 'rgb(0,0,0)',%s            hoverOffset: 4%s          }]%s        },%s      });%s", $ecdiv, $ecdiv, "\n", "\n", "\n", "\n", "\n", "\n", "\n", $MarkedECS, $OK, $Fail, $NotTested, "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		}
+	 print "    </script>\n";
 	}
 
 	public function showHelp() {
