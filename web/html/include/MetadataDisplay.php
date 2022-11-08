@@ -39,7 +39,8 @@ Class MetadataDisplay {
 			$warnings = '';
 
 			if ($entity['isIdP']) {
-				$ECSTagged = array('http://refeds.org/category/research-and-scholarship' => false,
+				$ECSTagged = array('https://myacademicid.org/entity-categories/esi' => false,
+					'http://refeds.org/category/research-and-scholarship' => false,
 					'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => false,
 					'https://refeds.org/category/anonymous' => false,
 					'https://refeds.org/category/code-of-conduct/v2' => false,
@@ -47,6 +48,7 @@ Class MetadataDisplay {
 					'https://refeds.org/category/pseudonymous' => false);
 				$ECSTested = array(
 					'anonymous' => false,
+					'esi' => false,
 					'cocov1-1' => false,
 					'cocov2-1' => false,
 					'personalized' => false,
@@ -100,7 +102,7 @@ Class MetadataDisplay {
 						case 'Personalized attributes OK, Entity Category Support missing' :
 						case 'Pseudonymous attributes OK, Entity Category Support missing' :
 						case 'schacPersonalUniqueCode OK' :
-							$warnings .= ($ECSTagged[$tag]) ? '' : sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']);
+							$warnings .= ($ECSTagged[$tag]) ? '' : sprintf("SWAMID Release-check: %s is supported according to release-check but not marked in Metadata (EntityAttributes/entity-category-support).\n", $tag);
 							break;
 						case 'Support for CoCo missing, Entity Category Support missing' :
 						case 'R&S attribute missing, Entity Category Support missing' :
