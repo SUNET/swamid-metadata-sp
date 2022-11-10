@@ -67,7 +67,7 @@ function showEntityList($show) {
 			$html->showHeaders('Metadata SWAMID - SP:s');
 			$entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
 			showMenu('SPs', $query);
-			$extraTH = sprintf('<th>CoCo</th><th>R&S</th><th>SIRTFI</a></th>');
+			$extraTH = sprintf('<th>Anon</th><th>Pseuso</th><th>Pers</th><th>CoCo v1</th><th>CoCo v2</th><th>R&S</th><th>ESI</th><th>SIRTFI</th>');
 			break;
 		case 'All' :
 			$html->showHeaders('Metadata SWAMID - All');
@@ -80,7 +80,7 @@ function showEntityList($show) {
 			print 'Show what ??????';
 			return;
 	}
-	printf ('    <table id="entities-table" class="table table-striped table-bordered">%s      <thead><tr><th><form>entityID <input type="text" name="query" value="%s"><input type="hidden" name="show" value="%s"><input type="submit" value="Filter"></form></th><th>Published in</th><th>DisplayName</th><th>OrganizationName</th>%s</tr></thead>%s'
+	printf ('    <div class="table-responsive"><table id="entities-table" class="table table-striped table-bordered">%s      <thead><tr><th><form>entityID <input type="text" name="query" value="%s"><input type="hidden" name="show" value="%s"><input type="submit" value="Filter"></form></th><th>Published in</th><th>DisplayName</th><th>OrganizationName</th>%s</tr></thead>%s'
 		, "\n", $query, $show, $extraTH, "\n");
 	$html->addTableSort('entities-table');
 	$entitys->bindValue(':Query', "%".$query."%");
@@ -209,11 +209,21 @@ function showList($entitys, $show) {
 	$countSWAMID = 0;
 	$counteduGAIN = 0;
 	$countTesting = 0;
-	$countECcoco = 0;
+	$countECanon = 0;
+	$countECpseuso = 0;
+	$countECpers = 0;
+	$countECcocov1 = 0;
+	$countECcocov2 = 0;
 	$countECrs = 0;
+	$countECesi = 0;
 	$countHideFromDisc = 0;
-	$countECScoco = 0;
+	$countECSanon = 0;
+	$countECSpseuso = 0;
+	$countECSpers = 0;
+	$countECScocov1 = 0;
+	$countECScocov2 = 0;
 	$countECSrs = 0;
+	$countECSesi = 0;
 	$countAL1 = 0;
 	$countAL2 = 0;
 	$countAL3 = 0;
@@ -224,8 +234,12 @@ function showList($entitys, $show) {
 		$isAL1 = '';
 		$isAL2 = '';
 		$isAL3 = '';
+		$isAnon = '';
+		$isPseuso = '';
+		$isPers = '';
 		$isSIRTFI = '';
-		$isCoco = '';
+		$isCocov1 = '';
+		$isCocov2 = '';
 		$isRS = '';
 		$hasHide = '';
 
@@ -243,6 +257,34 @@ function showList($entitys, $show) {
 			switch ($attribute['type']) {
 				case 'entity-category' :
 					switch ($attribute['attribute']) {
+						case 'https://refeds.org/category/anonymous' :
+							if ($prodFeed) {
+								$countECanon ++;
+								$isAnon = 'X';
+							} else
+								$isAnon = '(X)';
+							break;
+						case 'https://refeds.org/category/code-of-conduct/v2' :
+							if ($prodFeed) {
+								$countECcocov2 ++;
+								$isCocov2 = 'X';
+							} else
+								$isCocov2 = '(X)';
+							break;
+						case 'https://refeds.org/category/pseudonymous' :
+							if ($prodFeed) {
+								$countECpseuso ++;
+								$isPseuso = 'X';
+							} else
+								$isPseuso = '(X)';
+							break;
+						case 'https://refeds.org/category/personalized' :
+							if ($prodFeed) {
+								$countECpers ++;
+								$isPers = 'X';
+							} else
+								$isPers = '(X)';
+							break;
 						case 'http://refeds.org/category/research-and-scholarship' :
 							if ($prodFeed) {
 								$countECrs ++;
@@ -252,10 +294,17 @@ function showList($entitys, $show) {
 							break;
 						case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
 							if ($prodFeed) {
-								$countECcoco ++;
-								$isCoco = 'X';
+								$countECcocov1 ++;
+								$isCocov1 = 'X';
 							} else
-								$isCoco = '(X)';
+								$isCocov1 = '(X)';
+							break;
+						case 'https://myacademicid.org/entity-categories/esi' :
+							if ($prodFeed) {
+								$countECesi ++;
+								$isESI = 'X';
+							} else
+								$isESI = '(X)';
 							break;
 						case 'http://refeds.org/category/hide-from-discovery' :
 							if ($prodFeed) {
@@ -268,11 +317,26 @@ function showList($entitys, $show) {
 					break;
 				case 'entity-category-support' :
 					switch ($attribute['attribute']) {
+						case 'https://refeds.org/category/anonymous' :
+							if ($prodFeed) $countECSanon ++;
+							break;
+						case 'https://refeds.org/category/code-of-conduct/v2' :
+							if ($prodFeed) $countECScocov2 ++;
+							break;
+						case 'https://refeds.org/category/personalized' :
+							if ($prodFeed) $countECCpers ++;
+							break;
+						case 'https://refeds.org/category/pseudonymous' :
+							if ($prodFeed) $countECSpseuso ++;
+							break;
 						case 'http://refeds.org/category/research-and-scholarship' :
 							if ($prodFeed) $countECSrs ++;
 							break;
 						case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
-							if ($prodFeed) $countECScoco ++;
+							if ($prodFeed) $countECScocov1 ++;
+							break;
+						case 'https://myacademicid.org/entity-categories/esi' :
+							if ($prodFeed) $countECSesi ++;
 							break;
 					}
 					break;
@@ -329,14 +393,14 @@ function showList($entitys, $show) {
 			default :
 				$registerdIn = '';
 		}
-		printf ('<td><a href=".?showEntity=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td>', $row['id'], $row['entityID'], $registerdIn, $DisplayName, $row['OrganizationName']);
+		printf ('<td><a href=".?showEntity=%s"><span class="text-truncate">%s</span></a></td><td>%s</td><td>%s</td><td>%s</td>', $row['id'], $row['entityID'], $registerdIn, $DisplayName, $row['OrganizationName']);
 
 		switch ($show) {
 			case 'IdP' :
 				printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
 				break;
 			case 'SP' :
-				printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isCoco, $isRS, $isSIRTFI);
+				printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAnon, $isPseuso, $isPers, $isCocov1, $isCocov2, $isRS, $isESI, $isSIRTFI);
 				break;
 			case 'All' :
 				print $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>';
@@ -345,21 +409,39 @@ function showList($entitys, $show) {
 		}
 		print "</tr>\n";
 	} ?>
-    </table>
+    </table></div>
     <h4>Statistics</h4>
     <table class="table table-striped table-bordered">
       <tr><th rowspan="3">&nbsp;Registered in</th><th>SWAMID-Production</th><td><?=$countSWAMID?></td></tr>
       <tr><th>eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr>
-      <tr><th>SWAMID-Test only</th><td><?=$countTesting?></td></tr>
-      <tr><th rowspan="3">Entity Categories in production<br><i>Excluding testing only (X)</i></th><th>CoCo </th><td><?=$countECcoco?></td></tr>
+      <tr><th>SWAMID-Test only</th><td><?=$countTesting?></td></tr><?php
+	if ($show == 'All' || $show == 'SP') { ?>
+      <tr><th rowspan="8">Entity Categories in production<br><i>Excluding testing only (X)</i></th><th>Anonymous</th><td><?=$countECanon?></td></tr>
+      <tr><th>Pseudonymous</th><td><?=$countECpseuso?></td></tr>
+      <tr><th>Personalized</th><td><?=$countECpers?></td></tr>
+      <tr><th>CoCo v1</th><td><?=$countECcocov1?></td></tr>
+      <tr><th>CoCo v2</th><td><?=$countECcocov2?></td></tr>
       <tr><th>R&S</th><td><?=$countECrs?></td></tr>
-      <tr><th>DS-hide </th><td><?=$countHideFromDisc?></td></tr>
-      <tr><th rowspan="2">Support Categorys in production<br><i>Excluding testing only (X)</i></th><th>CoCo </th><td><?=$countECScoco?></td></tr>
+      <tr><th>ESI</th><td><?=$countECesi?></td></tr>
+      <tr><th>DS-hide </th><td><?=$countHideFromDisc?></td></tr><?php
+	} else {
+		printf('      <tr><th>Entity Categories in production<br><i>Excluding testing only (X)</i></th><th>DS-hide </th><td>%d</td></tr>', $countHideFromDisc);
+	}
+	if ($show == 'All' || $show == 'IdP') { ?>
+      <tr><th rowspan="7">Support Categorys in production<br><i>Excluding testing only (X)</i></th><th>Anonymous</th><td><?=$countECSanon?></td></tr>
+      <tr><th>Pseudonymous</th><td><?=$countECSpseuso?></td></tr>
+      <tr><th>Personalized</th><td><?=$countECSpers?></td></tr>
+      <tr><th>CoCo v1</th><td><?=$countECScocov1?></td></tr>
+      <tr><th>CoCo v2</th><td><?=$countECScocov2?></td></tr>
       <tr><th>R&S</th><td><?=$countECSrs?></td></tr>
+      <tr><th>ESI</th><td><?=$countECSesi?></td></tr>
       <tr><th rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>AL1</th><td><?=$countAL1?></td></tr>
       <tr><th>AL2 </th><td><?=$countAL2?></td></tr>
       <tr><th>AL3 </th><td><?=$countAL3?></td></tr>
-      <tr><th>SIRTFI </th><td><?=$countSIRTFI?></td></tr>
+      <tr><th>SIRTFI </th><td><?=$countSIRTFI?></td></tr><?php
+	} else {
+		printf('      <tr><th>Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>SIRTFI </th><td>%d</td></tr>', $countSIRTFI);
+	}?>
     </table>
 
 <?php
