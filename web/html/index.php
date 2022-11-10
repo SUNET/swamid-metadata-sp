@@ -324,7 +324,7 @@ function showList($entitys, $show) {
 							if ($prodFeed) $countECScocov2 ++;
 							break;
 						case 'https://refeds.org/category/personalized' :
-							if ($prodFeed) $countECCpers ++;
+							if ($prodFeed) $countECSpers ++;
 							break;
 						case 'https://refeds.org/category/pseudonymous' :
 							if ($prodFeed) $countECSpseuso ++;
