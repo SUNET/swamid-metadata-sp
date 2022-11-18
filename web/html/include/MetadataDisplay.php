@@ -1571,6 +1571,7 @@ Class MetadataDisplay {
 				case 'CoCo is not supported, BUT Entity Category Support is claimed' :
 				case 'R&S attributes missing, BUT Entity Category Support claimed' :
 				case 'Anonymous attribute missing, Entity Category Support missing' :
+				case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
 				case 'Personalized attribute missing, Entity Category Support missing' :
 				case 'Pseudonymous attribute missing, Entity Category Support missing' :
 				case 'Missing schacPersonalUniqueCode' :

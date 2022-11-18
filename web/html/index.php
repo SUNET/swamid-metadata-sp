@@ -241,6 +241,7 @@ function showList($entitys, $show) {
 		$isCocov1 = '';
 		$isCocov2 = '';
 		$isRS = '';
+		$isESI = '';
 		$hasHide = '';
 
 		$mduiHandler->bindValue(':Id', $row['id']);
