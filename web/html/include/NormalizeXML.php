@@ -45,6 +45,9 @@ Class NormalizeXML {
 				}
 				$this->checkNode($newChild, $child, $doc);
 				if ($name == 'md:EntityDescriptor') {
+					if (isset($this->nsList['xsi']) && ! isset($this->nsList['xs']))
+						$this->nsList['xs'] = array('uri' =>'http://www.w3.org/2001/XMLSchema');
+
 					foreach ($this->nsList as $ns => $uriArray) {
 						$newChild->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:'.$ns, $uriArray['uri']);
 					}
