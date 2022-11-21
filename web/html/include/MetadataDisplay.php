@@ -909,7 +909,7 @@ Class MetadataDisplay {
 	}
 
 	public function showRawXML($Entity_id, $URN = false) {
-		$entityHandler = $URN ? $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND status = 1;') : $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $URN ? $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND `status` = 1;') : $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindParam(':Id', $Entity_id);
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
