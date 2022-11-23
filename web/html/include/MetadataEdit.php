@@ -801,6 +801,9 @@ Class MetadataEdit {
 								}
 								$child = $child->nextSibling;
 							}
+							if ($elementmd == 'mdui:Logo' || $elementmd == 'mdui:InformationURL' || $elementmd == 'mdui:PrivacyStatementURL') {
+								$value = str_replace(' ', '+', $value);
+							}
 							if ($MduiElement) {
 								# Update value
 								$MduiElement->nodeValue = htmlspecialchars($value);
@@ -2557,6 +2560,9 @@ Class MetadataEdit {
 						$child = $Organization->firstChild;
 						$OrganizationElement = false;
 						$newOrg = true;
+						if ($elementmd == 'md:OrganizationURL') {
+							$value = str_replace(' ', '+', $value);
+						}
 						while ($child && ! $OrganizationElement) {
 							if (strtolower($child->getAttribute('xml:lang')) == $lang && $child->nodeName == $elementmd) {
 								$OrganizationElement = $child;
