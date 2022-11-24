@@ -1501,7 +1501,9 @@ Class Metadata {
 		$keyInfoHandler->execute();
 
 		$SWAMID_5_2_1_Level = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
+		$SWAMID_5_2_1_Level_2030 = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
 		$SWAMID_5_2_1_error = 0;
+		$SWAMID_5_2_1_2030_error = 0;
 		$SWAMID_5_2_2_error = false;
 		$SWAMID_5_2_2_errorNB = false;
 		$SWAMID_5_2_3_warning = false;
@@ -1557,6 +1559,9 @@ Class Metadata {
 					if ($keyInfo['bits'] >= 4096 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 3;
 					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 2 ) {
+						if ($keyInfo['notValidAfter'] > '2030-12-31') {
+							$SWAMID_5_2_1_Level_2030[$keyInfo['use']] = true;
+						}
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
 					} elseif ($SWAMID_5_2_1_Level[$keyInfo['use']] < 1) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 1;
@@ -1607,6 +1612,7 @@ Class Metadata {
 					case 2 :
 						// Key >= 2048 and < 4096  // >= 256 and <384
 						$SWAMID_5_2_1_error = $SWAMID_5_2_1_error == 0 ? 1 : $SWAMID_5_2_1_error;
+						$SWAMID_5_2_1_2030_error = $SWAMID_5_2_1_error ? true : $SWAMID_5_2_1_Level_2030[$use];
 						break;
 					case 1:
 						// To small key
@@ -1647,6 +1653,8 @@ Class Metadata {
 			if ($SWAMID_5_2_1_error == 1) {
 				if ($smalKeyFound) {
 					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+				} elseif ($SWAMID_5_2_1_2030_error) {
+					$this->error .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key if valid after 2030-12-31.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				} else {
 					$this->warning .= sprintf("SWAMID Tech %s: Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				}
