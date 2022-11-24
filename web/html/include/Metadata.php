@@ -1612,7 +1612,7 @@ Class Metadata {
 					case 2 :
 						// Key >= 2048 and < 4096  // >= 256 and <384
 						$SWAMID_5_2_1_error = $SWAMID_5_2_1_error == 0 ? 1 : $SWAMID_5_2_1_error;
-						$SWAMID_5_2_1_2030_error = $SWAMID_5_2_1_error ? true : $SWAMID_5_2_1_Level_2030[$use];
+						$SWAMID_5_2_1_2030_error = $SWAMID_5_2_1_2030_error ? true : $SWAMID_5_2_1_Level_2030[$use];
 						break;
 					case 1:
 						// To small key
