@@ -1629,6 +1629,7 @@ Class Metadata {
 				case 3 :
 					// Key >= 4096 or >= 384
 					$SWAMID_5_2_1_error = 0;
+					$SWAMID_5_2_1_2030_error = false;
 					break;
 				case 2 :
 					// Key >= 2048 and < 4096  // >= 256 and <384
@@ -1639,6 +1640,7 @@ Class Metadata {
 						// No enc/siging found set warning
 						$SWAMID_5_2_1_error = 1;
 					}
+					$SWAMID_5_2_1_2030_error = $SWAMID_5_2_1_2030_error ? true : $SWAMID_5_2_1_Level_2030['both'];
 					break;
 				case 1:
 					// To small key
