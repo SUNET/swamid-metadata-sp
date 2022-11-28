@@ -1656,7 +1656,7 @@ Class Metadata {
 				if ($smalKeyFound) {
 					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				} elseif ($SWAMID_5_2_1_2030_error) {
-					$this->errorNB .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key if valid after 2030-12-31.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key if valid after 2030-12-31.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				} else {
 					$this->warning .= sprintf("SWAMID Tech %s: Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				}
