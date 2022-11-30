@@ -1559,7 +1559,7 @@ Class Metadata {
 					if ($keyInfo['bits'] >= 4096 ) {
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 3;
 					} elseif ($keyInfo['bits'] >= 2048 && $SWAMID_5_2_1_Level[$keyInfo['use']] < 2 ) {
-						if ($keyInfo['notValidAfter'] > '2030-12-31') {
+						if ($keyInfo['notValidAfter'] > '2030-12-31' && $keyInfo['bits'] < 3072) {
 							$SWAMID_5_2_1_Level_2030[$keyInfo['use']] = true;
 						}
 						$SWAMID_5_2_1_Level[$keyInfo['use']] = 2;
@@ -1655,8 +1655,6 @@ Class Metadata {
 			if ($SWAMID_5_2_1_error == 1) {
 				if ($smalKeyFound) {
 					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
-				} elseif ($SWAMID_5_2_1_2030_error) {
-					$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 4096-bit RSA key if valid after 2030-12-31.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				} else {
 					$this->warning .= sprintf("SWAMID Tech %s: Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 				}
@@ -1668,6 +1666,10 @@ Class Metadata {
 				$this->errorNB .= sprintf("SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
 			}
 		}
+		if ($SWAMID_5_2_1_2030_error) {
+			$this->warning .= sprintf("SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57) than a 3072-bit RSA key if valid after 2030-12-31.\n", ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+		}
+
 		if ($SWAMID_5_2_2_error) {
 			$this->error .= sprintf("SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n", ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
 		} elseif ($SWAMID_5_2_2_errorNB) {
