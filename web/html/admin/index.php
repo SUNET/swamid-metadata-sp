@@ -32,8 +32,10 @@ if (isset($_SERVER['Meta-Assurance-Certification'])) {
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
 	$EPPN = $_SERVER['eduPersonPrincipalName'];
+} elseif (isset($_SERVER['subject-id'])) {
+	$EPPN = $_SERVER['subject-id'];
 } else {
-	$errors .= 'Missing eduPersonPrincipalName in SAML response ' . str_replace(array('ERRORURL_CODE', 'ERRORURL_CTX'), array('IDENTIFICATION_FAILURE', 'eduPersonPrincipalName'), $errorURL);
+	$errors .= 'Missing eduPersonPrincipalName/subject-id in SAML response ' . str_replace(array('ERRORURL_CODE', 'ERRORURL_CTX'), array('IDENTIFICATION_FAILURE', 'eduPersonPrincipalName'), $errorURL);
 }
 
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
