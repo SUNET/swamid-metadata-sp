@@ -1325,6 +1325,9 @@ Class MetadataDisplay {
 					case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
 						$CoCo = true;
 						break;
+					case 'https://refeds.org/category/personalized' :
+						$Personalized = true;
+						break;
 					case 'http://refeds.org/category/research-and-scholarship' :
 						$RandS = true;
 						break;

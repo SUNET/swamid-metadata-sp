@@ -4,7 +4,8 @@ $this->standardAttributes = array(
 		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al1', 'swamidStd' => true),
 		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al2', 'swamidStd' => true),
 		array('type' => 'IdP', 'value' => 'http://www.swamid.se/policy/assurance/al3', 'swamidStd' => true),
-		array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi', 'swamidStd' => true)),
+		array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi', 'swamidStd' => true),
+		array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi2', 'swamidStd' => true)),
 	'entity-category' => array(
 		array('type' => 'SP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
 		array('type' => 'SP', 'value' => 'https://refeds.org/category/anonymous', 'swamidStd' => true),
