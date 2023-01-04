@@ -2412,15 +2412,27 @@ Class MetadataEdit {
 			print "\n        </ul>";
 
 			if ($indexValue == $index) {
+				print "<h5>Available attributes:</h5>";
 				foreach ($this->FriendlyNames as $nameL => $data) {
-					if ($data['swamidStd'])
+					if ($data['swamidStd']) {
 						if (isset($existingRequestedAttribute[$nameL]))
 							printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
 						else
 							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $data['desc'], $nameL,  "\n");
+					}
+				}
+				print '<br><h5>Not recommended attributes:</h5>';
+				foreach ($this->FriendlyNames as $nameL => $data) {
+					if (! $data['swamidStd']) {
+						if (isset($existingRequestedAttribute[$nameL]))
+							printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
+						else
+							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $data['desc'], $nameL,  "\n");
+					}
 				}
 				printf('
-        <form>
+		<br>
+		<form>
           <input type="hidden" name="edit" value="AttributeConsumingService">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
