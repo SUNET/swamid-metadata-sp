@@ -122,3 +122,9 @@ CREATE TABLE `EntitiesStatus` (
 	`NrOfSPs` int(10) unsigned DEFAULT NULL,
 	`NrOfIdPs` int(10) unsigned DEFAULT NULL,
 	`Changed` int(10) unsigned DEFAULT NULL);
+
+CREATE TABLE `EntitiesStatistics` (
+	`date` datetime DEFAULT NULL,
+	`NrOfEntites` int(10) unsigned DEFAULT NULL,
+	`NrOfSPs` int(10) unsigned DEFAULT NULL,
+	`NrOfIdPs` int(10) unsigned DEFAULT NULL);

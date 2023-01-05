@@ -1387,7 +1387,7 @@ Class MetadataDisplay {
 			}
 		}
 
-		printf ('    <h3>Totalt entity errors</h3>    <p>Statistics on number of entities not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="total" width="200" height="50"></canvas>%s    <h3>Totalt SP errors</h3>%s    <p>Statistics on number of Service Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="SPs" width="200" height="50"></canvas>%s    <h3>Totalt IdP errors</h3>%s    <p>Statistics on number of Identity Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="IdPs" width="200" height="50"></canvas>%s    <br><br>%s    <h3>Statistics in numbers</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th><th>ErrorsTotal</th><th>ErrorsSPs</th><th>ErrorsIdPs</th></tr>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		printf ('    <h3>Totalt entity errors</h3>%s    <p>Statistics on number of entities not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="total" width="200" height="50"></canvas>%s    <h3>Totalt SP errors</h3>%s    <p>Statistics on number of Service Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="SPs" width="200" height="50"></canvas>%s    <h3>Totalt IdP errors</h3>%s    <p>Statistics on number of Identity Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="IdPs" width="200" height="50"></canvas>%s    <br><br>%s    <h3>Statistics in numbers</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th><th>ErrorsTotal</th><th>ErrorsSPs</th><th>ErrorsIdPs</th></tr>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
 		printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', 'Now', $NrOfEntites, $NrOfSPs, $NrOfIdPs, $ErrorsTotal, ($ErrorsTotal / $NrOfEntites * 100), $ErrorsSPs, ($ErrorsSPs / $NrOfSPs * 100), $ErrorsIdPs, ($ErrorsIdPs / $NrOfIdPs * 100), "\n");
 		array_unshift($labelsArray, 'Now');
 		array_unshift($totalArray, $ErrorsTotal);
@@ -1626,6 +1626,58 @@ Class MetadataDisplay {
 			printf ("      const my%s = new Chart(ctx%s, {%s        width: 200,%s        type: 'pie',%s        data: {%s          labels: ['OK + ECS', 'OK no ECS', 'Fail', 'Not tested'],%s          datasets: [{%s            label: 'Errors',%s            data: [%d, %d, %d, %d],%s            backgroundColor: [%s              'rgb(99, 255, 132)',%s              'rgb(255, 205, 86)',%s              'rgb(255, 99, 132)',%s              'rgb(255, 255, 255)',%s            ],%s            borderColor : 'rgb(0,0,0)',%s            hoverOffset: 4%s          }]%s        },%s      });%s", $ecdiv, $ecdiv, "\n", "\n", "\n", "\n", "\n", "\n", "\n", $MarkedECS, $OK, $Fail, $NotTested, "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
 		}
 	 print "    </script>\n";
+	}
+
+	public function showEntityStatistics() {
+		$labelsArray = array();
+		$SPArray = array();
+		$IdPArray = array();
+
+		$NrOfEntites = 0;
+		$NrOfSPs = 0;
+		$NrOfIdPs = 0;
+
+		$entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE status = 1 AND publishIn > 2");
+		$entitys->execute();
+		while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+			$isIdP = $row['isIdP'];
+			$isSP = $row['isSP'];
+			switch ($row['publishIn']) {
+				case 1 :
+					break;
+				case 3 :
+				case 7 :
+					$NrOfEntites ++;
+					if ($row['isIdP']) $NrOfIdPs ++;
+					if ($row['isSP']) $NrOfSPs ++;
+					break;
+				default :
+					printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
+			}
+		}
+
+		printf ('    <h3>Entity Statistics</h3>%s    <p>Statistics on number of entities in SWAMID.</p>%s    <canvas id="total" width="200" height="50"></canvas>%s    <br><br>%s    <h3>Statistics in numbers</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n");
+		printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s', 'Now', $NrOfEntites, $NrOfSPs, $NrOfIdPs, "\n");
+		array_unshift($labelsArray, 'Now');
+		array_unshift($SPArray, $NrOfSPs);
+		array_unshift($IdPArray, $NrOfIdPs);
+
+		$statusRows = $this->metaDb->prepare("SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM EntitiesStatistics ORDER BY `date` DESC");
+		$statusRows->execute();
+		while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
+			$week = date('W',mktime(0, 0, 0, substr($row['date'],5,2), substr($row['date'],8,2), substr($row['date'],0,4)));
+			$dateLabel = substr($row['date'],2,8);
+			printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s', substr($row['date'],0,10), $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], "\n");
+			array_unshift($labelsArray, $dateLabel);
+			array_unshift($SPArray, $row['NrOfSPs']);
+			array_unshift($IdPArray, $row['NrOfIdPs']);
+		}
+		$labels = implode("','", $labelsArray);
+		$IdPs = implode(',', $IdPArray);
+		$SPs = implode(',', $SPArray);
+
+		printf ('    </table>%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', "\n", "\n", "\n");
+		printf ("      const ctxTotal = document.getElementById('total').getContext('2d');%s      const myTotal = new Chart(ctxTotal, {%s        type: 'line',%s        data: {%s          labels: ['%s'],%s          datasets: [{%s            label: 'IdP',%s            backgroundColor: \"rgb(251,153,2)\",%s			data: [%s],%s            fill: 'origin'%s          }, {%s            label: 'SP',%s            backgroundColor: \"rgb(2,71,254)\",%s			data: [%s],%s            fill: 0%s          }]%s        },%s        options: {%s          responsive: true,%s          scales: {%s            yAxes: {%s              beginAtZero: true,%s              stacked: true,%s            }%s          }%s        }%s      });%s    </script>%s", "\n", "\n", "\n", "\n", $labels, "\n", "\n", "\n", "\n", $IdPs, "\n", "\n", "\n", "\n", "\n", $SPs, "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
 	}
 
 	public function showHelp() {

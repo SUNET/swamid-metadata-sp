@@ -207,6 +207,12 @@ if (isset($_FILES['XMLfile'])) {
 					$menuActive = 'upload';
 					showUpload();
 					break;
+				case 'EntityStatistics' :
+					$menuActive = 'EntityStatistics';
+					$html->showHeaders('Metadata SWAMID - Entity Statistics');
+					showMenu();
+					$display->showEntityStatistics();
+					break;
 				case 'ErrorStatus' :
 					$menuActive = 'ErrorStatus';
 					$html->showHeaders('Metadata SWAMID - Errror status');
@@ -721,6 +727,7 @@ function showMenu() {
 	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
+	printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>', $filter, $menuActive == 'EntityStatistics' ? '' : '-outline');
 	printf('<a href=".?action=ErrorStatistics%s"><button type="button" class="btn btn%s-primary">Error statistics</button></a>', $filter, $menuActive == 'ErrorStatistics' ? '' : '-outline');
 	printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>', $filter, $menuActive == 'EcsStatistics' ? '' : '-outline');
 	printf('<a href=".?action=ErrorStatus%s"><button type="button" class="btn btn%s-primary">Error status</button></a>', $filter, $menuActive == 'ErrorStatus' ? '' : '-outline');
@@ -864,7 +871,7 @@ function move2Pending($Entity_id) {
 				} else {
 					$entityOld['publishIn'] = $entity['isIdP'] ? 7 : 3;
 				}
-				printf('    <p>The entity should be published in:</p>
+				printf('    <h5>The entity should be published in:</h5>
     <form>
       <input type="hidden" name="move2Pending" value="%d">
       <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
@@ -874,6 +881,7 @@ function move2Pending($Entity_id) {
       <input type="radio" id="Testing" name="publishedIn" value="1"%s>
       <label for="Testing">Testing only</label>
       <br>
+      <h5> Confirmation:</h5>
       <input type="checkbox" id="OrganisationOK" name="OrganisationOK">
       <label for="OrganisationOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
       <br>
@@ -1084,6 +1092,11 @@ function removeEntity($Entity_id) {
 				$menuActive = 'new';
 				$button = 'Confirm discard draft';
 				$from = 'discard the draft';
+				break;
+			case 6 :
+				$menuActive = 'wait';
+				$button = 'Confirm delete shadow';
+				$from = 'delete the shadow entity';
 				break;
 			default :
 				$OK2Remove = false;
