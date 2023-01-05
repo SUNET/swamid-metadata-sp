@@ -2086,19 +2086,31 @@ Class Metadata {
 	# Removes an entity from database
 	#############
 	public function removeEntity() {
-		# Remove data for this Entity
-		$this->metaDb->exec('DELETE FROM EntityAttributes WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM Mdui WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM KeyInfo WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM AttributeConsumingService WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM Organization WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM ContactPerson WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM EntityURLs WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM Users WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('DELETE FROM Entities WHERE `id` = ' . $this->dbIdNr .';');
+		$this->_removeEntity($this->dbIdNr);
+	}
+	private function _removeEntity($dbIdNr) {
+		$entityHandler = $this->metaDb->prepare('SELECT publishedId FROM Entities WHERE id = :Id;');
+		$entityHandler->bindParam(':Id', $dbIdNr);
+		$entityHandler->execute();
+		if ($Entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+			if ($Entity['publishedId'] > 0) {
+				#Remove shadow first
+				$this->_removeEntity($Entity['publishedId']);
+			}
+			# Remove data for this Entity
+			$this->metaDb->exec('DELETE FROM EntityAttributes WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM Mdui WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM KeyInfo WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM AttributeConsumingService WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM Organization WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM ContactPerson WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM EntityURLs WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM Users WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM Entities WHERE `id` = ' . $dbIdNr .';');
+		}
 	}
 
 	#############
@@ -2157,9 +2169,33 @@ Class Metadata {
 	# Moves an entity from pendingQueue to publishedPending state
 	#############
 	public function movePublishedPending() {
-		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
+		$entityHandler = $this->metaDb->prepare('SELECT `entityID` FROM Entities WHERE `status` = 2 AND `id` = :Id');
+		$entityUserHandler = $this->metaDb->prepare('SELECT `userID`, `email` FROM Users WHERE `entity_id` = :Id');
+		$copyUserHandler = $this->metaDb->prepare('INSERT INTO Users (`entity_id`, `userID`, `email`) VALUES (:Entity_id, :UserID, :Email) ON DUPLICATE KEY UPDATE `email` = :Email');
+		$publishedEntityHandler = $this->metaDb->prepare('SELECT `id` FROM Entities WHERE `status` = 1 AND `entityID` = :Id');
+
 		$entityHandler->bindParam(':Id', $this->dbIdNr);
+		$entityUserHandler->bindParam(':Id', $this->dbIdNr);
 		$entityHandler->execute();
+		# Check if entity id exist as status pending
+		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+			# Get id of published version
+			$publishedEntityHandler->bindParam(':Id', $entity['entityID']);
+			$publishedEntityHandler->execute();
+			if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
+				$copyUserHandler->bindValue(':Entity_id', $publishedEntity['id']);
+				$entityUserHandler->execute();
+				while ($entityUser = $entityUserHandler->fetch(PDO::FETCH_ASSOC)) {
+					# Copy userId and email from pending -> published
+					$copyUserHandler->bindValue(':UserID', $entityUser['userID']);
+					$copyUserHandler->bindValue(':Email', $entityUser['email']);
+					$copyUserHandler->execute();
+				}
+			}
+			$entityUpdateHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
+			$entityUpdateHandler->bindParam(':Id', $this->dbIdNr);
+			$entityUpdateHandler->execute();
+		}
 	}
 
 	#############
