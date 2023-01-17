@@ -225,28 +225,11 @@ if (isset($_FILES['XMLfile'])) {
 					showMenu();
 					$display->showEntityStatistics();
 					break;
-				case 'ErrorStatus' :
-					$menuActive = 'ErrorStatus';
-					$html->showHeaders('Metadata SWAMID - Errror status');
-					showMenu();
-					$display->showErrorStatus();
-					$html->addTableSort('IDPSSO-table');
-					$html->addTableSort('SPSSO-table');
-					$html->addTableSort('contact-table');
-					$html->addTableSort('SFS-table');
-					$html->addTableSort('RE-table');
-					break;
 				case 'EcsStatistics' :
 					$menuActive = 'EcsStatistics';
 					$html->showHeaders('Metadata SWAMID - EntityCategorySupport status');
 					showMenu();
 					$display->showEcsStatistics();
-					break;
-				case 'ErrorStatistics' :
-					$menuActive = 'ErrorStatistics';
-					$html->showHeaders('Metadata SWAMID - Error status');
-					showMenu();
-					$display->showErrorStatistics();
 					break;
 				case 'showURL' :
 					$menuActive = '';
@@ -317,8 +300,10 @@ if (isset($_FILES['XMLfile'])) {
 					showEntityList();
 			}
 		}
-	} else
-		showEntityList();
+	} else {
+		$menuActive = 'myEntities';
+		showMyEntities();
+	}
 }
 
 $html->showFooter($display->getCollapseIcons());
@@ -687,7 +672,7 @@ function showMyEntities() {
 				break;
 		}
 		$errorStatus = ($row['errors'] == '') ? ($row['errorsNB'] == '') ? '<i class="fas fa-check"></i>' : '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-exclamation"></i>';
-		printf('      <tr><td><a href="?showEntity=%d" target="_blank">%s</a></td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s', $row['id'], $row['entityID'], $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
+		printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s', $row['id'], $row['entityID'], $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
 	}
 	print "    </table>\n";
 	$html->addTableSort('annual-table');
@@ -797,9 +782,7 @@ function showMenu() {
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>', $filter, $menuActive == 'EntityStatistics' ? '' : '-outline');
-	#printf('<a href=".?action=ErrorStatistics%s"><button type="button" class="btn btn%s-primary">Error statistics</button></a>', $filter, $menuActive == 'ErrorStatistics' ? '' : '-outline');
 	printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>', $filter, $menuActive == 'EcsStatistics' ? '' : '-outline');
-	printf('<a href=".?action=ErrorStatus%s"><button type="button" class="btn btn%s-primary">Error status</button></a>', $filter, $menuActive == 'ErrorStatus' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
 	}
