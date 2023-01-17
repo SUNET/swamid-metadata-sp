@@ -2092,7 +2092,7 @@ Class Metadata {
 	# Updates which user that is responsible for an entity
 	#############
 	public function updateResponsible() {
-		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE SET `lastChanged` = NOW()');
+		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
 		$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
 		$entityUserHandler->bindParam(':User_Id', $this->user['id']);
 		$entityUserHandler->execute();
@@ -2102,7 +2102,7 @@ Class Metadata {
 	# Copies which user that is responsible for an entity from another entity
 	#############
 	public function copyResponsible($otherEntity_id) {
-		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE SET `lastChanged` = :LastChanged');
+		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
 		$otherEntityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :OtherEntity_Id');
 
 		$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
@@ -2221,7 +2221,7 @@ Class Metadata {
 			if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
 				$entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
 				$entityUserHandler = $this->metaD->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id');
-				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE SET `lastChanged` = :LastChanged WHERE `lastChanged` < :LastChanged');
+				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged WHERE `lastChanged` < :LastChanged');
 				$updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Entity_Id, :User_Id, :LastConfirmed) ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
 
 				# Get lastValidated
@@ -2532,7 +2532,7 @@ Class Metadata {
 	public function createAccessRequest($user_id) {
 		$hash = hash_hmac('md5',$this->entityID(),time());
 		$code = base64_encode(sprintf ('%d:%d:%s', $this->dbIdNr, $user_id, $hash));
-		$addNewRequestHandler = $this->metaDb->prepare('INSERT INTO `AccessRequests` (`entity_id`, `user_id`, `hash`, `requestDate`) VALUES (:Entity_id, :User_id, :Hashvalue, NOW()) ON DUPLICATE KEY UPDATE SET `hash` = :Hashvalue, `requestDate` = NOW()');
+		$addNewRequestHandler = $this->metaDb->prepare('INSERT INTO `AccessRequests` (`entity_id`, `user_id`, `hash`, `requestDate`) VALUES (:Entity_id, :User_id, :Hashvalue, NOW()) ON DUPLICATE KEY UPDATE `hash` = :Hashvalue, `requestDate` = NOW()');
 		$addNewRequestHandler->bindParam(':Entity_id', $this->dbIdNr);
 		$addNewRequestHandler->bindParam(':User_id', $user_id);
 		$addNewRequestHandler->bindParam(':Hashvalue', $hash);
@@ -2551,7 +2551,7 @@ Class Metadata {
 			} else {
 				$requestHandler = $this->metaDb->prepare('SELECT `requestDate`, NOW() - INTERVAL 1 DAY AS `limit`, `email`, `fullName`, `entityID` FROM `AccessRequests`, `Users`, `Entities`  WHERE Users.`id` = `user_id` AND `Entities`.`id` = `entity_id` AND `entity_id` =  :Entity_id AND `user_id` = :User_id AND `hash` = :Hashvalue');
 				$requestRemoveHandler = $this->metaDb->prepare('DELETE FROM `AccessRequests` WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
-				$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE SET `lastChanged` = NOW()');
+				$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
 				$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
 				$entityUserHandler->bindParam(':User_Id', $user_id);
 				$requestHandler->bindParam(':Entity_id', $this->dbIdNr);

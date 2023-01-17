@@ -446,7 +446,7 @@ Class MetadataEdit {
 				case 'Update' :
 					if ($IDPSSODescriptor) {
 						$IDPSSODescriptor->setAttribute('errorURL', $errorURLValue);
-						$errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE SET `URL` = :URL;");
+						$errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE `URL` = :URL;");
 						$errorURLUpdateHandler->bindParam(':Id', $this->dbIdNr);
 						$errorURLUpdateHandler->bindParam(':URL', $errorURLValue);
 						$errorURLUpdateHandler->execute();
@@ -3336,7 +3336,7 @@ Class MetadataEdit {
 
 			if ($IDPSSODescriptor  && $IDPSSODescriptor->getAttribute('errorURL') == '') {
 				$IDPSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
-				$errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type` ) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE SET `URL`= :URL;");
+				$errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type` ) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE `URL`= :URL;");
 				$errorURLUpdateHandler->bindParam(':Id', $this->dbIdNr);
 				$errorURLUpdateHandler->bindParam(':URL', $errorURL['URL']);
 				$errorURLUpdateHandler->execute();
