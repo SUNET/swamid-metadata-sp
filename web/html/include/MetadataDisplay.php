@@ -111,6 +111,9 @@ Class MetadataDisplay {
 						case 'Anonymous attribute missing, Entity Category Support missing' :
 						case 'Personalized attribute missing, Entity Category Support missing' :
 						case 'Pseudonymous attribute missing, Entity Category Support missing' :
+						case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
+						case 'Personalized attributes missing, BUT Entity Category Support claimed' :
+						case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
 						case 'Missing schacPersonalUniqueCode' :
 							$errors .= ($ECSTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n", $testResult['time'], $testResult['result']) : '';
 							break;
@@ -924,12 +927,12 @@ Class MetadataDisplay {
 
 	public function showEditors($Entity_id){
 		$this->showCollapse('Editors', 'Editors', false, 0, true, false, $Entity_id, 0);
-		$usersHandler = $this->metaDb->prepare('SELECT * FROM Users WHERE `entity_id` = :Id ORDER BY `userID`;');
+		$usersHandler = $this->metaDb->prepare('SELECT `userID`, `email`, `fullName` FROM EntityUser, Users WHERE `entity_id` = :Id AND id = user_id ORDER BY `userID`;');
 		$usersHandler->bindParam(':Id', $Entity_id);
 		$usersHandler->execute();
 		print "        <ul>\n";
 		while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
-			printf ('          <li>%s, %s</li>%s', $user['userID'], $user['email'], "\n");
+			printf ('          <li>%s (Identifier : %s, Email : %s)</li>%s', $user['fullName'], $user['userID'], $user['email'], "\n");
 		}
 		print "        </ul>";
 		$this->showCollapseEnd('Editors', 0);
@@ -1158,7 +1161,7 @@ Class MetadataDisplay {
 	}
 
 	public function showPendingListToRemove() {
-		$entitiesHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml`, `lastUpdated`, `email` FROM Entities, Users WHERE `status` = 2 AND `id` = `entity_id` ORDER BY lastUpdated ASC, `entityID`');
+		$entitiesHandler = $this->metaDb->prepare('SELECT Entities.`id`, `entityID`, `xml`, `lastUpdated`, `email` FROM Entities, EntityUser, Users WHERE `status` = 2 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id` ORDER BY lastUpdated ASC, `entityID`');
 		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$entityHandler->bindParam(':EntityID', $entityID);
 		$entitiesHandler->execute();
@@ -1342,177 +1345,6 @@ Class MetadataDisplay {
 		printf ('        </table>%s      </div><!-- End tab-pane RE -->%s    </div><!-- End tab-content -->%s', "\n", "\n", "\n");
 	}
 
-	public function showErrorStatistics() {
-		$statusRows = $this->metaDb->prepare("SELECT `date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed` FROM EntitiesStatus ORDER BY `date` DESC");
-		$statusRows->execute();
-		$labelsArray = array();
-		$totalArray = array();
-		$totalOKArray = array();
-		$SPArray = array();
-		$SPOKArray = array();
-		$IdPArray = array();
-		$IdPOKArray = array();
-
-		$TotalMin = 1000;
-		$SPMin = 1000;
-		$IdPMin = 1000;
-
-		$ErrorsTotal = 0;
-		$ErrorsSPs = 0;
-		$ErrorsIdPs = 0;
-		$NrOfEntites = 0;
-		$NrOfSPs = 0;
-		$NrOfIdPs = 0;
-		$entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `errors` FROM Entities WHERE status = 1 AND publishIn > 2");
-		$entitys->execute();
-		while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
-			$isIdP = $row['isIdP'];
-			$isSP = $row['isSP'];
-			switch ($row['publishIn']) {
-				case 1 :
-					break;
-				case 3 :
-				case 7 :
-					$NrOfEntites ++;
-					if ($row['isIdP']) $NrOfIdPs ++;
-					if ($row['isSP']) $NrOfSPs ++;
-					if ( $row['errors'] <> '' ) {
-						$ErrorsTotal ++;
-						if ($row['isIdP']) $ErrorsIdPs ++;
-						if ($row['isSP']) $ErrorsSPs ++;
-					}
-					break;
-				default :
-					printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
-			}
-		}
-
-		printf ('    <h3>Totalt entity errors</h3>%s    <p>Statistics on number of entities not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="total" width="200" height="50"></canvas>%s    <h3>Totalt SP errors</h3>%s    <p>Statistics on number of Service Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="SPs" width="200" height="50"></canvas>%s    <h3>Totalt IdP errors</h3>%s    <p>Statistics on number of Identity Providers not complying to the SWAMID SAML WebSSO Technology Profile.</p>%s    <canvas id="IdPs" width="200" height="50"></canvas>%s    <br><br>%s    <h3>Statistics in numbers</h3>%s    <table class="table table-striped table-bordered">%s      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th><th>ErrorsTotal</th><th>ErrorsSPs</th><th>ErrorsIdPs</th></tr>%s', "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
-		printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', 'Now', $NrOfEntites, $NrOfSPs, $NrOfIdPs, $ErrorsTotal, ($ErrorsTotal / $NrOfEntites * 100), $ErrorsSPs, ($ErrorsSPs / $NrOfSPs * 100), $ErrorsIdPs, ($ErrorsIdPs / $NrOfIdPs * 100), "\n");
-		array_unshift($labelsArray, 'Now');
-		array_unshift($totalArray, $ErrorsTotal);
-		array_unshift($totalOKArray, $NrOfEntites - $ErrorsTotal);
-		array_unshift($SPArray, $ErrorsSPs);
-		array_unshift($SPOKArray, $NrOfSPs - $ErrorsSPs);
-		array_unshift($IdPArray, $ErrorsIdPs);
-		array_unshift($IdPOKArray, $NrOfIdPs - $ErrorsIdPs);
-
-		while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
-			$week = date('W',mktime(0, 0, 0, substr($row['date'],5,2), substr($row['date'],8,2), substr($row['date'],0,4)));
-			$dateLabel = substr($row['date'],2,8);
-			printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', $dateLabel, $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], $row['ErrorsTotal'], ($row['ErrorsTotal'] / $row['NrOfEntites'] * 100), $row['ErrorsSPs'],($row['ErrorsSPs'] / $row['NrOfSPs'] * 100), $row['ErrorsIdPs'], ($row['ErrorsIdPs'] / $row['NrOfIdPs'] * 100), "\n");
-			array_unshift($labelsArray, $dateLabel);
-			array_unshift($totalArray, $row['ErrorsTotal']);
-			array_unshift($totalOKArray, $row['NrOfEntites'] - $row['ErrorsTotal']);
-			array_unshift($SPArray, $row['ErrorsSPs']);
-			array_unshift($SPOKArray, $row['NrOfSPs'] - $row['ErrorsSPs']);
-			array_unshift($IdPArray, $row['ErrorsIdPs']);
-			array_unshift($IdPOKArray, $row['NrOfIdPs'] - $row['ErrorsIdPs']);
-
-			$TotalMin = ($row['ErrorsTotal'] < $TotalMin) ? $row['ErrorsTotal'] : $TotalMin;
-			$SPMin = ($row['ErrorsSPs'] < $SPMin) ? $row['ErrorsSPs'] : $SPMin;
-			$IdPMin = ($row['ErrorsIdPs'] < $IdPMin) ? $row['ErrorsIdPs'] : $IdPMin;
-		}
-		$labels = implode("','", $labelsArray);
-		$total = implode(',', $totalArray);
-		$totalOK = implode(',', $totalOKArray);
-		$SP = implode(',', $SPArray);
-		$SPOK = implode(',', $SPOKArray);
-		$IdP = implode(',', $IdPArray);
-		$IdPOK = implode(',', $IdPOKArray);
-
-		$TotalMin = ($TotalMin < 100) ? 0 : $TotalMin - 100;
-		$SPMin = ($SPMin < 100) ? 0 : $SPMin - 100;
-		$IdPMin = ($IdPMin < 100) ? 0 : $IdPMin - 100;
-		print "    </table>\n"; ?>
-    <script src="/include/chart/chart.min.js"></script>
-    <script>
-      const ctxTotal = document.getElementById('total').getContext('2d');
-      const ctxSP = document.getElementById('SPs').getContext('2d');
-      const ctxIdP = document.getElementById('IdPs').getContext('2d');
-
-      const myTotal = new Chart(ctxTotal, {
-        type: 'line',
-        data: {
-          labels: ['<?=$labels?>'],
-          datasets: [{
-            label: 'Errors',
-            backgroundColor: "rgb(220,0,0)",
-            data: [<?=$total?>],
-            fill: 'origin'
-          }, {
-            label: 'OK',
-            backgroundColor: "rgb(0,220,0)",
-            data: [<?=$totalOK?>],
-            fill: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            yAxes: {
-              beginAtZero: true,
-              stacked: true,
-              suggestedMin: <?= $TotalMin?>
-            }
-          }
-        }
-      });
-      const mySP = new Chart(ctxSP, {
-        type: 'line',
-        data: {
-          labels: ['<?=$labels?>'],
-          datasets: [{
-            label: 'Errors',
-            backgroundColor: "rgb(220,0,0)",
-            data: [<?=$SP?>],
-            fill: 'origin'
-          }, {
-            label: 'OK',
-            backgroundColor: "rgb(0,220,0)",
-            data: [<?=$SPOK?>],
-            fill: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            yAxes: {
-              stacked: true,
-              suggestedMin: <?= $SPMin?>
-            }
-          }
-        }
-      });
-      const myIdP = new Chart(ctxIdP, {
-        type: 'line',
-        data: {
-          labels: ['<?=$labels?>'],
-          datasets: [{
-            label: 'Errors',
-            backgroundColor: "rgb(220,0,0)",
-            data: [<?=$IdP?>],
-            fill: 'origin'
-          }, {
-            label: 'OK',
-            backgroundColor: "rgb(0,220,0)",
-            data: [<?=$IdPOK?>],
-			fill: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            yAxes: {
-              stacked: true,
-              suggestedMin: <?= $IdPMin?>
-            }
-          }
-        }
-      });
-    </script><?php print "\n";
-	}
-
 	public function showEcsStatistics() {
 		$ECSTagged = array(
 			'http://refeds.org/category/research-and-scholarship' => 'rands',
@@ -1613,7 +1445,7 @@ Class MetadataDisplay {
 			$OK = $ECSTested[$ec]['OK'] > $ECSTested[$ec]['MarkedWithECS'] ? $ECSTested[$ec]['OK'] - $ECSTested[$ec]['MarkedWithECS'] : 0;
 			$Fail = $ECSTested[$ec]['Fail'] > $NrOfIdPs ? 0 : $ECSTested[$ec]['Fail'];
 			$NotTested = $NrOfIdPs - $MarkedECS - $OK - $Fail;
-			printf('      <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', $descr, $MarkedECS, ($MarkedECS/$NrOfIdPs*100), $OK, ($OK/$NrOfIdPs*100), $Fail, ($Fail/$NrOfIdPs*100), $NotTested, ($NotTested/$NrOfIdPs*100), "\n");	
+			printf('      <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s', $descr, $MarkedECS, ($MarkedECS/$NrOfIdPs*100), $OK, ($OK/$NrOfIdPs*100), $Fail, ($Fail/$NrOfIdPs*100), $NotTested, ($NotTested/$NrOfIdPs*100), "\n");
 		}
 		printf('    </table>%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', "\n", "\n", "\n");
 		foreach ($ECS as $ec => $descr) {

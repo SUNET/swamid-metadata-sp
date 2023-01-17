@@ -446,7 +446,7 @@ Class MetadataEdit {
 				case 'Update' :
 					if ($IDPSSODescriptor) {
 						$IDPSSODescriptor->setAttribute('errorURL', $errorURLValue);
-						$errorURLUpdateHandler = $this->metaDb->prepare("REPLACE INTO EntityURLs (entity_id, URL, type ) VALUES (:Id, :URL, 'error');");
+						$errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE SET `URL` = :URL;");
 						$errorURLUpdateHandler->bindParam(':Id', $this->dbIdNr);
 						$errorURLUpdateHandler->bindParam(':URL', $errorURLValue);
 						$errorURLUpdateHandler->execute();
@@ -2424,10 +2424,17 @@ Class MetadataEdit {
 				print '<br><h5>Not recommended attributes:</h5>';
 				foreach ($this->FriendlyNames as $nameL => $data) {
 					if (! $data['swamidStd']) {
+						if (substr($nameL, 0, 27) == 'urn:mace:dir:attribute-def:') {
+							$samlVer = ' (SAML1)';
+							$nf = 'urn:mace:shibboleth:1.0:attributeNamespace:uri';
+						} else {
+							$samlVer = '';
+							$nf = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
+						}
 						if (isset($existingRequestedAttribute[$nameL]))
-							printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
+							printf('<b>%s%s</b> - %s<br>%s', $data['desc'], $samlVer, $nameL,  "\n");
 						else
-							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $data['desc'], $nameL,  "\n");
+							printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=%s&isRequired=1&action=Add">[copy]</a> <b>%s%s</b> - %s<br>%s', $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $nf, $data['desc'], $samlVer, $nameL,  "\n");
 					}
 				}
 				printf('
@@ -2454,13 +2461,13 @@ Class MetadataEdit {
             <div class="col-2">NameFormat: </div>
             <div class="col">
               <select name="NameFormat">
-                <option value="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">urn:oasis:names:tc:SAML:2.0:attrname-format:uri</option>
-                <option value="urn:mace:shibboleth:1.0:attributeNamespace:uri">urn:mace:shibboleth:1.0:attributeNamespace:uri</option>
+                <option value="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" %s>urn:oasis:names:tc:SAML:2.0:attrname-format:uri</option>
+                <option value="urn:mace:shibboleth:1.0:attributeNamespace:uri" %s>urn:mace:shibboleth:1.0:attributeNamespace:uri</option>
               </select>
             </div>
           </div>
           <button type="submit" name="action" value="Add">Add/Update</button>
-        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, $name, $isRequired ? " checked" : '', $friendlyName, $nameFormat);
+        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, $name, $isRequired ? " checked" : '', $friendlyName, $nameFormat == 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri' ? ' selected' : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? ' selected' : '');
 			}
 		}
 		printf('        <a href="./?validateEntity=%d"><button>Back</button></a>%s        <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&action=AddIndex"><button>Add Index</button></a>%s      </div><!-- end col -->%s      <div class="col">', $this->dbIdNr, "\n", $this->dbIdNr, $this->dbOldIdNr, "\n", "\n");
@@ -3329,7 +3336,7 @@ Class MetadataEdit {
 
 			if ($IDPSSODescriptor  && $IDPSSODescriptor->getAttribute('errorURL') == '') {
 				$IDPSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
-				$errorURLUpdateHandler = $this->metaDb->prepare("REPLACE INTO EntityURLs (entity_id, URL, type ) VALUES (:Id, :URL, 'error');");
+				$errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type` ) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE SET `URL`= :URL;");
 				$errorURLUpdateHandler->bindParam(':Id', $this->dbIdNr);
 				$errorURLUpdateHandler->bindParam(':URL', $errorURL['URL']);
 				$errorURLUpdateHandler->execute();
@@ -4153,5 +4160,13 @@ Class MetadataEdit {
 				printf('%s                <option value="%s">%s</option>', "\n",  $lang, $descr);
 		}
 		print "\n              </select>\n";
+	}
+
+	public function updateUser($userID, $email, $fullName) {
+		$userHandler = $this->metaDb->prepare('UPDATE Users SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
+		$userHandler->bindValue(':Id', strtolower($userID));
+		$userHandler->bindValue(':Email', $email);
+		$userHandler->bindValue(':FullName', $fullName);
+		$userHandler->execute();
 	}
 }

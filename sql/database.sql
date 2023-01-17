@@ -100,12 +100,6 @@ CREATE TABLE `URLs` (
 	`lastValidated` datetime DEFAULT NULL,
 	`validationOutput` text DEFAULT NULL);
 
-CREATE TABLE `Users` (
-	`entity_id` int(10) unsigned DEFAULT NULL,
-	`userID` text DEFAULT NULL,
-	`email` text DEFAULT NULL,
-	UNIQUE KEY `entity_id_userID` (`entity_id`,`userID`) USING HASH);
-
 CREATE TABLE `TestResults` (
 	`entityID` varchar(256) DEFAULT NULL,
 	`test` varchar(20) DEFAULT NULL,
@@ -128,3 +122,29 @@ CREATE TABLE `EntitiesStatistics` (
 	`NrOfEntites` int(10) unsigned DEFAULT NULL,
 	`NrOfSPs` int(10) unsigned DEFAULT NULL,
 	`NrOfIdPs` int(10) unsigned DEFAULT NULL);
+
+CREATE TABLE `EntityConfirmation` (
+	`entity_id` int(10) unsigned DEFAULT NULL,
+	`user_id` int(10) unsigned DEFAULT NULL,
+	`lastConfirmed` datetime DEFAULT NULL,
+	UNIQUE KEY `entity_id` (`entity_id`) USING HASH);
+
+CREATE TABLE `Users` (
+	`id` int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	`userID` text DEFAULT NULL,
+	`email` text DEFAULT NULL,
+	`fullName` text DEFAULT NULL,
+	UNIQUE KEY `userID` (`userID`) USING HASH);
+
+CREATE TABLE `EntityUser` (
+	`entity_id` int(10) unsigned DEFAULT NULL,
+	`user_id` int(10) unsigned DEFAULT NULL,
+	`lastChanged` datetime DEFAULT NULL,
+	UNIQUE KEY `entity_id_user_id` (`entity_id`,`user_id`) USING HASH);
+
+CREATE TABLE `AccessRequests` (
+	`entity_id` int(10) unsigned DEFAULT NULL,
+	`user_id` int(10) unsigned DEFAULT NULL,
+	`hash` varchar(32) DEFAULT NULL,
+	`requestDate` datetime DEFAULT NULL,
+	UNIQUE KEY `entity_id_user_id` (`entity_id`,`user_id`) USING HASH);

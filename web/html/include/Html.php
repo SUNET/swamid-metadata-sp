@@ -35,6 +35,7 @@ Class HTML {
   <title><?=$title?></title>
   <link href="/fontawesome/css/fontawesome.min.css" rel="stylesheet">
   <link href="/fontawesome/css/solid.min.css" rel="stylesheet">
+  <link href="/fontawesome/css/regular.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
@@ -69,10 +70,12 @@ Class HTML {
     .fa-check {
       color: green;
     }
-    .fa-exclamation-triangle {
+    .fa-exclamation-triangle,
+    .fa-clock {
       color: orange;
     }
-    .fa-exclamation {
+    .fa-exclamation,
+    .fa-bell {
       color: red;
     }
 

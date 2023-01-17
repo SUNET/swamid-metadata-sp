@@ -136,6 +136,7 @@ if (isset($_FILES['XMLfile'])) {
 	if (isset($_GET['Entity']) && (isset($_GET['oldEntity']))) {
 		include '../include/MetadataEdit.php';
 		$editMeta = new MetadataEdit($baseDir, $_GET['Entity'], $_GET['oldEntity']);
+		$editMeta->updateUser($EPPN, $mail, $fullName);
 		if (checkAccess($_GET['Entity'], $EPPN, $userLevel, 10, true)) {
 			$html->showHeaders('Metadata SWAMID - Edit - '.$_GET['edit']);
 			$editMeta->edit($_GET['edit']);
@@ -186,11 +187,18 @@ if (isset($_FILES['XMLfile'])) {
 					if ($newEntity_id = $metadata->createDraft())
 						$metadata->validateXML();
 						$metadata->validateSAML();
-						$metadata->updateResponsible($EPPN,$mail);
+						$metadata->getUser($EPPN, $mail, $fullName, true);
+						$metadata->updateResponsible();
 						showEntity($newEntity_id);
 					break;
 				case 'Request removal' :
 					requestRemoval($Entity_id);
+					break;
+				case 'Annual Confirmation' :
+					annualConfirmation($Entity_id);
+					break;
+				case 'Request Access' :
+					requestAccess($Entity_id);
 					break;
 			}
 		} else {
@@ -206,6 +214,10 @@ if (isset($_FILES['XMLfile'])) {
 				case 'upload' :
 					$menuActive = 'upload';
 					showUpload();
+					break;
+				case 'myEntities' :
+					$menuActive = 'myEntities';
+					showMyEntities();
 					break;
 				case 'EntityStatistics' :
 					$menuActive = 'EntityStatistics';
@@ -504,6 +516,7 @@ function showEntity($Entity_id)  {
 		print "\n" . '    <div class="row">';
 		switch ($entity['status']) {
 			case 1:
+				printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d"><button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>', "\n", $Entity_id, getErrors($Entity_id) == '' ? 'success' : 'danger');
 				printf('%s      <a href=".?action=createDraft&Entity=%d"><button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $Entity_id);
 				printf('%s      <a href=".?action=Request+removal&Entity=%d"><button type="button" class="btn btn-outline-danger">Request removal</button></a>', "\n", $Entity_id);
 				break;
@@ -518,11 +531,7 @@ function showEntity($Entity_id)  {
 			case 3:
 				if (checkAccess($Entity_id, $EPPN, $userLevel, 10, false)) {
 					$errors = getBlockingErrors($Entity_id);
-					if ($errors == '') {
-						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-success">Request publication</button></a>', "\n", $Entity_id);
-					} else {
-						printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-danger">Request publication</button></a>', "\n", $Entity_id);
-					}
+					printf('%s      <a href=".?move2Pending=%d"><button type="button" class="btn btn-outline-%s">Request publication</button></a>', "\n", $Entity_id, getBlockingErrors($Entity_id) == '' ? 'success' : 'danger' );
 					printf('%s      <a href=".?removeEntity=%d"><button type="button" class="btn btn-outline-danger">Discard Draft</button></a>', "\n", $Entity_id);
 					print "\n      <br>";
 					if ($oldEntity_id > 0) {
@@ -577,7 +586,7 @@ function showEntity($Entity_id)  {
 		$display->showOrganization($Entity_id, $oldEntity_id, $allowEdit);
 		$display->showContacts($Entity_id, $oldEntity_id, $allowEdit);
 		$display->showXML($Entity_id);
-		if ($entity['status'] > 1 ) $display->showEditors($Entity_id);
+		$display->showEditors($Entity_id);
 
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');
@@ -627,6 +636,64 @@ function showList($entitys, $minLevel) {
 }
 
 ####
+# Shows list for entities this user have access to do Annual Check for.
+####
+function showMyEntities() {
+	global $db, $html, $EPPN, $userLevel;
+
+	$html->showHeaders('Metadata SWAMID - Annual Check');
+	showMenu();
+	if ($userLevel > 9) {
+		printf ('    <div class="row">%s      <div class="col">%s        <a href=".?action=myEntities&%s"><button type="button" class="btn btn-outline-success">Show %s</button></a>%s      </div>%s    </div>%s', "\n", "\n", isset($_GET['showAll']) ? 'showMy' : 'showAll', isset($_GET['showAll']) ? 'My' : 'All',"\n", "\n", "\n");
+    }
+	if (isset($_GET['showAll']) && $userLevel > 9) {
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `status` FROM Entities WHERE `status` = 1 ORDER BY `entityID`");
+	} else {
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `status` FROM Users, EntityUser, Entities WHERE EntityUser.`entity_id` = Entities.`id` AND EntityUser.`user_id` = Users.`id` AND `status` < 4 AND `userID` = :UserID ORDER BY `entityID`, `status`");
+	}
+	$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`, NOW() - INTERVAL 12 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
+	#$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 1 DAY AS `warnDate`, NOW() - INTERVAL 1 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
+	$entitysHandler->bindValue(':UserID', $EPPN);
+
+	printf ('%s    <table id="annual-table" class="table table-striped table-bordered">%s      <thead><tr>%s        <th>entityID</th><th>Metadata status</th><th>Last confirmed(UTC)</th><th>By</th>%s      </tr></thead>%s', "\n", "\n", "\n", "\n", "\n");
+	$entitysHandler->execute();
+	while ($row = $entitysHandler->fetch(PDO::FETCH_ASSOC)) {
+		$entityConfirmationHandler->bindParam(':Id', $row['id']);
+		$entityConfirmationHandler->execute();
+		if ($entityConfirmation = $entityConfirmationHandler->fetch(PDO::FETCH_ASSOC)) {
+			$lastConfirmed = $entityConfirmation['lastConfirmed'];
+			$updater = $entityConfirmation['fullName'] . ' (' . $entityConfirmation['email'] . ')';
+			$confirmStatus = ($entityConfirmation['warnDate'] > $entityConfirmation['lastConfirmed']) ? ($entityConfirmation['errorDate'] > $entityConfirmation['lastConfirmed']) ? ' <i class="fa-regular fa-bell"></i>' : ' <i class="fa-regular fa-clock"></i>' : '';
+		} else {
+			$confirmStatus = ' <i class="fa-regular fa-bell"></i>';
+			$lastConfirmed = 'Never';
+			$updater = '';
+		}
+		switch ($row['status']) {
+			case 1 :
+				$pubStatus = 'Published';
+				break;
+			case 2 :
+				$pubStatus = 'Pending';
+				$lastConfirmed = '';
+				$confirmStatus = '';
+				$updater = '';
+				break;
+			case 3 :
+				$pubStatus = 'Draft';
+				$lastConfirmed = '';
+				$confirmStatus = '';
+				$updater = '';
+				break;
+		}
+		$errorStatus = ($row['errors'] == '') ? ($row['errorsNB'] == '') ? '<i class="fas fa-check"></i>' : '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-exclamation"></i>';
+		printf('      <tr><td><a href="?showEntity=%d" target="_blank">%s</a></td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s', $row['id'], $row['entityID'], $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
+	}
+	print "    </table>\n";
+	$html->addTableSort('annual-table');
+}
+
+####
 # Shows form for upload of new XML
 ####
 function showUpload() {
@@ -650,7 +717,7 @@ function showUpload() {
 ####
 function importXML(){
 	global $html, $baseDir;
-	global $EPPN,$mail;
+	global $EPPN,$mail, $fullName;
 
 	include '../include/NormalizeXML.php';
 	include '../include/ValidateXML.php';
@@ -663,7 +730,8 @@ function importXML(){
 		if ($validate->validateXML($baseDir . '/../schemas/schema.xsd')) {
 			$metadata = new Metadata($baseDir, $entityID, 'New');
 			$metadata->importXML($import->getXML());
-			$metadata->updateResponsible($EPPN,$mail);
+			$metadata->getUser($EPPN, $mail, $fullName, true);
+			$metadata->updateResponsible();
 			$metadata->validateXML(true);
 			$metadata->validateSAML(true);
 
@@ -723,12 +791,13 @@ function showMenu() {
 	}
 
 	print "\n    ";
+	printf('<a href=".?action=myEntities%s"><button type="button" class="btn btn%s-primary">My entities</button></a>', $filter, $menuActive == 'myEntities' ? '' : '-outline');
 	printf('<a href=".?action=pub%s"><button type="button" class="btn btn%s-primary">Published</button></a>', $filter, $menuActive == 'publ' ? '' : '-outline');
 	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>', $filter, $menuActive == 'EntityStatistics' ? '' : '-outline');
-	printf('<a href=".?action=ErrorStatistics%s"><button type="button" class="btn btn%s-primary">Error statistics</button></a>', $filter, $menuActive == 'ErrorStatistics' ? '' : '-outline');
+	#printf('<a href=".?action=ErrorStatistics%s"><button type="button" class="btn btn%s-primary">Error statistics</button></a>', $filter, $menuActive == 'ErrorStatistics' ? '' : '-outline');
 	printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>', $filter, $menuActive == 'EcsStatistics' ? '' : '-outline');
 	printf('<a href=".?action=ErrorStatus%s"><button type="button" class="btn btn%s-primary">Error status</button></a>', $filter, $menuActive == 'ErrorStatus' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
@@ -754,18 +823,18 @@ function move2Pending($Entity_id) {
 	global $db, $html, $display, $userLevel, $menuActive, $baseDir;
 	global $EPPN, $mail, $fullName;
 	global $mailContacts, $mailRequetser, $SendOut;
-	$entityHandler = $db->prepare('SELECT entityID, isIdP, isSP FROM Entities WHERE status = 3 AND id = :Id;');
-	$entityHandler->bindParam(':Id', $Entity_id);
-	$entityHandler->execute();
-	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-		if ( $entity['isIdP'] && $entity['isSP']) {
+
+	$draftMetadata = new Metadata($baseDir, $Entity_id);
+
+	if ($draftMetadata->EntityExists()) {
+		if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
 			$sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
-		} elseif ($entity['isIdP']) {
+		} elseif ($draftMetadata->isIdP()) {
 			$sections = '4.1.1 and 4.1.2' ;
-		} elseif ($entity['isSP']) {
+		} elseif ($draftMetadata->isSP()) {
 			$sections = '4.2.1 and 4.2.2' ;
 		}
-		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+		$html->showHeaders('Metadata SWAMID - ' . $draftMetadata->EntityID());
 		$errors = getBlockingErrors($Entity_id);
 		if ($errors == '') {
 			if (isset($_GET['publishedIn'])) {
@@ -789,42 +858,37 @@ function move2Pending($Entity_id) {
 
 				setupMail();
 
-				if ($SendOut)
+				$addresses = $draftMetadata->getTechnicalAndAdministrativeContacts();
+				if ($SendOut) {
 					$mailRequetser->addAddress($mail);
-				$addresses = array();
-				$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE entity_id = id AND entityID=:EntityID AND (contactType='technical' OR contactType='administrative') AND (status = 1 OR status = 3) AND emailAddress <> ''");
-				$contactHandler->bindParam(':EntityID',$entity['entityID']);
-				$contactHandler->execute();
-				while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
-					if ($SendOut)
-						$mailContacts->addAddress(substr($address['emailAddress'],7));
-					$addresses[] = substr($address['emailAddress'],7);
+					while ($address = $addresses) {
+						$mailContacts->addAddress($address);
+					}
 				}
 
 				$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
 
 				//Content
 				$mailContacts->isHTML(true);
-				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested an update of %s</p>\n<p>You have received this mail because you are either the new or old technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
-				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested an update of %s\n\nYou have received this mail because you are either the new or old technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
+				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested an update of %s</p>\n<p>You have received this mail because you are either the new or old technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $draftMetadata->EntityID(), $hostURL, $Entity_id, $hostURL, $Entity_id);
+				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested an update of %s\n\nYou have received this mail because you are either the new or old technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $draftMetadata->EntityID(), $hostURL, $Entity_id);
 
 				$mailRequetser->isHTML(true);
-				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
-				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
+				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $draftMetadata->EntityID(), $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
+				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $draftMetadata->EntityID(), $hostURL, $Entity_id, implode (", ",$addresses));
 
-				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entity['entityID']);
-				$entityHandlerOld = $db->prepare('SELECT `xml`, `publishIn` FROM Entities WHERE entityID = :Id AND status = 1;');
-				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
-				$entityHandlerOld->execute();
-				if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
+				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $draftMetadata->EntityID());
+				$publishedMetadata = new Metadata($baseDir, $draftMetadata->EntityID(), 'prod');
+
+				if ($publishedMetadata->EntityExists()) {
 					$mailContacts->Subject	= 'Info : Updated SWAMID metadata for ' . $short_entityid;
 					$mailRequetser->Subject	= 'Updated SWAMID metadata for ' . $short_entityid;
-					$newMetadata = new Metadata($baseDir, $entity['entityID'], 'Shadow');
-					$newMetadata->importXML($entityOld['xml']);
-					$newMetadata->updateFeedByValue($entityOld['publishIn']);
-					$newMetadata->validateXML();
-					$newMetadata->validateSAML();
-					$oldEntity_id = $newMetadata->ID();
+					$shadowMetadata = new Metadata($baseDir, $draftMetadata->EntityID(), 'Shadow');
+					$shadowMetadata->importXML($publishedMetadata->XML());
+					$shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
+					$shadowMetadata->validateXML();
+					$shadowMetadata->validateSAML();
+					$oldEntity_id = $shadowMetadata->ID();
 				} else {
 					$mailContacts->Subject	= 'Info : New SWAMID metadata for ' . $short_entityid;
 					$mailRequetser->Subject	= 'New SWAMID metadata for ' . $short_entityid;
@@ -847,29 +911,26 @@ function move2Pending($Entity_id) {
 
 				printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following new or old technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
 				printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);
-				$entityPublishHandler = $db->prepare('UPDATE Entities SET `status` = 2, `publishedId` = :PublishedId, `publishIn` = :PublishIn WHERE `status` = 3 AND `id` = :Id;');
-				$entityPublishHandler->bindParam(':Id', $Entity_id);
-				$entityPublishHandler->bindParam(':PublishedId', $oldEntity_id);
-				$entityPublishHandler->bindParam(':PublishIn', $_GET['publishedIn']);
-				$entityPublishHandler->execute();
+				$draftMetadata->updateFeedByValue($_GET['publishedIn']);
+				$draftMetadata->moveDraftToPending($oldEntity_id);
 			} else {
 				$menuActive = 'new';
 				showMenu();
 				if ($errors != '') {
 					printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
 				}
-				printf('%s    <p>You are about to request publication of <b>%s</b></p>', "\n", $entity['entityID']);
-				$entityHandlerOld = $db->prepare('SELECT publishIn FROM Entities WHERE entityID = :Id AND status = 1;');
+				printf('%s    <p>You are about to request publication of <b>%s</b></p>', "\n", $draftMetadata->EntityID());
+				$publishedMetadata = new Metadata($baseDir, $draftMetadata->EntityID(), 'prod');
+
 				$publishArrayOld = array();
-				$entityHandlerOld->bindParam(':Id', $entity['entityID']);
-				$entityHandlerOld->execute();
-				if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
-					if (($entityOld['publishIn'] & 2) == 2) $publishArrayOld[] = 'SWAMID';
-					if (($entityOld['publishIn'] & 4) == 4) $publishArrayOld[] = 'eduGAIN';
-					if ($entityOld['publishIn'] == 1) $publishArrayOld[] = 'SWAMID-testing';
+				if ($publishedMetadata->EntityExists()) {
+					$oldPublishedValue = $publishedMetadata->feedValue();
+					if (($oldPublishedValue & 2) == 2) $publishArrayOld[] = 'SWAMID';
+					if (($oldPublishedValue & 4) == 4) $publishArrayOld[] = 'eduGAIN';
+					if ($oldPublishedValue == 1) $publishArrayOld[] = 'SWAMID-testing';
 					printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArrayOld));
 				} else {
-					$entityOld['publishIn'] = $entity['isIdP'] ? 7 : 3;
+					$oldPublishedValue = $draftMetadata->isIdP() ? 7 : 3;
 				}
 				printf('    <h5>The entity should be published in:</h5>
     <form>
@@ -887,7 +948,7 @@ function move2Pending($Entity_id) {
       <br>
       <input type="submit" name="action" value="Request publication">
     </form>
-    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $Entity_id, $entityOld['publishIn'] == 7 ? ' checked' : '', $entityOld['publishIn'] == 3 ? ' checked' : '', $entityOld['publishIn'] == 1 ? ' checked' : '', $sections, $Entity_id);
+    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $Entity_id, $oldPublishedValue == 7 ? ' checked' : '', $oldPublishedValue == 3 ? ' checked' : '', $oldPublishedValue == 1 ? ' checked' : '', $sections, $Entity_id);
 			}
 		} else {
 			printf('
@@ -906,6 +967,64 @@ function move2Pending($Entity_id) {
 		print "Can't find Entity";
 	}
 	print "\n";
+}
+
+function annualConfirmation($Entity_id){
+	global $html, $menuActive, $baseDir;
+	global $EPPN, $mail, $fullName;
+
+	$metadata = new Metadata($baseDir, $Entity_id);
+	if ($metadata->status() == 1) {
+		# Entity is Published
+		$errors = getErrors($Entity_id);
+		if ($errors == '') {
+			$user_id = $metadata->getUserId($EPPN);
+			if ($metadata->isResponsible()) {
+				# User have access to entity
+				if ( $metadata->isIdP() && $metadata->isSP()) {
+					$sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
+				} elseif ($metadata->isIdP()) {
+					$sections = '4.1.1 and 4.1.2' ;
+				} elseif ($metadata->isSP()) {
+					$sections = '4.2.1 and 4.2.2' ;
+				}
+
+				if (isset($_GET['entityIsOK'])) {
+					$metadata->updateUser($EPPN, $mail, $fullName, true);
+					$confirm = true;
+				} else {
+					$errors .= isset($_GET['FormVisit']) ? "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n" : '';
+					$confirm = false;
+				}
+
+				if ($confirm) {
+					$metadata->confirmEntity($user_id);
+					$menuActive = 'myEntities';
+					showMyEntities();
+				} else {
+					$html->showHeaders('Metadata SWAMID - ' . $metadata->EntityID());
+					$menuActive = '';
+					showMenu();
+					if ($errors != '') {
+						printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
+					}
+					printf('%s    <p>You are confirming that <b>%s</b> is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>%s', "\n", $metadata->EntityID(), "\n");
+					printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="hidden" name="FormVisit" value="true">%s      <h5> Confirmation:</h5>%s      <input type="checkbox" id="entityIsOK" name="entityIsOK">%s      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>%s      <br>%s      <input type="submit" name="action" value="Annual Confirmation">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>%s', "\n", $Entity_id, "\n", "\n", "\n", "\n", $sections, "\n", "\n", "\n", "\n", $Entity_id, "\n");
+				}
+			} else {
+				# User have no access yet.
+				requestAccess($Entity_id);
+			}
+		} else {
+			$html->showHeaders('Metadata SWAMID - ' . $metadata->EntityID());
+			printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Please fix the following errors before confirming:</b><br>%s        %s%s      </div>%s    </div>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>%s', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n", "\n", $Entity_id, "\n");
+		}
+	} else {
+		$html->showHeaders('Metadata SWAMID - NotFound');
+		$menuActive = 'new';
+		showMenu();
+		print "Can't find Entity";
+	}
 }
 
 function requestRemoval($Entity_id) {
@@ -1033,18 +1152,18 @@ function setupMail() {
 function move2Draft($Entity_id) {
 	global $db, $html, $display, $menuActive, $baseDir;
 	global $EPPN,$mail;
-	$entityHandler = $db->prepare('SELECT `entityID`, `xml`, `userID`, `email` FROM Entities, Users WHERE `entity_id` = `id` AND `status` = 2 AND `id` = :Id;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `xml`, FROM Entities WHERE `status` = 2 AND `id` = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 		if (isset($_GET['action'])) {
-			$newMetadata = new Metadata($baseDir, $entity['entityID'], 'New');
-			$newMetadata->importXML($entity['xml']);
-			$newMetadata->validateXML(true);
-			$newMetadata->validateSAML(true);
+			$draftMetadata = new Metadata($baseDir, $entity['entityID'], 'New');
+			$draftMetadata->importXML($entity['xml']);
+			$draftMetadata->validateXML(true);
+			$draftMetadata->validateSAML(true);
 			$menuActive = 'new';
-			$newMetadata->updateResponsible($entity['userID'], $entity['email']);
-			showEntity($newMetadata->ID());
+			$draftMetadata->copyResponsible($Entity_id);
+			showEntity($draftMetadata->ID());
 			$oldMetadata = new Metadata($baseDir, $Entity_id);
 			$oldMetadata->removeEntity();
 		} else {
@@ -1123,14 +1242,12 @@ function removeEntity($Entity_id) {
 }
 
 function checkAccess($Entity_id, $userID, $userLevel, $minLevel, $showError=false) {
-	global $db, $html;
+	global $html, $baseDir;
 	if ($userLevel >= $minLevel)
 		return true;
-	$userHandler = $db->prepare('SELECT * FROM Users WHERE entity_id = :Entity_id AND `userID` = :UserID');
-	$userHandler->bindValue(':Entity_id', $Entity_id);
-	$userHandler->bindValue(':UserID', $userID);
-	$userHandler->execute();
-	if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
+	$metadata = new Metadata($baseDir, $Entity_id);
+	$metadata->getUser($userID);
+	if ($metadata->isResponsible()) {
 		return true;
 	} else {
 		if ($showError) {
@@ -1142,12 +1259,80 @@ function checkAccess($Entity_id, $userID, $userLevel, $minLevel, $showError=fals
 	}
 }
 
+# Request access to an entity
+function requestAccess($Entity_id) {
+	global $html, $baseDir;
+	global $EPPN, $mail, $fullName;
+	global $mailContacts, $mailRequetser, $SendOut;
+
+	$metadata = new Metadata($baseDir, $Entity_id);
+	if ($metadata->EntityExists()) {
+		$user_id = $metadata->getUserId($EPPN);
+		if ($metadata->isResponsible()) {
+			# User already have access.
+			$html->showHeaders('Metadata SWAMID - ' . $metadata->EntityID());
+			$menuActive = '';
+			showMenu();
+			printf('%s    <p>You already have access to <b>%s</b></p>%s', "\n", $metadata->EntityID(), "\n");
+			printf('    <a href="./?showEntity=%d"><button>Return to Entity</button></a>%s', $Entity_id, "\n");
+		} else {
+			$errors = '';
+			$addresses = $metadata->getTechnicalAndAdministrativeContacts();
+
+			if (isset($_GET['requestAccess'])) {
+				# We are commint from the Form.
+				# Fetch user_id again and make sure user exists
+				$user_id = $metadata->getUserId($EPPN, $mail, $fullName, true);
+				# Get code to send in email
+				$requestCode = urlencode($metadata->createAccessRequest($user_id));
+				$fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
+				setupMail();
+				if ($SendOut) {
+					while ($address = $addresses) {
+						$mailContacts->addAddress($address);
+					}
+				}
+				$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+
+				//Content
+				$mailContacts->isHTML(true);
+				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested access to update %s</p>\n<p>You have received this mail because you are either the technical and/or administrative contact.</p>\n<p>If you approve, please click on this link <a href=\"%s/?approveAccessRequest=%s\">%s/?approveAccessRequest=%s</a></p>\n<p>If you do not approve, you can ignore this email. No changes will be made.</p>", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $requestCode, $hostURL, $requestCode);
+				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested access to update %s\n\nYou have received this mail because you are either the technical and/or administrative contact.\n\nIf you approve, please click on this link %s/?approveAccessRequest=%s\n\nIf you do not approve, you can ignore this email. No changes will be made.", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $requestCode);
+				$info = sprintf("<p>The request has been sent to: %s</p>\n<p>Contact them and ask them to accept your request.</p>\n", implode (", ",$addresses));
+
+				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->EntityID());
+
+				$mailContacts->Subject	= 'Access request for ' . $short_entityid;
+
+				try {
+					$mailContacts->send();
+				} catch (Exception $e) {
+					echo 'Message could not be sent to contacts.<br>';
+					echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+				}
+				$menuActive = '';
+				showInfo($info);
+			} else {
+				$errors .= isset($_GET['FormVisit']) ? "You must check the box to confirm.\n" : '';
+				$html->showHeaders('Metadata SWAMID - ' . $metadata->EntityID());
+				$menuActive = '';
+				showMenu();
+				if ($errors != '') {
+					printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
+				}
+				printf('%s    <p>You do not have access to <b>%s</b></p>%s', "\n", $metadata->EntityID(), "\n");
+				printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="hidden" name="FormVisit">%s      <h5>Request access:</h5>%s      <input type="checkbox" id="requestAccess" name="requestAccess">%s      <label for="requestAccess">I confirm that I have the right to update this entity.</label><br>%s      <p>A mail will be sent to the following addresses with further instructions: %s.</p>%s      <input type="submit" name="action" value="Request Access">%s    </form>%s    <a href="./?showEntity=%d"><button>Return to Entity</button></a>%s', "\n", $Entity_id, "\n", "\n", "\n", "\n", "\n", implode (", ",$addresses), "\n", "\n", "\n", $Entity_id, "\n");
+			}
+		}
+	}
+}
+
 # Return Blocking errors
 function getBlockingErrors($Entity_id) {
 	global $db;
 	$errors = '';
 
-	$entityHandler = $db->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors` FROM Entities WHERE `id` = :Id;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `errors` FROM Entities WHERE `id` = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	/*$urlHandler1 = $db->prepare('SELECT `status`, `URL`, `lastValidated`, `validationOutput` FROM URLs WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
 	$urlHandler1->bindParam(':Id', $Entity_id);
@@ -1178,10 +1363,39 @@ function getBlockingErrors($Entity_id) {
 	return $errors;
 }
 
+# Return All errors, both blocking and nonblocking
+function getErrors($Entity_id) {
+	global $db;
+	$errors = '';
+
+	$entityHandler = $db->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
+	$entityHandler->bindParam(':Id', $Entity_id);
+
+	$entityHandler->execute();
+	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		$errors = $entity['errorsNB'];
+		$errors .= $entity['errors'];
+	}
+	return $errors;
+}
+
 function showHelp() {
 	global $html, $display, $menuActive;
 	$html->showHeaders('Metadata SWAMID');
 	$menuActive = '';
 	showMenu();
 	$display->showHelp();
+}
+
+function showError($text) {
+	global $html;
+	$html->showHeaders('Metadata SWAMID - Error');
+	print $text;
+}
+
+function showInfo($text) {
+	global $html, $menuActive;
+	$html->showHeaders('Metadata SWAMID');
+	showMenu();
+	printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s', "\n", "\n", $text, "\n", "\n", "\n");
 }

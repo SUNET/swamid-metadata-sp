@@ -8,6 +8,7 @@ Class Metadata {
 
 	private $isIdP = false;
 	private $isSP = false;
+	private $feedValue = 0;
 	private $registrationInstant = '';
 
 	private $entityID = 'Unknown';
@@ -15,6 +16,8 @@ Class Metadata {
 	private $dbIdNr = 0;
 	private $status = 0;
 	private $xml;
+
+	private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
 	private $basedDir = '';
 	//$startTimer = time();
@@ -40,7 +43,7 @@ Class Metadata {
 	}
 
 	private function __construct2($entity_id) {
-		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindValue(':Id', $entity_id);
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -53,6 +56,9 @@ Class Metadata {
 			$this->dbIdNr = $entity['id'];
 			$this->status = $entity['status'];
 			$this->entityID = $entity['entityID'];
+			$this->isIdP = $entity['isIdP'];
+			$this->isSP = $entity['isSP'];
+			$this->feedValue = $entity['publishIn'];
 		}
 	}
 
@@ -75,7 +81,7 @@ Class Metadata {
 				$this->status = 3;
 		}
 
-		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml` FROM Entities WHERE `entityID` = :Id AND `status` = :Status;');
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`, `xml` FROM Entities WHERE `entityID` = :Id AND `status` = :Status;');
 		$entityHandler->bindValue(':Id', $entityID);
 		$entityHandler->bindValue(':Status', $this->status);
 		$entityHandler->execute();
@@ -87,6 +93,9 @@ Class Metadata {
 			$this->xml->loadXML($entity['xml']);
 			$this->xml->encoding = 'UTF-8';
 			$this->dbIdNr = $entity['id'];
+			$this->isIdP = $entity['isIdP'];
+			$this->isSP = $entity['isSP'];
+			$this->feedValue = $entity['publishIn'];
 		}
 	}
 
@@ -121,7 +130,6 @@ Class Metadata {
 	}
 
 	public function validateURLs($limit=10){
-		$this->showProgress('validateURLs - start');
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_HEADER, 1);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -207,7 +215,6 @@ Class Metadata {
 			$count ++;
 		}
 		curl_close($ch);
-		$this->showProgress('validateURLs - done');
 		if ($limit > 10)
 			printf ("Checked %d URL:s\n", $count);
 	}
@@ -323,15 +330,17 @@ Class Metadata {
 
 	# Creates / updates XML from Published into Draft
 	public function createDraft() {
-		if ($this->entityExists && $this->status == 1) {
+		if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
 			# Add new entity into database
 			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, 3, :Xml, NOW());');
 			$entityHandlerInsert->bindValue(':Id', $this->entityID);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerInsert->execute();
+			$oldDbNr = $this->dbIdNr;
 			$this->result = "";
 			$this->dbIdNr = $this->metaDb->lastInsertId();
 			$this->status = 3;
+			$this->copyResponsible($oldDbNr);
 			return $this->dbIdNr;
 		} else
 			return false;
@@ -363,7 +372,6 @@ Class Metadata {
 		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
 		$child = $EntityDescriptor->firstChild;
 		while ($child) {
-			#$this->showProgress($child->nodeName);
 			switch ($child->nodeName) {
 				case 'ds:Signature' :
 					// Should not be in SWAMID-metadata
@@ -643,7 +651,6 @@ Class Metadata {
 		# https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
 		$child = $data->firstChild;
 		while ($child) {
-			#$this->showProgress("SPSSODescriptor->".$child->nodeName);
 			switch ($child->nodeName) {
 				# 2.4.1
 				#case 'md:Signature' :
@@ -761,8 +768,15 @@ Class Metadata {
 						}
 						if ($child->getAttribute('NameFormat')) {
 							$NameFormat = $child->getAttribute('NameFormat');
-							if ($NameFormat <> 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri') {
-								$this->warning .= sprintf("NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n", $NameFormat, $Name, $index);
+							switch ($NameFormat) {
+								case 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri' :
+									#OK;
+									break;
+								case 'urn:mace:shibboleth:1.0:attributeNamespace:uri' :
+									$this->warning .= sprintf("SAML1 NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n", $NameFormat, $Name, $index);
+									break;
+								default :
+									$this->warning .= sprintf("NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n", $NameFormat, $Name, $index);
 							}
 						} else {
 							$this->warning .= sprintf("NameFormat is missing for %s in RequestedAttribute for index %d. This might create problmes with some IdP:s\n", $Name, $index);
@@ -1228,7 +1242,6 @@ Class Metadata {
 
 	// 5.1.1 -> 5.1.5/ 6.1.1 -> 6.1.5
 	private function checkLangElements() {
-		#$this->showProgress('checkLang');
 		$mduiArray = array();
 		$usedLangArray = array();
 		$mduiHandler = $this->metaDb->prepare("SELECT `type`, `lang`, `element` FROM Mdui WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
@@ -2049,6 +2062,7 @@ Class Metadata {
 		$publishedHandler->bindValue(':Id', $this->dbIdNr);
 		$publishedHandler->bindValue(':PublishIn', $publishIn);
 		$publishedHandler->execute();
+		$this->feedValue = $publishIn;
 	}
 
 	#############
@@ -2059,17 +2073,34 @@ Class Metadata {
 		$publishedHandler->bindValue(':Id', $this->dbIdNr);
 		$publishedHandler->bindValue(':PublishIn', $publishIn);
 		$publishedHandler->execute();
+		$this->feedValue = $publishIn;
 	}
 
 	#############
 	# Updates which user that is responsible for an entity
 	#############
-	public function updateResponsible($EPPN,$mail) {
-		$userHandler = $this->metaDb->prepare('INSERT INTO Users (`entity_id`, `userID`, `email`) VALUES (:Entity_id, :UserID, :Email) ON DUPLICATE KEY UPDATE `email` = :Email');
-		$userHandler->bindValue(':Entity_id', $this->dbIdNr);
-		$userHandler->bindValue(':UserID', $EPPN);
-		$userHandler->bindValue(':Email', $mail);
-		$userHandler->execute();
+	public function updateResponsible() {
+		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE SET `lastChanged` = NOW()');
+		$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
+		$entityUserHandler->bindParam(':User_Id', $this->user['id']);
+		$entityUserHandler->execute();
+	}
+
+	#############
+	# Copies which user that is responsible for an entity from another entity
+	#############
+	public function copyResponsible($otherEntity_id) {
+		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE SET `lastChanged` = :LastChanged');
+		$otherEntityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :OtherEntity_Id');
+
+		$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
+		$otherEntityUserHandler->bindParam(':OtherEntity_Id', $otherEntity_id);
+		$otherEntityUserHandler->execute();
+		while ($otherEntityUser = $otherEntityUserHandler->fetch(PDO::FETCH_ASSOC)) {
+			$entityUserHandler->bindParam(':User_Id', $otherEntityUser['user_id']);
+			$entityUserHandler->bindParam(':LastChanged', $otherEntityUser['lastChanged']);
+			$entityUserHandler->execute();
+		}
 	}
 
 	#############
@@ -2108,7 +2139,7 @@ Class Metadata {
 			$this->metaDb->exec('DELETE FROM ContactPerson WHERE `entity_id` = ' . $dbIdNr .';');
 			$this->metaDb->exec('DELETE FROM EntityURLs WHERE `entity_id` = ' . $dbIdNr .';');
 			$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $dbIdNr .';');
-			$this->metaDb->exec('DELETE FROM Users WHERE `entity_id` = ' . $dbIdNr .';');
+			$this->metaDb->exec('DELETE FROM EntityUser WHERE `entity_id` = ' . $dbIdNr .';');
 			$this->metaDb->exec('DELETE FROM Entities WHERE `id` = ' . $dbIdNr .';');
 		}
 	}
@@ -2169,29 +2200,41 @@ Class Metadata {
 	# Moves an entity from pendingQueue to publishedPending state
 	#############
 	public function movePublishedPending() {
-		$entityHandler = $this->metaDb->prepare('SELECT `entityID` FROM Entities WHERE `status` = 2 AND `id` = :Id');
-		$entityUserHandler = $this->metaDb->prepare('SELECT `userID`, `email` FROM Users WHERE `entity_id` = :Id');
-		$copyUserHandler = $this->metaDb->prepare('INSERT INTO Users (`entity_id`, `userID`, `email`) VALUES (:Entity_id, :UserID, :Email) ON DUPLICATE KEY UPDATE `email` = :Email');
-		$publishedEntityHandler = $this->metaDb->prepare('SELECT `id` FROM Entities WHERE `status` = 1 AND `entityID` = :Id');
-
-		$entityHandler->bindParam(':Id', $this->dbIdNr);
-		$entityUserHandler->bindParam(':Id', $this->dbIdNr);
-		$entityHandler->execute();
 		# Check if entity id exist as status pending
-		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+		if ($this->status == 2) {
+			$publishedEntityHandler = $this->metaDb->prepare('SELECT `id` FROM Entities WHERE `status` = 1 AND `entityID` = :Id');
 			# Get id of published version
-			$publishedEntityHandler->bindParam(':Id', $entity['entityID']);
+			$publishedEntityHandler->bindParam(':Id', $this->entityID);
 			$publishedEntityHandler->execute();
 			if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
-				$copyUserHandler->bindValue(':Entity_id', $publishedEntity['id']);
+				$entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
+				$entityUserHandler = $this->metaD->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id');
+				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE SET `lastChanged` = :LastChanged WHERE `lastChanged` < :LastChanged');
+				$updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Entity_Id, :User_Id, :LastConfirmed) ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
+
+				# Get lastValidated
+				$entityHandler->execute();
+				$entityHandler->bindParam(':Id', $this->dbIdNr);
+				$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
+
+				$addEntityUserHandler->bindParam(':Entity_id', $publishedEntity['id']);
+
+				# Get users having access to this entityID
+				$entityUserHandler->bindParam(':Id', $this->dbIdNr);
 				$entityUserHandler->execute();
 				while ($entityUser = $entityUserHandler->fetch(PDO::FETCH_ASSOC)) {
-					# Copy userId and email from pending -> published
-					$copyUserHandler->bindValue(':UserID', $entityUser['userID']);
-					$copyUserHandler->bindValue(':Email', $entityUser['email']);
-					$copyUserHandler->execute();
+					# Copy userId from pending -> published
+					$addEntityUserHandler->bindValue(':User_ID', $entityUser['user_id']);
+					$addEntityUserHandler->bindValue(':LastChanged', $entityUser['lastChanged']);
+					$addEntityUserHandler->execute();
 				}
+				# Set lastValidated on Pending as lastConfirmed on Published
+				$updateEntityConfirmationHandler->bindParam(':Entity_Id', $this->dbIdNr);
+				$updateEntityConfirmationHandler->bindParam(':User_Id', $entityUser['user_id']);
+				$updateEntityConfirmationHandler->bindParam(':LastConfirmed', $entity['lastValidated']);
+				$updateEntityConfirmationHandler->execute();
 			}
+			# Move entity to status Pending
 			$entityUpdateHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
 			$entityUpdateHandler->bindParam(':Id', $this->dbIdNr);
 			$entityUpdateHandler->execute();
@@ -2260,6 +2303,108 @@ Class Metadata {
 	}
 
 	#############
+	# Return if this entity is an IdP
+	#############
+	public function isIdP() {
+		return $this->isIdP;
+	}
+
+	#############
+	# Return if this entity is an SP
+	#############
+	public function isSP() {
+		return $this->isSP;
+	}
+
+	#############
+	# Moves a Draft into Pending state
+	#############
+	public function moveDraftToPending($publishedEntity_id) {
+		$this->addRegistrationInfo();
+		$entityHandler = $this->metaDb->prepare('UPDATE Entities SET `status` = 2, `publishedId` = :PublishedId, `xml` = :Xml WHERE `status` = 3 AND `id` = :Id;');
+		$entityHandler->bindParam(':Id', $this->dbIdNr);
+		$entityHandler->bindParam(':PublishedId', $publishedEntity_id);
+		$entityHandler->bindValue(':Xml', $this->xml->saveXML());
+
+		$entityHandler->execute();
+	}
+
+	private function addRegistrationInfo() {
+		$EntityDescriptor = $this->getEntityDescriptor($this->xml);
+		# Find md:Extensions in XML
+		$child = $EntityDescriptor->firstChild;
+		$Extensions = false;
+		while ($child && ! $Extensions) {
+			switch ($child->nodeName) {
+				case 'md:Extensions' :
+					$Extensions = $child;
+					break;
+				case 'md:RoleDescriptor' :
+				case 'md:SPSSODescriptor' :
+				case 'md:IDPSSODescriptor' :
+				case 'md:AuthnAuthorityDescriptor' :
+				case 'md:AttributeAuthorityDescriptor' :
+				case 'md:PDPDescriptor' :
+				case 'md:AffiliationDescriptor' :
+				case 'md:Organization' :
+				case 'md:ContactPerson' :
+				case 'md:AdditionalMetadataLocation' :
+					$Extensions = $this->newXml->createElement('md:Extensions');
+					$EntityDescriptor->insertBefore($Extensions, $child);
+					break;
+			}
+			$child = $child->nextSibling;
+		}
+		if (! $Extensions) {
+			# Add if missing
+			$Extensions = $this->newXml->createElement('md:Extensions');
+			$EntityDescriptor->appendChild($Extensions);
+		}
+		# Find mdattr:EntityAttributes in XML
+		$child = $Extensions->firstChild;
+		$RegistrationInfo = false;
+		while ($child && ! $RegistrationInfo) {
+			if ($child->nodeName == 'mdrpi:RegistrationInfo') {
+				$RegistrationInfo = $child;
+			} else
+				$child = $child->nextSibling;
+		}
+		if (! $RegistrationInfo) {
+			# Add if missing
+			$ts=date("Y-m-d\TH:i:s\Z");
+			$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
+			$RegistrationInfo = $this->newXml->createElement('mdrpi:RegistrationInfo');
+			$RegistrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/');
+			$RegistrationInfo->setAttribute('registrationInstant', $ts);
+			$Extensions->appendChild($RegistrationInfo);
+		}
+
+		# Find samla:Attribute in XML
+		$child = $RegistrationInfo->firstChild;
+		$RegistrationPolicy = false;
+		while ($child && ! $RegistrationPolicy) {
+			if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute('xml:lang') == 'en') {
+				$RegistrationPolicy = $child;
+			} else {
+				$child = $child->nextSibling;
+			}
+		}
+		if (!$RegistrationPolicy) {
+			$RegistrationPolicy = $this->newXml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps');
+			$RegistrationPolicy->setAttribute('xml:lang', 'en');
+			$RegistrationInfo->appendChild($RegistrationPolicy);
+		}
+	}
+
+	#############
+	# Return status # for this entity
+	#############
+	public function status() {
+		return $this->status;
+	}
+
+
+	#############
 	# Return if this entity exists in the database
 	#############
 	public function EntityExists() {
@@ -2273,12 +2418,152 @@ Class Metadata {
 		return $this->dbIdNr;
 	}
 
-	private function showProgress($info) {
-		#if($verbose) {
-		#	printf('%d: %s<br>',time() - $this->startTimer, $info);
-		#	ob_flush();
-		#	flush();
-		#}
+	#############
+	# Return feed value for this entity in the database
+	#############
+	public function feedValue() {
+		return $this->feedValue;
+	}
+
+	public function getTechnicalAndAdministrativeContacts() {
+		$addresses = array();
+
+		# If entity in Published will only match one. If entity in draft, will match both draft and published and get addresses from both.
+		$contactHandler = $this->metaDb->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE id = entity_id AND ((entityID = :EntityID AND status = 1) OR (id = :Entity_ID AND status = 3)) AND (contactType='technical' OR contactType='administrative') AND emailAddress <> ''");
+		$contactHandler->bindParam(':EntityID',$this->entityID);
+		$contactHandler->bindParam(':Entity_ID',$this->dbIdNr);
+		$contactHandler->execute();
+		while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
+			$addresses[] = substr($address['emailAddress'],7);
+		}
+		return $addresses;
+	}
+
+	#############
+	# Return XML for this entity in the database
+	#############
+	public function XML() {
+		return $this->xml->saveXML();
+	}
+
+	public function confirmEntity($user_id) {
+		$entityConfirmHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Id, :User_id, NOW()) ON DUPLICATE KEY UPDATE  `user_id` = :User_id, `lastConfirmed` = NOW()');
+		$entityConfirmHandler->bindParam(':Id', $this->dbIdNr);
+		$entityConfirmHandler->bindParam(':User_id', $user_id);
+		$entityConfirmHandler->execute();
+	}
+
+	public function getUser($userID, $email = '', $fullName = '', $add = false) {
+		if ($this->user['id'] == 0) {
+			$userHandler = $this->metaDb->prepare('SELECT `id`, `email`, `fullName` FROM Users WHERE `userID` = :Id');
+			$userHandler->bindValue(':Id', strtolower($userID));
+			$userHandler->execute();
+			if ($this->user = $this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
+				if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
+					$userHandler = $this->metaDb->prepare('UPDATE Users SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
+					$userHandler->bindValue(':Id', strtolower($userID));
+					$userHandler->bindValue(':Email', $email);
+					$userHandler->bindValue(':FullName', $fullName);
+					$userHandler->execute();
+				}
+			} elseif ($add) {
+				$addNewUserHandler = $this->metaDb->prepare('INSERT INTO Users (`userID`, `email`, `fullName`) VALUES(:Id, :Email, :FullName)');
+				$addNewUserHandler->bindParam(':Id', strtolower($userID));
+				$addNewUserHandler->bindParam(':Email', $email);
+				$addNewUserHandler->bindParam(':FullName', $fullName);
+				$this->user['id'] = $this->metaDb->lastInsertId();
+				$this->user['email'] = $email;
+				$this->user['fullname'] = $fullName;
+			} else {
+				$this->user['id'] = 0;
+				$this->user['email'] = '';
+				$this->user['fullname'] = '';
+			}
+		}
+		return $this->user;
+	}
+
+	public function getUserId($userID, $email = '', $fullName = '', $add = false) {
+		if ($this->user['id'] == 0) {
+			$this->getUser($userID, $email, $fullName, $add);
+		}
+		return $this->user['id'];
+	}
+
+	public function updateUser($userID, $email, $fullName) {
+		$userHandler = $this->metaDb->prepare('UPDATE Users SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
+		$userHandler->bindValue(':Id', strtolower($userID));
+		$userHandler->bindValue(':Email', $email);
+		$userHandler->bindValue(':FullName', $fullName);
+		$userHandler->execute();
+	}
+
+	#############
+	# Check if userID is responsible for this entityID
+	#############
+	public function isResponsible() {
+		if ($this->user['id'] > 0) {
+			$userHandler = $this->metaDb->prepare('SELECT * FROM EntityUser WHERE `user_id` = :UsersID AND `entity_id`= :EntityID' );
+			$userHandler->bindParam(':UsersID', $this->user['id']);
+			$userHandler->bindParam(':EntityID', $this->dbIdNr);
+			$userHandler->execute();
+			if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	public function createAccessRequest($user_id) {
+		$hash = hash_hmac('md5',$this->entityID(),time());
+		$code = base64_encode(sprintf ('%d:%d:%s', $this->dbIdNr, $user_id, $hash));
+		$addNewRequestHandler = $this->metaDb->prepare('INSERT INTO `AccessRequests` (`entity_id`, `user_id`, `hash`, `requestDate`) VALUES (:Entity_id, :User_id, :Hashvalue, NOW()) ON DUPLICATE KEY UPDATE SET `hash` = :Hashvalue, `requestDate` = NOW()');
+		$addNewRequestHandler->bindParam(':Entity_id', $this->dbIdNr);
+		$addNewRequestHandler->bindParam(':User_id', $user_id);
+		$addNewRequestHandler->bindParam(':Hashvalue', $hash);
+		$addNewRequestHandler->execute();
+		return $code;
+	}
+
+	public function validateCode($user_id, $hash) {
+		if ($user_id > 0) {
+			$userHandler = $this->metaDb->prepare('SELECT * FROM EntityUser WHERE `user_id` = :UsersID AND `entity_id`= :EntityID' );
+			$userHandler->bindParam(':UsersID', $user_id);
+			$userHandler->bindParam(':EntityID', $this->dbIdNr);
+			$userHandler->execute();
+			if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
+				return array('returnCode' => 1, 'info' => 'User already had access');
+			} else {
+				$requestHandler = $this->metaDb->prepare('SELECT `requestDate`, NOW() - INTERVAL 1 DAY AS `limit`, `email`, `fullName`, `entityID` FROM `AccessRequests`, `Users`, `Entities`  WHERE Users.`id` = `user_id` AND `Entities`.`id` = `entity_id` AND `entity_id` =  :Entity_id AND `user_id` = :User_id AND `hash` = :Hashvalue');
+				$requestRemoveHandler = $this->metaDb->prepare('DELETE FROM `AccessRequests` WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
+				$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE SET `lastChanged` = NOW()');
+				$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
+				$entityUserHandler->bindParam(':User_Id', $user_id);
+				$requestHandler->bindParam(':Entity_id', $this->dbIdNr);
+				$requestHandler->bindParam(':User_id', $user_id);
+				$requestHandler->bindParam(':Hashvalue', $hash);
+				$requestRemoveHandler->bindParam(':Entity_id', $this->dbIdNr);
+				$requestRemoveHandler->bindParam(':User_id', $user_id);
+
+				$requestHandler->execute();
+				if ($request = $requestHandler->fetch(PDO::FETCH_ASSOC)) {
+					$requestRemoveHandler->execute();
+					if ($request['limit'] < $request['requestDate']) {
+						$entityUserHandler->execute();
+						return array('returnCode' => 2, 'info' => 'Access granted.', 'fullName' => $request['fullName'], 'email' => $request['email']);
+					} else {
+						return array('returnCode' => 11, 'info' => 'Code was expired. Please ask user to request new.');
+					}
+				} else {
+					return array('returnCode' => 12, 'info' => 'Invalid code');
+				}
+			}
+		} else {
+			return array('returnCode' => 13, 'info' => 'Error in code');
+		}
 	}
 
 	public function saveStatus($date = '') {

@@ -1,4 +1,12 @@
 <?php
+// Import PHPMailer classes into the global namespace
+// These must be at the top of your script, not inside a function
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+//Load composer's autoloader
+require 'vendor/autoload.php';
+
 $baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 1);
 include $baseDir . '/config.php';
 
@@ -24,6 +32,8 @@ if (isset($_GET['showEntity'])) {
 	$display->showRawXML($_GET['rawXML']);
 } elseif (isset($_GET['rawXMLEntityID'])) {
 	$display->showRawXML($_GET['rawXMLEntityID'], true);
+} elseif (isset(($_GET['approveAccessRequest']))) {
+	approveAccessRequest($_GET['approveAccessRequest']);
 } elseif (isset($_GET['show'])) {
 	switch($_GET['show']) {
 		case 'Pending' :
@@ -714,4 +724,71 @@ function nodeName($str) {
 		return $array[1];
 	else
 		return $array[0];
+}
+
+function approveAccessRequest($code) {
+	global $baseDir;
+	$codeArray = explode(':', base64_decode($code));
+	if (isset($codeArray[2])) {
+		include 'include/Metadata.php';
+		$metadata = new Metadata($baseDir, $codeArray[0]);
+		if ($metadata->EntityExists()) {
+			$result = $metadata->validateCode($codeArray[1], $codeArray[2]);
+			if ($result['returnCode'] < 10) {
+				$info = $result['info'];
+				if ($result['returnCode'] == 2) {
+					global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
+
+					$mail = new PHPMailer(true);
+					/*$mail->SMTPDebug = 2;*/
+					$mail->isSMTP();
+					$mail->Host = $SMTPHost;
+					$mail->SMTPAuth = true;
+					$mail->SMTPAutoTLS = true;
+					$mail->Port = 587;
+					$mail->SMTPAuth = true;
+					$mail->Username = $SASLUser;
+					$mail->Password = $SASLPassword;
+					$mail->SMTPSecure = 'tls';
+
+					//Recipients
+					$mail->setFrom($MailFrom, 'Metadata');
+					$mail->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+					$mail->addAddress($result['email']);
+					$mail->Body		= sprintf("<p>Hi.</p>\n<p>Your access to %s have been granted.</p>\n<p>-- <br>This mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations. If you've any questions please contact operations@swamid.se.</p>", $metadata->entityID());
+					$mail->AltBody	= sprintf("Hi.\n\nYour access to %s have been granted.\n\n-- \nThis mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations. If you've any questions please contact operations@swamid.se.", $metadata->EntityID());
+					$mail->Subject	= 'Access granted for ' . $short_entityid;
+
+					$info = sprintf('<h3>Access granted</h3>Access to <b>%s</b> added for %s (%s).', $metadata->EntityID(), $result['fullName'], $result['email']);
+
+					try {
+						$mail->send();
+					} catch (Exception $e) {
+						echo 'Message could not be sent to contacts.<br>';
+						echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+					}
+				}
+				showText($info);
+			} else {
+				showError($result['info']);
+			}
+		} else {
+			showError('Invalid code');
+		}
+	} else {
+		showError('Invalid code');
+	}
+}
+
+function showError($error) {
+	global $html;
+	$html->showHeaders('Metadata SWAMID - Error');
+	print $error;
+}
+
+function showText($text, $showMenu = false, $error = false) {
+	global $html, $menuActive;
+	$html->showHeaders('Metadata SWAMID');
+	if ($showMenu) showMenu();
+	printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s', "\n", "\n", $text, "\n", "\n", "\n");
 }
