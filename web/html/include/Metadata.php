@@ -476,6 +476,18 @@ Class Metadata {
 	private function parseExtensions_EntityAttributes_Attribute($data) {
 		$entityAttributesHandler = $this->metaDb->prepare('INSERT INTO EntityAttributes (`entity_id`, `type`, `attribute`) VALUES (:Id, :Type, :Value);');
 
+		if (! $data->hasAttribute('NameFormat') && $data->hasAttribute('Name')) {
+			switch ($data->getAttribute('Name')) {
+				case 'http://macedir.org/entity-category' :
+				case 'http://macedir.org/entity-category-support' :
+				case 'urn:oasis:names:tc:SAML:attribute:assurance-certification' :
+				case 'urn:oasis:names:tc:SAML:profiles:subject-id:req' :
+				case 'http://www.swamid.se/assurance-requirement' :
+					$data->setAttribute('NameFormat', 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri');
+					$this->result .= sprintf("Added NameFormat urn:oasis:names:tc:SAML:2.0:attrname-format:uri to Extensions/EntityAttributes/Attribute/%s.\n", $data->getAttribute('Name'));;
+					break;
+			}
+		}
 		if ($data->getAttribute('NameFormat') == 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri') {
 			switch ($data->getAttribute('Name')) {
 				case 'http://macedir.org/entity-category' :
