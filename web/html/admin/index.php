@@ -632,9 +632,9 @@ function showMyEntities() {
 		printf ('    <div class="row">%s      <div class="col">%s        <a href=".?action=myEntities&%s"><button type="button" class="btn btn-outline-success">Show %s</button></a>%s      </div>%s    </div>%s', "\n", "\n", isset($_GET['showAll']) ? 'showMy' : 'showAll', isset($_GET['showAll']) ? 'My' : 'All',"\n", "\n", "\n");
     }
 	if (isset($_GET['showAll']) && $userLevel > 9) {
-		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `status` FROM Entities WHERE `status` = 1 ORDER BY `entityID`");
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status` FROM Entities WHERE `status` = 1 ORDER BY `entityID`");
 	} else {
-		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `status` FROM Users, EntityUser, Entities WHERE EntityUser.`entity_id` = Entities.`id` AND EntityUser.`user_id` = Users.`id` AND `status` < 4 AND `userID` = :UserID ORDER BY `entityID`, `status`");
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status` FROM Users, EntityUser, Entities WHERE EntityUser.`entity_id` = Entities.`id` AND EntityUser.`user_id` = Users.`id` AND `status` < 4 AND `userID` = :UserID ORDER BY `entityID`, `status`");
 	}
 	$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`, NOW() - INTERVAL 12 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
 	#$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 1 DAY AS `warnDate`, NOW() - INTERVAL 1 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
@@ -671,7 +671,7 @@ function showMyEntities() {
 				$updater = '';
 				break;
 		}
-		$errorStatus = ($row['errors'] == '') ? ($row['errorsNB'] == '') ? '<i class="fas fa-check"></i>' : '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-exclamation"></i>';
+		$errorStatus = ($row['errors'] == '' && $row['errorsNB'] == '') ? ($row['warnings'] == '') ? '<i class="fas fa-check"></i>' : '<i class="fas fa-exclamation-triangle"></i>' : '<i class="fas fa-exclamation"></i>';
 		printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s', $row['id'], $row['entityID'], $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
 	}
 	print "    </table>\n";
