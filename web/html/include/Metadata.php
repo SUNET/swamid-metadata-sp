@@ -2474,13 +2474,13 @@ Class Metadata {
 				if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
 					$userHandler = $this->metaDb->prepare('UPDATE Users SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
 					$userHandler->bindValue(':Id', strtolower($userID));
-					$userHandler->bindValue(':Email', $email);
-					$userHandler->bindValue(':FullName', $fullName);
+					$userHandler->bindParam(':Email', $email);
+					$userHandler->bindParam(':FullName', $fullName);
 					$userHandler->execute();
 				}
 			} elseif ($add) {
 				$addNewUserHandler = $this->metaDb->prepare('INSERT INTO Users (`userID`, `email`, `fullName`) VALUES(:Id, :Email, :FullName)');
-				$addNewUserHandler->bindParam(':Id', strtolower($userID));
+				$addNewUserHandler->bindValue(':Id', strtolower($userID));
 				$addNewUserHandler->bindParam(':Email', $email);
 				$addNewUserHandler->bindParam(':FullName', $fullName);
 				$this->user['id'] = $this->metaDb->lastInsertId();

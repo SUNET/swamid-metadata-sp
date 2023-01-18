@@ -1267,7 +1267,7 @@ function requestAccess($Entity_id) {
 				$fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
 				setupMail();
 				if ($SendOut) {
-					while ($address = $addresses) {
+					foreach ($addresses as $address) {
 						$mailContacts->addAddress($address);
 					}
 				}
