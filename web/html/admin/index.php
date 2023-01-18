@@ -259,13 +259,11 @@ if (isset($_FILES['XMLfile'])) {
 					}
 					break;
 				case 'ErrorList' :
-					if ($userLevel > 1) {
-						$menuActive = 'Errors';
-						$html->showHeaders('Metadata SWAMID - Errror status');
-						showMenu();
-						$display->showErrorList();
-						$html->addTableSort('error-table');
-					}
+					$menuActive = 'Errors';
+					$html->showHeaders('Metadata SWAMID - Errror status');
+					showMenu();
+					$display->showErrorList();
+					$html->addTableSort('error-table');
 					break;
 				case 'ErrorListDownload' :
 					if ($userLevel > 1) {
@@ -783,11 +781,9 @@ function showMenu() {
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
 	printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>', $filter, $menuActive == 'EntityStatistics' ? '' : '-outline');
 	printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>', $filter, $menuActive == 'EcsStatistics' ? '' : '-outline');
+	printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
 	if ( $userLevel > 4 ) {
 		printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>', $filter, $menuActive == 'URLlist' ? '' : '-outline');
-	}
-	if ( $userLevel > 1 ) {
-			printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
 	}
 	if ( $userLevel > 10 ) {
 		printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>', $filter, $menuActive == 'CleanPending' ? '' : '-outline');
