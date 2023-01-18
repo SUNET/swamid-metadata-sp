@@ -840,7 +840,7 @@ function move2Pending($Entity_id) {
 				$addresses = $draftMetadata->getTechnicalAndAdministrativeContacts();
 				if ($SendOut) {
 					$mailRequetser->addAddress($mail);
-					while ($address = $addresses) {
+					foreach ($addresses as $address) {
 						$mailContacts->addAddress($address);
 					}
 				}
