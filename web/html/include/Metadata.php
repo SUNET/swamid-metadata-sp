@@ -2225,8 +2225,8 @@ Class Metadata {
 				$updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Entity_Id, :User_Id, :LastConfirmed) ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
 
 				# Get lastValidated
-				$entityHandler->execute();
 				$entityHandler->bindParam(':Id', $this->dbIdNr);
+				$entityHandler->execute();
 				$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
 
 				$addEntityUserHandler->bindParam(':Entity_id', $publishedEntity['id']);
