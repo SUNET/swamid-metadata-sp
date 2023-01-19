@@ -2232,7 +2232,7 @@ Class Metadata {
 				$addEntityUserHandler->bindParam(':Entity_id', $publishedEntity['id']);
 
 				# Get users having access to this entityID
-				$entityUserHandler->bindParam(':Id', $this->dbIdNr);
+				$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
 				$entityUserHandler->execute();
 				while ($entityUser = $entityUserHandler->fetch(PDO::FETCH_ASSOC)) {
 					# Copy userId from pending -> published
