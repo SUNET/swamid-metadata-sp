@@ -2221,7 +2221,7 @@ Class Metadata {
 			if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
 				$entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
 				$entityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id');
-				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged WHERE `lastChanged` < :LastChanged');
+				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged)');
 				$updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Entity_Id, :User_Id, :LastConfirmed) ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
 
 				# Get lastValidated
