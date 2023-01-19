@@ -2220,7 +2220,7 @@ Class Metadata {
 			$publishedEntityHandler->execute();
 			if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
 				$entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
-				$entityUserHandler = $this->metaD->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id');
+				$entityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id');
 				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged WHERE `lastChanged` < :LastChanged');
 				$updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Entity_Id, :User_Id, :LastConfirmed) ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
 
