@@ -2229,7 +2229,7 @@ Class Metadata {
 				$entityHandler->execute();
 				$entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
 
-				$addEntityUserHandler->bindParam(':Entity_id', $publishedEntity['id']);
+				$addEntityUserHandler->bindParam(':Entity_Id', $publishedEntity['id']);
 
 				# Get users having access to this entityID
 				$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
