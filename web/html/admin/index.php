@@ -1131,7 +1131,7 @@ function setupMail() {
 function move2Draft($Entity_id) {
 	global $db, $html, $display, $menuActive, $baseDir;
 	global $EPPN,$mail;
-	$entityHandler = $db->prepare('SELECT `entityID`, `xml`, FROM Entities WHERE `status` = 2 AND `id` = :Id;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `xml` FROM Entities WHERE `status` = 2 AND `id` = :Id;');
 	$entityHandler->bindParam(':Id', $Entity_id);
 	$entityHandler->execute();
 	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
