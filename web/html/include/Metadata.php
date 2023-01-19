@@ -2236,7 +2236,7 @@ Class Metadata {
 				$entityUserHandler->execute();
 				while ($entityUser = $entityUserHandler->fetch(PDO::FETCH_ASSOC)) {
 					# Copy userId from pending -> published
-					$addEntityUserHandler->bindValue(':User_ID', $entityUser['user_id']);
+					$addEntityUserHandler->bindValue(':User_Id', $entityUser['user_id']);
 					$addEntityUserHandler->bindValue(':LastChanged', $entityUser['lastChanged']);
 					$addEntityUserHandler->execute();
 				}
