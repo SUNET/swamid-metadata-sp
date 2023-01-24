@@ -2485,6 +2485,7 @@ Class Metadata {
 				$addNewUserHandler->bindValue(':Id', strtolower($userID));
 				$addNewUserHandler->bindParam(':Email', $email);
 				$addNewUserHandler->bindParam(':FullName', $fullName);
+				$addNewUserHandler->execute();
 				$this->user['id'] = $this->metaDb->lastInsertId();
 				$this->user['email'] = $email;
 				$this->user['fullname'] = $fullName;
