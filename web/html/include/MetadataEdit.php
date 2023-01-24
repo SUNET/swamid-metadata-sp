@@ -484,7 +484,7 @@ Class MetadataEdit {
 			$newstate = 'dark';
 			$oldstate = 'dark';
 		} else {
-			$copy = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&action=Update&errorURL=%s">[copy]</a> ', $this->dbIdNr, $this->dbOldIdNr, urlencode($errorURL['URL']));
+			$copy = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&action=Update&errorURL=%s">[copy]</a> ', $this->dbIdNr, $this->dbOldIdNr, urlencode($oldURL));
 			$newstate = ($newURL == 'Missing') ? 'dark' : 'success';
 			$oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
 		}
@@ -633,6 +633,8 @@ Class MetadataEdit {
 			if ($changed) {
 				$this->saveXML();
 			}
+		} else {
+			$scopeValue = '';
 		}
 
 		$scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');

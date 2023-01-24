@@ -325,6 +325,8 @@ Class Metadata {
 			$entityHandlerInsert->execute();
 			$this->dbIdNr = $this->metaDb->lastInsertId();
 		}
+		$this->isIdP = false;
+		$this->isSP = false;
 		$this->entityExists = true;
 	}
 
@@ -2361,7 +2363,7 @@ Class Metadata {
 				case 'md:Organization' :
 				case 'md:ContactPerson' :
 				case 'md:AdditionalMetadataLocation' :
-					$Extensions = $this->newXml->createElement('md:Extensions');
+					$Extensions = $this->xml->createElement('md:Extensions');
 					$EntityDescriptor->insertBefore($Extensions, $child);
 					break;
 			}
@@ -2385,7 +2387,7 @@ Class Metadata {
 			# Add if missing
 			$ts=date("Y-m-d\TH:i:s\Z");
 			$EntityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
-			$RegistrationInfo = $this->newXml->createElement('mdrpi:RegistrationInfo');
+			$RegistrationInfo = $this->xml->createElement('mdrpi:RegistrationInfo');
 			$RegistrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/');
 			$RegistrationInfo->setAttribute('registrationInstant', $ts);
 			$Extensions->appendChild($RegistrationInfo);

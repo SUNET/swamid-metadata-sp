@@ -122,7 +122,7 @@ Class MetadataDisplay {
 					}
 				}
 				foreach ($ECSTested AS $tag => $tested) {
-					$warnings .= ($ECSTested[$tag]) ? '' : sprintf('SWAMID Release-check: Updated test missing please rerun at <a href="https://%s.release-check.swamid.se/">Release-check</a>%s', $tag, "\n");
+					$warnings .= ($ECSTested[$tag]) ? '' : sprintf('SWAMID Release-check: Updated test for %s missing please rerun at <a href="https://%s.release-check.swamid.se/">Release-check</a>%s', $tag, $tag, "\n");
 				}
 				// Error URLs
 				$urlHandler2->execute();
