@@ -2371,7 +2371,7 @@ Class Metadata {
 		}
 		if (! $Extensions) {
 			# Add if missing
-			$Extensions = $this->newXml->createElement('md:Extensions');
+			$Extensions = $this->xml->createElement('md:Extensions');
 			$EntityDescriptor->appendChild($Extensions);
 		}
 		# Find mdattr:EntityAttributes in XML
@@ -2404,7 +2404,7 @@ Class Metadata {
 			}
 		}
 		if (!$RegistrationPolicy) {
-			$RegistrationPolicy = $this->newXml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps');
+			$RegistrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps');
 			$RegistrationPolicy->setAttribute('xml:lang', 'en');
 			$RegistrationInfo->appendChild($RegistrationPolicy);
 		}
