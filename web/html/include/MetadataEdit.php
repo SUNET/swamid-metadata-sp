@@ -793,7 +793,7 @@ Class MetadataEdit {
 							$child = $UUInfo->firstChild;
 							$MduiElement = false;
 							while ($child && ! $MduiElement) {
-								if ($child->nodeName == $elementmd && $child->getAttribute('xml:lang') == $langvalue) {
+								if ($child->nodeName == $elementmd && strtolower($child->getAttribute('xml:lang')) == $langvalue) {
 									if ($elementmd == 'mdui:Logo') {
 										if ( $child->getAttribute('height') == $heightValue && $child->getAttribute('width') == $widthValue)
 											$MduiElement = $child;
@@ -877,7 +877,7 @@ Class MetadataEdit {
 									$MduiElement = false;
 									$moreMduiElement = false;
 									while ($child && ! $MduiElement) {
-										if ($child->nodeName == $elementmd && $child->getAttribute('xml:lang') == $langvalue) {
+										if ($child->nodeName == $elementmd && strtolower($child->getAttribute('xml:lang')) == $langvalue) {
 											if ($elementmd == 'mdui:Logo') {
 												if ($child->getAttribute('height') == $heightValue && $child->getAttribute('width') == $widthValue) {
 													$MduiElement = $child;
@@ -2145,7 +2145,7 @@ Class MetadataEdit {
 								if ($placement == 3 && $child->nodeName == $elementmd && $child->getAttribute('Name') == $name) {
 									$AttributeConsumingServiceElement = $child;
 									$update = true;
-								} elseif ($placement != 3 && $child->nodeName == $elementmd && $child->getAttribute('xml:lang') == $langvalue ) {
+								} elseif ($placement != 3 && $child->nodeName == $elementmd && strtolower($child->getAttribute('xml:lang')) == $langvalue ) {
 									$AttributeConsumingServiceElement = $child;
 									$update = true;
 								} elseif (isset ($this->orderAttributeRequestingService[$child->nodeName]) && $this->orderAttributeRequestingService[$child->nodeName] <= $placement) {
@@ -2240,7 +2240,7 @@ Class MetadataEdit {
 								while ($child && ! $AttributeConsumingServiceElement) {
 									if ($placement == 3 && $child->nodeName == $elementmd && $child->getAttribute('Name') == $name) {
 										$AttributeConsumingServiceElement = $child;
-									} elseif ($placement != 3 && $child->nodeName == $elementmd && $child->getAttribute('xml:lang') == $langvalue ) {
+									} elseif ($placement != 3 && $child->nodeName == $elementmd && strtolower($child->getAttribute('xml:lang')) == $langvalue ) {
 										$AttributeConsumingServiceElement = $child;
 									} else {
 										$moreElements = true;

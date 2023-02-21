@@ -480,8 +480,8 @@ function showInfo() {
           <li><b>SP via interfederation</b> lists Service Providers imported into SWAMID from interfederations.</li>
         </ul></p>
         <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form. E.g entering "umu.se" in the entityID search form will list all entities including "umu.se" in their entityID.</p>
-        <h4>Update Identity Provider or Service Provider metadata</h4>
-        <p>Login using the blue button at the top right corner of this page to add, update or request removal of your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
+        <h4>Add or Update Identity Provider or Service Provider metadata</h4>
+        <p>Login using the orange button at the top right corner of this page to add, update or request removal of your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
         <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduID.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
 <?php
 }
