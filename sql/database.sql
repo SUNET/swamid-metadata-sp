@@ -29,7 +29,7 @@ CREATE TABLE `Scopes` (
 CREATE TABLE `Mdui` (
 	`entity_id` int(10) unsigned DEFAULT NULL,
 	`type` enum('SPSSO', 'IDPSSO', 'IDPDisco') DEFAULT NULL,
-	`lang` char(2) DEFAULT NULL,
+	`lang` char(10) DEFAULT NULL,
 	`height` smallint(6) DEFAULT NULL,
 	`width` smallint(6) DEFAULT NULL,
 	`element` varchar(25) DEFAULT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE `AttributeConsumingService_Service` (
 	`entity_id` int(10) unsigned DEFAULT NULL,
 	`Service_index` smallint(5) unsigned DEFAULT NULL,
 	`element` varchar(20) DEFAULT NULL,
-	`lang` char(2) DEFAULT NULL,
+	`lang` char(10) DEFAULT NULL,
 	`data` text DEFAULT NULL);
 
 CREATE TABLE `AttributeConsumingService_RequestedAttribute` (
