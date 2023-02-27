@@ -2195,7 +2195,9 @@ Class Metadata {
 							}
 						}
 					}
+					print $publishedEntity['xml'];
 				}
+				print $pendingXML;
 			}
 		}
 		return false;

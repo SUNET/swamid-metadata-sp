@@ -276,13 +276,7 @@ if (isset($_FILES['XMLfile'])) {
 						$menuActive = 'CleanPending';
 						$html->showHeaders('Metadata SWAMID - Clean Pending');
 						showMenu();
-						if (isset($_GET['entity_id'])) {
-							$metadata = new Metadata($baseDir, $_GET['entity_id']);
-							if ($metadata->checkPendingIfPublished()) {
-								$metadata->removeEntity();
-							}
-						}
-						$display->showPendingListToRemove();
+						$display->showPendingList();
 					}
 					break;
 				case 'ShowDiff' :
@@ -292,7 +286,7 @@ if (isset($_FILES['XMLfile'])) {
 					if (isset($_GET['entity_id1']) && isset($_GET['entity_id2'])) {
 						$display->showXMLDiff($_GET['entity_id1'], $_GET['entity_id2']);
 					}
-					$display->showPendingListToRemove();
+					$display->showPendingList();
 					break;
 				default :
 					showEntityList();

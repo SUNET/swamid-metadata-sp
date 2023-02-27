@@ -37,6 +37,9 @@ Class NormalizeXML {
 				if ($child->hasAttributes() )  {
 					$nrOfAttribues = $child->attributes->count();
 					for ($index = 0; $index < $nrOfAttribues; $index++) {
+						# Remove unwanted attributes
+						if ($child->attributes->item($index)->name == 'validUntil') continue;
+						if ($child->attributes->item($index)->name == 'cacheDuration') continue;
 						if ($child->attributes->item($index)->prefix) {
 							$newChild->setAttribute($this->checkNameSpaceAttribute($child->attributes->item($index)).':'.$child->attributes->item($index)->name, $child->attributes->item($index)->value);
 						} else

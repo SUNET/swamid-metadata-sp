@@ -1144,23 +1144,34 @@ Class MetadataDisplay {
 			$entityHandler->bindValue(':ID', $entity_id2);
 			$entityHandler->execute();
 			if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-				printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
-				require_once $this->baseDir . '/include/Diff.php';
-				require_once $this->baseDir . '/include/Diff/Renderer/Text/Unified.php';
-				$options = array(
-					//'ignoreWhitespace' => true,
-					//'ignoreCase' => true,
-				);
-				$diff = new Diff(explode("\n", $entity2['xml']), explode("\n", $entity1['xml']), $options);
-				$renderer = new Diff_Renderer_Text_Unified;
-				printf('<pre>%s</pre>', htmlspecialchars($diff->render($renderer)));
+				if (! class_exists('NormalizeXML')) {
+					include $this->baseDir.'/include/NormalizeXML.php';
+				}
+				$normalize1 = new NormalizeXML();
+				$normalize1->fromString($entity1['xml']);
+				$normalize2 = new NormalizeXML();
+				$normalize2->fromString($entity2['xml']);
+				if ($normalize1->getStatus() && $normalize2->getStatus()) {
+					printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
+					require_once $this->baseDir . '/include/Diff.php';
+					require_once $this->baseDir . '/include/Diff/Renderer/Text/Unified.php';
+					$options = array(
+						//'ignoreWhitespace' => true,
+						//'ignoreCase' => true,
+					);
+					$diff = new Diff(explode("\n", $normalize2->getXML()), explode("\n", $normalize1->getXML()), $options);
+					$renderer = new Diff_Renderer_Text_Unified;
+					printf('<pre>%s</pre>', htmlspecialchars($diff->render($renderer)));
+				} else {
+					print $normalize1->getError();
+				}
 			} else {
 
 			}
 		}
 	}
 
-	public function showPendingListToRemove() {
+	public function showPendingList() {
 		$entitiesHandler = $this->metaDb->prepare('SELECT Entities.`id`, `entityID`, `xml`, `lastUpdated`, `email` FROM Entities, EntityUser, Users WHERE `status` = 2 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id` ORDER BY lastUpdated ASC, `entityID`');
 		$entityHandler = $this->metaDb->prepare('SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
 		$entityHandler->bindParam(':EntityID', $entityID);
@@ -1181,11 +1192,7 @@ Class MetadataDisplay {
 					$pendingXML = $normalize->getXML();
 					$entityHandler->execute();
 					if ($publishedEntity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-						if ($pendingXML == $publishedEntity['xml'] && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
-							$OKRemove = sprintf('<a href=".?action=CleanPending&entity_id=%d">%s</a>',$pendingEntity['id'], $entityID);
-						} else {
-							$OKRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>', $entityID, $pendingEntity['id'], $publishedEntity['id']);
-						}
+						$OKRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>', $entityID, $pendingEntity['id'], $publishedEntity['id']);
 						printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $OKRemove, $pendingEntity['email'], $pendingEntity['lastUpdated'], ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '', ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
 					} else {
 						printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">Not published</td></tr>%s', $entityID, $pendingEntity['email'], $pendingEntity['lastUpdated'], "\n" );
