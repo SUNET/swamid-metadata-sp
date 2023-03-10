@@ -22,13 +22,11 @@ try {
 	echo "Error: " . $e->getMessage();
 }
 
-$entitys = $db->prepare("SELECT id, entityID, lastValidated FROM Entities WHERE lastValidated < :Date AND status = 1 ORDER BY lastValidated");
-$entitys->bindValue(':Date', $argv[1]);
+$entitys = $db->prepare(sprintf('SELECT id, entityID FROM Entities WHERE lastValidated <  NOW() - INTERVAL :Days DAY AND status = 1 ORDER BY lastValidated LIMIT %d',$argv[2]));
+$entitys->bindValue(':Days', $argv[1]);
 $entitys->execute();
-#$entitys = $db->prepare("SELECT id, entityID, lastValidated FROM Entities");
-#print $count;
-while ($count > 0 && $row = $entitys->fetch(PDO::FETCH_ASSOC)) {
-	printf ("%s -> entityID : %s\n",$row['lastValidated'], $row['entityID']);
+while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+	printf ("Revalidating entityID : %s\n",$row['entityID']);
 	$metadata = new Metadata('/var/www/html',$row['id']);
 	if ($metadata->getResult() <> "")
 		printf ("%s\n" ,$metadata->getResult());
@@ -37,17 +35,12 @@ while ($count > 0 && $row = $entitys->fetch(PDO::FETCH_ASSOC)) {
 	$metadata->validateSAML();
 	if ($metadata->getResult() <> "")
 		printf ("\nValidate ->\n%s#\n" ,$metadata->getResult());
-	#if ($metadata->getWarning() <> "")
-	#	printf ("\nWarning ->\n%s\n" ,$metadata->getWarning());
-	#if ($metadata->getError() <> "")
-	#	printf ("\nError ->\n%s\n" ,$metadata->getError());
-	$count--;
 }
 
 function usage() {
 	print "Usage:\n";
-	printf("	%s <Date/Time> <entitys>\n", $argv[0]);
-	print "	Date/Time - Validate all entitys with lastValidatdion less than this\n";
+	printf("	%s <Days> <entitys>\n", $argv[0]);
+	print "	Days - Validate all entitys with lastValidatdion less than this numer of days\n";
 	print "	entitys - Max nr of entitys to validate\n";
 }
 ?>
