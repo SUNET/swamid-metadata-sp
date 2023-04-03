@@ -2619,5 +2619,35 @@ Class Metadata {
 		$statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatus (`date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed`) VALUES ('$date', $ErrorsTotal, $ErrorsSPs, $ErrorsIdPs, $NrOfEntites, $NrOfSPs, $NrOfIdPs, '$Changed')");
 		$statsUpdate->execute();
 	}
+
+	public function saveEntitiesStatistics($date = '') {
+		if ($date == '') {
+			$date = gmdate('Y-m-d');
+		}
+		$NrOfEntites = 0;
+		$NrOfSPs = 0;
+		$NrOfIdPs = 0;
+
+		$entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE status = 1 AND publishIn > 2");
+		$entitys->execute();
+		while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+			$isIdP = $row['isIdP'];
+			$isSP = $row['isSP'];
+			switch ($row['publishIn']) {
+				case 1 :
+					break;
+				case 3 :
+				case 7 :
+					$NrOfEntites ++;
+					if ($row['isIdP']) $NrOfIdPs ++;
+					if ($row['isSP']) $NrOfSPs ++;
+					break;
+				default :
+					printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
+			}
+		}
+		$statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatistics (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`) VALUES ('$date', $NrOfEntites, $NrOfSPs, $NrOfIdPs)");
+		$statsUpdate->execute();
+	}
 }
 # vim:set ts=2
