@@ -2093,10 +2093,11 @@ Class Metadata {
 	#############
 	# Updates which user that is responsible for an entity
 	#############
-	public function updateResponsible() {
-		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+	public function updateResponsible($approvedBy) {
+		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
 		$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
 		$entityUserHandler->bindParam(':User_Id', $this->user['id']);
+		$entityUserHandler->bindParam(':ApprovedBy', $approvedBy);
 		$entityUserHandler->execute();
 	}
 
@@ -2104,14 +2105,15 @@ Class Metadata {
 	# Copies which user that is responsible for an entity from another entity
 	#############
 	public function copyResponsible($otherEntity_id) {
-		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
-		$otherEntityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :OtherEntity_Id');
+		$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :ApprovedBy, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
+		$otherEntityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `approvedBy`, `lastChanged` FROM EntityUser WHERE `entity_id` = :OtherEntity_Id');
 
 		$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
 		$otherEntityUserHandler->bindParam(':OtherEntity_Id', $otherEntity_id);
 		$otherEntityUserHandler->execute();
 		while ($otherEntityUser = $otherEntityUserHandler->fetch(PDO::FETCH_ASSOC)) {
 			$entityUserHandler->bindParam(':User_Id', $otherEntityUser['user_id']);
+			$entityUserHandler->bindParam(':ApprovedBy', $otherEntityUser['approvedBy']);
 			$entityUserHandler->bindParam(':LastChanged', $otherEntityUser['lastChanged']);
 			$entityUserHandler->execute();
 		}
@@ -2222,8 +2224,8 @@ Class Metadata {
 			$publishedEntityHandler->execute();
 			if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
 				$entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
-				$entityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id');
-				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged)');
+				$entityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `approvedBy`, `lastChanged` FROM EntityUser WHERE `entity_id` = :Entity_Id ORDER BY `lastChanged`');
+				$addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :ApprovedBy, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged)');
 				$updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation (`entity_id`, `user_id`, `lastConfirmed`) VALUES (:Entity_Id, :User_Id, :LastConfirmed) ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
 
 				# Get lastValidated
@@ -2239,6 +2241,7 @@ Class Metadata {
 				while ($entityUser = $entityUserHandler->fetch(PDO::FETCH_ASSOC)) {
 					# Copy userId from pending -> published
 					$addEntityUserHandler->bindValue(':User_Id', $entityUser['user_id']);
+					$addEntityUserHandler->bindValue(':ApprovedBy', $entityUser['approvedBy']);
 					$addEntityUserHandler->bindValue(':LastChanged', $entityUser['lastChanged']);
 					$addEntityUserHandler->execute();
 				}
@@ -2543,7 +2546,7 @@ Class Metadata {
 		return $code;
 	}
 
-	public function validateCode($user_id, $hash) {
+	public function validateCode($user_id, $hash, $approvedBy) {
 		if ($user_id > 0) {
 			$userHandler = $this->metaDb->prepare('SELECT * FROM EntityUser WHERE `user_id` = :UsersID AND `entity_id`= :EntityID' );
 			$userHandler->bindParam(':UsersID', $user_id);
@@ -2554,9 +2557,10 @@ Class Metadata {
 			} else {
 				$requestHandler = $this->metaDb->prepare('SELECT `requestDate`, NOW() - INTERVAL 1 DAY AS `limit`, `email`, `fullName`, `entityID` FROM `AccessRequests`, `Users`, `Entities`  WHERE Users.`id` = `user_id` AND `Entities`.`id` = `entity_id` AND `entity_id` =  :Entity_id AND `user_id` = :User_id AND `hash` = :Hashvalue');
 				$requestRemoveHandler = $this->metaDb->prepare('DELETE FROM `AccessRequests` WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
-				$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `lastChanged`) VALUES(:Entity_Id, :User_Id, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+				$entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
 				$entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
 				$entityUserHandler->bindParam(':User_Id', $user_id);
+				$entityUserHandler->bindParam(':ApprovedBy', $approvedBy);
 				$requestHandler->bindParam(':Entity_id', $this->dbIdNr);
 				$requestHandler->bindParam(':User_id', $user_id);
 				$requestHandler->bindParam(':Hashvalue', $hash);

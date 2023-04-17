@@ -173,6 +173,8 @@ if (isset($_FILES['XMLfile'])) {
 		removeKey($_GET['removeKey'], $_GET['type'], $_GET['use'], $_GET['serialNumber']);
 } elseif (isset($_GET['rawXML'])) {
 	$display->showRawXML($_GET['rawXML']);
+} elseif (isset(($_GET['approveAccessRequest']))) {
+	approveAccessRequest($_GET['approveAccessRequest']);
 } elseif (isset($_GET['showHelp'])) {
 	showHelp();
 } else {
@@ -184,12 +186,19 @@ if (isset($_FILES['XMLfile'])) {
 				case 'createDraft' :
 					$menuActive = 'new';
 					$metadata = new Metadata($baseDir, $Entity_id);
-					if ($newEntity_id = $metadata->createDraft())
-						$metadata->validateXML();
-						$metadata->validateSAML();
-						$metadata->getUser($EPPN, $mail, $fullName, true);
-						$metadata->updateResponsible();
-						showEntity($newEntity_id);
+					$user_id = $metadata->getUserId($EPPN);
+					if ($metadata->isResponsible()) {
+						if ($newEntity_id = $metadata->createDraft()) {
+							$metadata->validateXML();
+							$metadata->validateSAML();
+							$metadata->copyResponsible($Entity_id);
+							$menuActive = 'new';
+							showEntity($newEntity_id);
+						}
+					} else {
+						# User have no access yet.
+						requestAccess($Entity_id);
+					}
 					break;
 				case 'Request removal' :
 					requestRemoval($Entity_id);
@@ -627,10 +636,9 @@ function showMyEntities() {
 		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status` FROM Entities WHERE `status` = 1 ORDER BY `entityID`");
 	} else {
 		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status` FROM Users, EntityUser, Entities WHERE EntityUser.`entity_id` = Entities.`id` AND EntityUser.`user_id` = Users.`id` AND `status` < 4 AND `userID` = :UserID ORDER BY `entityID`, `status`");
+		$entitysHandler->bindValue(':UserID', $EPPN);
 	}
 	$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`, NOW() - INTERVAL 12 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
-	#$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 1 DAY AS `warnDate`, NOW() - INTERVAL 1 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
-	$entitysHandler->bindValue(':UserID', $EPPN);
 
 	printf ('%s    <table id="annual-table" class="table table-striped table-bordered">%s      <thead><tr>%s        <th>entityID</th><th>Metadata status</th><th>Last confirmed(UTC)</th><th>By</th>%s      </tr></thead>%s', "\n", "\n", "\n", "\n", "\n");
 	$entitysHandler->execute();
@@ -708,7 +716,7 @@ function importXML(){
 			$metadata = new Metadata($baseDir, $entityID, 'New');
 			$metadata->importXML($import->getXML());
 			$metadata->getUser($EPPN, $mail, $fullName, true);
-			$metadata->updateResponsible();
+			$metadata->updateResponsible($EPPN);
 			$metadata->validateXML(true);
 			$metadata->validateSAML(true);
 
@@ -1001,81 +1009,79 @@ function annualConfirmation($Entity_id){
 }
 
 function requestRemoval($Entity_id) {
-	global $db, $html, $display, $userLevel, $menuActive;
+	global $db, $html, $menuActive, $baseDir;
 	global $EPPN, $mail, $fullName;
 	global $mailContacts, $mailRequetser, $SendOut;
-	$entityHandler = $db->prepare('SELECT `entityID`, `publishIn` FROM Entities WHERE status = 1 AND id = :Id;');
-	$entityHandler->bindParam(':Id', $Entity_id);
-	$entityHandler->execute();
-	if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-		$html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
-		if (isset($_GET['confirmRemoval'])) {
-			$menuActive = 'publ';
-			showMenu();
-			$fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
+	$metadata = new Metadata($baseDir, $Entity_id);
+	if ($metadata->status() == 1) {
+		$user_id = $metadata->getUserId($EPPN);
+		if ($metadata->isResponsible()) {
+			# User have access to entity
+			$html->showHeaders('Metadata SWAMID - ' . $metadata->EntityID());
+			if (isset($_GET['confirmRemoval'])) {
+				$menuActive = 'publ';
+				showMenu();
+				$fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
 
-			setupMail();
+				setupMail();
 
-			if ($SendOut)
-				$mailRequetser->addAddress($mail);
-
-			$addresses = array();
-			$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM Entities, ContactPerson WHERE entity_id = id AND entityID=:EntityID AND (contactType='technical' OR contactType='administrative')");
-			$contactHandler->bindParam(':EntityID',$entity['entityID']);
-			$contactHandler->execute();
-			while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
 				if ($SendOut)
-					$mailContacts->addAddress(substr($address['emailAddress'],7));
-				$addresses[] = substr($address['emailAddress'],7);
+					$mailRequetser->addAddress($mail);
+
+				$addresses = array();
+				$contactHandler = $db->prepare("SELECT DISTINCT emailAddress FROM ContactPerson WHERE entity_id = :Entity_ID AND (contactType='technical' OR contactType='administrative')");
+				$contactHandler->bindParam(':Entity_ID',$Entity_id);
+				$contactHandler->execute();
+				while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
+					if ($SendOut)
+						$mailContacts->addAddress(substr($address['emailAddress'],7));
+					$addresses[] = substr($address['emailAddress'],7);
+				}
+
+				$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+
+				//Content
+				$mailContacts->isHTML(true);
+				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested removal of the entity with the entityID %s from the SWAMID metadata.</p>\n<p>You have received this mail because you are either the technical and/or administrative contact.</p>\n<p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve request please forward this mail to SWAMID Operations (operations@swamid.se) and request for the removal to be denied.</p>", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $Entity_id, $hostURL, $Entity_id);
+				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested removal of the entity with the entityID %s from the SWAMID metadata.\n\nYou have received this mail because you are either the technical and/or administrative contact.\n\nYou can see the current metadata at %s/?showEntity=%d\n\nIf you do not approve this request please forward this mail to SWAMID Operations (operations@swamid.se) and request for the removal to be denied.", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $Entity_id);
+
+				$mailRequetser->isHTML(true);
+				$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested removal of the entity with the entityID %s from the SWAMID metadata.</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $metadata->EntityID(), $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
+				$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested removal of the entity with the entityID %s from the SWAMID metadata.\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe current metadata can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the technical and/or administrative contacts : %s\n\n", $metadata->EntityID(), $hostURL, $Entity_id, implode (", ",$addresses));
+
+				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->EntityID());
+				$mailContacts->Subject	= 'Info : Request to remove SWAMID metadata for ' . $short_entityid;
+				$mailRequetser->Subject	= 'Request to remove SWAMID metadata for ' . $short_entityid;
+
+				try {
+					$mailContacts->send();
+				} catch (Exception $e) {
+					echo 'Message could not be sent to contacts.<br>';
+					echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+				}
+
+				try {
+					$mailRequetser->send();
+				} catch (Exception $e) {
+					echo 'Message could not be sent to requester.<br>';
+					echo 'Mailer Error: ' . $mailRequetser->ErrorInfo . '<br>';
+				}
+
+				printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
+				printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);
+			} else {
+				$menuActive = 'publ';
+				showMenu();
+				printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $metadata->EntityID());
+				if (($metadata->feedValue() & 2) == 2) $publishArray[] = 'SWAMID';
+				if (($metadata->feedValue() & 4) == 4) $publishArray[] = 'eduGAIN';
+				if ($metadata->feedValue() == 1) $publishArray[] = 'SWAMID-testing';
+				printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
+				printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $Entity_id, "\n", "\n", "\n", "\n", "\n", "\n" ,$Entity_id);
 			}
-
-			$hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-
-			//Content
-			$mailContacts->isHTML(true);
-			$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested removal of the entity with the entityID %s from the SWAMID metadata.</p>\n<p>You have received this mail because you are either the technical and/or administrative contact.</p>\n<p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve request please forward this mail to SWAMID Operations (operations@swamid.se) and request for the removal to be denied.</p>", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id);
-			$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested removal of the entity with the entityID %s from the SWAMID metadata.\n\nYou have received this mail because you are either the technical and/or administrative contact.\n\nYou can see the current metadata at %s/?showEntity=%d\n\nIf you do not approve this request please forward this mail to SWAMID Operations (operations@swamid.se) and request for the removal to be denied.", $EPPN, $fullName, $mail, $entity['entityID'], $hostURL, $Entity_id);
-
-			$mailRequetser->isHTML(true);
-			$mailRequetser->Body	= sprintf("<p>Hi.</p>\n<p>You have requested removal of the entity with the entityID %s from the SWAMID metadata.</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $entity['entityID'], $hostURL, $Entity_id, $hostURL, $Entity_id,implode ("</li>\n<li>",$addresses));
-			$mailRequetser->AltBody	= sprintf("Hi.\n\nYou have requested removal of the entity with the entityID %s from the SWAMID metadata.\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe current metadata can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the technical and/or administrative contacts : %s\n\n", $entity['entityID'], $hostURL, $Entity_id, implode (", ",$addresses));
-
-			$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entity['entityID']);
-			$mailContacts->Subject	= 'Info : Request to remove SWAMID metadata for ' . $short_entityid;
-			$mailRequetser->Subject	= 'Request to remove SWAMID metadata for ' . $short_entityid;
-
-			try {
-				$mailContacts->send();
-			} catch (Exception $e) {
-				echo 'Message could not be sent to contacts.<br>';
-				echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
-			}
-
-			try {
-				$mailRequetser->send();
-			} catch (Exception $e) {
-				echo 'Message could not be sent to requester.<br>';
-				echo 'Mailer Error: ' . $mailRequetser->ErrorInfo . '<br>';
-			}
-
-			printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
-			printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$Entity_id);
 		} else {
-			$menuActive = 'publ';
-			showMenu();
-			printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $entity['entityID']);
-			if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
-			if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
-			if ($entity['publishIn'] == 1) $publishArray[] = 'SWAMID-testing';
-			printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArray));
-			printf('    <form>
-      <input type="hidden" name="Entity" value="%d">
-      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">
-      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>
-      <br>
-      <input type="submit" name="action" value="Request removal">
-    </form>
-    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $Entity_id, $Entity_id);
+			# User have no access yet.
+			requestAccess($Entity_id);
 		}
 	} else {
 		$html->showHeaders('Metadata SWAMID - NotFound');
@@ -1178,17 +1184,20 @@ function removeEntity($Entity_id) {
 			case 2 :
 				$menuActive = 'wait';
 				$button = 'Confirm delete pending';
-				$from = 'delete the pending entity';
+				$from = 'Pending';
+				$action = 'delete the pending entity';
 				break;
 			case 3 :
 				$menuActive = 'new';
 				$button = 'Confirm discard draft';
-				$from = 'discard the draft';
+				$from = 'Drafts';
+				$action = 'discard the draft';
 				break;
 			case 6 :
 				$menuActive = 'wait';
 				$button = 'Confirm delete shadow';
-				$from = 'delete the shadow entity';
+				$from = 'Shadow entity';
+				$action = 'delete the shadow entity';
 				break;
 			default :
 				$OK2Remove = false;
@@ -1200,7 +1209,7 @@ function removeEntity($Entity_id) {
 				$metadata->removeEntity();
 				printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
 			} else {
-				printf('    <p>You are about to %s of <b>%s</b></p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $from, $entity['entityID'], "\n", "\n", $Entity_id, "\n", $button, "\n", "\n",  $Entity_id);
+				printf('    <p>You are about to %s of <b>%s</b></p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $action, $entity['entityID'], "\n", "\n", $Entity_id, "\n", $button, "\n", "\n",  $Entity_id);
 			}
 		} else {
 			print "You can't Remove / Discard this entity";
@@ -1269,8 +1278,8 @@ function requestAccess($Entity_id) {
 
 				//Content
 				$mailContacts->isHTML(true);
-				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested access to update %s</p>\n<p>You have received this mail because you are either the technical and/or administrative contact.</p>\n<p>If you approve, please click on this link <a href=\"%s/?approveAccessRequest=%s\">%s/?approveAccessRequest=%s</a></p>\n<p>If you do not approve, you can ignore this email. No changes will be made.</p>", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $requestCode, $hostURL, $requestCode);
-				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested access to update %s\n\nYou have received this mail because you are either the technical and/or administrative contact.\n\nIf you approve, please click on this link %s/?approveAccessRequest=%s\n\nIf you do not approve, you can ignore this email. No changes will be made.", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $requestCode);
+				$mailContacts->Body		= sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested access to update %s</p>\n<p>You have received this mail because you are either the technical and/or administrative contact.</p>\n<p>If you approve, please click on this link <a href=\"%s/admin/?approveAccessRequest=%s\">%s/?approveAccessRequest=%s</a></p>\n<p>If you do not approve, you can ignore this email. No changes will be made.</p>", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $requestCode, $hostURL, $requestCode);
+				$mailContacts->AltBody	= sprintf("Hi.\n\n%s (%s, %s) has requested access to update %s\n\nYou have received this mail because you are either the technical and/or administrative contact.\n\nIf you approve, please click on this link %s/admin/?approveAccessRequest=%s\n\nIf you do not approve, you can ignore this email. No changes will be made.", $EPPN, $fullName, $mail, $metadata->EntityID(), $hostURL, $requestCode);
 				$info = sprintf("<p>The request has been sent to: %s</p>\n<p>Contact them and ask them to accept your request.</p>\n", implode (", ",$addresses));
 
 				$short_entityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->EntityID());
@@ -1358,6 +1367,68 @@ function showHelp() {
 	$menuActive = '';
 	showMenu();
 	$display->showHelp();
+}
+
+function approveAccessRequest($code) {
+	global $baseDir;
+	global $EPPN;
+	$codeArray = explode(':', base64_decode($code));
+	if (isset($codeArray[2])) {
+		$metadata = new Metadata($baseDir, $codeArray[0]);
+		if ($metadata->EntityExists()) {
+			$result = $metadata->validateCode($codeArray[1], $codeArray[2], $EPPN);
+			if ($result['returnCode'] < 10) {
+				$info = $result['info'];
+				if ($result['returnCode'] == 2) {
+					global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
+
+					$mail = new PHPMailer(true);
+					/*$mail->SMTPDebug = 2;*/
+					$mail->isSMTP();
+					$mail->Host = $SMTPHost;
+					$mail->SMTPAuth = true;
+					$mail->SMTPAutoTLS = true;
+					$mail->Port = 587;
+					$mail->SMTPAuth = true;
+					$mail->Username = $SASLUser;
+					$mail->Password = $SASLPassword;
+					$mail->SMTPSecure = 'tls';
+
+					//Recipients
+					$mail->setFrom($MailFrom, 'Metadata');
+					$mail->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+					$mail->addAddress($result['email']);
+					$mail->Body		= sprintf("<p>Hi.</p>\n<p>Your access to %s have been granted.</p>\n<p>-- <br>This mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations. If you've any questions please contact operations@swamid.se.</p>", $metadata->entityID());
+					$mail->AltBody	= sprintf("Hi.\n\nYour access to %s have been granted.\n\n-- \nThis mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations. If you've any questions please contact operations@swamid.se.", $metadata->EntityID());
+					$mail->Subject	= 'Access granted for ' . $short_entityid;
+
+					$info = sprintf('<h3>Access granted</h3>Access to <b>%s</b> added for %s (%s).', $metadata->EntityID(), $result['fullName'], $result['email']);
+
+					try {
+						$mail->send();
+					} catch (Exception $e) {
+						echo 'Message could not be sent to contacts.<br>';
+						echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+					}
+				}
+				showText($info);
+			} else {
+				showError($result['info']);
+			}
+		} else {
+			showError('Invalid code');
+		}
+	} else {
+		showError('Invalid code');
+	}
+}
+
+
+function showText($text, $showMenu = false, $error = false) {
+	global $html, $menuActive;
+	$html->showHeaders('Metadata SWAMID');
+	if ($showMenu) showMenu();
+	printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s', "\n", "\n", $text, "\n", "\n", "\n");
 }
 
 function showError($text) {
