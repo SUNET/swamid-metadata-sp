@@ -194,6 +194,7 @@ Class MetadataDisplay {
 			case 'DiscoHints' :
 			case 'IdPKeyInfo' :
 			case 'SPKeyInfo' :
+			case 'AAKeyInfo' :
 			case 'AttributeConsumingService' :
 			case 'Organization' :
 			case 'ContactPersons' :
@@ -386,6 +387,32 @@ Class MetadataDisplay {
 		}
 		$this->showCollapseEnd('AttributeConsumingService', 1);
 		$this->showCollapseEnd('SP', 0);
+	}
+
+	public function showAA($Entity_id, $oldEntity_id=0, $allowEdit = false, $removable = false) {
+		if ($removable)
+			$removable = 'SSO';
+		$this->showCollapse('AttributeAuthority', 'AttributeAuthority', true, 0, true, $removable, $Entity_id);
+		/*print '
+          <div class="row">
+            <div class="col-6">';
+		$this->showScopes($Entity_id, $oldEntity_id, true, $allowEdit);
+		if ($oldEntity_id != 0 ) {
+			$this->showNewCol(1);
+			$this->showErrorURL($oldEntity_id, $Entity_id);
+			$this->showScopes($oldEntity_id, $Entity_id);
+		}
+		print '
+            </div><!-- end col -->
+          </div><!-- end row -->'; */
+		$this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 1, true, $allowEdit ? 'AAKeyInfo' : false, $Entity_id, $oldEntity_id);
+		$this->showKeyInfo($Entity_id, 'AttributeAuthority', $oldEntity_id, true);
+		if ($oldEntity_id != 0 ) {
+			$this->showNewCol(1);
+			$this->showKeyInfo($oldEntity_id, 'AttributeAuthority', $Entity_id);
+		}
+		$this->showCollapseEnd('KeyInfo_AttributeAuthority', 1);
+		$this->showCollapseEnd('AttributeAuthority', 0);
 	}
 
 	####

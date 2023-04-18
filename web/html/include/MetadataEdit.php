@@ -96,11 +96,17 @@ Class MetadataEdit {
 			case 'SPKeyInfo' :
 				$this->editKeyInfo('SPSSO');
 				break;
+			case 'AAKeyInfo' :
+				$this->editKeyInfo('AttributeAuthority');
+				break;
 			case 'AddIdPKeyInfo' :
 				$this->addKeyInfo('IDPSSO');
 				break;
 			case 'AddSPKeyInfo' :
 				$this->addKeyInfo('SPSSO');
+				break;
+			case 'AddAAKeyInfo' :
+				$this->addKeyInfo('AttributeAuthority');
 				break;
 			case 'AttributeConsumingService' :
 				$this->editAttributeConsumingService();
@@ -1336,6 +1342,7 @@ Class MetadataEdit {
 	}
 	private function addKeyInfo($type) {
 		$edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
+		$edit = $type == 'AttributeAuthority' ? 'AAKeyInfo' : $edit;
 		$added = false;
 		if (isset($_POST['certificate']) && isset($_POST['use'])) {
 			$certificate = str_replace(array("\r") ,array(''), $_POST['certificate']);
@@ -1468,6 +1475,7 @@ Class MetadataEdit {
 
 		printf ('%s    <div class="row">%s      <div class="col">', "\n", "\n");
 		$edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
+		$edit = $type == 'AttributeAuthority' ? 'AAKeyInfo' : $edit;
 		$addLink = sprintf('<a href="?edit=Add%s&Entity=%d&oldEntity=%d"><button>Add new certificate</button></a><br>', $edit, $this->dbIdNr, $this->dbOldIdNr);
 		if (isset($_GET['action'])) {
 			$error = '';

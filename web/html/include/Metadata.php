@@ -8,6 +8,7 @@ Class Metadata {
 
 	private $isIdP = false;
 	private $isSP = false;
+	private $isAA = false;
 	private $feedValue = 0;
 	private $registrationInstant = '';
 
@@ -43,7 +44,7 @@ Class Metadata {
 	}
 
 	private function __construct2($entity_id) {
-		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml` FROM Entities WHERE `id` = :Id;');
 		$entityHandler->bindValue(':Id', $entity_id);
 		$entityHandler->execute();
 		if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -58,6 +59,7 @@ Class Metadata {
 			$this->entityID = $entity['entityID'];
 			$this->isIdP = $entity['isIdP'];
 			$this->isSP = $entity['isSP'];
+			$this->isAA = $entity['isAA'];
 			$this->feedValue = $entity['publishIn'];
 		}
 	}
@@ -81,7 +83,7 @@ Class Metadata {
 				$this->status = 3;
 		}
 
-		$entityHandler = $this->metaDb->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`, `xml` FROM Entities WHERE `entityID` = :Id AND `status` = :Status;');
+		$entityHandler = $this->metaDb->prepare('SELECT `id`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml` FROM Entities WHERE `entityID` = :Id AND `status` = :Status;');
 		$entityHandler->bindValue(':Id', $entityID);
 		$entityHandler->bindValue(':Status', $this->status);
 		$entityHandler->execute();
@@ -95,6 +97,7 @@ Class Metadata {
 			$this->dbIdNr = $entity['id'];
 			$this->isIdP = $entity['isIdP'];
 			$this->isSP = $entity['isSP'];
+			$this->isAA = $entity['isAA'];
 			$this->feedValue = $entity['publishIn'];
 		}
 	}
@@ -311,7 +314,7 @@ Class Metadata {
 		$this->cleanOutAttribuesInIDPSSODescriptor();
 		if ($this->entityExists && $this->status == 1) {
 			# Update entity in database
-			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `xml` = :Xml , `lastUpdated` = NOW() WHERE `entityID` = :Id AND `status` = :Status;');
+			$entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0, `xml` = :Xml , `lastUpdated` = NOW() WHERE `entityID` = :Id AND `status` = :Status;');
 			$entityHandlerUpdate->bindValue(':Id', $this->entityID);
 			$entityHandlerUpdate->bindValue(':Status', $this->status);
 			$entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
@@ -327,6 +330,7 @@ Class Metadata {
 		}
 		$this->isIdP = false;
 		$this->isSP = false;
+		$this->isAA = false;
 		$this->entityExists = true;
 	}
 
@@ -334,7 +338,7 @@ Class Metadata {
 	public function createDraft() {
 		if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
 			# Add new entity into database
-			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, 3, :Xml, NOW());');
+			$entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`) VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW());');
 			$entityHandlerInsert->bindValue(':Id', $this->entityID);
 			$entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
 			$entityHandlerInsert->execute();
@@ -366,7 +370,7 @@ Class Metadata {
 		$this->metaDb->exec('DELETE FROM ContactPerson WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM EntityURLs WHERE `entity_id` = ' . $this->dbIdNr .';');
 		$this->metaDb->exec('DELETE FROM Scopes WHERE `entity_id` = ' . $this->dbIdNr .';');
-		$this->metaDb->exec('UPDATE Entities SET `isIdP` = 0, `isSP` = 0 WHERE `id` = ' . $this->dbIdNr .';');
+		$this->metaDb->exec('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = ' . $this->dbIdNr .';');
 
 		$SWAMID_5_1_30_error = false;
 		$cleanOutSignature = false;
@@ -398,7 +402,9 @@ Class Metadata {
 					break;
 				#case 'md:AuthnAuthorityDescriptor' :
 				case 'md:AttributeAuthorityDescriptor' :
+					$this->metaDb->exec('UPDATE Entities SET `isAA` = 1 WHERE `id` = '. $this->dbIdNr);
 					$this->parseAttributeAuthorityDescriptor($child);
+					$this->isAA = true;
 					break;
 				#case 'md:PDPDescriptor' :
 				#case 'md:AffiliationDescriptor' :
@@ -2331,6 +2337,13 @@ Class Metadata {
 	#############
 	public function isSP() {
 		return $this->isSP;
+	}
+
+	#############
+	# Return if this entity is an AA
+	#############
+	public function isAA() {
+		return $this->isAA;
 	}
 
 	#############

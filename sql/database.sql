@@ -5,6 +5,7 @@ CREATE TABLE `Entities` (
 	`registrationInstant` varchar(256) DEFAULT NULL,
 	`isIdP` tinyint(3) unsigned DEFAULT NULL,
 	`isSP` tinyint(3) unsigned DEFAULT NULL,
+	`isAA` tinyint(3) unsigned DEFAULT NULL,
 	`publishIn` tinyint(3) unsigned DEFAULT NULL,
 	`status` tinyint(3) unsigned DEFAULT NULL,
 	`ALlevel` tinyint(3) unsigned DEFAULT NULL,
@@ -139,7 +140,7 @@ CREATE TABLE `Users` (
 CREATE TABLE `EntityUser` (
 	`entity_id` int(10) unsigned DEFAULT NULL,
 	`user_id` int(10) unsigned DEFAULT NULL,
-	`approvedBy` text DEFAULT NULL,
+	`approver` text DEFAULT NULL,
 	`lastChanged` datetime DEFAULT NULL,
 	UNIQUE KEY `entity_id_user_id` (`entity_id`,`user_id`) USING HASH);
 

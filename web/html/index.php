@@ -119,7 +119,7 @@ function showMenu($menuActive, $query = '') {
 ####
 function showEntity($Entity_id, $URN = false)  {
 	global $db, $html, $display;
-	$entityHandler = $URN ? $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE entityID = :Id AND status = 1;') : $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE id = :Id;');
+	$entityHandler = $URN ? $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId` FROM Entities WHERE entityID = :Id AND status = 1;') : $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId` FROM Entities WHERE id = :Id;');
 	$publishArray = array();
 	$publishArrayOld = array();
 
@@ -201,6 +201,7 @@ function showEntity($Entity_id, $URN = false)  {
 		$display->showEntityAttributes($Entities_id, $oldEntity_id);
 		if ($entity['isIdP'] ) $display->showIdP($Entities_id, $oldEntity_id);
 		if ($entity['isSP'] ) $display->showSp($Entities_id, $oldEntity_id);
+		if ($entity['isAA'] ) $display->showAA($Entities_id, $oldEntity_id);
 		$display->showOrganization($Entities_id, $oldEntity_id);
 		$display->showContacts($Entities_id, $oldEntity_id);
 		$display->showXML($Entities_id);

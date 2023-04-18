@@ -429,7 +429,7 @@ function showEntityList($status = 1) {
 ####
 function showEntity($Entity_id)  {
 	global $db, $html, $display, $userLevel, $menuActive, $EPPN;
-	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `publishedId` FROM Entities WHERE `id` = :Id;');
+	$entityHandler = $db->prepare('SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId` FROM Entities WHERE `id` = :Id;');
 	$publishArray = array();
 	$publishArrayOld = array();
 	$allowEdit = false;
@@ -569,6 +569,7 @@ function showEntity($Entity_id)  {
 		$able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
 		if ($entity['isIdP'] ) $display->showIdP($Entity_id, $oldEntity_id, $allowEdit, $able2beRemoveSSO);
 		if ($entity['isSP'] ) $display->showSp($Entity_id, $oldEntity_id, $allowEdit, $able2beRemoveSSO);
+		if ($entity['isAA'] ) $display->showAA($Entity_id, $oldEntity_id, $allowEdit, true);
 		$display->showOrganization($Entity_id, $oldEntity_id, $allowEdit);
 		$display->showContacts($Entity_id, $oldEntity_id, $allowEdit);
 		$display->showXML($Entity_id);
