@@ -237,7 +237,6 @@ Class Metadata {
 			if ($verbose) printf ("Checking : %s last seen %s\n", $URLInfo['URL'], $URLInfo['lastSeen']);
 			$this->checkURLStatus($URLInfo['URL'], $verbose);
 		}
-
 	}
 
 	private function checkURLStatus($url, $verbose = false){
@@ -248,13 +247,13 @@ Class Metadata {
 			$missing = true;
 			$CoCoV1 = false;
 			$Logo = false;
-			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
+			$EntityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status` FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL AND `status`< 4');
 			$EntityHandler->bindValue(':URL', $url);
 			$EntityHandler->execute();
-			$SSOUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status` FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL');
+			$SSOUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status` FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL AND `status`< 4');
 			$SSOUIIHandler->bindValue(':URL', $url);
 			$SSOUIIHandler->execute();
-			$OrganizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status` FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
+			$OrganizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status` FROM Organization, Entities WHERE entity_id = id AND `data` = :URL AND `status`< 4');
 			$OrganizationHandler->bindValue(':URL', $url);
 			$OrganizationHandler->execute();
 			$entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute` FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category'");
