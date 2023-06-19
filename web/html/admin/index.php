@@ -297,6 +297,13 @@ if (isset($_FILES['XMLfile'])) {
 					}
 					$display->showPendingList();
 					break;
+				case 'showScopes' :
+					$menuActive = 'Scopes';
+					$html->showHeaders('Metadata SWAMID - Show scopes');
+					showMenu();
+					$display->showScopeLists();
+					$html->addTableSort('scope-table');
+					break;
 				default :
 					showEntityList();
 			}
@@ -782,6 +789,7 @@ function showMenu() {
 	printf('<a href=".?action=new%s"><button type="button" class="btn btn%s-primary">Drafts</button></a>', $filter, $menuActive == 'new' ? '' : '-outline');
 	printf('<a href=".?action=wait%s"><button type="button" class="btn btn%s-primary">Pending</button></a>', $filter, $menuActive == 'wait' ? '' : '-outline');
 	printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>', $filter, $menuActive == 'upload' ? '' : '-outline');
+	printf('<a href=".?action=showScopes%s"><button type="button" class="btn btn%s-primary">IdP scopes</button></a>', $filter, $menuActive == 'showScopes' ? '' : '-outline');
 	printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>', $filter, $menuActive == 'EntityStatistics' ? '' : '-outline');
 	printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>', $filter, $menuActive == 'EcsStatistics' ? '' : '-outline');
 	printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>', $filter, $menuActive == 'Errors' ? '' : '-outline');
@@ -1435,7 +1443,7 @@ function showText($text, $showMenu = false, $error = false) {
 function showError($text) {
 	global $html;
 	$html->showHeaders('Metadata SWAMID - Error');
-	print $text;
+	printf('%s', $text);
 }
 
 function showInfo($text) {

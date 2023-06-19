@@ -1459,6 +1459,24 @@ Class MetadataDisplay {
 		printf ("      const ctxTotal = document.getElementById('total').getContext('2d');%s      const myTotal = new Chart(ctxTotal, {%s        type: 'line',%s        data: {%s          labels: ['%s'],%s          datasets: [{%s            label: 'IdP',%s            backgroundColor: \"rgb(240,85,35)\",%s			data: [%s],%s            fill: 'origin'%s          }, {%s            label: 'SP',%s            backgroundColor: \"rgb(2,71,254)\",%s			data: [%s],%s            fill: 0%s          }]%s        },%s        options: {%s          responsive: true,%s          scales: {%s            yAxes: {%s              beginAtZero: true,%s              stacked: true,%s            }%s          }%s        }%s      });%s    </script>%s", "\n", "\n", "\n", "\n", $labels, "\n", "\n", "\n", "\n", $IdPs, "\n", "\n", "\n", "\n", "\n", $SPs, "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n", "\n");
 	}
 
+	public function showScopeLists() {
+		printf ('        <table id="scope-table" class="table table-striped table-bordered">%s          <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n", "\n");
+		$ScopeHandler = $this->metaDb->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
+												FROM `Scopes` ,`Entities`, `Organization`
+												WHERE `Scopes`.`entity_id` = `Entities`.`id` AND
+													`publishIn` > 1 AND
+													`status` = 1 AND
+													`Organization`.`entity_id` = `Entities`.`id` AND
+													`Organization`.`lang` = 'sv' AND
+													`element`= 'OrganizationName'");
+		$ScopeHandler->execute();
+		while ($Scope = $ScopeHandler->fetch(PDO::FETCH_ASSOC)) {
+			printf ('          <tr><td>%s</td><td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td><td>%s</td></tr>%s', $Scope['scope'], $Scope['id'], $Scope['entityID'], $Scope['data'], "\n");
+		}
+		printf ('        </table>%s', "\n");
+
+	}
+
 	public function showHelp() {
 		print "    <p>The SWAMID Metadata Tool is the place where you can see, register, update and remove metadata for Identity Providers and Service Providers in the Academic Identity Federation SWAMID.</p>\n";
 		$this->showCollapse('Register a new entity in SWAMID', 'RegisterNewEntity', false, 0, false);?>
