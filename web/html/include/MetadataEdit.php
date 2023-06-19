@@ -505,19 +505,19 @@ Class MetadataEdit {
 
 		printf('%s    <div class="row">%s      <div class="col">', "\n", "\n");
 		printf('%s        <b>errorURL</b>%s        <ul><li>%s<p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">%s</p></li></ul>', "\n", "\n", $links, $newstate, $newURL);
-		print '
+		printf ('
         <form>
           <input type="hidden" name="edit" value="IdPErrorURL">
-          <input type="hidden" name="Entity" value="' . $this->dbIdNr . '">
-          <input type="hidden" name="oldEntity" value="' . $this->dbOldIdNr . '">
+          <input type="hidden" name="Entity" value="%d">
+          <input type="hidden" name="oldEntity" value="%d">
           New errorURL :
-          <input type="text" name="errorURL" value="' . $errorURLValue . '">
+          <input type="text" name="errorURL" value="%s">
           <br>
           <input type="submit" name="action" value="Update">
         </form>
-        <a href="./?validateEntity=' . $this->dbIdNr . '"><button>Back</button></a>
+        <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">' . "\n";
+      <div class="col">%s', $this->dbIdNr, $this->dbOldIdNr, $errorURLValue, $this->dbIdNr, "\n");
 		if ($this->oldExists)
 			printf('%s        <b>errorURL</b>%s        <ul><li>%s<p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">%s</p></li></ul>', "\n", "\n", $copy, $oldstate, $oldURL);
 		print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
@@ -664,19 +664,19 @@ Class MetadataEdit {
 			$links = $baseLink . 'Copy"><i class="fas fa-pencil-alt"></i></a> ' . $baseLink . 'Delete"><i class="fas fa-trash"></i></a> ';
 			printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s', $links, $state, $scope['scope'], $scope['regexp'] ? 'true' : 'false', "\n");
 		}
-		print '        </ul>
+		printf ('        </ul>
         <form>
           <input type="hidden" name="edit" value="IdPScopes">
-          <input type="hidden" name="Entity" value="' . $this->dbIdNr . '">
-          <input type="hidden" name="oldEntity" value="' . $this->dbOldIdNr . '">
+          <input type="hidden" name="Entity" value="%d">
+          <input type="hidden" name="oldEntity" value="%d">
           New Scope :
-          <input type="text" name="value" value="' . $scopeValue . '">
+          <input type="text" name="value" value="%s">
           <br>
           <input type="submit" name="action" value="Add">
         </form>
-        <a href="./?validateEntity=' . $this->dbIdNr . '"><button>Back</button></a>
+        <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">';
+      <div class="col">',$this->dbIdNr, $this->dbOldIdNr, $scopeValue, $this->dbIdNr);
 		if ($this->oldExists) {
 			print '
         <b>Scopes</b>

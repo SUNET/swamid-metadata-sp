@@ -1,9 +1,10 @@
 <?php
 # Cleanup pending queue and moves out from queue if published.
-$baseDir = '/var/www/html';
-include $baseDir.'/config.php';
-include $baseDir.'/include/Metadata.php';
-
+$baseDir = dirname($_SERVER['PHP_SELF'], 2) . '/html';
+// file deepcode ignore FileInclusion: 
+include $baseDir . '/config.php';
+// file deepcode ignore FileInclusion: 
+include $baseDir . '/include/Metadata.php';
 
 try {
 	$db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);

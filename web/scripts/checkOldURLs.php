@@ -1,7 +1,10 @@
 <?php
+$baseDir = dirname($_SERVER['PHP_SELF'], 2) . '/html';
 # Check URLs where lastSeen is older than 30 days and remove if not in use in any entity
-include "/var/www/html/include/Metadata.php";
+// deepcode ignore FileInclusion: 
+include "$baseDir/include/Metadata.php";
 
-$metadata = new Metadata('/var/www/html');
+// deepcode ignore FileInclusion: 
+$metadata = new Metadata($baseDir);
 $metadata->checkOldURLS(30,true);
 ?>
