@@ -50,6 +50,7 @@ $this->FriendlyNames = array(
 	'urn:oid:1.3.6.1.4.1.5923.1.1.1.10'		=> array('desc' => 'eduPersonTargetedID', 'swamidStd' => true),
 	'urn:oid:1.3.6.1.4.1.5923.1.1.1.13'		=> array('desc' => 'eduPersonUniqueId', 'swamidStd' => true),
 	'urn:oid:2.16.840.1.113730.3.1.4'		=> array('desc' => 'employeeType', 'swamidStd' => false),
+	'urn:oid:2.16.840.1.113730.3.1.13'		=> array('desc' => 'mailLocalAddress', 'swamidStd' => true),
 	'urn:oid:2.5.4.42'						=> array('desc' => 'givenName', 'swamidStd' => true),
 	'urn:oid:0.9.2342.19200300.100.1.10'	=> array('desc' => 'manager', 'swamidStd' => false),
 	'urn:oid:0.9.2342.19200300.100.1.3'		=> array('desc' => 'mail', 'swamidStd' => true),
