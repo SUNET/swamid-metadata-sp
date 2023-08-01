@@ -585,8 +585,8 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entity['entityID'], $entity['serviceName'], $entity['organization'], $entity['contacts'],
-        $entity['ec'], $entity['assurancec'], $entity['ra'], "\n");
+        $entity['entityID'], $entity['displayName'], $entity['serviceName'], $entity['organization'],
+        $entity['contacts'], $entity['ec'], $entity['assurancec'], $entity['ra'], "\n");
     }
   }
 }

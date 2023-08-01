@@ -23,6 +23,7 @@ $xml->encoding = 'UTF-8';
 
 checkEntities($xml);
 unset($xml);
+$db->query('DELETE FROM ExternalEntities WHERE updated = 0');
 
 function checkEntities(&$xml) {
   global $db;
@@ -55,7 +56,7 @@ function checkEntities(&$xml) {
       `ec` = :Ec,
       `assurancec` = :Assurancec,
       `ra` = :RegistrationAuthority
-    WHERE `entityID` = :EntityID');
+    WHERE `entityID` = :EntityID LIMIT 1');
   $updateHandler->bindParam(':EntityID', $entityID);
   $updateHandler->bindParam(':IsIdP', $isIdP);
   $updateHandler->bindParam(':IsSP', $isSP);
@@ -170,6 +171,7 @@ function checkEntities(&$xml) {
                   case 'eduidmd:RepublishRequest' :
                   case 'taat:taat' :
                   case 'mdext:SWITCHaaiExtensions' :
+                  case 'shibmd:Scope' :
                     break;
                   default :
                     printf ("Missing %s in md:Extensions\n",
