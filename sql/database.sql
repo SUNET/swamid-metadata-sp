@@ -150,3 +150,19 @@ CREATE TABLE `AccessRequests` (
 	`hash` varchar(32) DEFAULT NULL,
 	`requestDate` datetime DEFAULT NULL,
 	UNIQUE KEY `entity_id_user_id` (`entity_id`,`user_id`) USING HASH);
+
+CREATE TABLE `ExternalEntities` (
+	`entityID` varchar(256) DEFAULT NULL,
+	`updated` tinyint(3) unsigned DEFAULT NULL,
+	`isIdP` tinyint(3) unsigned DEFAULT NULL,
+	`isSP` tinyint(3) unsigned DEFAULT NULL,
+	`isAA` tinyint(3) unsigned DEFAULT NULL,
+	`displayName` text DEFAULT NULL,
+	`serviceName` text DEFAULT NULL,
+	`organization` text DEFAULT NULL,
+	`contacts` text DEFAULT NULL,
+	`scopes` text DEFAULT NULL,
+	`ecs` text DEFAULT NULL,
+	`ec` text DEFAULT NULL,
+	`assurancec` text DEFAULT NULL,
+	`ra` text DEFAULT NULL);
