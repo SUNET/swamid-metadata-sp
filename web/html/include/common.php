@@ -67,7 +67,8 @@ $this->FriendlyNames = array(
 	'urn:mace:dir:attribute-def:cn' => array('desc' => 'cn', 'swamidStd' => false),
 	'urn:mace:dir:attribute-def:displayName' => array('desc' => 'displayName', 'swamidStd' => false),
 	'urn:mace:dir:attribute-def:eduPersonPrincipalName' => array('desc' => 'eduPersonPrincipalName', 'swamidStd' => false),
-	'urn:mace:dir:attribute-def:eduPersonScopedAffiliation' => array('desc' => 'eduPersonScopedAffiliation', 'swamidStd' => false),
+	'urn:mace:dir:attribute-def:eduPersonScopedAffiliation' =>
+		array('desc' => 'eduPersonScopedAffiliation', 'swamidStd' => false),
 	'urn:mace:dir:attribute-def:eduPersonTargetedID' => array('desc' => 'eduPersonTargetedID', 'swamidStd' => false),
 	'urn:mace:dir:attribute-def:givenName' => array('desc' => 'givenName', 'swamidStd' => false),
 	'urn:mace:dir:attribute-def:mail' => array('desc' => 'mail', 'swamidStd' => false),
