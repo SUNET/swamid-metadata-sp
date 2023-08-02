@@ -96,6 +96,7 @@ if ($errors != '') {
 switch ($EPPN) {
 	case 'bjorn@sunet.se' :
 	case 'jocar@sunet.se' :
+	case 'mifr@sunet.se' :
 		$userLevel = 20;
 		break;
 	case 'frkand02@umu.se' :
