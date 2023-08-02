@@ -2249,10 +2249,11 @@ Class Metadata {
 					$addEntityUserHandler->bindValue(':ApprovedBy', $entityUser['approvedBy']);
 					$addEntityUserHandler->bindValue(':LastChanged', $entityUser['lastChanged']);
 					$addEntityUserHandler->execute();
+					$lastUser=$entityUser['user_id'];
 				}
 				# Set lastValidated on Pending as lastConfirmed on Published
-				$updateEntityConfirmationHandler->bindParam(':Entity_Id', $this->dbIdNr);
-				$updateEntityConfirmationHandler->bindParam(':User_Id', $entityUser['user_id']);
+				$updateEntityConfirmationHandler->bindParam(':Entity_Id', $publishedEntity['id']);
+				$updateEntityConfirmationHandler->bindParam(':User_Id', $lastUser);
 				$updateEntityConfirmationHandler->bindParam(':LastConfirmed', $entity['lastValidated']);
 				$updateEntityConfirmationHandler->execute();
 			}
