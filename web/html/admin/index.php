@@ -639,12 +639,35 @@ function showMyEntities() {
 	$html->showHeaders('Metadata SWAMID - Annual Check');
 	showMenu();
 	if ($userLevel > 9) {
-		printf ('    <div class="row">%s      <div class="col">%s        <a href=".?action=myEntities&%s"><button type="button" class="btn btn-outline-success">Show %s</button></a>%s      </div>%s    </div>%s', "\n", "\n", isset($_GET['showAll']) ? 'showMy' : 'showAll', isset($_GET['showAll']) ? 'My' : 'All',"\n", "\n", "\n");
+		printf ('    <div class="row">%s      <div class="col">%s', "\n", "\n");
+		printf ('        <a href=".?action=myEntities&showMy">
+          <button type="button" class="btn btn%s-success">Show My</button>
+        </a>%s',
+			isset($_GET['showMy']) ? '' : '-outline', "\n");
+		printf ('        <a href=".?action=myEntities&showPub">
+          <button type="button" class="btn btn%s-success">Show Published</button>
+        </a>%s',
+			isset($_GET['showPub']) ? '' : '-outline', "\n");
+		printf ('        <a href=".?action=myEntities&showPubTest">
+          <button type="button" class="btn btn%s-success">Show Published in test</button>
+        </a>%s',
+			isset($_GET['showPubTest']) ? '' : '-outline', "\n");
+		printf ('      </div>%s    </div>%s', "\n", "\n");
     }
-	if (isset($_GET['showAll']) && $userLevel > 9) {
-		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status` FROM Entities WHERE `status` = 1 ORDER BY `entityID`");
+	if (isset($_GET['showPub']) && $userLevel > 9) {
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+			FROM Entities WHERE `status` = 1 AND publishIn > 1 ORDER BY `entityID`");
+	} elseif (isset($_GET['showPubTest']) && $userLevel > 9) {
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+			FROM Entities WHERE `status` = 1 AND publishIn = 1 ORDER BY `entityID`");
 	} else {
-		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status` FROM Users, EntityUser, Entities WHERE EntityUser.`entity_id` = Entities.`id` AND EntityUser.`user_id` = Users.`id` AND `status` < 4 AND `userID` = :UserID ORDER BY `entityID`, `status`");
+		$entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+			FROM Users, EntityUser, Entities
+			WHERE EntityUser.`entity_id` = Entities.`id`
+				AND EntityUser.`user_id` = Users.`id`
+				AND `status` < 4
+				AND `userID` = :UserID
+			ORDER BY `entityID`, `status`");
 		$entitysHandler->bindValue(':UserID', $EPPN);
 	}
 	$entityConfirmationHandler = $db->prepare("SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`, NOW() - INTERVAL 12 MONTH AS 'errorDate' FROM Users, EntityConfirmation WHERE `user_id`= `id` AND `entity_id` = :Id");
