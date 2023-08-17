@@ -628,18 +628,19 @@ Class MetadataDisplay {
         $state = 'dark';
       }
       switch ($element) {
-        case 'InformationURL' :
         case 'Logo' :
+          $data = sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $data, $state, $data);
+          printf ('%s                  <li><span class="text-%s">%s (%s) = %s</span></li>',
+          "\n", $state, $element, $size, $data);
+          break;
+        case 'InformationURL' :
         case 'PrivacyStatementURL' :
           $data = sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $data, $state, $data);
+          printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
+          "\n", $state, $element, $data);
           break;
         default :
-      }
-      if ($element == 'Logo') {
-        printf ('%s                  <li><span class="text-%s">%s (%s) = %s</span></li>',
-          "\n", $state, $element, $size, $data);
-      } else {
-        printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
+          printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
           "\n", $state, $element, $data);
       }
     }

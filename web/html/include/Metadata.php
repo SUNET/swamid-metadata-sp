@@ -789,8 +789,9 @@ Class Metadata {
           $element = substr($child->nodeName, 5);
           break;
         default :
-          $this->result .= $child->nodeType == 8 ? '' :
-            sprintf ("Unknown Element (%s) in %s->DiscoHints.\n", $child->nodeName, $type);
+          $this->result .= $child->nodeType == 8
+            ? ''
+            : sprintf ("Unknown Element (%s) in DiscoHints.\n", $child->nodeName);
           $element = 'Unknown';
       }
 
@@ -924,7 +925,7 @@ Class Metadata {
         case self::SAML_MD_REQUESTEDATTRIBUTE :
           $FriendlyName = $child->getAttribute('FriendlyName') ? $child->getAttribute('FriendlyName') : '';
           $NameFormat = '';
-          $isRequired = ($child->getAttribute('isRequired') 
+          $isRequired = ($child->getAttribute('isRequired')
             && ($child->getAttribute('isRequired') == 'true' || $child->getAttribute('isRequired') == '1')) ? 1 : 0;
           if ($child->getAttribute('Name')) {
             $Name = $child->getAttribute('Name');
@@ -1331,7 +1332,7 @@ Class Metadata {
             $keyInfoHandler->bindParam(':Issuer', $issuer);
             $keyInfoHandler->bindParam(':Bits', $keyInfo['bits']);
             $keyInfoHandler->bindParam(':Key_type', $keyType);
-            $keyInfoHandler->bindParam(':SerialNumber', $cert_info['serialNumber']);
+            $keyInfoHandler->bindParam(':SerialNumber', $certInfo['serialNumber']);
           } else {
             $keyInfoHandler->bindValue(':NotValidAfter', '1970-01-01 00:00:00');
             $keyInfoHandler->bindValue(':Subject', '?');
