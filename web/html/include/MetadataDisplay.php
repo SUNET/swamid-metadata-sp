@@ -1180,7 +1180,7 @@ Class MetadataDisplay {
               <button type="button" class="btn btn-primary">Recheck now</button>
             </a>
           </td>
-        </tr>%s', $urlInfo['lastValidated'], $_GET['action'] ,urlencode($url), "\n");
+        </tr>%s', $urlInfo['lastValidated'], htmlspecialchars($_GET['action']) ,urlencode($url), "\n");
         printf ('      <tr><th>Status</th><td>%s</td></tr>%s', $urlInfo['validationOutput'] , "\n");
         $urlType = $urlInfo['type'];
       }

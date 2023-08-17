@@ -394,18 +394,21 @@ Class MetadataEdit {
             $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
             $entityType = $data['type'];
           }
-      }?>
-        <b><?=$type?></b>
+      }
+      printf('
+        <b>%s</b>
         <ul>
           <li>
-            <div<?=$error?>>
-              <span class="text-<?=$state?>"><?=$value?></span>
-              (<?=$entityType?>)
-              <a href="?edit=EntityAttributes&Entity=<?=$this->dbIdNr?>&oldEntity=<?=$this->dbOldIdNr?>&type=<?=$type?>&attribute=<?=$value?>&action=Delete">
+            <div%s>
+              <span class="text-%s">%s</span>
+              (%s)
+              <a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Delete">
                 <i class="fas fa-trash"></i>
               </a>
             </div>
-          </li><?php
+          </li>',
+        $type, $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, $value
+      );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         $type = $attribute['type'];
