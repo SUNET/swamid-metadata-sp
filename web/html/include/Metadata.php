@@ -1,5 +1,5 @@
 <?php
-Class Metadata {
+class Metadata {
   # Setup
   private $result = '';
   private $warning = '';
@@ -19,8 +19,6 @@ Class Metadata {
   private $xml;
 
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
-
-  private $baseDir = '';
 
   const BIND_COCOV1STATUS = ':Cocov1Status';
   const BIND_RESULT = ':Result';
@@ -48,6 +46,7 @@ Class Metadata {
   const SAML_MD_CONTACTPERSON = 'md:ContactPerson';
   const SAML_MD_EMAILADDRESS = 'md:EmailAddress';
   const SAML_MD_ENCRYPTIONMETHOD = 'md:EncryptionMethod';
+  const SAML_MD_ENTITYDESCRIPTOR = 'md:EntityDescriptor';
   const SAML_MD_EXTENSIONS = 'md:Extensions';
   const SAML_MD_GIVENNAME = 'md:GivenName';
   const SAML_MD_IDPSSODESCRIPTOR = 'md:IDPSSODescriptor';
@@ -92,24 +91,21 @@ Class Metadata {
   public function __construct() {
     $a = func_get_args();
     $i = func_num_args();
-    if (isset($a[0])) {
-      $this->baseDir = array_shift($a);
-      include $this->baseDir . '/config.php';
-      include $this->baseDir . '/include/common.php';
-      try {
-        $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-        // set the PDO error mode to exception
-        $this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-      } catch(PDOException $e) {
-        echo "Error: " . $e->getMessage();
-      }
+    include __DIR__  . '/../config.php';
+    include __DIR__ . '/common.php';
+    try {
+      $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
+      // set the PDO error mode to exception
+      $this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch(PDOException $e) {
+      echo "Error: " . $e->getMessage();
     }
     if (method_exists($this,$f='construct'.$i)) {
         call_user_func_array(array($this,$f),$a);
     }
   }
 
-  private function construct2($id) {
+  private function construct1($id) {
     $entityHandler = $this->metaDb->prepare('
       SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`
         FROM Entities WHERE `id` = :Id');
@@ -132,7 +128,7 @@ Class Metadata {
     }
   }
 
-  private function construct3($entityID = '', $entityStatus = '') {
+  private function construct2($entityID = '', $entityStatus = '') {
     $this->entityID = $entityID;
 
     switch (strtolower($entityStatus)) {
@@ -2568,7 +2564,7 @@ Class Metadata {
       FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
     $publishedHandler->bindParam(':EntityID', $entityID);
 
-    require_once $this->baseDir.'/include/NormalizeXML.php';
+    require_once __DIR__  . '/NormalizeXML.php';
     $normalize = new NormalizeXML();
 
     if ($pendingEntity = $pendingHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -2713,7 +2709,7 @@ Class Metadata {
   private function getEntityDescriptor($xml) {
     $child = $xml->firstChild;
     while ($child) {
-      if ($child->nodeName == "md:EntityDescriptor") {
+      if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
         return $child;
       }
       $child = $child->nextSibling;

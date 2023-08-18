@@ -1,5 +1,5 @@
 <?php
-Class ValidateXML {
+class ValidateXML {
   # Setup
   public function __construct($xml) {
     $this->error = 'No XML loaded';

@@ -16,7 +16,7 @@ $baseDir = '/var/www/html';
 include $baseDir.'/include/Metadata.php';
 
 
-$metadata = new Metadata($baseDir, $id);
+$metadata = new Metadata($id);
 $metadata->movePublishedPending();
 
 function usage($scriptname) {

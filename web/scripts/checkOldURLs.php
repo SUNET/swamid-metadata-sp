@@ -5,6 +5,6 @@ $baseDir = dirname($_SERVER['PHP_SELF'], 2) . '/html';
 include "$baseDir/include/Metadata.php";
 
 // deepcode ignore FileInclusion:
-$metadata = new Metadata($baseDir);
+$metadata = new Metadata();
 $metadata->checkOldURLS(30,true);
 ?>

@@ -1,5 +1,5 @@
 <?php
-Class MetadataEdit {
+class MetadataEdit {
   # Setup
   const SAML_DS_SIGNATURE = 'ds:Signature';
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
@@ -58,9 +58,9 @@ Class MetadataEdit {
   const HTML_DELETE = 'Delete"><i class="fas fa-trash"></i></a> ';
   const HTML_HREF_BLANK = '<a href="%s" class="text-%s" target="blank">%s</a>';
 
-  public function __construct($baseDir, $newID, $oldID = 0) {
-    include $baseDir . '/config.php';
-    include $baseDir . '/include/common.php';
+  public function __construct($newID, $oldID = 0) {
+    include __DIR__ . '/../config.php';
+    include __DIR__ . '/include/common.php';
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
       // set the PDO error mode to exception

@@ -1,5 +1,5 @@
 <?php
-Class MetadataDisplay {
+class MetadataDisplay {
 
   const BIND_TYPE = ':Type';
   const BIND_URL = ':URL';
@@ -17,11 +17,10 @@ Class MetadataDisplay {
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
 
   # Setup
-  public function __construct($baseDir) {
-    include $baseDir . '/config.php';
-    include $baseDir . '/include/common.php';
-    $this->baseDir = $baseDir;
-
+  public function __construct() {
+    include __DIR__  . '/../config.php';
+    include __DIR__ . '/common.php';
+    
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
       // set the PDO error mode to exception
@@ -1431,7 +1430,7 @@ Class MetadataDisplay {
       $entityHandler->execute();
       if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         if (! class_exists('NormalizeXML')) {
-          include $this->baseDir.'/include/NormalizeXML.php';
+          include __DIR__ . '/NormalizeXML.php';
         }
         $normalize1 = new NormalizeXML();
         $normalize1->fromString($entity1['xml']);
@@ -1439,8 +1438,8 @@ Class MetadataDisplay {
         $normalize2->fromString($entity2['xml']);
         if ($normalize1->getStatus() && $normalize2->getStatus()) {
           printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
-          require_once $this->baseDir . '/include/Diff.php';
-          require_once $this->baseDir . '/include/Diff/Renderer/Text/Unified.php';
+          require_once __DIR__ . '/Diff.php';
+          require_once __DIR__ . '/Diff/Renderer/Text/Unified.php';
           $options = array(
             //'ignoreWhitespace' => true,
             //'ignoreCase' => true,
@@ -1467,7 +1466,7 @@ Class MetadataDisplay {
     $entitiesHandler->execute();
 
     if (! class_exists('NormalizeXML')) {
-      include $this->baseDir.'/include/NormalizeXML.php';
+      include __DIR__ . '/NormalizeXML.php';
     }
     $normalize = new NormalizeXML();
 

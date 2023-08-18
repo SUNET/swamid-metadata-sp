@@ -7,8 +7,7 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require 'vendor/autoload.php';
 
-$baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 1);
-include $baseDir . '/config.php';
+include __DIR__ . '/config.php';
 
 include 'include/Html.php';
 $html = new HTML($DiscoveryService, $Mode);
@@ -22,7 +21,7 @@ try {
 }
 
 include 'include/MetadataDisplay.php';
-$display = new MetadataDisplay($baseDir);
+$display = new MetadataDisplay();
 
 if (isset($_GET['showEntity'])) {
   showEntity($_GET['showEntity']);

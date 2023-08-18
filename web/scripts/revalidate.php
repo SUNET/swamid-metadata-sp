@@ -27,7 +27,7 @@ $entitys->bindValue(':Days', $argv[1]);
 $entitys->execute();
 while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
 	printf ("Revalidating entityID : %s\n",$row['entityID']);
-	$metadata = new Metadata('/var/www/html',$row['id']);
+	$metadata = new Metadata($row['id']);
 	if ($metadata->getResult() <> "")
 		printf ("%s\n" ,$metadata->getResult());
 	$metadata->clearResult();
