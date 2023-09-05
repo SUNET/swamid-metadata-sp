@@ -126,7 +126,6 @@ switch ($EPPN) {
   case 'paulscot@kau.se' :
     $userLevel = 10;
     break;
-  case 'ldc-esw@lu.se' :
   case 'johpe12@liu.se' :
   case 'pax@sunet.se' :
   case 'toylon98@umu.se' :
