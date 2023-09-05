@@ -155,13 +155,13 @@ class NormalizeXML {
     return $ns;
   }
 
-  private function checkDOMError ($number, $error){
+  public function checkDOMError ($number, $error){
     $errorParts = explode(' ', $error);
     if ($errorParts[0] == 'DOMDocument::load():') {
-      $this->error = preg_replace('/ in .*, line:/', ' line:', substr($error, 21));
+      $this->error .= preg_replace('/ in .*, line:/', ' line:', substr($error, 21)) . "<br>";
       $this->status = false;
     } else {
-      $this->error = $error;
+      $this->error .= $error;
       $this->status = false;
     }
   }
@@ -170,6 +170,7 @@ class NormalizeXML {
     $this->nsList = array();
     if (file_exists($filename)) {
       if (is_readable($filename)) {
+        $this->error = '';
         $doc = new DOMDocument('1.0', 'UTF-8');
         set_error_handler(array($this, 'checkDOMError'));
         if ( $doc->load($filename) ) {

@@ -18,8 +18,8 @@ class MetadataDisplay {
 
   # Setup
   public function __construct() {
-    include __DIR__  . '/../config.php';
-    include __DIR__ . '/common.php';
+    require __DIR__  . '/../config.php';
+    require __DIR__ . '/common.php';
     
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -1102,11 +1102,11 @@ class MetadataDisplay {
     printf ('
     <h4>
       <i class="fas fa-chevron-circle-right"></i>
-      <a href=".?rawXML=%s" target="_blank">Show XML</a>
+      <a href=".?rawXML=%d" target="_blank">Show XML</a>
     </h4>
     <h4>
       <i class="fas fa-chevron-circle-right"></i>
-      <a href=".?rawXML=%s&download" target="_blank">Download XML</a>
+      <a href=".?rawXML=%d&download" target="_blank">Download XML</a>
     </h4>%s',
       $entityId, $entityId, "\n");
   }
@@ -1430,7 +1430,7 @@ class MetadataDisplay {
       $entityHandler->execute();
       if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         if (! class_exists('NormalizeXML')) {
-          include __DIR__ . '/NormalizeXML.php';
+          require_once __DIR__ . '/NormalizeXML.php';
         }
         $normalize1 = new NormalizeXML();
         $normalize1->fromString($entity1['xml']);
@@ -1466,7 +1466,7 @@ class MetadataDisplay {
     $entitiesHandler->execute();
 
     if (! class_exists('NormalizeXML')) {
-      include __DIR__ . '/NormalizeXML.php';
+      require_once __DIR__ . '/NormalizeXML.php';
     }
     $normalize = new NormalizeXML();
 

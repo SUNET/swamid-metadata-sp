@@ -59,8 +59,8 @@ class MetadataEdit {
   const HTML_HREF_BLANK = '<a href="%s" class="text-%s" target="blank">%s</a>';
 
   public function __construct($newID, $oldID = 0) {
-    include __DIR__ . '/../config.php';
-    include __DIR__ . '/include/common.php';
+    require __DIR__ . '/../config.php';
+    require __DIR__ . '/common.php';
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
       // set the PDO error mode to exception

@@ -91,8 +91,8 @@ class Metadata {
   public function __construct() {
     $a = func_get_args();
     $i = func_num_args();
-    include __DIR__  . '/../config.php';
-    include __DIR__ . '/common.php';
+    require __DIR__  . '/../config.php';
+    require __DIR__ . '/common.php';
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
       // set the PDO error mode to exception
