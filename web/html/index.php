@@ -5,12 +5,11 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 //Load composer's autoloader
-require 'vendor/autoload.php';
+require_once 'vendor/autoload.php';
 
-$baseDir = dirname($_SERVER['SCRIPT_FILENAME'], 1);
-include $baseDir . '/config.php';
+require_once 'config.php';
 
-include 'include/Html.php';
+require_once 'include/Html.php';
 $html = new HTML($DiscoveryService, $Mode);
 
 try {
@@ -21,8 +20,8 @@ try {
   echo "Error: " . $e->getMessage();
 }
 
-include 'include/MetadataDisplay.php';
-$display = new MetadataDisplay($baseDir);
+require_once 'include/MetadataDisplay.php';
+$display = new MetadataDisplay();
 
 if (isset($_GET['showEntity'])) {
   showEntity($_GET['showEntity']);

@@ -8,7 +8,7 @@ if ($import->getStatus()) {
 	$entityID=$import->getEntityID();
 	printf ("%s\n",$entityID);
 	#print $import->getXML();
-	$metadata = new Metadata('/var/www/html',$import->getEntityID(),'Prod');
+	$metadata = new Metadata($import->getEntityID(),'Prod');
 	$metadata->importXML($import->getXML());
 	$metadata->updateFeed($argv[2]);
 

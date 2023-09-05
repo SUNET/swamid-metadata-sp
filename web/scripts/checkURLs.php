@@ -4,6 +4,6 @@ $baseDir = dirname($_SERVER['PHP_SELF'], 2) . '/html';
 // deepcode ignore FileInclusion:
 include $baseDir.'/include/Metadata.php';
 
-$metadata = new Metadata($baseDir);
+$metadata = new Metadata();
 $metadata->validateURLs(100);
 ?>
