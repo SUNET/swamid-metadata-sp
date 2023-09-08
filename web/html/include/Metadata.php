@@ -2574,10 +2574,11 @@ class Metadata {
       if ($normalize->getStatus() && $normalize->getEntityID() == $entityID) {
         $pendingXML = $normalize->getXML();
         $publishedHandler->execute();
-        if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)
-          && $pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
-          if ($pendingXML == $publishedEntity['xml']) {
-            return true;
+        if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)) {
+          if ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
+            if ($pendingXML == $publishedEntity['xml']) {
+              return true;
+            }
           } else {
             // For new Entities remove RegistrationInfo and compare
             $noRegistrationInfo = $normalize->cleanOutRegistrationInfo($publishedEntity['xml']);
