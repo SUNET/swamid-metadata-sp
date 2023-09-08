@@ -258,7 +258,7 @@ class MetadataEdit {
             # Add if missing
             $entityDescriptor->setAttributeNS(
               self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
-            $entityAttributes = $this->newXml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTE);
+            $entityAttributes = $this->newXml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
             $extensions->appendChild($entityAttributes);
           }
 
@@ -313,7 +313,7 @@ class MetadataEdit {
             $child = $extensions->firstChild;
             $entityAttributes = false;
             while ($child && ! $entityAttributes) {
-              if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTE) {
+              if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTES) {
                 $entityAttributes = $child;
               }
               $child = $child->nextSibling;
@@ -3651,7 +3651,7 @@ class MetadataEdit {
       $child = $extensions->firstChild;
       $entityAttributes = false;
       while ($child && ! $entityAttributes) {
-        if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTE) {
+        if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTES) {
           $entityAttributes = $child;
         } else
           $child = $child->nextSibling;
@@ -3659,7 +3659,7 @@ class MetadataEdit {
       if (! $entityAttributes) {
         # Add if missing
         $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
-        $entityAttributes = $this->newXml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTE);
+        $entityAttributes = $this->newXml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
         $extensions->appendChild($entityAttributes);
       }
 
