@@ -848,7 +848,7 @@ function importXML(){
   if ($import->getStatus()) {
     $entityID = $import->getEntityID();
     $validate = new ValidateXML($import->getXML());
-    if ($validate->validateSchema('/../../schemas/schema.xsd')) {
+    if ($validate->validateSchema('../../schemas/schema.xsd')) {
       $metadata = new Metadata($entityID, 'New');
       $metadata->importXML($import->getXML());
       $metadata->getUser($EPPN, $mail, $fullName, true);
