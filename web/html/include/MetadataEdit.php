@@ -790,7 +790,7 @@ class MetadataEdit {
       } else {
         $state = 'success';
       }
-      $baseLink = sptinff('<a href="?edit=IdPScopes&Entity=%d&oldEntity=%d&value=%s&action=',
+      $baseLink = sprintf('<a href="?edit=IdPScopes&Entity=%d&oldEntity=%d&value=%s&action=',
         $this->dbIdNr, $this->dbOldIdNr, $scope['scope']);
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
       printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
