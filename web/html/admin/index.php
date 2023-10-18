@@ -148,6 +148,29 @@ try {
   echo "Error: " . $e->getMessage();
 }
 
+/* BEGIN RAF Logging */
+$assuranceHandler = $db->prepare(
+  'INSERT INTO `assuranceLog` (`entityID`, `assurance`)
+    VALUES (:EntityID, :Assurance) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
+$assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
+if (isset($_SERVER['eduPersonAssurance'])) {
+  foreach (explode(';', $_SERVER['eduPersonAssurance']) as $eduPersonAssurance) {
+    if (substr($eduPersonAssurance, 0, 33) ==  'https://refeds.org/assurance/IAP/') {
+      $assuranceHandler->bindValue(':Assurance',
+        str_replace ('https://refeds.org/assurance/IAP/', 'RAF-', $eduPersonAssurance));
+      $assuranceHandler->execute();
+    } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') {
+      $assuranceHandler->bindValue(':Assurance',
+        str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance));
+      $assuranceHandler->execute();
+    }
+  }
+} else {
+  $assuranceHandler->bindValue(':Assurance', 'None');
+  $assuranceHandler->execute();
+}
+/* END RAF Logging */
+
 require_once '../include/MetadataDisplay.php';
 $display = new MetadataDisplay();
 

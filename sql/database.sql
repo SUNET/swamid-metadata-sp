@@ -166,3 +166,9 @@ CREATE TABLE `ExternalEntities` (
 	`ec` text DEFAULT NULL,
 	`assurancec` text DEFAULT NULL,
 	`ra` text DEFAULT NULL);
+
+CREATE TABLE `assuranceLog` (
+		`entityID` varchar(256) DEFAULT NULL,
+		`assurance` varchar(10),
+    `logDate` DATE DEFAULT (CURRENT_DATE),
+		UNIQUE KEY `entityID_assurance` (`entityID`,`assurance`) USING HASH);
