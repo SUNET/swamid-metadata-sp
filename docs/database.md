@@ -151,3 +151,10 @@ entityID | VARCHAR(256) |
 test | VARCHAR(20) | 
 time | DATETIME | 
 result | VARCHAR(70) | 
+
+## MailReminders
+Field | Type | Usage
+------|------| -----
+entity_id | int(10) | Foreign key (id) from Entities table
+type | tinyint(3) | Type of reminder ( 1 = Annual Confirmation)
+days | smallint(4) |
