@@ -29,9 +29,6 @@ if (isset($_SERVER['displayName'])) {
   $fullName = '';
 }
 
-$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
-$html->setDisplayName($displayName);
-
 $idpCountHandler = $db->prepare(
   'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`');
 $idpCountHandler->execute();
@@ -56,11 +53,23 @@ while ($idpAssuranceRow = $idpAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
   $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
 }
 
-
-
+$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
+$html->setDisplayName($displayName);
 $html->showHeaders('Metadata SWAMID - RAF status');
 printf('    <div class="row">
-      <div class="col"></div>
+      <div class="col-6">
+        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">&nbsp;</div></div>
+        <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">&nbsp;</div></div>
+        <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
+        <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
+      </div>
       <div class="col">
         <h3>SWAMID</h3>
         <canvas id="swamid"></canvas>
@@ -69,54 +78,8 @@ printf('    <div class="row">
         <h3>REFEDS</h3>
         <canvas id="raf"></canvas>
       </div>
-      <div class="col"></div>
     </div>
     <br>
-    <script src="/include/chart/chart.min.js"></script>
-    <script>
-      const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
-      const myswamid = new Chart(ctxswamid, {
-        width: 200,
-        type: \'pie\',
-        data: {
-          labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
-          datasets: [{
-            label: \'SWAMID\',
-            data: [%d, %d, %d, %d],
-            backgroundColor: [
-              \'rgb(99, 255, 132)\',
-              \'rgb(255, 205, 86)\',
-              \'rgb(255, 99, 132)\',
-              \'rgb(255, 255, 255)\',
-            ],
-            borderColor : \'rgb(0,0,0)\',
-            hoverOffset: 4
-          }]
-        },
-      });
-    </script>
-    <script>
-      const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
-      const myraf = new Chart(ctxraf, {
-        width: 200,
-        type: \'pie\',
-        data: {
-          labels: [\'High\', \'Medium\', \'Low\', \'None\'],
-          datasets: [{
-            label: \'RAF\',
-            data: [%d, %d, %d, %d],
-            backgroundColor: [
-              \'rgb(99, 255, 132)\',
-              \'rgb(255, 205, 86)\',
-              \'rgb(255, 99, 132)\',
-              \'rgb(255, 255, 255)\',
-            ],
-            borderColor : \'rgb(0,0,0)\',
-            hoverOffset: 4
-          }]
-        },
-      });
-    </script>
     <table class="table table-striped table-bordered">
       <tr>
         <th>IdP</th>
@@ -128,15 +91,16 @@ printf('    <div class="row">
         <th>RAF-High</th>
         <th>Nothing</th>
       </tr>%s',
-      $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-      $idps - $assuranceCount['SWAMID-AL1'],
-      $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-      $idps - $assuranceCount['RAF-low'],
-       "\n");
+  $idps,
+  $assuranceCount['SWAMID-AL3'],
+  $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+  $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+  $idps - $assuranceCount['SWAMID-AL1'],
+  $assuranceCount['RAF-high'],
+  $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+  $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+  $idps - $assuranceCount['RAF-low'],
+  "\n");
 
 $assuranceHandler = $db->prepare(
   'SELECT `entityID`, `assurance`, `logDate`
@@ -173,6 +137,60 @@ if ($oldIdp) {
   printRow($oldIdp, $assurance);
 }
 print "    </table>\n    <br>\n";
+
+printf('      <script src="/include/chart/chart.min.js"></script>
+      <script>
+        const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
+        const myswamid = new Chart(ctxswamid, {
+          width: 200,
+          type: \'pie\',
+          data: {
+            labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
+            datasets: [{
+              label: \'SWAMID\',
+              data: [%d, %d, %d, %d],
+              backgroundColor: [
+                \'rgb(99, 255, 132)\',
+                \'rgb(255, 205, 86)\',
+                \'rgb(255, 99, 132)\',
+                \'rgb(255, 255, 255)\',
+              ],
+              borderColor : \'rgb(0,0,0)\',
+              hoverOffset: 4
+            }]
+          },
+        });
+      </script>
+      <script>
+        const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
+        const myraf = new Chart(ctxraf, {
+          width: 200,
+          type: \'pie\',
+          data: {
+            labels: [\'High\', \'Medium\', \'Low\', \'None\'],
+            datasets: [{
+              label: \'RAF\',
+              data: [%d, %d, %d, %d],
+              backgroundColor: [
+                \'rgb(99, 255, 132)\',
+                \'rgb(255, 205, 86)\',
+                \'rgb(255, 99, 132)\',
+                \'rgb(255, 255, 255)\',
+              ],
+              borderColor : \'rgb(0,0,0)\',
+              hoverOffset: 4
+            }]
+          },
+        });
+      </script>',
+  $assuranceCount['SWAMID-AL3'],
+  $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+  $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+  $idps - $assuranceCount['SWAMID-AL1'],
+  $assuranceCount['RAF-high'],
+  $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+  $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+  $idps - $assuranceCount['RAF-low']);
 
 $html->showFooter(array());
 # End of page
