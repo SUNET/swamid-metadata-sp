@@ -7,7 +7,7 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require_once '/var/www/html/vendor/autoload.php';
 
-include "/var/www/html/config.php";
+include_once "/var/www/html/config.php";  # NOSONAR
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -65,7 +65,6 @@ function sendEntityConfirmation($id, $entityID, $months) {
   global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut, $baseURL;
  
   $mailContacts = new PHPMailer(true);
-  /*$mailContacts->SMTPDebug = 2; */
   $mailContacts->isSMTP();
   $mailContacts->Host = $SMTPHost;
   $mailContacts->SMTPAuth = true;
