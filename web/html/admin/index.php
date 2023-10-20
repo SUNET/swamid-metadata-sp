@@ -294,6 +294,12 @@ if (isset($_FILES['XMLfile'])) {
           showMenu();
           $display->showEcsStatistics();
           break;
+        case 'RAFStatistics' :
+          $menuActive = 'RAFStatistics';
+          $html->showHeaders('Metadata SWAMID - RAF status');
+          showMenu();
+          $display->showRAFStatistics();
+          break;
         case 'showURL' :
           $menuActive = '';
           $html->showHeaders('Metadata SWAMID - URL status');
@@ -958,9 +964,10 @@ function showMenu() {
     $filter, $menuActive == 'EntityStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>',
     $filter, $menuActive == 'EcsStatistics' ? '' : HTML_OUTLINE);
+  printf('<a href=".?action=RAFStatistics%s"><button type="button" class="btn btn%s-primary">RAF statistics</button></a>',
+    $filter, $menuActive == 'RAFStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>',
     $filter, $menuActive == 'Errors' ? '' : HTML_OUTLINE);
-
 
   if ( $userLevel > 4 ) {
     printf('%s    <a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>',
