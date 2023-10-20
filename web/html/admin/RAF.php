@@ -1,5 +1,5 @@
 <?php
-require_once '../config.php';
+require_once '../config.php'; # NOSONAR
 
 require_once '../include/Html.php';
 $html = new HTML('', $Mode);
@@ -53,11 +53,30 @@ while ($idpAssuranceRow = $idpAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
   $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
 }
 
+$metaAssuranceHandler = $db->prepare(
+  "SELECT COUNT(`id`) AS `count`, `attribute`
+  FROM `Entities`, `EntityAttributes`
+  WHERE `Entities`.`id` = `EntityAttributes`.`entity_id`
+    AND `status` = 1
+    AND `isIdP` = 1
+    AND `publishIn` > 1
+    AND `type` = 'assurance-certification'
+  GROUP BY `attribute`");
+
+$metaAssuranceHandler->execute();
+$metaAssuranceCount = array(
+  'SWAMID-AL1' => 0,
+  'SWAMID-AL2' => 0,
+  'SWAMID-AL3' => 0);
+while ($metaAssuranceRow = $metaAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
+  $metaAssuranceCount[$metaAssuranceRow['attribute']] = $metaAssuranceRow['count'];
+}
+
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 $html->showHeaders('Metadata SWAMID - RAF status');
 printf('    <div class="row">
-      <div class="col-6">
+      <div class="col">
         <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>
         <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
@@ -77,6 +96,10 @@ printf('    <div class="row">
       <div class="col">
         <h3>REFEDS</h3>
         <canvas id="raf"></canvas>
+      </div>
+      <div class="col">
+        <h3>Assurance in metadata</h3>
+        <canvas id="meta"></canvas>
       </div>
     </div>
     <br>
@@ -182,6 +205,27 @@ printf('      <script src="/include/chart/chart.min.js"></script>
             }]
           },
         });
+      </script>
+      <script>
+        const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
+        const mymeta = new Chart(ctxmeta, {
+          width: 200,
+          type: \'pie\',
+          data: {
+            labels: [\'AL3\', \'AL2\', \'AL1\'],
+            datasets: [{
+              label: \'Metadata\',
+              data: [%d, %d, %d],
+              backgroundColor: [
+                \'rgb(99, 255, 132)\',
+                \'rgb(255, 205, 86)\',
+                \'rgb(255, 99, 132)\',
+              ],
+              borderColor : \'rgb(0,0,0)\',
+              hoverOffset: 4
+            }]
+          },
+        });
       </script>',
   $assuranceCount['SWAMID-AL3'],
   $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
@@ -190,7 +234,12 @@ printf('      <script src="/include/chart/chart.min.js"></script>
   $assuranceCount['RAF-high'],
   $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
   $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-  $idps - $assuranceCount['RAF-low']);
+  $idps - $assuranceCount['RAF-low'],
+  $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'],
+  $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] -
+    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'],
+  $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] -
+    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2']);
 
 $html->showFooter(array());
 # End of page
