@@ -472,7 +472,8 @@ function showInfo() {
       <div class="col">
         <br>
         <h3>SWAMID Metadata Tool</h3>
-        <p>Welcome to the SWAMID Metadata Tool. With this tool you can browse and examine metadata availabe through SWAMID.
+        <p>Welcome to the SWAMID Metadata Tool. With this tool you can browse and examine
+          metadata availabe through SWAMID.
         <h4>Public available information</h4>
         <p>To view entities, i.e. Identiy Providers and Service Providers, available in SWAMID, select a tab:<ul>
           <li><b>All in SWAMID</b> lists all entities registered in SWAMID.</li>
@@ -483,7 +484,11 @@ function showInfo() {
         </ul></p>
         <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form. E.g entering "umu.se" in the entityID search form will list all entities including "umu.se" in their entityID.</p>
         <h4>Add or Update Identity Provider or Service Provider metadata</h4>
-        <p>Login using the orange button at the top right corner of this page to add, update or request removal of your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu at the top.</p>
+        <p>Login using the orange button at the top right corner of this page to add, update or request removal of
+          your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are
+          published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu
+          at the top. When you have requested publication you will get an e-mail that you need to forward to
+          operations for compleation.</p>
         <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduID.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
 <?php
 }

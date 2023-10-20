@@ -167,8 +167,15 @@ CREATE TABLE `ExternalEntities` (
 	`assurancec` text DEFAULT NULL,
 	`ra` text DEFAULT NULL);
 
+CREATE TABLE `MailReminders` (
+	`entity_id` int(10) unsigned DEFAULT NULL,
+	`type` tinyint(3) unsigned DEFAULT NULL,
+	`level` tinyint(3) unsigned DEFAULT NULL,
+	`mailDate` datetime DEFAULT NULL,
+	UNIQUE KEY `entity_id_type` (`entity_id`,`type`) USING HASH);
+
 CREATE TABLE `assuranceLog` (
-		`entityID` varchar(256) DEFAULT NULL,
-		`assurance` varchar(10),
-    `logDate` DATE DEFAULT (CURRENT_DATE),
-		UNIQUE KEY `entityID_assurance` (`entityID`,`assurance`) USING HASH);
+	`entityID` varchar(256) DEFAULT NULL,
+	`assurance` varchar(10),
+	`logDate` DATE DEFAULT (CURRENT_DATE),
+	UNIQUE KEY `entityID_assurance` (`entityID`,`assurance`) USING HASH);
