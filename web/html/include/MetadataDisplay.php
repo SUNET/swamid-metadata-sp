@@ -1739,11 +1739,11 @@ class MetadataDisplay {
         <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
       </div>
       <div class="col">
-        <h3>SWAMID</h3>
+        <h3>SWAMID Assurance</h3>
         <canvas id="swamid"></canvas>
       </div>
       <div class="col">
-        <h3>REFEDS</h3>
+        <h3>REFEDS Assurance</h3>
         <canvas id="raf"></canvas>
       </div>
       <div class="col">
