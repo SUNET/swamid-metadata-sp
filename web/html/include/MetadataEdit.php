@@ -46,6 +46,8 @@ class MetadataEdit {
 
   const SAMLNF_URI = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
   const SAMLXMLNS_URI = 'http://www.w3.org/2000/xmlns/';
+  const SAMLXMLNS_DS = 'xmlns:ds';
+  const SAMLXMLNS_DS_URL = 'http://www.w3.org/2000/09/xmldsig#';
   const SAMLXMLNS_MDUI = 'xmlns:mdui';
   const SAMLXMLNS_MDUI_URL = 'urn:oasis:names:tc:SAML:metadata:ui';
 
@@ -1617,6 +1619,11 @@ class MetadataEdit {
             } else {
               $beforeChild = $child;
             }
+          }
+
+          if ($child->nodeName != self::SAML_MD_KEYDESCRIPTOR) {
+            # No existing KeyDescriptor. Suggest no existing KeyInfo ? Better add xmlns:ds
+            $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_DS, self::SAMLXMLNS_DS_URL);
           }
 
           $keyDescriptor = $this->newXml->createElement(self::SAML_MD_KEYDESCRIPTOR);
