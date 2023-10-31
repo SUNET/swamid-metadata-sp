@@ -390,7 +390,6 @@ function showEntityList($status = 1) {
   $feedArrow = '';
   $orgArrow = '';
   $entityIDArrow = '';
-  $validationArrow = '';
   $warningArrow = '';
   $errorArrow = '';
   if (isset($_GET['feedDesc'])) {
@@ -407,9 +406,6 @@ function showEntityList($status = 1) {
     $sortOrder = '`OrganizationName` ASC, `entityID`';
     $orgOrder = 'orgDesc';
     $orgArrow = HTML_CLASS_FA_DOWN;
-  } elseif (isset($_GET['validationOutput'])) {
-    $sortOrder = '`validationOutput` DESC, `entityID`, `id`';
-    $validationArrow = HTML_CLASS_FA_DOWN;
   } elseif (isset($_GET['warnings'])) {
     $sortOrder = '`warnings` DESC, `errors` DESC, `errorsNB` DESC, `entityID`, `id`';
     $warningArrow = HTML_CLASS_FA_DOWN;
@@ -473,12 +469,22 @@ function showEntityList($status = 1) {
   if (isset($_GET['action'])) {
     $filter .= '&action='.$_GET['action'];
   }
-  $entitys = $db->prepare(
-    "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
-      `lastUpdated`, `lastValidated`, `validationOutput`, `warnings`, `errors`, `errorsNB`
-    FROM Entities
-    LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationName' AND lang = 'en'
-    WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
+  if ($status == 1) {
+    $entitys = $db->prepare(
+      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
+        `lastUpdated`, `lastConfirmed` AS lastValidated, `warnings`, `errors`, `errorsNB`
+      FROM Entities
+      LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationName' AND lang = 'en'
+      LEFT JOIN EntityConfirmation ON EntityConfirmation.entity_id = id
+      WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
+  } else {
+    $entitys = $db->prepare(
+      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
+        `lastUpdated`, `lastValidated`, `warnings`, `errors`, `errorsNB`
+      FROM Entities
+      LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationName' AND lang = 'en'
+      WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
+  }
   $entitys->bindValue(':Query', "%".$query."%");
 
   printf('
@@ -496,12 +502,14 @@ function showEntityList($status = 1) {
             <input type="submit" value="Filter">
           </form>
         </th>
-        <th><a href="?%s&%s">OrganizationName%s</a></th><th>%s</th><th>lastValidated (UTC)</th>
-        <th><a href="?%s&validationOutput">validationOutput%s</a></th>
+        <th><a href="?%s&%s">OrganizationName%s</a></th>
+        <th>%s (UTC)</th>
+        <th>%s (UTC)</th>
         <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s',
     $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter,
-    $orgOrder, $orgArrow, ($status == 1) ? 'lastUpdated (UTC)' : 'created (UTC)' ,
-    $filter, $validationArrow, $filter, $warningArrow, $filter, $errorArrow, "\n");
+    $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
+    ($status == 1) ? 'Last Confirmed' : 'Last Validated',
+    $filter, $warningArrow, $filter, $errorArrow, "\n");
   showList($entitys, $minLevel);
 }
 
@@ -723,7 +731,6 @@ function showList($entitys, $minLevel) {
       }
       $validationStatus = ($row['warnings'] == '') ? '' : '<i class="fas fa-exclamation-triangle"></i>';
       $validationStatus .= ($row['errors'] == '' && $row['errorsNB'] == '') ? '' : '<i class="fas fa-exclamation"></i>';
-      $validationOutput = ($row['validationOutput'] == '') ? '' : '<i class="fas fa-question"></i>';
       printf ('
         <td class="text-center">%s</td>
         <td class="text-center">%s</td>
@@ -731,10 +738,9 @@ function showList($entitys, $minLevel) {
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>
-        <td>%s</td>
         <td>%s</td>',
         $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationName'],
-        $row['lastUpdated'], $row['lastValidated'], $validationOutput, $validationStatus);
+        $row['lastUpdated'], $row['lastValidated'], $validationStatus);
       print "\n      </tr>\n";
     }
   } ?>
@@ -1548,7 +1554,7 @@ function getErrors($entitiesId) {
   global $db;
   $errors = '';
 
-  $entityHandler = $db->prepare('SELECT `entityID`, `status`, `validationOutput`, `warnings`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
+  $entityHandler = $db->prepare('SELECT `entityID`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
 
   $entityHandler->execute();
