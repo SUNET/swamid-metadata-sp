@@ -14,7 +14,7 @@ try {
   // set the PDO error mode to exception
   $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
+  echo "DB Error";
 }
 
 $updateMailRemindersHandler = $db->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
@@ -32,36 +32,46 @@ while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
 }
 $getMailRemindersHandler->closeCursor();
 
-$flagDates = $db->query('SELECT NOW() - INTERVAL 11 MONTH AS `warnDate`,
+$flagDates = $db->query('SELECT NOW() - INTERVAL 10 MONTH AS `warn1Date`,
+  NOW() - INTERVAL 11 MONTH AS `warn2Date`,
   NOW() - INTERVAL 12 MONTH AS `errorDate`', PDO::FETCH_ASSOC);
 foreach ($flagDates as $dates) {
   # Need to use foreach to fetch row. $flagDates is a PDOStatement
-  $warnDate = $dates['warnDate'];
+  $warn1Date = $dates['warn1Date'];
+  $warn2Date = $dates['warn2Date'];
   $errorDate = $dates['errorDate'];
 }
 $flagDates->closeCursor();
 
-$entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `lastConfirmed`
+$entitiesHandler = $db->prepare("SELECT DISTINCT Entities.`id`, `entityID`, `lastConfirmed`, `data` AS DisplayName
   FROM Entities
   LEFT JOIN EntityConfirmation ON EntityConfirmation.entity_id = id
+  LEFT JOIN Mdui ON Mdui.entity_id = id AND `element` = 'DisplayName' AND `lang` = 'en'
   WHERE `status` = 1 AND publishIn > 1 ORDER BY `entityID`");
 
 $entitiesHandler->execute();
 while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-  if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
-    printf('Error %s%s', $entity['lastConfirmed'], "\n");
+  /*if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
+    printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
+    $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 3));
+    sendEntityConfirmation($entity['id'], $entity['entityID'],
+      iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
+  } else*/if ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
+    printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
-    sendEntityConfirmation($entity['id'], $entity['entityID'], 12);
-  } elseif ($warnDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
-    printf('Warn %s%s', $entity['lastConfirmed'], "\n");
+    sendEntityConfirmation($entity['id'], $entity['entityID'],
+      iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 11);
+  }/* elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
+    printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 1));
-    sendEntityConfirmation($entity['id'], $entity['entityID'], 11);
-  }
+    sendEntityConfirmation($entity['id'], $entity['entityID'],
+      iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
+  }*/
 }
 $entitiesHandler->closeCursor();
 
 
-function sendEntityConfirmation($id, $entityID, $months) {
+function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut, $baseURL;
  
   $mailContacts = new PHPMailer(true);
@@ -91,15 +101,28 @@ function sendEntityConfirmation($id, $entityID, $months) {
   $mailContacts->isHTML(true);
   $mailContacts->Body    = sprintf("<html>\n  <body>
     <p>Hi.</p>
-    <p>Entity %s has not been validated/confirmed for %d months.</p>
-    <p>You have received this mail because you are either the technical and/or administrative contact.</p>
-    <p>You can update your entity at <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a></p>
+    <p>The entity \"%s\" (%s) has not been validated/confirmed for %d months.
+    The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational
+    and fulfils the Technology Profile. If not annually confirmed the Operations team will start the process
+    to remove the entity from SWAMID metadata registry.</p>
+    <p>You have received this email because you are either the technical and/or administrative contact.</p>
+    <p>You can confirm, update or remove your entity at
+    <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a> .</p>
+    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    --<br>
+    On behalf of SWAMID Operations</p>
   </body>\n</html>",
-    $entityID, $months, $baseURL, $id, $baseURL, $id);
-  $mailContacts->AltBody = sprintf("Hi.\n\nEntity %s has not been validated/confirmed for %d months.
-    \nYou have received this mail because you are either the technical and/or administrative contact.
-    \nYou can update your entity at %s/admin/?showEntity=%d",
-    $entityID, $months, $baseURL, $id);
+  $displayName, $entityID, $months, $baseURL, $id, $baseURL, $id);
+  $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has not been validated/confirmed for %d months.
+    The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational and fulfils
+    the Technology Profile. If not annually confirmed the Operations team will start the process to remove the entity
+    from SWAMID metadata registry.
+    \nYou have received this email because you are either the technical and/or administrative contact.
+    \nYou can confirm, update or remove your entity at %s/admin/?showEntity=%d .
+    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    --
+    On behalf of SWAMID Operations",
+    $displayName, $entityID, $months, $baseURL, $id);
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
   $mailContacts->Subject  = 'Warning : SWAMID metadata for ' . $shortEntityid . ' needs to be validated';
@@ -108,9 +131,7 @@ function sendEntityConfirmation($id, $entityID, $months) {
     $mailContacts->send();
   } catch (Exception $e) {
     echo 'Message could not be sent to contacts.<br>';
-    echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
   }
-
 }
 
 function getTechnicalAndAdministrativeContacts($id) {
