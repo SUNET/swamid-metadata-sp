@@ -61,12 +61,12 @@ while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
     sendEntityConfirmation($entity['id'], $entity['entityID'],
       iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 11);
-  }/* elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
+  } elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
     printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 1));
     sendEntityConfirmation($entity['id'], $entity['entityID'],
       iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
-  }*/
+  }
 }
 $entitiesHandler->closeCursor();
 
