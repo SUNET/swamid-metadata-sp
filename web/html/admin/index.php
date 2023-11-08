@@ -1830,6 +1830,7 @@ function approveAccessRequest($code) {
             This mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations.
             If you've any questions please contact operations@swamid.se.",
             $metadata->entityID());
+          $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->entityID());
           $mail->Subject = 'Access granted for ' . $shortEntityid;
 
           $info = sprintf('<h3>Access granted</h3>Access to <b>%s</b> added for %s (%s).',
