@@ -14,6 +14,7 @@ class Metadata {
 
   private $entityID = 'Unknown';
   private $entityExists = false;
+  private $entityDisplayName = false;
   private $dbIdNr = 0;
   private $status = 0;
   private $xml;
@@ -2856,6 +2857,22 @@ class Metadata {
   #############
   public function feedValue() {
     return $this->feedValue;
+  }
+
+  public function entityDisplayName() {
+    if (! $this->entityDisplayName ) {
+      $displayHandler = $this->metaDb->prepare(
+        "SELECT `data` AS DisplayName
+        FROM Mdui WHERE entity_id = :Entity_ID AND `element` = 'DisplayName' AND `lang` = 'en'");
+      $displayHandler->bindParam(':Entity_ID',$this->dbIdNr);
+      $displayHandler->execute();
+      if ($displayInfo = $displayHandler->fetch(PDO::FETCH_ASSOC)) {
+        $this->entityDisplayName = $displayInfo['DisplayName'];
+      } else {
+        $this->entityDisplayName = 'Display name missing';
+      }
+      return $this->entityDisplayName;
+    }
   }
 
   public function getTechnicalAndAdministrativeContacts() {

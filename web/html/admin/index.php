@@ -1031,6 +1031,7 @@ function move2Pending($entitiesId) {
         showMenu();
 
         $fullName = iconv("UTF-8", "ISO-8859-1", $fullName);
+        $displayName = $draftMetadata->entityDisplayName();
 
         setupMail();
 
@@ -1046,12 +1047,53 @@ function move2Pending($entitiesId) {
 
         //Content
         $mailContacts->isHTML(true);
-        $mailContacts->Body    = sprintf("<p>Hi.</p>\n<p>%s (%s, %s) has requested an update of %s</p>\n<p>You have received this mail because you are either the new or old technical and/or administrative contact.</p>\n<p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>If you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>", $EPPN, $fullName, $mail, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId);
-        $mailContacts->AltBody = sprintf("Hi.\n\n%s (%s, %s) has requested an update of %s\n\nYou have received this mail because you are either the new or old technical and/or administrative contact.\n\nYou can see the new version at %s/?showEntity=%d\n\nIf you do not approve this update please forward this mail to SWAMID Operations (operations@swamid.se) and request for the update to be denied.", $EPPN, $fullName, $mail, $draftMetadata->entityID(), $hostURL, $entitiesId);
+        $mailContacts->Body    = sprintf("<html>\n  <body>
+          <p>Hi.</p>
+          <p>%s (%s) has requested an update of \"%s\" (%s)</p>
+          <p>You have received this email because you are either the new or old technical and/or administrative contact.</p>
+          <p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+          <p>If you do not approve this update, forward this email to SWAMID Operations (operations@swamid.se) and request for the update to be denied.</p>
+          <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+          --<br>
+          On behalf of SWAMID Operations</p>
+          </body>\n</html>",
+          $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId);
+        $mailContacts->AltBody = sprintf("Hi.
+          \n%s (%s) has requested an update of \"%s\" (%s)
+          \nYou have received this email because you are either the new or old technical and/or administrative contact.
+          \nYou can see the new version at %s/?showEntity=%d
+          \nIf you do not approve this update, forward this email to SWAMID Operations (operations@swamid.se) and request for the update to be denied.
+          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          --
+          On behalf of SWAMID Operations",
+          $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId);
 
         $mailRequetser->isHTML(true);
-        $mailRequetser->Body    = sprintf("<p>Hi.</p>\n<p>You have requested an update of %s</p>\n<p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>\n<p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>\n<p>An email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : </p>\n<p><ul>\n<li>%s</li>\n</ul>\n", $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
-        $mailRequetser->AltBody = sprintf("Hi.\n\nYou have requested an update of %s\n\nPlease forward this email to SWAMID Operations (operations@swamid.se).\n\nThe new version can be found at %s/?showEntity=%d\n\nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s\n\n", $draftMetadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
+        $mailRequetser->Body    = sprintf("<html>\n  <body>
+          <p>Hi.</p>
+          <p>You have requested an update of \"%s\" (%s)</p>
+          <p>To continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
+          If you don’t do this the publication request will not be processed.</p>
+          <p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+          <p>An email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : </p>
+          <p><ul>
+          <li>%s</li>
+          </ul>
+          <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+          --<br>
+          On behalf of SWAMID Operations</p>
+          </body>\n</html>",
+          $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
+        $mailRequetser->AltBody = sprintf("Hi.
+          \nYou have requested an update of \"%s\" (%s)
+          \nTo continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
+          If you don’t do this the publication request will not be processed.
+          \nThe new version can be found at %s/?showEntity=%d
+          \nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s
+          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          --
+          On behalf of SWAMID Operations",
+          $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
 
         $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $draftMetadata->entityID());
         $publishedMetadata = new Metadata($draftMetadata->entityID(), 'prod');
@@ -1199,8 +1241,21 @@ function annualConfirmation($entitiesId){
           if ($errors != '') {
             printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
           }
-          printf('%s    <p>You are confirming that <b>%s</b> is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>%s', "\n", $metadata->entityID(), "\n");
-          printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="hidden" name="FormVisit" value="true">%s      <h5> Confirmation:</h5>%s      <input type="checkbox" id="entityIsOK" name="entityIsOK">%s      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>%s      <br>%s      <input type="submit" name="action" value="Annual Confirmation">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>%s', "\n", $entitiesId, "\n", "\n", "\n", "\n", $sections, "\n", "\n", "\n", "\n", $entitiesId, "\n");
+          printf(
+            '%s    <p>You are confirming that <b>%s</b> is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>%s',
+            "\n", $metadata->entityID(), "\n");
+          #      <label for="entityIsOK">I confirm that this Entity is part of an organisation that is a member of the SWAMID Identity Federation and I also confirm that the organisation fulfil one or more of SWAMID Assurance Profiles. (section %s in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a>)</label><br>
+          printf('    <form>
+      <input type="hidden" name="Entity" value="%d"
+      <input type="hidden" name="FormVisit" value="true">
+      <h5> Confirmation:</h5>
+      <input type="checkbox" id="entityIsOK" name="entityIsOK">
+      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
+      <br>
+      <input type="submit" name="action" value="Annual Confirmation">
+    </form>
+    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>%s',
+            $entitiesId, $sections, $entitiesId, "\n");
         }
       } else {
         # User have no access yet.
