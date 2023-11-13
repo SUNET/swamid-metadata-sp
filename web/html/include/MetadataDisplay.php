@@ -1181,6 +1181,22 @@ class MetadataDisplay {
           </td>
         </tr>%s', $urlInfo['lastValidated'], htmlspecialchars($_GET['action']) ,urlencode($url), "\n");
         printf ('      <tr><th>Status</th><td>%s</td></tr>%s', $urlInfo['validationOutput'] , "\n");
+        switch ($urlInfo['validationOutput']) {
+          case 'SSL certificate problem: unable to get local issuer certificate' :
+            printf ('      <tr><th>Possible solution</th><td>You are missing intermediate certificate(s).<br>
+              Verify at <a href="https://www.ssllabs.com/ssltest/analyze.html?d=%s">SSL Labs</a></td></tr>%s',
+              urlencode($url), "\n");
+            break;
+          case 'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+            printf ('      <tr><th>Possible solution</th>
+              <td>You are missing link / have a java-script to generate this page.<br>
+              Verify with curl -s %s | grep http://www.geant.net/uri/dataprotection-code-of-conduct/v1<br>
+              This should output this URL.</td></tr>%s',
+              $url, "\n");
+            break;
+          default:
+              break;
+        }
         $urlType = $urlInfo['type'];
       }
       printf ('    </table>%s    <table class="table table-striped table-bordered">
