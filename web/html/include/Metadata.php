@@ -139,7 +139,7 @@ class Metadata {
         break;
       case 'shadow' :
         # Request sent to OPS to be added.
-        # Create a shadow entiry
+        # Create a shadow entity
         $this->status = 6;
         break;
       case 'new' :
@@ -3011,13 +3011,6 @@ class Metadata {
             AND `hash` = :Hashvalue');
         $requestRemoveHandler = $this->metaDb->prepare('DELETE FROM `AccessRequests`
           WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
-        $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser
-          (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
-          VALUES(:Entity_Id, :User_Id, :ApprovedBy, NOW())
-          ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
-        $entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
-        $entityUserHandler->bindParam(':User_Id', $userId);
-        $entityUserHandler->bindParam(':ApprovedBy', $approvedBy);
         $requestHandler->bindParam(':Entity_id', $this->dbIdNr);
         $requestHandler->bindParam(':User_id', $userId);
         $requestHandler->bindParam(':Hashvalue', $hash);
@@ -3028,7 +3021,7 @@ class Metadata {
         if ($request = $requestHandler->fetch(PDO::FETCH_ASSOC)) {
           $requestRemoveHandler->execute();
           if ($request['limit'] < $request['requestDate']) {
-            $entityUserHandler->execute();
+            $this->addAccess2Entity($userId, $approvedBy);
             $result = array('returnCode' => 2, 'info' => 'Access granted.',
               'fullName' => $request['fullName'], 'email' => $request['email']);
           } else {
@@ -3042,6 +3035,17 @@ class Metadata {
       $result = array('returnCode' => 13, 'info' => 'Error in code');
     }
     return $result;
+  }
+
+  public function addAccess2Entity($userId, $approvedBy) {
+    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser
+      (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
+      VALUES(:Entity_Id, :User_Id, :ApprovedBy, NOW())
+      ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+    $entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
+    $entityUserHandler->bindParam(':User_Id', $userId);
+    $entityUserHandler->bindParam(':ApprovedBy', $approvedBy);
+    $entityUserHandler->execute();
   }
 
   public function saveStatus($date = '') {

@@ -262,6 +262,11 @@ if (isset($_FILES['XMLfile'])) {
         case 'Request Access' :
           requestAccess($entitiesId);
           break;
+        case 'forceAccess' :
+          $metadata = new Metadata($entitiesId);
+          $metadata->addAccess2Entity($metadata->getUserId($EPPN), $EPPN);
+          showEntity($entitiesId);
+          break;
         default :
       }
     } else {
@@ -1623,8 +1628,9 @@ function removeEntity($entitiesId) {
 
 function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=false) {
   global $html;
-  if ($userLevel >= $minLevel)
+  if ($userLevel >= $minLevel) {
     return true;
+  }
   $metadata = new Metadata($entitiesId);
   $metadata->getUser($userID);
   if ($metadata->isResponsible()) {
@@ -1642,7 +1648,7 @@ function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=fal
 # Request access to an entity
 function requestAccess($entitiesId) {
   global $html, $menuActive;
-  global $EPPN, $mail, $fullName;
+  global $EPPN, $mail, $fullName, $userLevel;
   global $mailContacts, $mailRequester, $SendOut;
 
   $metadata = new Metadata($entitiesId);
@@ -1738,7 +1744,10 @@ function requestAccess($entitiesId) {
       <input type="submit" name="action" value="Request Access">
     </form>
     <a href="./?showEntity=%d"><button>Return to Entity</button></a>%s',
-          $entitiesId, implode (", ",$addresses),  $entitiesId, "\n");
+          $entitiesId, implode (", ",$addresses), $entitiesId, "\n");
+        if ($userLevel > 19) {
+          printf('    <br><a href="./?action=forceAccess&Entity=%d"><button>Force access to Entity</button></a>%s', $entitiesId, "\n");
+        }
       }
     }
   }
