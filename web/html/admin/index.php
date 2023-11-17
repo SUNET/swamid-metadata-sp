@@ -82,11 +82,22 @@ if (isset($_SERVER['eduPersonPrincipalName'])) {
     $errorURL);
 }
 
+$foundEmployee = false;
+$foundStudent = true;
+$foundMember = false;
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
-  $foundEmployee = false;
   foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
-    if (explode('@',$ScopedAffiliation)[0] == 'employee') {
-      $foundEmployee = true;
+    switch(explode('@',$ScopedAffiliation)[0]) {
+      case 'employee' :
+        $foundEmployee = true;
+        break;
+      case 'student' :
+        $foundStudent = true;
+        break;
+      case 'member' :
+        $foundMember = true;
+        break;
+      default:
     }
   }
   if (! $foundEmployee) {
@@ -96,8 +107,17 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 } elseif (isset($_SERVER['eduPersonAffiliation'])) {
   $foundEmployee = false;
   foreach (explode(';',$_SERVER['eduPersonAffiliation']) as $Affiliation) {
-    if ($Affiliation == 'employee') {
-      $foundEmployee = true;
+    switch($Affiliation) {
+      case 'employee' :
+        $foundEmployee = true;
+        break;
+      case 'student' :
+        $foundStudent = true;
+        break;
+      case 'member' :
+        $foundMember = true;
+        break;
+      default:
     }
   }
   if (! $foundEmployee) {
@@ -109,10 +129,21 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
     && $_SERVER['Shib-Identity-Provider'] == 'https://login.idp.eduid.se/idp.xml') {
     #OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
     $filterFirst = false;
+    $foundMember = true;
   } else {
     $errors .=
       'Missing eduPersonScopedAffiliation and eduPersonAffiliation in SAML response<br>One of them is required<br>';
   }
+}
+
+if ($foundMember) {
+  if ($foundStudent && ! $foundEmployee) {
+    $errors .=
+    'Missing employee in either eduPersonScopedAffiliation or eduPersonAffiliation in SAML response<br>';
+  }
+} else {
+  $errors .=
+      'Missing member in either eduPersonScopedAffiliation or eduPersonAffiliation in SAML response<br>';
 }
 
 if ( isset($_SERVER['mail'])) {
