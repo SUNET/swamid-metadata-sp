@@ -83,7 +83,7 @@ if (isset($_SERVER['eduPersonPrincipalName'])) {
 }
 
 $foundEmployee = false;
-$foundStudent = true;
+$foundStudent = false;
 $foundMember = false;
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
