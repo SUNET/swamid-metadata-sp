@@ -40,7 +40,7 @@ while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
 function usage() {
 	print "Usage:\n";
 	printf("	%s <Days> <entitys>\n", $argv[0]);
-	print "	Days - Validate all entitys with lastValidatdion less than this numer of days\n";
+	print "	Days - Validate all entitys with lastValidation less than this numer of days\n";
 	print "	entitys - Max nr of entitys to validate\n";
 }
 ?>

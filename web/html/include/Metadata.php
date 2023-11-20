@@ -2657,7 +2657,7 @@ class Metadata {
         $updateEntityConfirmationHandler->bindParam(':LastConfirmed', $entity['lastValidated']);
         $updateEntityConfirmationHandler->execute();
       }
-      # Move entity to status Pending
+      # Move entity to status PendingPublished
       $entityUpdateHandler = $this->metaDb->prepare('UPDATE Entities
         SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
       $entityUpdateHandler->bindParam(':Id', $this->dbIdNr);
