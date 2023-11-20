@@ -100,10 +100,6 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
       default:
     }
   }
-  if (! $foundEmployee) {
-    $errors .= sprintf('Did not find employee in eduPersonScopedAffiliation. Only got %s<br>',
-      $_SERVER['eduPersonScopedAffiliation']);
-  }
 } elseif (isset($_SERVER['eduPersonAffiliation'])) {
   $foundEmployee = false;
   foreach (explode(';',$_SERVER['eduPersonAffiliation']) as $Affiliation) {
@@ -119,10 +115,6 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
         break;
       default:
     }
-  }
-  if (! $foundEmployee) {
-    $errors .= sprintf('Did not find employee in eduPersonAffiliation. Only got %s<br>',
-      $_SERVER['eduPersonAffiliation']);
   }
 } else {
   if (isset($_SERVER['Shib-Identity-Provider'])
