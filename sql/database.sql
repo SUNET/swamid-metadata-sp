@@ -62,7 +62,6 @@ CREATE TABLE `Entities` (
   `isAA` tinyint(3) unsigned DEFAULT NULL,
   `publishIn` tinyint(3) unsigned DEFAULT NULL,
   `status` tinyint(3) unsigned DEFAULT NULL,
-  `ALlevel` tinyint(3) unsigned DEFAULT NULL,
   `lastUpdated` datetime DEFAULT NULL,
   `lastValidated` datetime DEFAULT NULL,
   `validationOutput` text DEFAULT NULL,
