@@ -19,16 +19,17 @@ try {
 
 $updateMailRemindersHandler = $db->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
   VALUES (:Entity_Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()');
+$removeMailRemindersHandler = $db->prepare('DELETE FROM MailReminders
+  WHERE `entity_id` = :Entity_Id AND `type` = :Type');
+
 $getMailRemindersHandler = $db->prepare(
-  'SELECT `id`, `level`
-  FROM Entities
-  LEFT JOIN MailReminders ON `entity_id` = `id` AND `type` = :Type');
+  'SELECT `entity_id`, `level` FROM MailReminders WHERE `type` = :Type');
 
 # Time to confirm entities again ?
 $reminders = array();
 $getMailRemindersHandler->execute(array('Type' => 1));
 while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
-  $reminders[$entity['id']] = $entity['level'];
+  $reminders[$entity['entity_id']] = $entity['level'];
 }
 $getMailRemindersHandler->closeCursor();
 
@@ -56,6 +57,7 @@ while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 3));
     sendEntityConfirmation($entity['id'], $entity['entityID'],
       iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
+    unset(reminders[$entity['id']]);
   } else*/if ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
     printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
@@ -66,7 +68,15 @@ while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 1));
     sendEntityConfirmation($entity['id'], $entity['entityID'],
       iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
+  } elseif ($warn1Date > $entity['lastConfirmed']) {
+    unset($reminders[$entity['id']]);
   }
+}
+
+$removeMailRemindersHandler->bindValue(':Type', 1);
+$removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
+foreach ($reminders as $reminder => $level) {
+  $removeMailRemindersHandler->execute();
 }
 $entitiesHandler->closeCursor();
 
