@@ -471,8 +471,9 @@ class MetadataDisplay {
   }
 
   public function showAA($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
-    if ($removable)
+    if ($removable) {
       $removable = 'SSO';
+    }
     $this->showCollapse('AttributeAuthority', 'AttributeAuthority', true, 0, true, $removable, $entityId);
     $this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 1, true,
       $allowEdit ? 'AAKeyInfo' : false, $entityId, $oldEntityId);

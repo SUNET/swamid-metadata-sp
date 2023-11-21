@@ -708,7 +708,7 @@ function showEntity($entitiesId)  {
     $able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
     if ($entity['isIdP'] ) { $display->showIdP($entitiesId, $oldEntitiesId, $allowEdit, $able2beRemoveSSO); }
     if ($entity['isSP'] ) { $display->showSp($entitiesId, $oldEntitiesId, $allowEdit, $able2beRemoveSSO); }
-    if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, true); }
+    if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, $allowEdit); }
     $display->showOrganization($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showXML($entitiesId);

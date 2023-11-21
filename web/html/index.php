@@ -154,6 +154,9 @@ function showEntity($Entity_id, $URN = false)  {
         $oldEntity_id = 0;
       }
       switch ($entity['status']) {
+        case 2:
+          $headerCol1 = 'Waiting for publishing';
+          break;
         case 3:
           # Draft
           $headerCol1 = 'New metadata';
@@ -171,7 +174,7 @@ function showEntity($Entity_id, $URN = false)  {
           //$oldEntity_id = 0;
           break;
         default:
-          $headerCol1 = 'Waiting for publishing';
+          $headerCol1 = '';
       }
     } else {
       $headerCol1 = '';
@@ -187,7 +190,7 @@ function showEntity($Entity_id, $URN = false)  {
 
     <div class="row">
       <div class="col">
-        <?=($oldEntity_id > 0) ? "<h3>" . $headerCol1 . "</h3>\n" : ''; ?>
+        <?=($headerCol1 <>'') ? "<h3>" . $headerCol1 . "</h3>\n" : ''; ?>
         Published in : <?php
     print implode (', ', $publishArray);
     if ($oldEntity_id > 0) { ?>
