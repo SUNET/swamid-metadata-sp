@@ -52,23 +52,27 @@ $entitiesHandler = $db->prepare("SELECT DISTINCT Entities.`id`, `entityID`, `las
 
 $entitiesHandler->execute();
 while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-  /*if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
-    printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
-    $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 3));
-    sendEntityConfirmation($entity['id'], $entity['entityID'],
-      iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
-    unset(reminders[$entity['id']]);
-  } else*/if ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
-    printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
-    $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
-    sendEntityConfirmation($entity['id'], $entity['entityID'],
-      iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 11);
-  } elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
-    printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
-    $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 1));
-    sendEntityConfirmation($entity['id'], $entity['entityID'],
-      iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
-  } elseif ($warn1Date > $entity['lastConfirmed']) {
+  if ($warn1Date > $entity['lastConfirmed']) {
+    if (! isset($reminders[$entity['id']])) {
+      $reminders[$entity['id']] = 0;
+    }
+    /*if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
+      printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
+      $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 3));
+      sendEntityConfirmation($entity['id'], $entity['entityID'],
+        iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
+      unset(reminders[$entity['id']]);
+    } else*/if ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
+      printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
+      $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
+      sendEntityConfirmation($entity['id'], $entity['entityID'],
+        iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 11);
+    } elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
+      printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
+      $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 1));
+      sendEntityConfirmation($entity['id'], $entity['entityID'],
+        iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
+    }
     unset($reminders[$entity['id']]);
   }
 }
