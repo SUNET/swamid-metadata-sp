@@ -1,5 +1,5 @@
 <?php
-include "/var/www/html/config.php";
+include __DIR__ . '/../html/config.php'; #NOSONAR
 
 const MD_EXTENSIONS = 'md:Extensions';
 const SAML_ATTRIBUTEVALUE = 'saml:AttributeValue';

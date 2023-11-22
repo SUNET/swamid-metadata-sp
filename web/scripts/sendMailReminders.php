@@ -5,9 +5,9 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 //Load composer's autoloader
-require_once '/var/www/html/vendor/autoload.php';
+require_once __DIR__ . '/../html/vendor/autoload.php';
 
-include_once "/var/www/html/config.php";  # NOSONAR
+include_once __DIR__ . '/../html/config.php';  # NOSONAR
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);

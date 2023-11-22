@@ -9,6 +9,9 @@ include __DIR__ . '/../html/config.php'; # NOSONAR
 // file deepcode ignore FileInclusion:
 include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 
+const BIND_STATUS = ':Status';
+const BIND_REMOVEDATE = ':RemoveDate';
+
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
   // set the PDO error mode to exception
@@ -32,10 +35,10 @@ $flagDates->closeCursor();
 printf ("Cleaning Entities before %s\n", $removeDate);
 $entitiesHandler = $db->prepare(
   'SELECT id, `entityID`, `lastUpdated` FROM Entities WHERE `status` = :Status AND `lastUpdated` < :RemoveDate;');
-$entitiesHandler->bindValue(':RemoveDate', $removeDate);
+$entitiesHandler->bindValue(BIND_REMOVEDATE, $removeDate);
 
 # Remove SoftDeleted entities
-$entitiesHandler->bindValue(':Status', 4);
+$entitiesHandler->bindValue(BIND_STATUS, 4);
 $entitiesHandler->execute();
 while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
   $metadata = new Metadata($entity['id']);
@@ -45,7 +48,7 @@ while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
 $entitiesHandler->closeCursor();
 
 # Remove PendingPublished entities
-$entitiesHandler->bindValue(':Status', 5);
+$entitiesHandler->bindValue(BIND_STATUS, 5);
 $entitiesHandler->execute();
 while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
   $metadata = new Metadata($entity['id']);
@@ -55,8 +58,8 @@ while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
 $entitiesHandler->closeCursor();
 
 # Remove Shadow entities
-$entitiesHandler->bindValue(':RemoveDate', $removeDateShadow);
-$entitiesHandler->bindValue(':Status', 6);
+$entitiesHandler->bindValue(BIND_REMOVEDATE, $removeDateShadow);
+$entitiesHandler->bindValue(BIND_STATUS, 6);
 $entitiesHandler->execute();
 while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
   $metadata = new Metadata($entity['id']);
