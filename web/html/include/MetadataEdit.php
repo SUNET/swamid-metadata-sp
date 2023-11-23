@@ -2285,7 +2285,7 @@ class MetadataEdit {
           <li>Type / bits = %s / %d</li>
           <li>Serial Number = %s</li>
         </ul>',
-          "\n", $state, $use, $name, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'],
+          "\n", $state, htmlspecialchars($use), $name, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'],
           $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
       }
     }
@@ -2914,7 +2914,7 @@ class MetadataEdit {
             </div>
           </div>
           <button type="submit" name="action" value="Add">Add/Update</button>
-        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($name), $isRequired ? " checked" : '', $friendlyName, $nameFormat == self::SAMLNF_URI ? ' selected' : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? ' selected' : '');
+        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($name), $isRequired ? " checked" : '', htmlspecialchars($friendlyName), $nameFormat == self::SAMLNF_URI ? ' selected' : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? ' selected' : '');
       }
     }
     printf('        <a href="./?validateEntity=%d"><button>Back</button></a>
@@ -2965,7 +2965,7 @@ class MetadataEdit {
           printf('%s            <li>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
             "\n", $copy, $state,
             $data['friendlyName'] == '' ? '(' . $this->FriendlyNames[$name]['desc'] .')' : $data['friendlyName'],
-            $name, $data['isRequired'] == '1' ? ' (Required)' : '');
+            htmlspecialchars($name), $data['isRequired'] == '1' ? ' (Required)' : '');
         }
         printf("\n  %s</li>\n%s", self::HTML_END_UL, self::HTML_END_UL);
       }

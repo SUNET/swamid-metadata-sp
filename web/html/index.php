@@ -71,7 +71,7 @@ function showEntityList($show) {
   switch ($show) {
     case 'IdP' :
       $html->showHeaders('Metadata SWAMID - IdP:s');
-      $entitys = $db->prepare(
+      $entities = $db->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
         LEFT JOIN Organization ON `entity_id` = `id`
@@ -83,7 +83,7 @@ function showEntityList($show) {
       break;
     case 'SP' :
       $html->showHeaders('Metadata SWAMID - SP:s');
-      $entitys = $db->prepare(
+      $entities = $db->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
         LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
@@ -95,7 +95,7 @@ function showEntityList($show) {
       break;
     case 'All' :
       $html->showHeaders('Metadata SWAMID - All');
-      $entitys = $db->prepare(
+      $entities = $db->prepare(
         "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName
         FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
         WHERE `status` = 1 AND `entityID` LIKE :Query
@@ -124,10 +124,10 @@ function showEntityList($show) {
           %s
         </tr>
       </thead>%s'
-    , $query, htmlspecialchars($show), $extraTH, "\n");
+    , urlencode($query), htmlspecialchars($show), $extraTH, "\n");
   $html->addTableSort('entities-table');
-  $entitys->bindValue(':Query', "%".$query."%");
-  showList($entitys, $show);
+  $entities->bindValue(':Query', "%".$query."%");
+  showList($entities, $show);
 }
 
 ####
@@ -255,7 +255,7 @@ function showEntity($entity_id, $urn = false)  {
 ####
 # Shows a list of entitys
 ####
-function showList($entitys, $show) {
+function showList($entities, $show) {
   global $db;
   $entityAttributesHandler = $db->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
   $mduiHandler = $db->prepare("SELECT data FROM Mdui
@@ -285,8 +285,8 @@ function showList($entitys, $show) {
   $countAL3 = 0;
   $countSIRTFI = 0;
 
-  $entitys->execute();
-  while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+  $entities->execute();
+  while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     $isAL1 = '';
     $isAL2 = '';
     $isAL3 = '';
@@ -622,9 +622,9 @@ function showFeed($id) {
 
 function showPendingQueue() {
   global $db;
-  $entitys = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
-  $entitys->execute();
-  while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+  $entities = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
+  $entities->execute();
+  while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     printf ('%d %s%s',$row['id'], $row['entityID'], "\n");
   }
   exit;

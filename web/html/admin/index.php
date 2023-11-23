@@ -536,7 +536,7 @@ function showEntityList($status = 1) {
         <th>%s (UTC)</th>
         <th>%s (UTC)</th>
         <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s',
-    $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, $query, $action, $filter,
+    $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, htmlspecialchars($query), $action, $filter,
     $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
     ($status == 1) ? 'Last Confirmed' : 'Last Validated',
     $filter, $warningArrow, $filter, $errorArrow, "\n");
