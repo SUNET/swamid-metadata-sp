@@ -124,21 +124,21 @@ function checkEntities(&$xml) {
                 switch ($extChild->nodeName) {
                   case 'mdrpi:RegistrationInfo' :
                     $registrationAuthority = $extChild->getAttribute('registrationAuthority');
-                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/') ? false : true;
-                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/loop') ? false : $saveEntity;
+                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/') ? false : true;  # NOSONAR Should be http://
+                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/loop') ? false : $saveEntity; # NOSONAR Should be http://
                     break;
                   case 'mdattr:EntityAttributes' :
                     foreach ($extChild->childNodes as $entAttrChild) {
                       if ($entAttrChild->nodeName == 'saml:Attribute') {
                         switch ($entAttrChild->getAttribute('Name')){
-                          case 'http://macedir.org/entity-category' :
+                          case 'http://macedir.org/entity-category' : # NOSONAR Should be http://
                             foreach ($entAttrChild->childNodes as $attrChild) {
                               if ($attrChild->nodeName == SAML_ATTRIBUTEVALUE) {
                                 $eC .= $attrChild->nodeValue . ' ';
                               }
                             }
                             break;
-                          case 'http://macedir.org/entity-category-support' :
+                          case 'http://macedir.org/entity-category-support' : # NOSONAR Should be http://
                             foreach ($entAttrChild->childNodes as $attrChild) {
                               if ($attrChild->nodeName == SAML_ATTRIBUTEVALUE) {
                                 $eCS .= $attrChild->nodeValue . ' ';
@@ -153,11 +153,11 @@ function checkEntities(&$xml) {
                             }
                             break;
                           case 'urn:oasis:names:tc:SAML:profiles:subject-id:req' :
-                          case 'http://www.swamid.se/assurance-requirement' :
+                          case 'http://www.swamid.se/assurance-requirement' : # NOSONAR Should be http://
                           case 'https://federation.renater.fr/member-of' :
                           case 'urn:oid:2.16.756.1.2.5.1.1.4' :
                           case 'urn:oid:2.16.756.1.2.5.1.1.5' :
-                          case 'http://kafe.kreonet.net/jurisdiction' :
+                          case 'http://kafe.kreonet.net/jurisdiction' : # NOSONAR Should be http://
                             break;
                           default :
                             printf ("Missing %s in entAttrChild->Attribute(Name)\n",

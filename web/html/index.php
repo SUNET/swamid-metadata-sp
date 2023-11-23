@@ -124,7 +124,7 @@ function showEntityList($show) {
           %s
         </tr>
       </thead>%s'
-    , $query, $show, $extraTH, "\n");
+    , $query, htmlspecialchars($show), $extraTH, "\n");
   $html->addTableSort('entities-table');
   $entitys->bindValue(':Query', "%".$query."%");
   showList($entitys, $show);
@@ -346,7 +346,7 @@ function showList($entitys, $show) {
                 $isPers = '(X)';
               }
               break;
-            case 'http://refeds.org/category/research-and-scholarship' :
+            case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
               if ($prodFeed) {
                 $countECrs ++;
                 $isRS = 'X';
@@ -354,7 +354,7 @@ function showList($entitys, $show) {
                 $isRS = '(X)';
               }
               break;
-            case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+            case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
               if ($prodFeed) {
                 $countECcocov1 ++;
                 $isCocov1 = 'X';
@@ -370,7 +370,7 @@ function showList($entitys, $show) {
                 $isESI = '(X)';
               }
               break;
-            case 'http://refeds.org/category/hide-from-discovery' :
+            case 'http://refeds.org/category/hide-from-discovery' : # NOSONAR Should be http://
               if ($prodFeed) {
                 $countHideFromDisc ++;
                 $hasHide = 'X';
@@ -395,10 +395,10 @@ function showList($entitys, $show) {
             case 'https://refeds.org/category/pseudonymous' :
               if ($prodFeed) { $countECSpseuso ++; }
               break;
-            case 'http://refeds.org/category/research-and-scholarship' :
+            case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
               if ($prodFeed) { $countECSrs ++; }
               break;
-            case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+            case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
               if ($prodFeed) { $countECScocov1 ++; }
               break;
             case 'https://myacademicid.org/entity-categories/esi' :
@@ -409,7 +409,7 @@ function showList($entitys, $show) {
           break;
         case 'assurance-certification' :
           switch ($attribute['attribute']) {
-            case 'http://www.swamid.se/policy/assurance/al1' :
+            case 'http://www.swamid.se/policy/assurance/al1' : # NOSONAR Should be http://
               if ($prodFeed) {
                 $countAL1 ++;
                 $isAL1 = 'X';
@@ -417,7 +417,7 @@ function showList($entitys, $show) {
                 $isAL1 = '(X)';
               }
               break;
-            case 'http://www.swamid.se/policy/assurance/al2' :
+            case 'http://www.swamid.se/policy/assurance/al2' : # NOSONAR Should be http://
               if ($prodFeed) {
                 $countAL2 ++;
                 $isAL2 = 'X';
@@ -425,7 +425,7 @@ function showList($entitys, $show) {
                 $isAL2 = '(X)';
               }
               break;
-            case 'http://www.swamid.se/policy/assurance/al3' :
+            case 'http://www.swamid.se/policy/assurance/al3' : # NOSONAR Should be http://
               if ($prodFeed) {
                 $countAL3 ++;
                 $isAL3 = 'X';

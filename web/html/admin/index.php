@@ -459,23 +459,26 @@ function showEntityList($status = 1) {
   } else {
      $query = '';
   }
-  $filter = 'query='.$query;
+  $filter = 'query='.urlencode($query);
 
   switch ($status) {
     case 1:
       $html->showHeaders(HTML_TITLE . 'Published');
       $action = 'pub';
       $minLevel = 0;
+      $filter .= '&action=pub';
       break;
     case 2:
       $html->showHeaders(HTML_TITLE . 'Pending');
       $action = 'wait';
       $minLevel = 5;
+      $filter .= '&action=wait';
       break;
     case 3:
       $html->showHeaders(HTML_TITLE . 'Drafts');
       $action = 'new';
       $minLevel = 5;
+      $filter .= '&action=new';
       break;
     case 4:
       $html->showHeaders(HTML_TITLE . 'Deleted');
@@ -496,11 +499,8 @@ function showEntityList($status = 1) {
       $html->showHeaders('Metadata SWAMID');
   }
   showMenu();
-  if (isset($_GET['action'])) {
-    $filter .= '&action='.$_GET['action'];
-  }
   if ($status == 1) {
-    $entitys = $db->prepare(
+    $entities = $db->prepare( # NOSONAR $sortOrder is secure
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
         `lastUpdated`, `lastConfirmed` AS lastValidated, `warnings`, `errors`, `errorsNB`
       FROM Entities
@@ -508,14 +508,14 @@ function showEntityList($status = 1) {
       LEFT JOIN EntityConfirmation ON EntityConfirmation.entity_id = id
       WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
   } else {
-    $entitys = $db->prepare(
+    $entities = $db->prepare( # NOSONAR $sortOrder is secure
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
         `lastUpdated`, `lastValidated`, `warnings`, `errors`, `errorsNB`
       FROM Entities
       LEFT JOIN Organization ON Organization.entity_id = id AND element = 'OrganizationName' AND lang = 'en'
       WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
   }
-  $entitys->bindValue(':Query', "%".$query."%");
+  $entities->bindValue(':Query', "%".$query."%");
 
   printf('
     <table class="table table-striped table-bordered">
@@ -540,7 +540,7 @@ function showEntityList($status = 1) {
     $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
     ($status == 1) ? 'Last Confirmed' : 'Last Validated',
     $filter, $warningArrow, $filter, $errorArrow, "\n");
-  showList($entitys, $minLevel);
+  showList($entities, $minLevel);
 }
 
 ####
@@ -725,11 +725,11 @@ function showEntity($entitiesId)  {
 ####
 # Shows a list of entitys
 ####
-function showList($entitys, $minLevel) {
+function showList($entities, $minLevel) {
   global $db, $EPPN, $userLevel;
 
-  $entitys->execute();
-  while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
+  $entities->execute();
+  while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     if (checkAccess($row['id'], $EPPN, $userLevel, $minLevel)) {
       printf ('      <tr>
         ');
@@ -803,20 +803,20 @@ function showMyEntities() {
     printf ('      </div>%s    </div>%s', "\n", "\n");
     }
   if (isset($_GET['showPub']) && $userLevel > 9) {
-    $entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+    $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Entities WHERE `status` = 1 AND publishIn > 1 ORDER BY `entityID`");
   } elseif (isset($_GET['showPubTest']) && $userLevel > 9) {
-    $entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+    $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Entities WHERE `status` = 1 AND publishIn = 1 ORDER BY `entityID`");
   } else {
-    $entitysHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+    $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Users, EntityUser, Entities
       WHERE EntityUser.`entity_id` = Entities.`id`
         AND EntityUser.`user_id` = Users.`id`
         AND `status` < 4
         AND `userID` = :UserID
       ORDER BY `entityID`, `status`");
-    $entitysHandler->bindValue(':UserID', $EPPN);
+    $entitiesHandler->bindValue(':UserID', $EPPN);
   }
   $entityConfirmationHandler = $db->prepare(
     "SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`,
@@ -829,8 +829,8 @@ function showMyEntities() {
       <thead><tr>
         <th>entityID</th><th>Metadata status</th><th>Last confirmed(UTC)</th><th>By</th>
       </tr></thead>%s', "\n");
-  $entitysHandler->execute();
-  while ($row = $entitysHandler->fetch(PDO::FETCH_ASSOC)) {
+      $entitiesHandler->execute();
+  while ($row = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $entityConfirmationHandler->bindParam(':Id', $row['id']);
     $entityConfirmationHandler->execute();
     if ($entityConfirmation = $entityConfirmationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -978,7 +978,7 @@ function showMenu() {
   global $userLevel, $menuActive, $EPPN, $filterFirst;
   $filter='';
   if (isset($_GET['query'])) {
-    $filter='&query='.$_GET['query'];
+    $filter='&query='.urlencode($_GET['query']);
   } elseif (isset($_GET['first']) && $filterFirst) {
     $filter='&query=.'. explode('@',$EPPN)[1];
   }

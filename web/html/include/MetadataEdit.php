@@ -674,7 +674,7 @@ class MetadataEdit {
         </form>
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">%s', $this->dbIdNr, $this->dbOldIdNr, $errorURLValue, $this->dbIdNr, "\n");
+      <div class="col">%s', $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($errorURLValue), $this->dbIdNr, "\n");
     if ($this->oldExists)
       printf('%s        <b>errorURL</b>
         <ul>
@@ -849,7 +849,7 @@ class MetadataEdit {
         </form>
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">',$this->dbIdNr, $this->dbOldIdNr, $scopeValue, $this->dbIdNr);
+      <div class="col">',$this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($scopeValue), $this->dbIdNr);
     if ($this->oldExists) {
       print '
         <b>Scopes</b>
@@ -1271,7 +1271,7 @@ class MetadataEdit {
         </form>
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">', $value, $heightValue, $widthValue, $this->dbIdNr);
+      <div class="col">', htmlspecialchars($value), $heightValue, $widthValue, $this->dbIdNr);
 
     foreach ($oldMDUIElements as $lang => $elementValues) {
       printf ('%s        <b>Lang = "%s"</b>%s        <ul>', "\n", $lang, "\n");
@@ -1549,7 +1549,7 @@ class MetadataEdit {
       <div class="col">',
       $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DomainHint' ? ' selected' : '',
       $elementValue == 'GeolocationHint' ? ' selected' : '', $elementValue == 'IPHint' ? ' selected' : '',
-      $value, $this->dbIdNr);
+      htmlspecialchars($value), $this->dbIdNr);
 
     foreach ($oldMDUIElements as $element => $elementValues) {
       printf ('%s        <b>%s</b>%s        <ul>', "\n", $element, "\n");
@@ -2237,7 +2237,7 @@ class MetadataEdit {
           $use == 'encryption' ? ' selected' : '', $use == 'signing' ? ' selected' : '',
           $use == 'encryption & signing' ? ' selected' : '', "\n");
       } else {
-        $useLink = sprintf ('<b>KeyUse = "%s"</b>', $use);
+        $useLink = sprintf ('<b>KeyUse = "%s"</b>', htmlspecialchars($use));
       }
 
       printf('%s%s        <span class="text-%s text-truncate">%s %s</span>
@@ -2809,7 +2809,7 @@ class MetadataEdit {
                 <div class="col"><input type="textbox" size="60" name="value" value="%s"></div>
               </div>
               <button type="submit" name="action" value="Add">Add/Update</button>
-            </form>', $value);
+            </form>', htmlspecialchars($value));
       }
       $requestedAttributeHandler->execute();
       printf("\n        <b>RequestedAttributes</b>\n        <ul>");
@@ -2914,7 +2914,7 @@ class MetadataEdit {
             </div>
           </div>
           <button type="submit" name="action" value="Add">Add/Update</button>
-        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, $name, $isRequired ? " checked" : '', $friendlyName, $nameFormat == self::SAMLNF_URI ? ' selected' : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? ' selected' : '');
+        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($name), $isRequired ? " checked" : '', $friendlyName, $nameFormat == self::SAMLNF_URI ? ' selected' : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? ' selected' : '');
       }
     }
     printf('        <a href="./?validateEntity=%d"><button>Back</button></a>
@@ -3192,7 +3192,7 @@ class MetadataEdit {
         </form>
         <a href="./?validateEntity=' . $this->dbIdNr . '"><button>Back</button></a>
       </div><!-- end col -->
-      <div class="col">%s', $value, "\n");
+      <div class="col">%s', htmlspecialchars($value), "\n");
 
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
@@ -3241,7 +3241,7 @@ class MetadataEdit {
       if (isset($this->orderContactPerson[$partmd])) {
         $placement = $this->orderContactPerson[$partmd];
       } else {
-        printf ('Missing %s', $part);
+        printf ('Missing %s', htmlspecialchars($part));
         exit();
       }
 
@@ -3322,7 +3322,8 @@ class MetadataEdit {
           if ($contactPersonElement->nodeValue != $value) {
             $contactPersonElement->nodeValue = $value;
             $sql="UPDATE ContactPerson SET $part = :Data WHERE entity_id = :Id AND contactType = :ContactType ;";
-            $contactPersonUpdateHandler = $this->metaDb->prepare($sql);
+            // SONAR Comment : $part is validated above. Must exist as index in in $this->orderContactPerson
+            $contactPersonUpdateHandler = $this->metaDb->prepare($sql); # NOSONAR
             $contactPersonUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
             $contactPersonUpdateHandler->bindParam(self::BIND_CONTACTTYPE, $type);
             $contactPersonUpdateHandler->bindParam(self::BIND_DATA, $value);
@@ -3362,7 +3363,8 @@ class MetadataEdit {
                 if ($moreContactPersonElements) {
                   $sql="UPDATE ContactPerson SET $part = ''
                     WHERE entity_id = :Id AND contactType = :ContactType AND $part = :Value;";
-                  $contactPersonUpdateHandler = $this->metaDb->prepare($sql);
+                  // SONAR Comment : $part is validated above. Must exist as index in in $this->orderContactPerson
+                  $contactPersonUpdateHandler = $this->metaDb->prepare($sql); # NOSONAR
                   $contactPersonUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                   $contactPersonUpdateHandler->bindParam(self::BIND_CONTACTTYPE, $type);
                   $contactPersonUpdateHandler->bindParam(self::BIND_VALUE, $value);
@@ -3505,7 +3507,7 @@ class MetadataEdit {
       $type == 'other' ? ' selected' : '', $part == 'Company' ? ' selected' : '',
       $part == 'GivenName' ? ' selected' : '', $part == 'SurName' ? ' selected' : '',
       $part == 'EmailAddress' ? ' selected' : '', $part == 'TelephoneNumber' ? ' selected' : '',
-      $part == 'Extensions' ? ' selected' : '', $value, $this->dbIdNr);
+      $part == 'Extensions' ? ' selected' : '', htmlspecialchars($value), $this->dbIdNr);
 
     # Print Old contacts
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -3747,7 +3749,8 @@ class MetadataEdit {
   private function mergeIdpErrorURL () {
     if ( !$this->oldExists)
       return;
-    $errorURLHandler = $this->metaDb->prepare("SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
+    $errorURLHandler = $this->metaDb->prepare(
+      "SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $errorURLHandler->execute();
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -3764,7 +3767,10 @@ class MetadataEdit {
 
       if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
         $idpSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
-        $errorURLUpdateHandler = $this->metaDb->prepare("INSERT INTO EntityURLs (`entity_id`, `URL`, `type` ) VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE `URL`= :URL;");
+        $errorURLUpdateHandler = $this->metaDb->prepare(
+          "INSERT INTO EntityURLs (`entity_id`, `URL`, `type` )
+          VALUES (:Id, :URL, 'error')
+          ON DUPLICATE KEY UPDATE `URL`= :URL;");
         $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         $errorURLUpdateHandler->bindParam(self::BIND_URL, $errorURL['URL']);
         $errorURLUpdateHandler->execute();
@@ -4479,7 +4485,7 @@ class MetadataEdit {
         $ssoDescriptor = self::SAML_MD_IDPSSODESCRIPTOR;
         break;
       default :
-        printf ("Unknown type : %s", $type);
+        printf ("Unknown type : %s", htmlspecialchars($type));
         return;
     }
     $entityDescriptor = $this->getEntityDescriptor($this->newXml);
