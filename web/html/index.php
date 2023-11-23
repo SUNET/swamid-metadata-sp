@@ -7,9 +7,9 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
 
-require_once 'config.php';
+require_once 'config.php'; #NOSONAR
 
-require_once 'include/Html.php';
+require_once 'include/Html.php'; #NOSONAR
 $html = new HTML($DiscoveryService, $Mode);
 
 try {
@@ -20,7 +20,7 @@ try {
   echo "Error: " . $e->getMessage();
 }
 
-require_once 'include/MetadataDisplay.php';
+require_once 'include/MetadataDisplay.php'; #NOSONAR
 $display = new MetadataDisplay();
 
 if (isset($_GET['showEntity'])) {
@@ -46,8 +46,9 @@ if (isset($_GET['showEntity'])) {
       showInterfederation('SP');
       break;
     case 'feed' :
-      if (isset($_GET['id']))
+      if (isset($_GET['id'])) {
         showFeed($_GET['id']);
+      }
       break;
     default :
       showEntityList($_GET['show']);
@@ -70,19 +71,35 @@ function showEntityList($show) {
   switch ($show) {
     case 'IdP' :
       $html->showHeaders('Metadata SWAMID - IdP:s');
-      $entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+      $entitys = $db->prepare(
+        "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
+        FROM Entities
+        LEFT JOIN Organization ON `entity_id` = `id`
+          AND `element` = 'OrganizationName' AND `lang` = 'en'
+        WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query
+        ORDER BY `entityID` ASC");
       showMenu('IdPs', $query);
       $extraTH = sprintf('<th>AL1</a></th><th>AL2</a></th><th>AL3</a></th><th>SIRTFI</a></th><th>Hide</th>');
       break;
     case 'SP' :
       $html->showHeaders('Metadata SWAMID - SP:s');
-      $entitys = $db->prepare("SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+      $entitys = $db->prepare(
+        "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
+        FROM Entities
+        LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
+        WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query
+        ORDER BY `entityID` ASC");
       showMenu('SPs', $query);
-      $extraTH = sprintf('<th>Anon</th><th>Pseuso</th><th>Pers</th><th>CoCo v1</th><th>CoCo v2</th><th>R&S</th><th>ESI</th><th>SIRTFI</th>');
+      $extraTH = sprintf(
+        '<th>Anon</th><th>Pseuso</th><th>Pers</th><th>CoCo v1</th><th>CoCo v2</th><th>R&S</th><th>ESI</th><th>SIRTFI</th>');
       break;
     case 'All' :
       $html->showHeaders('Metadata SWAMID - All');
-      $entitys = $db->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en' WHERE `status` = 1 AND `entityID` LIKE :Query ORDER BY `entityID` ASC");
+      $entitys = $db->prepare(
+        "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName
+        FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
+        WHERE `status` = 1 AND `entityID` LIKE :Query
+        ORDER BY `entityID` ASC");
       showMenu('all', $query);
       $extraTH = '<th>IdP</th><th>SP</th>';
       break;
@@ -91,8 +108,23 @@ function showEntityList($show) {
       print 'Show what ??????';
       return;
   }
-  printf ('    <div class="table-responsive"><table id="entities-table" class="table table-striped table-bordered">%s      <thead><tr><th><form>entityID <input type="text" name="query" value="%s"><input type="hidden" name="show" value="%s"><input type="submit" value="Filter"></form></th><th>Published in</th><th>DisplayName</th><th>OrganizationName</th>%s</tr></thead>%s'
-    , "\n", $query, $show, $extraTH, "\n");
+  printf ('    <div class="table-responsive"><table id="entities-table" class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>
+            <form>
+              entityID <input type="text" name="query" value="%s">
+              <input type="hidden" name="show" value="%s">
+              <input type="submit" value="Filter">
+            </form>
+          </th>
+          <th>Published in</th>
+          <th>DisplayName</th>
+          <th>OrganizationName</th>
+          %s
+        </tr>
+      </thead>%s'
+    , $query, $show, $extraTH, "\n");
   $html->addTableSort('entities-table');
   $entitys->bindValue(':Query', "%".$query."%");
   showList($entitys, $show);
@@ -103,7 +135,7 @@ function showEntityList($show) {
 ####
 function showMenu($menuActive, $query = '') {
   print "\n    ";
-  $query = $query == '' ? '' : '&query=' . $query;
+  $query = $query == '' ? '' : '&query=' . urlencode($query);
   printf('<a href="./?show=All%s"><button type="button" class="btn btn%s-primary">All in SWAMID</button></a>', $query, $menuActive == 'all' ? '' : '-outline');
   printf('<a href="./?show=IdP%s"><button type="button" class="btn btn%s-primary">IdP in SWAMID</button></a>', $query, $menuActive == 'IdPs' ? '' : '-outline');
   printf('<a href="./?show=SP%s"><button type="button" class="btn btn%s-primary">SP in SWAMID</button></a>', $query, $menuActive == 'SPs' ? '' : '-outline');
@@ -116,9 +148,9 @@ function showMenu($menuActive, $query = '') {
 ####
 # Shows Entity information
 ####
-function showEntity($Entity_id, $URN = false)  {
+function showEntity($entity_id, $urn = false)  {
   global $db, $html, $display;
-  $entityHandler = $URN ?
+  $entityHandler = $urn ?
     $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
       FROM Entities WHERE entityID = :Id AND status = 1;') :
     $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
@@ -126,30 +158,34 @@ function showEntity($Entity_id, $URN = false)  {
   $publishArray = array();
   $publishArrayOld = array();
 
-  $entityHandler->bindParam(':Id', $Entity_id);
+  $entityHandler->bindParam(':Id', $entity_id);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     $entities_id = $entity['id'];
     $html->setDestination('?showEntity='.$entities_id);
-    if (($entity['publishIn'] & 2) == 2) $publishArray[] = 'SWAMID';
-    if (($entity['publishIn'] & 4) == 4) $publishArray[] = 'eduGAIN';
-    if (($entity['publishIn'] & 1) == 1) $publishArray[] = 'SWAMID-testing';
+    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
+    if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
+    if (($entity['publishIn'] & 1) == 1) { $publishArray[] = 'SWAMID-testing'; }
     if ($entity['status'] > 1 && $entity['status'] < 6) {
       if ($entity['publishedId'] > 0) {
-        $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
+        $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
+          FROM Entities
+          WHERE `id` = :Id AND `status` = 6;');
         $entityHandlerOld->bindParam(':Id', $entity['publishedId']);
         $headerCol2 = 'Old metadata - when requested publication';
       } else {
-        $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
+        $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
+          FROM Entities
+          WHERE `entityID` = :Id AND `status` = 1;');
         $entityHandlerOld->bindParam(':Id', $entity['entityID']);
         $headerCol2 = 'Old metadata - published now';
       }
       $entityHandlerOld->execute();
       if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
         $oldEntity_id = $entityOld['id'];
-        if (($entityOld['publishIn'] & 2) == 2) $publishArrayOld[] = 'SWAMID';
-        if (($entityOld['publishIn'] & 4) == 4) $publishArrayOld[] = 'eduGAIN';
-        if (($entityOld['publishIn'] & 1) == 1) $publishArrayOld[] = 'SWAMID-testing';
+        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+        if (($entityOld['publishIn'] & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
+        if (($entityOld['publishIn'] & 1) == 1) { $publishArrayOld[] = 'SWAMID-testing'; }
       } else {
         $oldEntity_id = 0;
       }
@@ -171,7 +207,6 @@ function showEntity($Entity_id, $URN = false)  {
         case 6:
           # Copy of published used to compare Pending
           $headerCol1 = 'Already published metadata (might not be the latest!)';
-          //$oldEntity_id = 0;
           break;
         default:
           $headerCol1 = '';
@@ -205,9 +240,9 @@ function showEntity($Entity_id, $URN = false)  {
       </div>
     </div><?php
     $display->showEntityAttributes($entities_id, $oldEntity_id);
-    if ($entity['isIdP'] ) $display->showIdP($entities_id, $oldEntity_id);
-    if ($entity['isSP'] ) $display->showSp($entities_id, $oldEntity_id);
-    if ($entity['isAA'] ) $display->showAA($entities_id, $oldEntity_id);
+    if ($entity['isIdP'] ) { $display->showIdP($entities_id, $oldEntity_id); }
+    if ($entity['isSP'] ) { $display->showSp($entities_id, $oldEntity_id); }
+    if ($entity['isAA'] ) { $display->showAA($entities_id, $oldEntity_id); }
     $display->showOrganization($entities_id, $oldEntity_id);
     $display->showContacts($entities_id, $oldEntity_id);
     $display->showXML($entities_id);
@@ -223,7 +258,9 @@ function showEntity($Entity_id, $URN = false)  {
 function showList($entitys, $show) {
   global $db;
   $entityAttributesHandler = $db->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
-  $mduiHandler = $db->prepare("SELECT data FROM Mdui WHERE element = 'DisplayName' AND entity_id = :Id ORDER BY type,lang;");
+  $mduiHandler = $db->prepare("SELECT data FROM Mdui
+    WHERE element = 'DisplayName' AND entity_id = :Id
+    ORDER BY type,lang;");
 
   $countSWAMID = 0;
   $counteduGAIN = 0;
@@ -266,9 +303,9 @@ function showList($entitys, $show) {
     $mduiHandler->bindValue(':Id', $row['id']);
     $mduiHandler->execute();
     if ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $DisplayName = $mdui['data'];
+      $displayName = $mdui['data'];
     } else {
-      $DisplayName = '';
+      $displayName = '';
     }
     $prodFeed = ($row['publishIn'] > 1) ? true : false;
     $entityAttributesHandler->bindValue(':Id', $row['id']);
@@ -281,83 +318,93 @@ function showList($entitys, $show) {
               if ($prodFeed) {
                 $countECanon ++;
                 $isAnon = 'X';
-              } else
+              } else {
                 $isAnon = '(X)';
+              }
               break;
             case 'https://refeds.org/category/code-of-conduct/v2' :
               if ($prodFeed) {
                 $countECcocov2 ++;
                 $isCocov2 = 'X';
-              } else
+              } else {
                 $isCocov2 = '(X)';
+              }
               break;
             case 'https://refeds.org/category/pseudonymous' :
               if ($prodFeed) {
                 $countECpseuso ++;
                 $isPseuso = 'X';
-              } else
+              } else {
                 $isPseuso = '(X)';
+              }
               break;
             case 'https://refeds.org/category/personalized' :
               if ($prodFeed) {
                 $countECpers ++;
                 $isPers = 'X';
-              } else
+              } else {
                 $isPers = '(X)';
+              }
               break;
             case 'http://refeds.org/category/research-and-scholarship' :
               if ($prodFeed) {
                 $countECrs ++;
                 $isRS = 'X';
-              } else
+              } else {
                 $isRS = '(X)';
+              }
               break;
             case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
               if ($prodFeed) {
                 $countECcocov1 ++;
                 $isCocov1 = 'X';
-              } else
+              } else {
                 $isCocov1 = '(X)';
+              }
               break;
             case 'https://myacademicid.org/entity-categories/esi' :
               if ($prodFeed) {
                 $countECesi ++;
                 $isESI = 'X';
-              } else
+              } else {
                 $isESI = '(X)';
+              }
               break;
             case 'http://refeds.org/category/hide-from-discovery' :
               if ($prodFeed) {
                 $countHideFromDisc ++;
                 $hasHide = 'X';
-              } else
+              } else {
                 $hasHide = '(X)';
+              }
               break;
+            default:
           }
           break;
         case 'entity-category-support' :
           switch ($attribute['attribute']) {
             case 'https://refeds.org/category/anonymous' :
-              if ($prodFeed) $countECSanon ++;
+              if ($prodFeed) { $countECSanon ++; }
               break;
             case 'https://refeds.org/category/code-of-conduct/v2' :
-              if ($prodFeed) $countECScocov2 ++;
+              if ($prodFeed) { $countECScocov2 ++; }
               break;
             case 'https://refeds.org/category/personalized' :
-              if ($prodFeed) $countECSpers ++;
+              if ($prodFeed) { $countECSpers ++; }
               break;
             case 'https://refeds.org/category/pseudonymous' :
-              if ($prodFeed) $countECSpseuso ++;
+              if ($prodFeed) { $countECSpseuso ++; }
               break;
             case 'http://refeds.org/category/research-and-scholarship' :
-              if ($prodFeed) $countECSrs ++;
+              if ($prodFeed) { $countECSrs ++; }
               break;
             case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
-              if ($prodFeed) $countECScocov1 ++;
+              if ($prodFeed) { $countECScocov1 ++; }
               break;
             case 'https://myacademicid.org/entity-categories/esi' :
-              if ($prodFeed) $countECSesi ++;
+              if ($prodFeed) { $countECSesi ++; }
               break;
+            default:
           }
           break;
         case 'assurance-certification' :
@@ -366,104 +413,148 @@ function showList($entitys, $show) {
               if ($prodFeed) {
                 $countAL1 ++;
                 $isAL1 = 'X';
-              } else
+              } else {
                 $isAL1 = '(X)';
+              }
               break;
             case 'http://www.swamid.se/policy/assurance/al2' :
               if ($prodFeed) {
                 $countAL2 ++;
                 $isAL2 = 'X';
-              } else
+              } else {
                 $isAL2 = '(X)';
+              }
               break;
             case 'http://www.swamid.se/policy/assurance/al3' :
               if ($prodFeed) {
                 $countAL3 ++;
                 $isAL3 = 'X';
-              } else
+              } else {
                 $isAL3 = '(X)';
+              }
               break;
             case 'https://refeds.org/sirtfi' :
               if ($prodFeed) {
                 $countSIRTFI ++;
                 $isSIRTFI = 'X';
-              } else
+              } else {
                 $isSIRTFI = '(X)';
+              }
               break;
+            default:
           }
+        default:
       }
     }
-    printf ('      <tr>');
     switch ($row['publishIn']) {
       case 1 :
         $countTesting ++;
-        $registerdIn = 'Test-only';
+        $registeredIn = 'Test-only';
         break;
       case 3 :
         $countSWAMID ++;
-        //$countTesting ++;
-        $registerdIn = 'SWAMID';
+        $registeredIn = 'SWAMID';
         break;
       case 7 :
         $countSWAMID ++;
         $counteduGAIN ++;
-        //$countTesting ++;
-        $registerdIn = ' SWAMID + eduGAIN';
+        $registeredIn = ' SWAMID + eduGAIN';
         break;
       default :
-        $registerdIn = '';
+        $registeredIn = '';
     }
-    printf ('<td><a href=".?showEntity=%s"><span class="text-truncate">%s</span></a></td><td>%s</td><td>%s</td><td>%s</td>', $row['id'], $row['entityID'], $registerdIn, $DisplayName, $row['OrganizationName']);
+    printf ('      <tr>
+        <td><a href=".?showEntity=%s"><span class="text-truncate">%s</span></a></td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>',
+      $row['id'], $row['entityID'], $registeredIn, $displayName, $row['OrganizationName']);
 
     switch ($show) {
       case 'IdP' :
-        printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
+        printf ('
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
         break;
       case 'SP' :
-        printf ('<td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td><td class="text-center">%s</td>', $isAnon, $isPseuso, $isPers, $isCocov1, $isCocov2, $isRS, $isESI, $isSIRTFI);
+        printf ('
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>',
+          $isAnon, $isPseuso, $isPers, $isCocov1, $isCocov2, $isRS, $isESI, $isSIRTFI);
         break;
       case 'All' :
-        print $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>';
-        print $row['isSP'] ? '<td class="text-center">X</td>' : '<td></td>';
+        printf("\n        %s", $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>');
+        printf("\n        %s", $row['isSP'] ? '<td class="text-center">X</td>' : '<td></td>');
         break;
+      default:
     }
-    print "</tr>\n";
+    print "\n      </tr>\n";
   } ?>
     </table></div>
     <h4>Statistics</h4>
     <table class="table table-striped table-bordered">
-      <tr><th rowspan="3">&nbsp;Registered in</th><th>SWAMID-Production</th><td><?=$countSWAMID?></td></tr>
-      <tr><th>eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr>
-      <tr><th>SWAMID-Test only</th><td><?=$countTesting?></td></tr><?php
+      <caption>Table of Entities statistics</caption>
+      <tr>
+        <th id="" rowspan="3">&nbsp;Registered in</th>
+        <th id="">SWAMID-Production</th><td><?=$countSWAMID?></td>
+      </tr>
+      <tr><th id="">eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr>
+      <tr><th id="">SWAMID-Test only</th><td><?=$countTesting?></td></tr><?php
   if ($show == 'All' || $show == 'SP') { ?>
-      <tr><th rowspan="8">Entity Categories in production<br><i>Excluding testing only (X)</i></th><th>Anonymous</th><td><?=$countECanon?></td></tr>
-      <tr><th>Pseudonymous</th><td><?=$countECpseuso?></td></tr>
-      <tr><th>Personalized</th><td><?=$countECpers?></td></tr>
-      <tr><th>CoCo v1</th><td><?=$countECcocov1?></td></tr>
-      <tr><th>CoCo v2</th><td><?=$countECcocov2?></td></tr>
-      <tr><th>R&S</th><td><?=$countECrs?></td></tr>
-      <tr><th>ESI</th><td><?=$countECesi?></td></tr>
-      <tr><th>DS-hide </th><td><?=$countHideFromDisc?></td></tr><?php
+
+      <tr>
+        <th id="ECS in production" rowspan="8">Entity Categories in production<br><i>Excluding testing only (X)</i></th>
+        <th id="Anonymous">Anonymous</th><td><?=$countECanon?></td>
+      </tr>
+      <tr><th id="Pseudonymous">Pseudonymous</th><td><?=$countECpseuso?></td></tr>
+      <tr><th id="Personalized">Personalized</th><td><?=$countECpers?></td></tr>
+      <tr><th id="coco v1">CoCo v1</th><td><?=$countECcocov1?></td></tr>
+      <tr><th id="coco v2">CoCo v2</th><td><?=$countECcocov2?></td></tr>
+      <tr><th id="r and s">R&S</th><td><?=$countECrs?></td></tr>
+      <tr><th id="esi">ESI</th><td><?=$countECesi?></td></tr>
+      <tr><th id="HideFromDisco">DS-hide </th><td><?=$countHideFromDisc?></td></tr><?php
   } else {
-    printf('      <tr><th>Entity Categories in production<br><i>Excluding testing only (X)</i></th><th>DS-hide </th><td>%d</td></tr>', $countHideFromDisc);
+    printf('
+      <tr>
+        <th id="ECS in production">Entity Categories in production<br><i>Excluding testing only (X)</i></th>
+        <th id="HideFromDisco">DS-hide </th><td>%d</td>
+      </tr>%s', $countHideFromDisc, "\n");
   }
   if ($show == 'All' || $show == 'IdP') { ?>
-      <tr><th rowspan="7">Support Categorys in production<br><i>Excluding testing only (X)</i></th><th>Anonymous</th><td><?=$countECSanon?></td></tr>
-      <tr><th>Pseudonymous</th><td><?=$countECSpseuso?></td></tr>
-      <tr><th>Personalized</th><td><?=$countECSpers?></td></tr>
-      <tr><th>CoCo v1</th><td><?=$countECScocov1?></td></tr>
-      <tr><th>CoCo v2</th><td><?=$countECScocov2?></td></tr>
-      <tr><th>R&S</th><td><?=$countECSrs?></td></tr>
-      <tr><th>ESI</th><td><?=$countECSesi?></td></tr>
-      <tr><th rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>AL1</th><td><?=$countAL1?></td></tr>
-      <tr><th>AL2 </th><td><?=$countAL2?></td></tr>
-      <tr><th>AL3 </th><td><?=$countAL3?></td></tr>
-      <tr><th>SIRTFI </th><td><?=$countSIRTFI?></td></tr><?php
+      <tr>
+        <th id="ECS in production" rowspan="7">Support Categorys in production<br><i>Excluding testing only (X)</i></th>
+        <th id="Anonymous">Anonymous</th><td><?=$countECSanon?></td>
+      </tr>
+      <tr><th id="Pseudonymous">Pseudonymous</th><td><?=$countECSpseuso?></td></tr>
+      <tr><th id="Personalized">Personalized</th><td><?=$countECSpers?></td></tr>
+      <tr><th id="coco v1">CoCo v1</th><td><?=$countECScocov1?></td></tr>
+      <tr><th id="coco v2">CoCo v2</th><td><?=$countECScocov2?></td></tr>
+      <tr><th id="r and s">R&S</th><td><?=$countECSrs?></td></tr>
+      <tr><th id="esi">ESI</th><td><?=$countECSesi?></td></tr>
+      <tr>
+        <th id="al1" rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th>
+        <th>AL1</th><td><?=$countAL1?></td>
+      </tr>
+      <tr><th id="al2">AL2 </th><td><?=$countAL2?></td></tr>
+      <tr><th id="al3">AL3 </th><td><?=$countAL3?></td></tr>
+      <tr><th id="sirtfi">SIRTFI </th><td><?=$countSIRTFI?></td></tr><?php
   } else {
-    printf('      <tr><th>Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>SIRTFI </th><td>%d</td></tr>', $countSIRTFI);
+    printf('
+      <tr>
+        <th>Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>SIRTFI </th><td>%d</td>
+      </tr>', $countSIRTFI);
   }?>
-    </table>
 
+    </table>
 <?php
 }
 
@@ -476,23 +567,30 @@ function showInfo() {
         <br>
         <h3>SWAMID Metadata Tool</h3>
         <p>Welcome to the SWAMID Metadata Tool. With this tool you can browse and examine
-          metadata availabe through SWAMID.
+          metadata available through SWAMID.
         <h4>Public available information</h4>
-        <p>To view entities, i.e. Identiy Providers and Service Providers, available in SWAMID, select a tab:<ul>
+        <p>To view entities, i.e. Identity Providers and Service Providers, available in SWAMID, select a tab:<ul>
           <li><b>All in SWAMID</b> lists all entities registered in SWAMID.</li>
-          <li><b>IdP in SWAMID</b> lists Identity Providers registered in SWAMID including identity assurance profiles.</li>
-          <li><b>SP in SWAMID</b> lists Service Providers registered in SWAMID including requested entity categories.</li>
+          <li><b>IdP in SWAMID</b> lists Identity Providers registered in SWAMID
+            including identity assurance profiles.</li>
+          <li><b>SP in SWAMID</b> lists Service Providers registered in SWAMID
+            including requested entity categories.</li>
           <li><b>IdP via interfederation</b> lists Identity Providers imported into SWAMID from interfederations.</li>
           <li><b>SP via interfederation</b> lists Service Providers imported into SWAMID from interfederations.</li>
         </ul></p>
-        <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form. E.g entering "umu.se" in the entityID search form will list all entities including "umu.se" in their entityID.</p>
+        <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form.
+          E.g entering "umu.se" in the entityID search form will list all entities
+          including "umu.se" in their entityID.</p>
         <h4>Add or Update Identity Provider or Service Provider metadata</h4>
         <p>Login using the orange button at the top right corner of this page to add, update or request removal of
           your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are
           published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu
           at the top. When you have requested publication you will get an e-mail that you need to forward to
           operations for compleation.</p>
-        <p>If you do not have an active user account at a SWAMID Identity Provider, you can create an eduID account at <a href="https://eduid.se">eduID.se</a>. Make sure that the primary email address of your eduID account matches an email address associated with a contact person of your entities.</p>
+        <p>If you do not have an active user account at a SWAMID Identity Provider,
+          you can create an eduID account at <a href="https://eduid.se">eduID.se</a>.
+          Make sure that the primary email address of your eduID account matches an email address
+          associated with a contact person of your entities.</p>
       </div>
     </div>
 <?php

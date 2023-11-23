@@ -21,16 +21,67 @@ class Metadata {
 
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
+  const BIND_APPROVEDBY = ':ApprovedBy';
+  const BIND_BITS = ':Bits';
   const BIND_COCOV1STATUS = ':Cocov1Status';
+  const BIND_COMPANY = ':Company';
+  const BIND_CONTACTTYPE = ':ContactType';
+  const BIND_DATA = ':Data';
+  const BIND_DATE = ':Date';
+  const BIND_DEFAULT = ':Default';
+  const BIND_ELEMENT = ':Element';
+  const BIND_EMAIL = ':Email';
+  const BIND_EMAILADDRESS = ':EmailAddress';
+  const BIND_ENTITYID = ':EntityID';
+  const BIND_ENTITY_ID = ':Entity_id';
+  const BIND_ERRORS = ':Errors';
+  const BIND_ERRORSNB = ':ErrorsNB';
+  const BIND_EXTENSIONS = ':Extensions';
+  const BIND_FRIENDLYNAME = ':FriendlyName';
+  const BIND_FULLNAME = ':FullName';
+  const BIND_GIVENNAME = ':GivenName';
+  const BIND_HASHVALUE = ':Hashvalue';
+  const BIND_HEIGHT = ':Height';
+  const BIND_ID = ':Id';
+  const BIND_INDEX = ':Index';
+  const BIND_ISREQUIRED = ':IsRequired';
+  const BIND_ISSUER = ':Issuer';
+  const BIND_KEY_TYPE = ':Key_type';
+  const BIND_LANG = ':Lang';
+  const BIND_LASTCHANGED = ':LastChanged';
+  const BIND_LASTCONFIRMED = ':LastConfirmed';
+  const BIND_NAME = ':Name';
+  const BIND_NAMEFORMAT = ':NameFormat';
+  const BIND_NOTVALIDAFTER = ':NotValidAfter';
+  const BIND_ORDER = ':Order';
+  const BIND_OTHERENTITY_ID = ':OtherEntity_Id';
+  const BIND_PUBLISHIN = ':PublishIn';
+  const BIND_PUBLISHEDID = ':PublishedId';
+  const BIND_REGEXP = ':Regexp';
+  const BIND_REGISTRATIONINSTANT = ':RegistrationInstant';
   const BIND_RESULT = ':Result';
+  const BIND_SCOPE = ':Scope';
+  const BIND_SERIALNUMBER = ':SerialNumber';
   const BIND_STATUS = ':Status';
+  const BIND_SUBCONTACTTYPE = ':SubcontactType';
+  const BIND_SUBJECT = ':Subject';
+  const BIND_SURNAME = ':SurName';
+  const BIND_TELEPHONENUMBER = ':TelephoneNumber';
   const BIND_TYPE = ':Type';
   const BIND_URL = ':URL';
+  const BIND_USE = ':Use';
+  const BIND_USER_ID = ':User_id';
+  const BIND_VALIDATIONOUTPUT = ':validationOutput';
+  const BIND_VALUE = ':Value';
+  const BIND_WARNINGS = ':Warnings';
+  const BIND_WIDTH = ':Width';
+  const BIND_XML = ':Xml';
 
   const SAML_IDPDISC_DISCOVERYRESPONSE = 'idpdisc:DiscoveryResponse';
   const SAML_ALG_DIGESTMETHOD = 'alg:DigestMethod';
   const SAML_ALG_SIGNATUREMETHOD = 'alg:SignatureMethod';
   const SAML_ALG_SIGNINGMETHOD = 'alg:SigningMethod';
+  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1';
   const SAML_DS_SIGNATURE = 'ds:Signature';
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
@@ -92,8 +143,8 @@ class Metadata {
   public function __construct() {
     $a = func_get_args();
     $i = func_num_args();
-    require __DIR__  . '/../config.php';
-    require __DIR__ . '/common.php';
+    require __DIR__  . '/../config.php'; #NOSONAR
+    require __DIR__ . '/common.php'; #NOSONAR
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
       // set the PDO error mode to exception
@@ -106,11 +157,11 @@ class Metadata {
     }
   }
 
-  private function construct1($id) {
+  private function construct1($id) { #NOSONAR is called from construct above
     $entityHandler = $this->metaDb->prepare('
       SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`
         FROM Entities WHERE `id` = :Id');
-    $entityHandler->bindValue(':Id', $id);
+    $entityHandler->bindValue(self::BIND_ID, $id);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $this->entityExists = true;
@@ -129,7 +180,7 @@ class Metadata {
     }
   }
 
-  private function construct2($entityID = '', $entityStatus = '') {
+  private function construct2($entityID = '', $entityStatus = '') { #NOSONAR is called from construct above
     $this->entityID = $entityID;
 
     switch (strtolower($entityStatus)) {
@@ -151,7 +202,7 @@ class Metadata {
     $entityHandler = $this->metaDb->prepare('
       SELECT `id`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
         FROM Entities WHERE `entityID` = :Id AND `status` = :Status');
-    $entityHandler->bindValue(':Id', $entityID);
+    $entityHandler->bindValue(self::BIND_ID, $entityID);
     $entityHandler->bindValue(self::BIND_STATUS, $this->status);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -254,13 +305,13 @@ class Metadata {
                   $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
                   break;
                 case 3 :
-                  if (strpos ( $output, 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') > 1 ) {
+                  if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
                     $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Policy OK');
                     $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
                     $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
                   } else {
                     $urlUpdateHandler->bindValue(self::BIND_RESULT,
-                      'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1');
+                      'Policy missing link to ' . self::SAML_EC_COCOV1);
                     $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
                     $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
                   }
@@ -351,7 +402,7 @@ class Metadata {
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($entity['type'] == 'SPSSO' && $entity['element'] == 'PrivacyStatementURL') {
-          $entityAttributesHandler->bindParam(':Id', $entity['entity_id']);
+          $entityAttributesHandler->bindParam(self::BIND_ID, $entity['entity_id']);
           $entityAttributesHandler->execute();
           while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
             if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') {
@@ -409,18 +460,18 @@ class Metadata {
       $entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities
         SET `isIdP` = 0, `isSP` = 0, `isAA` = 0, `xml` = :Xml , `lastUpdated` = NOW()
         WHERE `entityID` = :Id AND `status` = :Status');
-      $entityHandlerUpdate->bindValue(':Id', $this->entityID);
+      $entityHandlerUpdate->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerUpdate->bindValue(self::BIND_STATUS, $this->status);
-      $entityHandlerUpdate->bindValue(':Xml', $this->xml->saveXML());
+      $entityHandlerUpdate->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerUpdate->execute();
     } else {
       # Add new entity into database
       $entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities
         (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`)
         VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW())');
-      $entityHandlerInsert->bindValue(':Id', $this->entityID);
+      $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
-      $entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
+      $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
       $this->dbIdNr = $this->metaDb->lastInsertId();
     }
@@ -437,8 +488,8 @@ class Metadata {
       $entityHandlerInsert = $this->metaDb->prepare('
         INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`)
           VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW())');
-      $entityHandlerInsert->bindValue(':Id', $this->entityID);
-      $entityHandlerInsert->bindValue(':Xml', $this->xml->saveXML());
+      $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
+      $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
       $oldDbNr = $this->dbIdNr;
       $this->result = "";
@@ -460,27 +511,27 @@ class Metadata {
 
     # Remove old ContactPersons / Organization from previus runs
     $this->metaDb->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM AttributeConsumingService WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute
-      WHERE `entity_id` = :Id')->execute(array(':Id' => $this->dbIdNr));
+      WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM Organization WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM ContactPerson WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
-      array(':Id' => $this->dbIdNr));
+      array(self::BIND_ID => $this->dbIdNr));
 
     $swamid5130error = false;
     $cleanOutSignature = false;
@@ -502,20 +553,20 @@ class Metadata {
           break;
         case self::SAML_MD_IDPSSODESCRIPTOR :
           $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 1 WHERE `id` = :Id')->execute(
-            array(':Id' => $this->dbIdNr));
+            array(self::BIND_ID => $this->dbIdNr));
           $this->parseIDPSSODescriptor($child);
           $this->isIdP = true;
           break;
         case self::SAML_MD_SPSSODESCRIPTOR :
           $this->metaDb->prepare('UPDATE Entities SET `isSP` = 1 WHERE `id` = :Id')->execute(
-            array(':Id' => $this->dbIdNr));
+            array(self::BIND_ID => $this->dbIdNr));
           $this->parseSPSSODescriptor($child);
           $this->isSP = true;
           break;
         #case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
         case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
           $this->metaDb->prepare('UPDATE Entities SET `isAA` = 1 WHERE `id` = :Id')->execute(
-            array(':Id' => $this->dbIdNr));
+            array(self::BIND_ID => $this->dbIdNr));
           $this->parseAttributeAuthorityDescriptor($child);
           $this->isAA = true;
           break;
@@ -544,13 +595,13 @@ class Metadata {
       SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput,
         `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `xml` = :Xml, `lastValidated` = NOW()
       WHERE `id` = :Id;");
-    $resultHandler->bindValue(':Id', $this->dbIdNr);
-    $resultHandler->bindValue(':RegistrationInstant', $this->registrationInstant);
-    $resultHandler->bindValue(':validationOutput', $this->result);
-    $resultHandler->bindValue(':Warnings', $this->warning);
-    $resultHandler->bindValue(':Errors', $this->error);
-    $resultHandler->bindValue(':ErrorsNB', $this->errorNB);
-    $resultHandler->bindValue(':Xml', $this->xml->saveXML());
+    $resultHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $resultHandler->bindValue(self::BIND_REGISTRATIONINSTANT, $this->registrationInstant);
+    $resultHandler->bindValue(self::BIND_VALIDATIONOUTPUT, $this->result);
+    $resultHandler->bindValue(self::BIND_WARNINGS, $this->warning);
+    $resultHandler->bindValue(self::BIND_ERRORS, $this->error);
+    $resultHandler->bindValue(self::BIND_ERRORSNB, $this->errorNB);
+    $resultHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
     $resultHandler->execute();
   }
 
@@ -643,13 +694,13 @@ class Metadata {
           $attributeType = $data->getAttribute('Name');
       }
 
-      $entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
+      $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
       $entityAttributesHandler->bindValue(self::BIND_TYPE, $attributeType);
 
       $child = $data->firstChild;
       while ($child) {
         if ($child->nodeName == self::SAML_SAMLA_ATTRIBUTEVALUE) {
-          $entityAttributesHandler->bindValue(':Value', trim($child->textContent));
+          $entityAttributesHandler->bindValue(self::BIND_VALUE, trim($child->textContent));
           $entityAttributesHandler->execute();
         } else {
           $this->result .= 'Extensions -> EntityAttributes -> Attribute -> ' . $child->nodeName . " saknas.\n";
@@ -719,7 +770,7 @@ class Metadata {
   private function parseIDPSSODescriptorExtensions($data) {
     $scopesHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`)
       VALUES (:Id, :Scope, :Regexp)');
-    $scopesHandler->bindValue(':Id', $this->dbIdNr);
+    $scopesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
     #xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
     $child = $data->firstChild;
@@ -740,8 +791,8 @@ class Metadata {
                 $child->getAttribute('regexp'));
               $regexp = -1;
           }
-          $scopesHandler->bindValue(':Scope', trim($child->textContent));
-          $scopesHandler->bindValue(':Regexp', $regexp);
+          $scopesHandler->bindValue(self::BIND_SCOPE, trim($child->textContent));
+          $scopesHandler->bindValue(self::BIND_REGEXP, $regexp);
           $scopesHandler->execute();
           break;
         case self::SAML_MDUI_UIINFO :
@@ -770,11 +821,11 @@ class Metadata {
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
       VALUES (:Id, 'IDPDisco', :Lang, :Height, :Width, :Element, :Value)");
 
-    $ssoUIIHandler->bindValue(':Id', $this->dbIdNr);
-    $ssoUIIHandler->bindParam(':Lang', $lang);
-    $ssoUIIHandler->bindParam(':Height', $height);
-    $ssoUIIHandler->bindParam(':Width', $width);
-    $ssoUIIHandler->bindParam(':Element', $element);
+    $ssoUIIHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $ssoUIIHandler->bindParam(self::BIND_LANG, $lang);
+    $ssoUIIHandler->bindParam(self::BIND_HEIGHT, $height);
+    $ssoUIIHandler->bindParam(self::BIND_WIDTH, $width);
+    $ssoUIIHandler->bindParam(self::BIND_ELEMENT, $element);
 
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-ui/v1.0/os/sstc-saml-metadata-ui-v1.0-os.html
     $child = $data->firstChild;
@@ -783,16 +834,16 @@ class Metadata {
         case self::SAML_MDUI_IPHINT :
         case self::SAML_MDUI_DOMAINHINT :
         case self::SAML_MDUI_GEOLOCATIONHINT :
-          $element = substr($child->nodeName, 5);
+          $element = substr($child->nodeName, 5); #NOSONAR $element is used in Bind above
           break;
         default :
           $this->result .= $child->nodeType == 8
             ? ''
             : sprintf ("Unknown Element (%s) in DiscoHints.\n", $child->nodeName);
-          $element = 'Unknown';
+          $element = 'Unknown'; #NOSONAR $element is used in Bind above
       }
 
-      $ssoUIIHandler->bindValue(':Value', trim($child->textContent));
+      $ssoUIIHandler->bindValue(self::BIND_VALUE, trim($child->textContent));
       $ssoUIIHandler->execute();
       $child = $child->nextSibling;
     }
@@ -884,21 +935,21 @@ class Metadata {
       (`entity_id`, `Service_index`, `lang`, `element`, `data`) VALUES (:Id, :Index, :Lang, :Element, :Data)');
     $requestedAttributeHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute
       (`entity_id`, `Service_index`, `FriendlyName`, `Name`, `NameFormat`, `isRequired`)
-      VALUES (:Id, :Index, :FriendlyName, :Name, :NameFormat, :isRequired)');
+      VALUES (:Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired)');
 
-    $serviceHandler->bindValue(':Id', $this->dbIdNr);
-    $serviceHandler->bindParam(':Index', $index);
-    $serviceHandler->bindValue(':Default', $isDefault);
+    $serviceHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $serviceHandler->bindParam(self::BIND_INDEX, $index);
+    $serviceHandler->bindValue(self::BIND_DEFAULT, $isDefault);
     $serviceHandler->execute();
-    $serviceElementHandler->bindValue(':Id', $this->dbIdNr);
-    $serviceElementHandler->bindParam(':Index', $index);
-    $serviceElementHandler->bindParam(':Lang', $lang);
-    $requestedAttributeHandler->bindValue(':Id', $this->dbIdNr);
-    $requestedAttributeHandler->bindParam(':Index', $index);
-    $requestedAttributeHandler->bindParam(':FriendlyName', $FriendlyName);
-    $requestedAttributeHandler->bindParam(':Name', $Name);
-    $requestedAttributeHandler->bindParam(':NameFormat', $NameFormat);
-    $requestedAttributeHandler->bindParam(':isRequired', $isRequired);
+    $serviceElementHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
+    $serviceElementHandler->bindParam(self::BIND_LANG, $lang);
+    $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $requestedAttributeHandler->bindParam(self::BIND_INDEX, $index);
+    $requestedAttributeHandler->bindParam(self::BIND_FRIENDLYNAME, $friendlyName);
+    $requestedAttributeHandler->bindParam(self::BIND_NAME, $name);
+    $requestedAttributeHandler->bindParam(self::BIND_NAMEFORMAT, $nameFormat);
+    $requestedAttributeHandler->bindParam(self::BIND_ISREQUIRED, $isRequired);
 
     $serviceNameFound = false;
     $requestedAttributeFound = false;
@@ -907,52 +958,52 @@ class Metadata {
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_MD_SERVICENAME :
-          $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
-          $serviceElementHandler->bindValue(':Element', 'ServiceName');
-          $serviceElementHandler->bindValue(':Data', trim($child->textContent));
+          $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : ''; #NOSONAR $lnag is used in Bind above
+          $serviceElementHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
+          $serviceElementHandler->bindValue(self::BIND_DATA, trim($child->textContent));
           $serviceElementHandler->execute();
           $serviceNameFound = true;
           break;
         case self::SAML_MD_SERVICEDESCRIPTION :
-          $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
-          $serviceElementHandler->bindValue(':Element', 'ServiceDescription');
-          $serviceElementHandler->bindValue(':Data', trim($child->textContent));
+          $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : ''; #NOSONAR $lnag is used in Bind above
+          $serviceElementHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
+          $serviceElementHandler->bindValue(self::BIND_DATA, trim($child->textContent));
           $serviceElementHandler->execute();
           break;
         case self::SAML_MD_REQUESTEDATTRIBUTE :
-          $FriendlyName = $child->getAttribute('FriendlyName') ? $child->getAttribute('FriendlyName') : '';
-          $NameFormat = '';
-          $isRequired = ($child->getAttribute('isRequired')
+          $friendlyName = $child->getAttribute('FriendlyName') ? $child->getAttribute('FriendlyName') : '';
+          $nameFormat = '';
+          $isRequired = ($child->getAttribute('isRequired') # NOSONAR
             && ($child->getAttribute('isRequired') == 'true' || $child->getAttribute('isRequired') == '1')) ? 1 : 0;
           if ($child->getAttribute('Name')) {
-            $Name = $child->getAttribute('Name');
-            if ($FriendlyName != '' &&
-              isset($this->FriendlyNames[$Name]) &&
-              $this->FriendlyNames[$Name]['desc'] != $FriendlyName) {
+            $name = $child->getAttribute('Name');
+            if ($friendlyName != '' &&
+              isset($this->FriendlyNames[$name]) &&
+              $this->FriendlyNames[$name]['desc'] != $friendlyName) {
                 $this->warning .= sprintf(
                   "SWAMID Tech 6.1.20: FriendlyName for %s %s %d is %s (recomended from SWAMID is %s).\n",
-                  $Name, 'in RequestedAttribute for index', $index, $FriendlyName, $this->FriendlyNames[$Name]['desc']);
+                  $name, 'in RequestedAttribute for index', $index, $friendlyName, $this->FriendlyNames[$name]['desc']);
             }
             if ($child->getAttribute('NameFormat')) {
-              $NameFormat = $child->getAttribute('NameFormat');
-              switch ($NameFormat) {
+              $nameFormat = $child->getAttribute('NameFormat');
+              switch ($nameFormat) {
                 case 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri' :
-                  #OK;
+                  // This Is OK
                   break;
                 case 'urn:mace:shibboleth:1.0:attributeNamespace:uri' :
                   $this->warning .=
                     sprintf("SAML1 NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n",
-                      $NameFormat, $Name, $index);
+                      $nameFormat, $name, $index);
                   break;
                 default :
                   $this->warning .=
                     sprintf("NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n",
-                      $NameFormat, $Name, $index);
+                      $nameFormat, $name, $index);
               }
             } else {
               $this->warning .=
                 sprintf("NameFormat is missing for %s in RequestedAttribute for index %d. %s\n",
-                  $Name, $index, 'This might create problmes with some IdP:s');
+                  $name, $index, 'This might create problmes with some IdP:s');
             }
             $requestedAttributeHandler->execute();
             $requestedAttributeFound = true;
@@ -968,14 +1019,16 @@ class Metadata {
       }
       $child = $child->nextSibling;
     }
-    if ( ! $serviceNameFound )
+    if ( ! $serviceNameFound ) {
       $this->error .= sprintf(
           "SWAMID Tech 6.1.17: ServiceName is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n",
           $index);
-    if ( ! $requestedAttributeFound )
+    }
+    if ( ! $requestedAttributeFound ) {
       $this->error .= sprintf(
       "SWAMID Tech 6.1.19: RequestedAttribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n",
       $index);
+    }
   }
 
   #############
@@ -1024,27 +1077,27 @@ class Metadata {
     $organizationHandler = $this->metaDb->prepare('INSERT INTO Organization (`entity_id`, `lang`, `element`, `data`)
       VALUES (:Id, :Lang, :Element, :Value)');
 
-    $organizationHandler->bindValue(':Id', $this->dbIdNr);
-    $organizationHandler->bindParam(':Lang', $lang);
-    $organizationHandler->bindParam(':Element', $element);
+    $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $organizationHandler->bindParam(self::BIND_LANG, $lang);
+    $organizationHandler->bindParam(self::BIND_ELEMENT, $element);
 
     $child = $data->firstChild;
     while ($child) {
-      $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : '';
+      $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : ''; #NOSONAR Used in Bind above
       switch ($child->nodeName) {
         case self::SAML_MD_ORGANIZATIONURL :
           $this->addURL(trim($child->textContent), 1);
-          $element = substr($child->nodeName, 3);
+          $element = substr($child->nodeName, 3); #NOSONAR Used in Bind above
           break;
         case self::SAML_MD_EXTENSIONS :
         case self::SAML_MD_ORGANIZATIONNAME :
         case self::SAML_MD_ORGANIZATIONDISPLAYNAME :
-          $element = substr($child->nodeName, 3);
+          $element = substr($child->nodeName, 3); #NOSONAR Used in Bind above
           break;
         default :
           $this->result .= sprintf("Organization->%s missing in validator.\n", $child->nodeName);
       }
-      $organizationHandler->bindValue(':Value', trim($child->textContent));
+      $organizationHandler->bindValue(self::BIND_VALUE, trim($child->textContent));
       $organizationHandler->execute();
       $child = $child->nextSibling;
     }
@@ -1070,7 +1123,7 @@ class Metadata {
       VALUES (:Id, :ContactType, :SubcontactType, :Company, :EmailAddress,
         :Extensions, :GivenName, :SurName, :TelephoneNumber)');
 
-    $contactPersonHandler->bindValue(':Id', $this->dbIdNr);
+    $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-ui/v1.0/os/sstc-saml-metadata-ui-v1.0-os.html
     switch ($data->getAttribute('contactType')) {
@@ -1123,14 +1176,14 @@ class Metadata {
       }
       $child = $child->nextSibling;
     }
-    $contactPersonHandler->bindParam(':ContactType', $contactType);
-    $contactPersonHandler->bindParam(':SubcontactType', $subcontactType);
-    $contactPersonHandler->bindParam(':Company', $company);
-    $contactPersonHandler->bindParam(':EmailAddress', $emailAddress);
-    $contactPersonHandler->bindParam(':Extensions', $extensions);
-    $contactPersonHandler->bindParam(':GivenName', $givenName);
-    $contactPersonHandler->bindParam(':SurName', $surName);
-    $contactPersonHandler->bindParam(':TelephoneNumber', $telephoneNumber);
+    $contactPersonHandler->bindParam(self::BIND_CONTACTTYPE, $contactType);
+    $contactPersonHandler->bindParam(self::BIND_SUBCONTACTTYPE, $subcontactType);
+    $contactPersonHandler->bindParam(self::BIND_COMPANY, $company);
+    $contactPersonHandler->bindParam(self::BIND_EMAILADDRESS, $emailAddress);
+    $contactPersonHandler->bindParam(self::BIND_EXTENSIONS, $extensions);
+    $contactPersonHandler->bindParam(self::BIND_GIVENNAME, $givenName);
+    $contactPersonHandler->bindParam(self::BIND_SURNAME, $surName);
+    $contactPersonHandler->bindParam(self::BIND_TELEPHONENUMBER, $telephoneNumber);
     $contactPersonHandler->execute();
   }
 
@@ -1143,13 +1196,13 @@ class Metadata {
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
       VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Value)');
 
-    $ssoUIIHandler->bindValue(':Id', $this->dbIdNr);
+    $ssoUIIHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $ssoUIIHandler->bindValue(self::BIND_TYPE, $type);
-    $ssoUIIHandler->bindParam(':Lang', $lang);
-    $ssoUIIHandler->bindParam(':Height', $height);
-    $ssoUIIHandler->bindParam(':Width', $width);
-    $ssoUIIHandler->bindParam(':Element', $element);
-    $ssoUIIHandler->bindParam(':Value', $value);
+    $ssoUIIHandler->bindParam(self::BIND_LANG, $lang);
+    $ssoUIIHandler->bindParam(self::BIND_HEIGHT, $height);
+    $ssoUIIHandler->bindParam(self::BIND_WIDTH, $width);
+    $ssoUIIHandler->bindParam(self::BIND_ELEMENT, $element);
+    $ssoUIIHandler->bindParam(self::BIND_VALUE, $value);
 
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-ui/v1.0/os/sstc-saml-metadata-ui-v1.0-os.html
     $child = $data->firstChild;
@@ -1251,11 +1304,11 @@ class Metadata {
       VALUES (:Id, :Type, :Use, :Order, :Name, :NotValidAfter,
         :Subject, :Issuer, :Bits, :Key_type, :SerialNumber)');
 
-    $keyInfoHandler->bindValue(':Id', $this->dbIdNr);
+    $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->bindValue(self::BIND_TYPE, $type);
-    $keyInfoHandler->bindValue(':Use', $use);
-    $keyInfoHandler->bindValue(':Order', $order);
-    $keyInfoHandler->bindParam(':Name', $name);
+    $keyInfoHandler->bindValue(self::BIND_USE, $use);
+    $keyInfoHandler->bindValue(self::BIND_ORDER, $order);
+    $keyInfoHandler->bindParam(self::BIND_NAME, $name);
 
     $child = $data->firstChild;
     while ($child) {
@@ -1324,19 +1377,19 @@ class Metadata {
               }
             }
 
-            $keyInfoHandler->bindValue(':NotValidAfter', date('Y-m-d H:i:s', $certInfo['validTo_time_t']));
-            $keyInfoHandler->bindParam(':Subject', $subject);
-            $keyInfoHandler->bindParam(':Issuer', $issuer);
-            $keyInfoHandler->bindParam(':Bits', $keyInfo['bits']);
-            $keyInfoHandler->bindParam(':Key_type', $keyType);
-            $keyInfoHandler->bindParam(':SerialNumber', $certInfo['serialNumber']);
+            $keyInfoHandler->bindValue(self::BIND_NOTVALIDAFTER, date('Y-m-d H:i:s', $certInfo['validTo_time_t']));
+            $keyInfoHandler->bindParam(self::BIND_SUBJECT, $subject);
+            $keyInfoHandler->bindParam(self::BIND_ISSUER, $issuer);
+            $keyInfoHandler->bindParam(self::BIND_BITS, $keyInfo['bits']);
+            $keyInfoHandler->bindParam(self::BIND_KEY_TYPE, $keyType);
+            $keyInfoHandler->bindParam(self::BIND_SERIALNUMBER, $certInfo['serialNumber']);
           } else {
-            $keyInfoHandler->bindValue(':NotValidAfter', '1970-01-01 00:00:00');
-            $keyInfoHandler->bindValue(':Subject', '?');
-            $keyInfoHandler->bindValue(':Issuer', '?');
-            $keyInfoHandler->bindValue(':Bits', 0);
-            $keyInfoHandler->bindValue(':Key_type', '?');
-            $keyInfoHandler->bindValue(':SerialNumber', '?');
+            $keyInfoHandler->bindValue(self::BIND_NOTVALIDAFTER, '1970-01-01 00:00:00');
+            $keyInfoHandler->bindValue(self::BIND_SUBJECT, '?');
+            $keyInfoHandler->bindValue(self::BIND_ISSUER, '?');
+            $keyInfoHandler->bindValue(self::BIND_BITS, 0);
+            $keyInfoHandler->bindValue(self::BIND_KEY_TYPE, '?');
+            $keyInfoHandler->bindValue(self::BIND_SERIALNUMBER, '?');
             $name = 'Invalid Certificate';
           }
         break;
@@ -1365,7 +1418,7 @@ class Metadata {
 
     $entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id');
-    $entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
+    $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->execute();
     while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       switch ($entityAttribute['attribute']) {
@@ -1462,11 +1515,11 @@ class Metadata {
         `errorsNB` = :ErrorsNB,
         `lastValidated` = NOW()
       WHERE `id` = :Id;");
-    $resultHandler->bindValue(':Id', $this->dbIdNr);
-    $resultHandler->bindValue(':validationOutput', $this->result);
-    $resultHandler->bindValue(':Warnings', $this->warning);
-    $resultHandler->bindValue(':Errors', $this->error);
-    $resultHandler->bindValue(':ErrorsNB', $this->errorNB);
+    $resultHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $resultHandler->bindValue(self::BIND_VALIDATIONOUTPUT, $this->result);
+    $resultHandler->bindValue(self::BIND_WARNINGS, $this->warning);
+    $resultHandler->bindValue(self::BIND_ERRORS, $this->error);
+    $resultHandler->bindValue(self::BIND_ERRORSNB, $this->errorNB);
     $resultHandler->execute();
     $this->validateURLs();
   }
@@ -1477,7 +1530,7 @@ class Metadata {
     $usedLangArray = array();
     $mduiHandler = $this->metaDb->prepare("SELECT `type`, `lang`, `element`
       FROM Mdui WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
-    $mduiHandler->bindValue(':Id', $this->dbIdNr);
+    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $type = $mdui['type'];
@@ -1514,7 +1567,7 @@ class Metadata {
 
     $serviceElementHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `Service_index`
       FROM AttributeConsumingService_Service WHERE `entity_id` = :Id');
-    $serviceElementHandler->bindValue(':Id', $this->dbIdNr);
+    $serviceElementHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $serviceElementHandler->execute();
     while ($service = $serviceElementHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $service['element'];
@@ -1558,7 +1611,7 @@ class Metadata {
 
     $organizationArray = array();
     $organizationHandler = $this->metaDb->prepare('SELECT `lang`, `element` FROM Organization WHERE `entity_id` = :Id');
-    $organizationHandler->bindValue(':Id', $this->dbIdNr);
+    $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $lang = $organization['lang'];
@@ -1637,7 +1690,7 @@ class Metadata {
   private function checkEntityAttributes($type) {
     $entityAttributesHandler = $this->metaDb->prepare('SELECT `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id AND `type` = :Type');
-    $entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
+    $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
     if ($type == 'IDPSSO' ) {
       //5.1.9 SWAMID Identity Assurance Profile compliance MUST be registered in
@@ -1686,7 +1739,7 @@ class Metadata {
   private function checkErrorURL() {
     $errorURLHandler = $this->metaDb->prepare("SELECT DISTINCT `URL`
       FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
-    $errorURLHandler->bindParam(':Id', $this->dbIdNr);
+    $errorURLHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $errorURLHandler->execute();
     if (! $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
       $this->error .= "SWAMID Tech 5.1.13: IdP:s MUST have a registered errorURL.\n";
@@ -1696,7 +1749,7 @@ class Metadata {
   // 5.1.15, 5.1.16 Scope
   private function checkIDPScope() {
     $scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id');
-    $scopesHandler->bindParam(':Id', $this->dbIdNr);
+    $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $scopesHandler->execute();
     $missingScope = true;
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1727,12 +1780,12 @@ class Metadata {
         AND `lang` = :Lang
         AND `status` = 1
         AND `entityID` <> :EntityID;");
-    $mduiDNUniqHandler->bindParam(':Data', $data);
-    $mduiDNUniqHandler->bindParam(':Lang', $lang);
-    $mduiDNUniqHandler->bindParam(':EntityID', $entityID);
+    $mduiDNUniqHandler->bindParam(self::BIND_DATA, $data);
+    $mduiDNUniqHandler->bindParam(self::BIND_LANG, $lang);
+    $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $mduiHandler = $this->metaDb->prepare('SELECT `entityID`, `element`, `data`, `lang`
       FROM Entities, Mdui WHERE `id` = `entity_id` AND `entity_id` = :Id AND `type`  = :Type');
-    $mduiHandler->bindValue(':Id', $this->dbIdNr);
+    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->bindValue(self::BIND_TYPE, 'IDPSSO');
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1778,7 +1831,7 @@ class Metadata {
       'PrivacyStatementURL' => false);
     $mduiHandler = $this->metaDb->prepare("SELECT DISTINCT `element`, `data`
       FROM Mdui WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
-    $mduiHandler->bindValue(':Id', $this->dbIdNr);
+    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $elementArray[$mdui['element']] = true;
@@ -1812,7 +1865,7 @@ class Metadata {
       FROM KeyInfo
       WHERE `entity_id` = :Id AND `type` =:Type
       ORDER BY notValidAfter DESC');
-    $keyInfoHandler->bindValue(':Id', $this->dbIdNr);
+    $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->bindValue(self::BIND_TYPE, $type);
     $keyInfoHandler->execute();
 
@@ -2068,7 +2121,7 @@ class Metadata {
 
     $organizationHandler = $this->metaDb->prepare('SELECT DISTINCT `element`
       FROM Organization WHERE `entity_id` = :Id');
-    $organizationHandler->bindValue(':Id', $this->dbIdNr);
+    $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $elementArray[$organization['element']] = true;
@@ -2086,7 +2139,7 @@ class Metadata {
     $usedContactTypes = array();
     $contactPersonHandler = $this->metaDb->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
       FROM ContactPerson WHERE `entity_id` = :Id');
-    $contactPersonHandler->bindValue(':Id', $this->dbIdNr);
+    $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
 
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -2158,7 +2211,7 @@ class Metadata {
     $mduiArray = array();
     $mduiHandler = $this->metaDb->prepare("SELECT `lang`, `element`
       FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
-    $mduiHandler->bindValue(':Id', $this->dbIdNr);
+    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $lang = $mdui['lang'];
@@ -2180,7 +2233,7 @@ class Metadata {
 
     $contactPersonHandler = $this->metaDb->prepare("SELECT `emailAddress`
       FROM ContactPerson WHERE `contactType` = 'technical' AND `entity_id` = :Id;");
-    $contactPersonHandler->bindValue(':Id', $this->dbIdNr);
+    $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
     if (! $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       $this->error .= 'REFEDS Research and Scholarship 4.3.4 Require that the Service Provider provides';
@@ -2196,8 +2249,8 @@ class Metadata {
       FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
     $requestedAttributeHandler = $this->metaDb->prepare('SELECT DISTINCT `Service_index`
       FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id');
-    $mduiHandler->bindValue(':Id', $this->dbIdNr);
-    $requestedAttributeHandler->bindValue(':Id', $this->dbIdNr);
+    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $lang = $mdui['lang'];
@@ -2251,9 +2304,9 @@ class Metadata {
       FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id');
     $entityAttributesHandler =  $this->metaDb->prepare('SELECT attribute
       FROM EntityAttributes WHERE `type` = :Type AND `entity_id` = :Id');
-    $mduiHandler->bindValue(':Id', $this->dbIdNr);
-    $requestedAttributeHandler->bindValue(':Id', $this->dbIdNr);
-    $entityAttributesHandler->bindValue(':Id', $this->dbIdNr);
+    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $lang = $mdui['lang'];
@@ -2430,7 +2483,7 @@ class Metadata {
   private function addEntityUrl($type, $url) {
     $urlHandler = $this->metaDb->prepare("INSERT INTO EntityURLs
       (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, :Type)");
-    $urlHandler->bindValue(':Id', $this->dbIdNr);
+    $urlHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->bindValue(self::BIND_TYPE, $type);
     $urlHandler->execute();
@@ -2460,8 +2513,8 @@ class Metadata {
       }
     }
     $publishedHandler = $this->metaDb->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
-    $publishedHandler->bindValue(':Id', $this->dbIdNr);
-    $publishedHandler->bindValue(':PublishIn', $publishIn);
+    $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $publishedHandler->bindValue(self::BIND_PUBLISHIN, $publishIn);
     $publishedHandler->execute();
     $this->feedValue = $publishIn;
   }
@@ -2471,8 +2524,8 @@ class Metadata {
   #############
   public function updateFeedByValue($publishIn) {
     $publishedHandler = $this->metaDb->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
-    $publishedHandler->bindValue(':Id', $this->dbIdNr);
-    $publishedHandler->bindValue(':PublishIn', $publishIn);
+    $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $publishedHandler->bindValue(self::BIND_PUBLISHIN, $publishIn);
     $publishedHandler->execute();
     $this->feedValue = $publishIn;
   }
@@ -2481,10 +2534,10 @@ class Metadata {
   # Updates which user that is responsible for an entity
   #############
   public function updateResponsible($approvedBy) {
-    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
-    $entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
-    $entityUserHandler->bindParam(':User_Id', $this->user['id']);
-    $entityUserHandler->bindParam(':ApprovedBy', $approvedBy);
+    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+    $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+    $entityUserHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
+    $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $approvedBy);
     $entityUserHandler->execute();
   }
 
@@ -2492,16 +2545,16 @@ class Metadata {
   # Copies which user that is responsible for an entity from another entity
   #############
   public function copyResponsible($otherEntity_id) {
-    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_Id, :User_Id, :ApprovedBy, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
+    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
     $otherEntityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `approvedBy`, `lastChanged` FROM EntityUser WHERE `entity_id` = :OtherEntity_Id');
 
-    $entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
-    $otherEntityUserHandler->bindParam(':OtherEntity_Id', $otherEntity_id);
+    $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+    $otherEntityUserHandler->bindParam(self::BIND_OTHERENTITY_ID, $otherEntity_id);
     $otherEntityUserHandler->execute();
     while ($otherEntityUser = $otherEntityUserHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityUserHandler->bindParam(':User_Id', $otherEntityUser['user_id']);
-      $entityUserHandler->bindParam(':ApprovedBy', $otherEntityUser['approvedBy']);
-      $entityUserHandler->bindParam(':LastChanged', $otherEntityUser['lastChanged']);
+      $entityUserHandler->bindParam(self::BIND_USER_ID, $otherEntityUser['user_id']);
+      $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $otherEntityUser['approvedBy']);
+      $entityUserHandler->bindParam(self::BIND_LASTCHANGED, $otherEntityUser['lastChanged']);
       $entityUserHandler->execute();
     }
   }
@@ -2511,8 +2564,8 @@ class Metadata {
   #############
   public function updateLastUpdated($date) {
     $entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `lastUpdated` = :Date WHERE `id` = :Id');
-    $entityHandlerUpdate->bindValue(':Id', $this->dbIdNr);
-    $entityHandlerUpdate->bindValue(':Date', $date);
+    $entityHandlerUpdate->bindValue(self::BIND_ID, $this->dbIdNr);
+    $entityHandlerUpdate->bindValue(self::BIND_DATE, $date);
     $entityHandlerUpdate->execute();
   }
 
@@ -2524,7 +2577,7 @@ class Metadata {
   }
   private function removeEntityReal($dbIdNr) {
     $entityHandler = $this->metaDb->prepare('SELECT publishedId FROM Entities WHERE id = :Id');
-    $entityHandler->bindParam(':Id', $dbIdNr);
+    $entityHandler->bindParam(self::BIND_ID, $dbIdNr);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($entity['publishedId'] > 0) {
@@ -2534,23 +2587,23 @@ class Metadata {
       # Remove data for this Entity
       $this->metaDb->beginTransaction();
       $this->metaDb->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
-        array(':Id' => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(array(':Id' => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(array(':Id' => $dbIdNr));
+        array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
       $this->metaDb->prepare('DELETE FROM AttributeConsumingService WHERE `entity_id` = :Id')->execute(
-        array(':Id' => $dbIdNr));
+        array(self::BIND_ID => $dbIdNr));
       $this->metaDb->prepare('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = :Id')->execute(
-        array(':Id' => $dbIdNr));
+        array(self::BIND_ID => $dbIdNr));
       $this->metaDb->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute
-        WHERE `entity_id` = :Id')->execute(array(':Id' => $dbIdNr));
+        WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
       $this->metaDb->prepare('DELETE FROM Organization WHERE `entity_id` = :Id')->execute(
-        array(':Id' => $dbIdNr));
+        array(self::BIND_ID => $dbIdNr));
       $this->metaDb->prepare('DELETE FROM ContactPerson WHERE `entity_id` = :Id')->execute(
-        array(':Id' => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(array(':Id' => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(array(':Id' => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM EntityUser WHERE `entity_id` = :Id')->execute(array(':Id' => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Entities WHERE `id` = :Id')->execute(array(':Id' => $dbIdNr));
+        array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM EntityUser WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM Entities WHERE `id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
       $this->metaDb->commit();
     }
   }
@@ -2561,12 +2614,12 @@ class Metadata {
   public function checkPendingIfPublished() {
     $pendingHandler = $this->metaDb->prepare('SELECT `entityID`, `xml`, `lastUpdated`
       FROM Entities WHERE `status` = 2 AND `id` = :Id');
-    $pendingHandler->bindParam(':Id', $this->dbIdNr);
+    $pendingHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $pendingHandler->execute();
 
     $publishedHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated`
       FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
-    $publishedHandler->bindParam(':EntityID', $entityID);
+    $publishedHandler->bindParam(self::BIND_ENTITYID, $entityID);
 
     require_once __DIR__  . '/NormalizeXML.php';
     $normalize = new NormalizeXML();
@@ -2606,7 +2659,7 @@ class Metadata {
   public function move2SoftDelete() {
     $entityHandler = $this->metaDb->prepare('UPDATE Entities
       SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id');
-    $entityHandler->bindParam(':Id', $this->dbIdNr);
+    $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityHandler->execute();
   }
 
@@ -2619,51 +2672,51 @@ class Metadata {
       $publishedEntityHandler = $this->metaDb->prepare('SELECT `id`
         FROM Entities WHERE `status` = 1 AND `entityID` = :Id');
       # Get id of published version
-      $publishedEntityHandler->bindParam(':Id', $this->entityID);
+      $publishedEntityHandler->bindParam(self::BIND_ID, $this->entityID);
       $publishedEntityHandler->execute();
       if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
         $entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
         $entityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `approvedBy`, `lastChanged`
-          FROM EntityUser WHERE `entity_id` = :Entity_Id ORDER BY `lastChanged`');
+          FROM EntityUser WHERE `entity_id` = :Entity_id ORDER BY `lastChanged`');
         $addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser
           (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
-          VALUES(:Entity_Id, :User_Id, :ApprovedBy, :LastChanged)
+          VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged)
           ON DUPLICATE KEY
           UPDATE `lastChanged` =
             IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged)');
         $updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation
           (`entity_id`, `user_id`, `lastConfirmed`)
-          VALUES (:Entity_Id, :User_Id, :LastConfirmed)
-          ON DUPLICATE KEY UPDATE `user_id` = :User_Id, `lastConfirmed` = :LastConfirmed');
+          VALUES (:Entity_id, :User_id, :LastConfirmed)
+          ON DUPLICATE KEY UPDATE `user_id` = :User_id, `lastConfirmed` = :LastConfirmed');
 
         # Get lastValidated
-        $entityHandler->bindParam(':Id', $this->dbIdNr);
+        $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         $entityHandler->execute();
         $entity = $entityHandler->fetch(PDO::FETCH_ASSOC);
 
-        $addEntityUserHandler->bindParam(':Entity_Id', $publishedEntity['id']);
+        $addEntityUserHandler->bindParam(self::BIND_ENTITY_ID, $publishedEntity['id']);
 
         # Get users having access to this entityID
-        $entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
+        $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
         $entityUserHandler->execute();
         while ($entityUser = $entityUserHandler->fetch(PDO::FETCH_ASSOC)) {
           # Copy userId from pending -> published
-          $addEntityUserHandler->bindValue(':User_Id', $entityUser['user_id']);
-          $addEntityUserHandler->bindValue(':ApprovedBy', $entityUser['approvedBy']);
-          $addEntityUserHandler->bindValue(':LastChanged', $entityUser['lastChanged']);
+          $addEntityUserHandler->bindValue(self::BIND_USER_ID, $entityUser['user_id']);
+          $addEntityUserHandler->bindValue(self::BIND_APPROVEDBY, $entityUser['approvedBy']);
+          $addEntityUserHandler->bindValue(self::BIND_LASTCHANGED, $entityUser['lastChanged']);
           $addEntityUserHandler->execute();
           $lastUser=$entityUser['user_id'];
         }
         # Set lastValidated on Pending as lastConfirmed on Published
-        $updateEntityConfirmationHandler->bindParam(':Entity_Id', $publishedEntity['id']);
-        $updateEntityConfirmationHandler->bindParam(':User_Id', $lastUser);
-        $updateEntityConfirmationHandler->bindParam(':LastConfirmed', $entity['lastValidated']);
+        $updateEntityConfirmationHandler->bindParam(self::BIND_ENTITY_ID, $publishedEntity['id']);
+        $updateEntityConfirmationHandler->bindParam(self::BIND_USER_ID, $lastUser);
+        $updateEntityConfirmationHandler->bindParam(self::BIND_LASTCONFIRMED, $entity['lastValidated']);
         $updateEntityConfirmationHandler->execute();
       }
       # Move entity to status PendingPublished
       $entityUpdateHandler = $this->metaDb->prepare('UPDATE Entities
         SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
-      $entityUpdateHandler->bindParam(':Id', $this->dbIdNr);
+      $entityUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $entityUpdateHandler->execute();
     }
   }
@@ -2757,9 +2810,9 @@ class Metadata {
     $this->addRegistrationInfo();
     $entityHandler = $this->metaDb->prepare('UPDATE Entities
       SET `status` = 2, `publishedId` = :PublishedId, `xml` = :Xml WHERE `status` = 3 AND `id` = :Id');
-    $entityHandler->bindParam(':Id', $this->dbIdNr);
-    $entityHandler->bindParam(':PublishedId', $publishedEntity_id);
-    $entityHandler->bindValue(':Xml', $this->xml->saveXML());
+    $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+    $entityHandler->bindParam(self::BIND_PUBLISHEDID, $publishedEntity_id);
+    $entityHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
 
     $entityHandler->execute();
   }
@@ -2866,8 +2919,8 @@ class Metadata {
     if (! $this->entityDisplayName ) {
       $displayHandler = $this->metaDb->prepare(
         "SELECT `data` AS DisplayName
-        FROM Mdui WHERE entity_id = :Entity_ID AND `element` = 'DisplayName' AND `lang` = 'en'");
-      $displayHandler->bindParam(':Entity_ID',$this->dbIdNr);
+        FROM Mdui WHERE entity_id = :Entity_id AND `element` = 'DisplayName' AND `lang` = 'en'");
+      $displayHandler->bindParam(self::BIND_ENTITY_ID,$this->dbIdNr);
       $displayHandler->execute();
       if ($displayInfo = $displayHandler->fetch(PDO::FETCH_ASSOC)) {
         $this->entityDisplayName = $displayInfo['DisplayName'];
@@ -2886,11 +2939,11 @@ class Metadata {
     $contactHandler = $this->metaDb->prepare("SELECT DISTINCT emailAddress
       FROM Entities, ContactPerson
       WHERE id = entity_id
-        AND ((entityID = :EntityID AND status = 1) OR (id = :Entity_ID AND status = 3))
+        AND ((entityID = :EntityID AND status = 1) OR (id = :Entity_id AND status = 3))
         AND (contactType='technical' OR contactType='administrative')
         AND emailAddress <> ''");
-    $contactHandler->bindParam(':EntityID',$this->entityID);
-    $contactHandler->bindParam(':Entity_ID',$this->dbIdNr);
+    $contactHandler->bindParam(self::BIND_ENTITYID,$this->entityID);
+    $contactHandler->bindParam(self::BIND_ENTITY_ID,$this->dbIdNr);
     $contactHandler->execute();
     while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
       $addresses[] = substr($address['emailAddress'],7);
@@ -2910,31 +2963,31 @@ class Metadata {
       (`entity_id`, `user_id`, `lastConfirmed`)
       VALUES (:Id, :User_id, NOW())
       ON DUPLICATE KEY UPDATE  `user_id` = :User_id, `lastConfirmed` = NOW()');
-    $entityConfirmHandler->bindParam(':Id', $this->dbIdNr);
-    $entityConfirmHandler->bindParam(':User_id', $userId);
+    $entityConfirmHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+    $entityConfirmHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityConfirmHandler->execute();
   }
 
   public function getUser($userID, $email = '', $fullName = '', $add = false) {
     if ($this->user['id'] == 0) {
       $userHandler = $this->metaDb->prepare('SELECT `id`, `email`, `fullName` FROM Users WHERE `userID` = :Id');
-      $userHandler->bindValue(':Id', strtolower($userID));
+      $userHandler->bindValue(self::BIND_ID, strtolower($userID));
       $userHandler->execute();
       if ($this->user = $this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
           $userHandler = $this->metaDb->prepare('UPDATE Users
             SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
-          $userHandler->bindValue(':Id', strtolower($userID));
-          $userHandler->bindParam(':Email', $email);
-          $userHandler->bindParam(':FullName', $fullName);
+          $userHandler->bindValue(self::BIND_ID, strtolower($userID));
+          $userHandler->bindParam(self::BIND_EMAIL, $email);
+          $userHandler->bindParam(self::BIND_FULLNAME, $fullName);
           $userHandler->execute();
         }
       } elseif ($add) {
         $addNewUserHandler = $this->metaDb->prepare('INSERT INTO Users
           (`userID`, `email`, `fullName`) VALUES(:Id, :Email, :FullName)');
-        $addNewUserHandler->bindValue(':Id', strtolower($userID));
-        $addNewUserHandler->bindParam(':Email', $email);
-        $addNewUserHandler->bindParam(':FullName', $fullName);
+        $addNewUserHandler->bindValue(self::BIND_ID, strtolower($userID));
+        $addNewUserHandler->bindParam(self::BIND_EMAIL, $email);
+        $addNewUserHandler->bindParam(self::BIND_FULLNAME, $fullName);
         $addNewUserHandler->execute();
         $this->user['id'] = $this->metaDb->lastInsertId();
         $this->user['email'] = $email;
@@ -2958,9 +3011,9 @@ class Metadata {
   public function updateUser($userID, $email, $fullName) {
     $userHandler = $this->metaDb->prepare('UPDATE Users
       SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
-    $userHandler->bindValue(':Id', strtolower($userID));
-    $userHandler->bindValue(':Email', $email);
-    $userHandler->bindValue(':FullName', $fullName);
+    $userHandler->bindValue(self::BIND_ID, strtolower($userID));
+    $userHandler->bindValue(self::BIND_EMAIL, $email);
+    $userHandler->bindValue(self::BIND_FULLNAME, $fullName);
     $userHandler->execute();
   }
 
@@ -2970,9 +3023,9 @@ class Metadata {
   public function isResponsible() {
     if ($this->user['id'] > 0) {
       $userHandler = $this->metaDb->prepare('SELECT *
-        FROM EntityUser WHERE `user_id` = :UsersID AND `entity_id`= :EntityID' );
-      $userHandler->bindParam(':UsersID', $this->user['id']);
-      $userHandler->bindParam(':EntityID', $this->dbIdNr);
+        FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :EntityID' );
+      $userHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
+      $userHandler->bindParam(self::BIND_ENTITYID, $this->dbIdNr);
       $userHandler->execute();
       return $userHandler->fetch(PDO::FETCH_ASSOC);
     } else {
@@ -2987,9 +3040,9 @@ class Metadata {
       (`entity_id`, `user_id`, `hash`, `requestDate`)
       VALUES (:Entity_id, :User_id, :Hashvalue, NOW())
       ON DUPLICATE KEY UPDATE `hash` = :Hashvalue, `requestDate` = NOW()');
-    $addNewRequestHandler->bindParam(':Entity_id', $this->dbIdNr);
-    $addNewRequestHandler->bindParam(':User_id', $userId);
-    $addNewRequestHandler->bindParam(':Hashvalue', $hash);
+    $addNewRequestHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+    $addNewRequestHandler->bindParam(self::BIND_USER_ID, $userId);
+    $addNewRequestHandler->bindParam(self::BIND_HASHVALUE, $hash);
     $addNewRequestHandler->execute();
     return $code;
   }
@@ -2997,9 +3050,9 @@ class Metadata {
   public function validateCode($userId, $hash, $approvedBy) {
     if ($userId > 0) {
       $userHandler = $this->metaDb->prepare('SELECT *
-        FROM EntityUser WHERE `user_id` = :UsersID AND `entity_id`= :EntityID' );
-      $userHandler->bindParam(':UsersID', $userId);
-      $userHandler->bindParam(':EntityID', $this->dbIdNr);
+        FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :EntityID' );
+      $userHandler->bindParam(self::BIND_USER_ID, $userId);
+      $userHandler->bindParam(self::BIND_ENTITYID, $this->dbIdNr);
       $userHandler->execute();
       if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
         $result = array('returnCode' => 1, 'info' => 'User already had access');
@@ -3014,11 +3067,11 @@ class Metadata {
             AND `hash` = :Hashvalue');
         $requestRemoveHandler = $this->metaDb->prepare('DELETE FROM `AccessRequests`
           WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
-        $requestHandler->bindParam(':Entity_id', $this->dbIdNr);
-        $requestHandler->bindParam(':User_id', $userId);
-        $requestHandler->bindParam(':Hashvalue', $hash);
-        $requestRemoveHandler->bindParam(':Entity_id', $this->dbIdNr);
-        $requestRemoveHandler->bindParam(':User_id', $userId);
+        $requestHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+        $requestHandler->bindParam(self::BIND_USER_ID, $userId);
+        $requestHandler->bindParam(self::BIND_HASHVALUE, $hash);
+        $requestRemoveHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+        $requestRemoveHandler->bindParam(self::BIND_USER_ID, $userId);
 
         $requestHandler->execute();
         if ($request = $requestHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -3043,11 +3096,11 @@ class Metadata {
   public function addAccess2Entity($userId, $approvedBy) {
     $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser
       (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
-      VALUES(:Entity_Id, :User_Id, :ApprovedBy, NOW())
+      VALUES(:Entity_id, :User_id, :ApprovedBy, NOW())
       ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
-    $entityUserHandler->bindParam(':Entity_Id', $this->dbIdNr);
-    $entityUserHandler->bindParam(':User_Id', $userId);
-    $entityUserHandler->bindParam(':ApprovedBy', $approvedBy);
+    $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+    $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
+    $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $approvedBy);
     $entityUserHandler->execute();
   }
 

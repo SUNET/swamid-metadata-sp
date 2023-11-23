@@ -1,6 +1,10 @@
 <?php
 class MetadataDisplay {
 
+  const BIND_APPROVEDBY = ':ApprovedBy';
+  const BIND_ENTITYID = ':EntityID';
+  const BIND_ID = ':Id';
+  const BIND_INDEX = ':Index';
   const BIND_TYPE = ':Type';
   const BIND_URL = ':URL';
 
@@ -15,12 +19,13 @@ class MetadataDisplay {
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
+  const HTML_SPACER = '      ';
 
   # Setup
   public function __construct() {
-    require __DIR__  . '/../config.php';
-    require __DIR__ . '/common.php';
-    
+    require __DIR__  . '/../config.php'; #NOSONAR
+    require __DIR__ . '/common.php'; #NOSONAR
+
     try {
       $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
       // set the PDO error mode to exception
@@ -38,28 +43,28 @@ class MetadataDisplay {
     $entityHandler = $this->metaDb->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
       FROM Entities WHERE `id` = :Id;');
-    $entityHandler->bindParam(':Id', $entityId);
+    $entityHandler->bindParam(self::BIND_ID, $entityId);
     $urlHandler1 = $this->metaDb->prepare('
       SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
-    $urlHandler1->bindParam(':Id', $entityId);
+    $urlHandler1->bindParam(self::BIND_ID, $entityId);
     $urlHandler2 = $this->metaDb->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id AND type = 'error')");
-    $urlHandler2->bindParam(':Id', $entityId);
+    $urlHandler2->bindParam(self::BIND_ID, $entityId);
     $urlHandler3 = $this->metaDb->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-    $urlHandler3->bindParam(':Id', $entityId);
+    $urlHandler3->bindParam(self::BIND_ID, $entityId);
 
     $testResults = $this->metaDb->prepare('SELECT `test`, `result`, `time`
       FROM TestResults WHERE entityID = :EntityID');
     $entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id AND type = :Type;");
-    $entityAttributesHandler->bindParam(':Id', $entityId);
+    $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
 
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -89,7 +94,7 @@ class MetadataDisplay {
           $ecsTagged[$attribute['attribute']] = true;
         }
 
-        $testResults->bindValue(':EntityID', $entity['entityID']);
+        $testResults->bindValue(self::BIND_ENTITYID, $entity['entityID']);
         $testResults->execute();
         while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
           $ecsTested[$testResult['test']] = true;
@@ -228,7 +233,7 @@ class MetadataDisplay {
     $extra = false, $entityId=0, $oldEntityId=0) {
     $spacer = '';
     while ($step > 0 ) {
-      $spacer .= '      ';
+      $spacer .= self::HTML_SPACER;
       $step--;
     }
     if ($expanded) {
@@ -277,7 +282,7 @@ class MetadataDisplay {
   private function showNewCol($step) {
     $spacer = '';
     while ($step > 0 ) {
-      $spacer .= '      ';
+      $spacer .= self::HTML_SPACER;
       $step--;
     } ?>
 
@@ -291,7 +296,7 @@ class MetadataDisplay {
   private function showCollapseEnd($name, $step = 0){
     $spacer = '';
     while ($step > 0 ) {
-      $spacer .= '      ';
+      $spacer .= self::HTML_SPACER;
       $step--;
     }?>
 
@@ -321,7 +326,7 @@ class MetadataDisplay {
     $entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
     if ($otherEntityId) {
-      $entityAttributesHandler->bindParam(':Id', $otherEntityId);
+      $entityAttributesHandler->bindParam(self::BIND_ID, $otherEntityId);
       $entityAttributesHandler->execute();
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         $type = $attribute['type'];
@@ -332,7 +337,7 @@ class MetadataDisplay {
         $otherAttributeValues[$type][$value] = true;
       }
     }
-    $entityAttributesHandler->bindParam(':Id', $entityId);
+    $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
     $entityAttributesHandler->execute();
 
     if ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -493,7 +498,7 @@ class MetadataDisplay {
     $errorURLHandler = $this->metaDb->prepare("SELECT DISTINCT `URL`
       FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
     if ($otherEntityId) {
-      $errorURLHandler->bindParam(':Id', $otherEntityId);
+      $errorURLHandler->bindParam(self::BIND_ID, $otherEntityId);
       $errorURLHandler->execute();
       if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
         $otherURL = $errorURL['URL'];
@@ -505,7 +510,7 @@ class MetadataDisplay {
       $otherURL = '';
       $state = 'dark';
     }
-    $errorURLHandler->bindParam(':Id', $entityId);
+    $errorURLHandler->bindParam(self::BIND_ID, $entityId);
     $errorURLHandler->execute();
     $edit = $allowEdit ?
       sprintf(' <a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
@@ -536,7 +541,7 @@ class MetadataDisplay {
   private function showScopes($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
     $scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
     if ($otherEntityId) {
-      $scopesHandler->bindParam(':Id', $otherEntityId);
+      $scopesHandler->bindParam(self::BIND_ID, $otherEntityId);
       $scopesHandler->execute();
       while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
         $otherScopes[$scope['scope']] = $scope['regexp'];
@@ -547,7 +552,7 @@ class MetadataDisplay {
       $entityId, $otherEntityId) : '';
     print "\n              <b>Scopes$edit</b>
               <ul>\n";
-    $scopesHandler->bindParam(':Id', $entityId);
+    $scopesHandler->bindParam(self::BIND_ID, $entityId);
     $scopesHandler->execute();
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($otherEntityId) {
@@ -571,7 +576,7 @@ class MetadataDisplay {
       FROM Mdui WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `lang`, `element`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $otherMDUIElements = array();
-    $mduiHandler->bindParam(':Id', $otherEntityId);
+    $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
@@ -590,7 +595,7 @@ class MetadataDisplay {
     }
 
     $oldLang = 'xxxxxxx';
-    $mduiHandler->bindParam(':Id', $entityId);
+    $mduiHandler->bindParam(self::BIND_ID, $entityId);
     $mduiHandler->execute();
     $showEndUL = false;
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -656,7 +661,7 @@ class MetadataDisplay {
     $mduiHandler = $this->metaDb->prepare("SELECT `element`, `data`
       FROM Mdui WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $otherMDUIElements = array();
-    $mduiHandler->bindParam(':Id', $otherEntityId);
+    $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
@@ -667,7 +672,7 @@ class MetadataDisplay {
     }
 
     $oldElement = 'xxxxxxx';
-    $mduiHandler->bindParam(':Id', $entityId);
+    $mduiHandler->bindParam(self::BIND_ID, $entityId);
     $mduiHandler->execute();
     $showEndUL = false;
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -701,7 +706,7 @@ class MetadataDisplay {
     $keyInfoStatusHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter`
       FROM KeyInfo WHERE entity_id = :Id AND type = :Type');
     $keyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
-    $keyInfoStatusHandler->bindParam(':Id', $entityId);
+    $keyInfoStatusHandler->bindParam(self::BIND_ID, $entityId);
     $keyInfoStatusHandler->execute();
     $validEncryptionFound = false;
     $validSigningFound = false;
@@ -735,7 +740,7 @@ class MetadataDisplay {
     $keyInfoHandler->bindParam(self::BIND_TYPE, $type);
     if ($otherEntityId) {
       $otherKeyInfos = array();
-      $keyInfoHandler->bindParam(':Id', $otherEntityId);
+      $keyInfoHandler->bindParam(self::BIND_ID, $otherEntityId);
       $keyInfoHandler->execute();
 
       while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -743,7 +748,7 @@ class MetadataDisplay {
       }
     }
 
-    $keyInfoHandler->bindParam(':Id', $entityId);
+    $keyInfoHandler->bindParam(self::BIND_ID, $entityId);
     $keyInfoHandler->execute();
     while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       $error = '';
@@ -812,16 +817,16 @@ class MetadataDisplay {
       WHERE `entity_id` = :Id AND `Service_index` = :Index
       ORDER BY `element` DESC, `lang`;');
 
-    $serviceElementHandler->bindParam(':Index', $serviceIndex);
+    $serviceElementHandler->bindParam(self::BIND_INDEX, $serviceIndex);
     $requestedAttributeHandler = $this->metaDb->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
       FROM AttributeConsumingService_RequestedAttribute
       WHERE `entity_id` = :Id AND `Service_index` = :Index
       ORDER BY `isRequired` DESC, `FriendlyName`;');
-    $requestedAttributeHandler->bindParam(':Index', $serviceIndex);
+    $requestedAttributeHandler->bindParam(self::BIND_INDEX, $serviceIndex);
     if ($otherEntityId) {
-      $serviceIndexHandler->bindParam(':Id', $otherEntityId);
-      $serviceElementHandler->bindParam(':Id', $otherEntityId);
-      $requestedAttributeHandler->bindParam(':Id', $otherEntityId);
+      $serviceIndexHandler->bindParam(self::BIND_ID, $otherEntityId);
+      $serviceElementHandler->bindParam(self::BIND_ID, $otherEntityId);
+      $requestedAttributeHandler->bindParam(self::BIND_ID, $otherEntityId);
       $serviceIndexHandler->execute();
       while ($index = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
         $serviceIndex = $index['Service_index'];
@@ -839,9 +844,9 @@ class MetadataDisplay {
       }
     }
 
-    $serviceIndexHandler->bindParam(':Id', $entityId);
-    $serviceElementHandler->bindParam(':Id', $entityId);
-    $requestedAttributeHandler->bindParam(':Id', $entityId);
+    $serviceIndexHandler->bindParam(self::BIND_ID, $entityId);
+    $serviceElementHandler->bindParam(self::BIND_ID, $entityId);
+    $requestedAttributeHandler->bindParam(self::BIND_ID, $entityId);
 
     $serviceIndexHandler->execute();
     while ($index = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -924,7 +929,7 @@ class MetadataDisplay {
     $organizationHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `data`
       FROM Organization WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     if ($otherEntityId) {
-      $organizationHandler->bindParam(':Id', $otherEntityId);
+      $organizationHandler->bindParam(self::BIND_ID, $otherEntityId);
       $organizationHandler->execute();
       while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
         if (! isset($otherOrganizationElements[$organization['element']]) )
@@ -932,7 +937,7 @@ class MetadataDisplay {
         $otherOrganizationElements[$organization['element']][$organization['lang']] = $organization['data'];
       }
     }
-    $organizationHandler->bindParam(':Id', $entityId);
+    $organizationHandler->bindParam(self::BIND_ID, $entityId);
     $organizationHandler->execute();
     print "\n        <ul>";
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -978,7 +983,7 @@ class MetadataDisplay {
     $contactPersonHandler = $this->metaDb->prepare('SELECT *
       FROM ContactPerson WHERE `entity_id` = :Id ORDER BY `contactType`;');
     if ($otherEntityId) {
-      $contactPersonHandler->bindParam(':Id', $otherEntityId);
+      $contactPersonHandler->bindParam(self::BIND_ID, $otherEntityId);
       $contactPersonHandler->execute();
       while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
         if (! isset($otherContactPersons[$contactPerson['contactType']])) {
@@ -1011,7 +1016,7 @@ class MetadataDisplay {
         }
       }
     }
-    $contactPersonHandler->bindParam(':Id', $entityId);
+    $contactPersonHandler->bindParam(self::BIND_ID, $entityId);
     $contactPersonHandler->execute();
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($contactPerson['subcontactType'] == '') {
@@ -1116,7 +1121,7 @@ class MetadataDisplay {
     $entityHandler = $urn
       ? $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND `status` = 1;')
       : $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
-    $entityHandler->bindParam(':Id', $entityId);
+    $entityHandler->bindParam(self::BIND_ID, $entityId);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       header('Content-Type: application/xml; charset=utf-8');
@@ -1134,7 +1139,7 @@ class MetadataDisplay {
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
     $usersHandler = $this->metaDb->prepare('SELECT `userID`, `email`, `fullName`
       FROM EntityUser, Users WHERE `entity_id` = :Id AND id = user_id ORDER BY `userID`;');
-    $usersHandler->bindParam(':Id', $entityId);
+    $usersHandler->bindParam(self::BIND_ID, $entityId);
     $usersHandler->execute();
     print "        <ul>\n";
     while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1210,7 +1215,7 @@ class MetadataDisplay {
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         $ecInfo = '';
         if ($entity['type'] == 'SPSSO' && $entity['element'] == 'PrivacyStatementURL') {
-          $entityAttributesHandler->bindParam(':Id', $entity['entity_id']);
+          $entityAttributesHandler->bindParam(self::BIND_ID, $entity['entity_id']);
           $entityAttributesHandler->execute();
           while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
             if ($attribute['attribute'] == self::SAML_EC_COCOV1) {
@@ -1384,7 +1389,7 @@ class MetadataDisplay {
       </thead>%s', "\n");
     }
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $contactPersonHandler->bindValue(':Id', $entity['id']);
+      $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
       $contactPersonHandler->execute();
       $emails['administrative'] = '';
       $emails['support'] = '';
@@ -1439,11 +1444,11 @@ class MetadataDisplay {
   }
 
   public function showXMLDiff($entityId1, $entityId2) {
-    $entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml` FROM Entities WHERE `id` = :ID');
-    $entityHandler->bindValue(':ID', $entityId1);
+    $entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml` FROM Entities WHERE `id` = :Id');
+    $entityHandler->bindValue(self::BIND_ID, $entityId1);
     $entityHandler->execute();
     if ($entity1 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityHandler->bindValue(':ID', $entityId2);
+      $entityHandler->bindValue(self::BIND_ID, $entityId2);
       $entityHandler->execute();
       if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         if (! class_exists('NormalizeXML')) {
@@ -1479,7 +1484,7 @@ class MetadataDisplay {
       ORDER BY lastUpdated ASC, `entityID`');
     $entityHandler = $this->metaDb->prepare(
       'SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
-    $entityHandler->bindParam(':EntityID', $entityID);
+    $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $entitiesHandler->execute();
 
     if (! class_exists('NormalizeXML')) {
@@ -2139,4 +2144,3 @@ class MetadataDisplay {
     return $this->collapseIcons;
   }
 }
-# vim:set ts=2:

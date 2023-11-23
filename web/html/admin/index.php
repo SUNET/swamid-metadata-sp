@@ -4,6 +4,8 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+const BIND_ASSURANCE = ':Assurance';
+const HTML_TITLE = 'Metadata SWAMID - ';
 const HTML_TITLE_PROBLEM = 'Metadata SWAMID - Problem';
 const HTML_CLASS_FA_UP = '<i class="fa fa-arrow-up"></i>';
 const HTML_CLASS_FA_DOWN = '<i class="fa fa-arrow-down"></i>';
@@ -12,9 +14,9 @@ const HTML_OUTLINE = '-outline';
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
 
-require_once '../config.php';
+require_once '../config.php'; #NOSONAR
 
-require_once '../include/Html.php';
+require_once '../include/Html.php'; #NOSONAR
 $html = new HTML('', $Mode);
 
 try {
@@ -33,17 +35,17 @@ $assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
 if (isset($_SERVER['eduPersonAssurance'])) {
   foreach (explode(';', $_SERVER['eduPersonAssurance']) as $eduPersonAssurance) {
     if (substr($eduPersonAssurance, 0, 33) ==  'https://refeds.org/assurance/IAP/') {
-      $assuranceHandler->bindValue(':Assurance',
+      $assuranceHandler->bindValue(BIND_ASSURANCE,
         substr(str_replace ('https://refeds.org/assurance/IAP/', 'RAF-', $eduPersonAssurance),0,10));
       $assuranceHandler->execute();
     } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') {
-      $assuranceHandler->bindValue(':Assurance',
+      $assuranceHandler->bindValue(BIND_ASSURANCE,
       substr(str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance),0,10));
       $assuranceHandler->execute();
     }
   }
 } else {
-  $assuranceHandler->bindValue(':Assurance', 'None');
+  $assuranceHandler->bindValue(BIND_ASSURANCE, 'None');
   $assuranceHandler->execute();
 }
 /* END RAF Logging */
@@ -195,20 +197,20 @@ $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>
 $html->setDisplayName($displayName);
 
 
-require_once '../include/MetadataDisplay.php';
+require_once '../include/MetadataDisplay.php'; #NOSONAR
 $display = new MetadataDisplay();
 
-require_once '../include/Metadata.php';
+require_once '../include/Metadata.php'; #NOSONAR
 
 if (isset($_FILES['XMLfile'])) {
   importXML();
 } elseif (isset($_GET['edit'])) {
   if (isset($_GET['Entity']) && (isset($_GET['oldEntity']))) {
-    require_once '../include/MetadataEdit.php';
+    require_once '../include/MetadataEdit.php'; #NOSONAR
     $editMeta = new MetadataEdit($_GET['Entity'], $_GET['oldEntity']);
     $editMeta->updateUser($EPPN, $mail, $fullName);
     if (checkAccess($_GET['Entity'], $EPPN, $userLevel, 10, true)) {
-      $html->showHeaders('Metadata SWAMID - Edit - '.$_GET['edit']);
+      $html->showHeaders(HTML_TITLE . 'Edit - '.$_GET['edit']);
       $editMeta->edit($_GET['edit']);
     }
   } else {
@@ -312,25 +314,25 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'EntityStatistics' :
           $menuActive = 'EntityStatistics';
-          $html->showHeaders('Metadata SWAMID - Entity Statistics');
+          $html->showHeaders(HTML_TITLE . 'Entity Statistics');
           showMenu();
           $display->showEntityStatistics();
           break;
         case 'EcsStatistics' :
           $menuActive = 'EcsStatistics';
-          $html->showHeaders('Metadata SWAMID - EntityCategorySupport status');
+          $html->showHeaders(HTML_TITLE . 'EntityCategorySupport status');
           showMenu();
           $display->showEcsStatistics();
           break;
         case 'RAFStatistics' :
           $menuActive = 'RAFStatistics';
-          $html->showHeaders('Metadata SWAMID - RAF status');
+          $html->showHeaders(HTML_TITLE . 'RAF status');
           showMenu();
           $display->showRAFStatistics();
           break;
         case 'showURL' :
           $menuActive = '';
-          $html->showHeaders('Metadata SWAMID - URL status');
+          $html->showHeaders(HTML_TITLE . 'URL status');
           showMenu();
           if (isset($_GET['URL'])) {
             if (isset($_GET['recheck'])) {
@@ -343,7 +345,7 @@ if (isset($_FILES['XMLfile'])) {
         case 'URLlist' :
           if ($userLevel > 4) {
             $menuActive = 'URLlist';
-            $html->showHeaders('Metadata SWAMID - URL status');
+            $html->showHeaders(HTML_TITLE . 'URL status');
             showMenu();
             if (isset($_GET['URL'])) {
               if (isset($_GET['recheck'])) {
@@ -358,7 +360,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'ErrorList' :
           $menuActive = 'Errors';
-          $html->showHeaders('Metadata SWAMID - Errror status');
+          $html->showHeaders(HTML_TITLE . 'Errror status');
           showMenu();
           $display->showErrorList();
           $html->addTableSort('error-table');
@@ -372,14 +374,14 @@ if (isset($_FILES['XMLfile'])) {
         case 'CleanPending' :
           if ($userLevel > 10) {
             $menuActive = 'CleanPending';
-            $html->showHeaders('Metadata SWAMID - Clean Pending');
+            $html->showHeaders(HTML_TITLE . 'Clean Pending');
             showMenu();
             $display->showPendingList();
           }
           break;
         case 'ShowDiff' :
           $menuActive = 'CleanPending';
-          $html->showHeaders('Metadata SWAMID - Clean Pending');
+          $html->showHeaders(HTML_TITLE . 'Clean Pending');
           showMenu();
           if (isset($_GET['entity_id1']) && isset($_GET['entity_id2'])) {
             $display->showXMLDiff($_GET['entity_id1'], $_GET['entity_id2']);
@@ -388,7 +390,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'showScopes' :
           $menuActive = 'Scopes';
-          $html->showHeaders('Metadata SWAMID - Show scopes');
+          $html->showHeaders(HTML_TITLE . 'Show scopes');
           showMenu();
           $display->showScopeLists();
           $html->addTableSort('scope-table');
@@ -461,32 +463,32 @@ function showEntityList($status = 1) {
 
   switch ($status) {
     case 1:
-      $html->showHeaders('Metadata SWAMID - Published');
+      $html->showHeaders(HTML_TITLE . 'Published');
       $action = 'pub';
       $minLevel = 0;
       break;
     case 2:
-      $html->showHeaders('Metadata SWAMID - Pending');
+      $html->showHeaders(HTML_TITLE . 'Pending');
       $action = 'wait';
       $minLevel = 5;
       break;
     case 3:
-      $html->showHeaders('Metadata SWAMID - Drafts');
+      $html->showHeaders(HTML_TITLE . 'Drafts');
       $action = 'new';
       $minLevel = 5;
       break;
     case 4:
-      $html->showHeaders('Metadata SWAMID - Deleted');
+      $html->showHeaders(HTML_TITLE . 'Deleted');
       $action = 'pub';
       $minLevel = 5;
       break;
     case 5:
-      $html->showHeaders('Metadata SWAMID - Pending already Published');
+      $html->showHeaders(HTML_TITLE . 'Pending already Published');
       $action = 'pub';
       $minLevel = 5;
       break;
     case 6:
-      $html->showHeaders('Metadata SWAMID - Published when added to Pending');
+      $html->showHeaders(HTML_TITLE . 'Published when added to Pending');
       $action = 'pub';
       $minLevel = 5;
       break;
@@ -612,7 +614,7 @@ function showEntity($entitiesId)  {
       $menuActive = 'publ';
       $oldEntitiesId = 0;
     }
-    $html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+    $html->showHeaders(HTML_TITLE . $entity['entityID']);
     showMenu();?>
     <div class="row">
       <div class="col">
@@ -715,7 +717,7 @@ function showEntity($entitiesId)  {
     $display->showEditors($entitiesId);
 
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders(HTML_TITLE . 'NotFound');
     print "Can't find Entity";
   }
 }
@@ -782,7 +784,7 @@ function showList($entitys, $minLevel) {
 function showMyEntities() {
   global $db, $html, $EPPN, $userLevel;
 
-  $html->showHeaders('Metadata SWAMID - Annual Check');
+  $html->showHeaders(HTML_TITLE . 'Annual Check');
   showMenu();
   if ($userLevel > 9) {
     printf ('    <div class="row">%s      <div class="col">%s', "\n", "\n");
@@ -883,7 +885,7 @@ function showMyEntities() {
 ####
 function showUpload() {
   global $html;
-  $html->showHeaders('Metadata SWAMID - Add new XML');
+  $html->showHeaders(HTML_TITLE . 'Add new XML');
   showMenu();
   ?>
     <form action="." method="post" enctype="multipart/form-data">
@@ -1063,7 +1065,7 @@ function move2Pending($entitiesId) {
           <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
         </ul>';
     }
-    $html->showHeaders('Metadata SWAMID - ' . $draftMetadata->entityID());
+    $html->showHeaders(HTML_TITLE . $draftMetadata->entityID());
     $errors = getBlockingErrors($entitiesId);
     if ($errors == '') {
       if (isset($_GET['publishedIn'])) {
@@ -1263,7 +1265,7 @@ function move2Pending($entitiesId) {
         str_ireplace("\n", "<br>", $errors), $entitiesId);
     }
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
     showMenu();
     print "Can't find Entity";
@@ -1332,7 +1334,7 @@ function annualConfirmation($entitiesId){
           $menuActive = 'myEntities';
           showMyEntities();
         } else {
-          $html->showHeaders('Metadata SWAMID - ' . $metadata->entityID());
+          $html->showHeaders(HTML_TITLE . $metadata->entityID());
           $menuActive = '';
           showMenu();
           if ($errors != '') {
@@ -1361,11 +1363,11 @@ function annualConfirmation($entitiesId){
         requestAccess($entitiesId);
       }
     } else {
-      $html->showHeaders('Metadata SWAMID - ' . $metadata->entityID());
+      $html->showHeaders(HTML_TITLE . $metadata->entityID());
       printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Please fix the following errors before confirming:</b><br>%s        %s%s      </div>%s    </div>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>%s', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n", "\n", $entitiesId, "\n");
     }
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
     showMenu();
     print "Can't find Entity";
@@ -1381,7 +1383,7 @@ function requestRemoval($entitiesId) {
     $user_id = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
       # User have access to entity
-      $html->showHeaders('Metadata SWAMID - ' . $metadata->entityID());
+      $html->showHeaders(HTML_TITLE . $metadata->entityID());
       if (isset($_GET['confirmRemoval'])) {
         $menuActive = 'publ';
         showMenu();
@@ -1395,7 +1397,7 @@ function requestRemoval($entitiesId) {
 
         $addresses = array();
         $contactHandler = $db->prepare(
-          "SELECT DISTINCT emailAddress 
+          "SELECT DISTINCT emailAddress
           FROM ContactPerson
           WHERE entity_id = :Entity_ID AND (contactType='technical' OR contactType='administrative')");
         $contactHandler->bindParam(':Entity_ID',$entitiesId);
@@ -1461,7 +1463,7 @@ function requestRemoval($entitiesId) {
             </body>
           </html>",
           $displayName, $metadata->entityID(),
-          $hostURL, $entitiesId, 
+          $hostURL, $entitiesId,
           $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
         $mailRequester->AltBody = sprintf("Hi.
           \nYou have requested removal of the entity \"%s\" (%s) from the SWAMID metadata.
@@ -1509,7 +1511,7 @@ function requestRemoval($entitiesId) {
       requestAccess($entitiesId);
     }
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'publ';
     showMenu();
     print "Can't find Entity";
@@ -1573,7 +1575,7 @@ function move2Draft($entitiesId) {
       $oldMetadata = new Metadata($entitiesId);
       $oldMetadata->removeEntity();
     } else {
-      $html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+      $html->showHeaders(HTML_TITLE . $entity['entityID']);
       $menuActive = 'wait';
       showMenu();
       printf('%s    <p>You are about to cancel your request for publication of <b>%s</b></p>', "\n", $entity['entityID']);
@@ -1584,7 +1586,7 @@ function move2Draft($entitiesId) {
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $entitiesId, $entitiesId);
     }
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'wait';
     showMenu();
     print "Can't find Entity";
@@ -1604,7 +1606,7 @@ function removeEntity($entitiesId) {
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    $html->showHeaders('Metadata SWAMID - ' . $entity['entityID']);
+    $html->showHeaders(HTML_TITLE . $entity['entityID']);
     $OK2Remove = true;
     switch($entity['status']) {
       case 2 :
@@ -1641,7 +1643,7 @@ function removeEntity($entitiesId) {
       print "You can't Remove / Discard this entity";
     }
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
     showMenu();
     print "Can't find Entity";
@@ -1679,7 +1681,7 @@ function requestAccess($entitiesId) {
     $user_id = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
       # User already have access.
-      $html->showHeaders('Metadata SWAMID - ' . $metadata->entityID());
+      $html->showHeaders(HTML_TITLE . $metadata->entityID());
       $menuActive = '';
       showMenu();
       printf('%s    <p>You already have access to <b>%s</b></p>%s', "\n", $metadata->entityID(), "\n");
@@ -1746,7 +1748,7 @@ function requestAccess($entitiesId) {
         showInfo($info);
       } else {
         $errors .= isset($_GET['FormVisit']) ? "You must check the box to confirm.\n" : '';
-        $html->showHeaders('Metadata SWAMID - ' . $metadata->entityID());
+        $html->showHeaders(HTML_TITLE . $metadata->entityID());
         $menuActive = '';
         showMenu();
         if ($errors != '') {
@@ -1783,7 +1785,7 @@ function getBlockingErrors($entitiesId) {
 
   $entityHandler = $db->prepare('SELECT `entityID`, `errors` FROM Entities WHERE `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
-  
+
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     $errors .= $entity['errors'];
@@ -1897,7 +1899,7 @@ function showText($text, $showMenu = false, $error = false) {
 
 function showError($text) {
   global $html;
-  $html->showHeaders('Metadata SWAMID - Error');
+  $html->showHeaders(HTML_TITLE . 'Error');
   printf('%s', $text);
 }
 

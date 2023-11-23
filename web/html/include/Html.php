@@ -50,7 +50,9 @@ class HTML {
     body {
       padding-top: 20px;
       padding-bottom: 20px;
-      <?= $this->mode == 'QA' ? 'background-color: #F05523;' : ''?><?= $this->mode == 'Lab' ? 'background-color: #8B0000;' : ''?>
+      <?= $this->mode == 'QA' ? 
+        'background-color: #F05523;' :
+        ''?><?= $this->mode == 'Lab' ? 'background-color: #8B0000;' : ''?>
     }
 
     .container {
@@ -104,7 +106,7 @@ class HTML {
       <?=$this->displayName?>
 
     </div>
-<?php	}
+<?php }
   ###
   # Print footer on webpage
   ###
@@ -138,7 +140,7 @@ class HTML {
       if (isset($this->tableToSort[0])) {
         # Add JS script to be able to use later
         printf('  <script type="text/javascript" charset="utf8"
-    src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>%s', "\n");
+      src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>%s', "\n");
       }
       print "  <script>\n";
       if (isset($collapseIcons[0])) {
@@ -174,7 +176,9 @@ class HTML {
       //var fileName = $(this).val().split("\\").pop();
       var fileName = $(this).val().split("\\\\").pop();
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
-    });<?php print "  </script>\n"; } ?>
+    });<?php 
+      print "  </script>\n"; 
+    } ?>
 </body>
 </html>
 <?php

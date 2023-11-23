@@ -155,7 +155,7 @@ class NormalizeXML {
     return $ns;
   }
 
-  public function checkDOMError ($number, $error){
+  public function checkDOMError ($number, $error){ #NOSONAR $number is in call!!!
     $errorParts = explode(' ', $error);
     if ($errorParts[0] == 'DOMDocument::load():') {
       $this->error .= preg_replace('/ in .*, line:/', ' line:', substr($error, 21)) . "<br>";
@@ -262,7 +262,7 @@ class NormalizeXML {
     $xml->formatOutput = true;
     $xml->loadXML($xml2clean);
     $xml->encoding = 'UTF-8';
-    
+
     $child = $xml->firstChild;
     while ($child && $continue) {
       if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {

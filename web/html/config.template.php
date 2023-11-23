@@ -1,7 +1,7 @@
 <?php
 $dbServername = "mariadb";
 $dbUsername = "metdata_admin";
-$dbPassword = "adminpwd";
+$dbPassword = "adminpwd"; # NOSONAR
 $dbName = "metadata";
 
 $SMTPHost = 'smtp.host.se';

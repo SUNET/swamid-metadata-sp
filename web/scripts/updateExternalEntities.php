@@ -40,7 +40,7 @@ function checkEntities(&$xml) {
   $eCS = '';
   $assuranceC = '';
   $registrationAuthority = 'Not Set';
-  
+
   $updateHandler = $db->prepare('UPDATE ExternalEntities
     SET
       `updated` = 1,
@@ -70,7 +70,7 @@ function checkEntities(&$xml) {
   $updateHandler->bindParam(':Ec', $eC);
   $updateHandler->bindParam(':Assurancec', $assuranceC);
   $updateHandler->bindParam(':RegistrationAuthority', $registrationAuthority);
- 
+
   $insertHandler = $db->prepare('INSERT INTO ExternalEntities
       (`entityID`, `updated`, `isIdP`, `isSP`, `isAA`, `displayName`, `serviceName`, `organization`,
       `contacts`, `scopes`, `ecs`, `ec`, `assurancec`,`ra`)
@@ -90,7 +90,7 @@ function checkEntities(&$xml) {
   $insertHandler->bindParam(':Ec', $eC);
   $insertHandler->bindParam(':Assurancec', $assuranceC);
   $insertHandler->bindParam(':RegistrationAuthority', $registrationAuthority);
- 
+
   $child = $xml->firstChild;
   while ($child) {
     switch ($child->nodeName) {
@@ -102,7 +102,7 @@ function checkEntities(&$xml) {
         break;
       case 'md:EntityDescriptor':
         $saveEntity = true;
-        $entityID = $child->getAttribute('entityID');
+        $entityID = $child->getAttribute('entityID'); #NOSONAR used above
         $isIdP = 0;
         $isSP = 0;
         $isAA = 0;
@@ -115,7 +115,7 @@ function checkEntities(&$xml) {
         $eCS = '';
         $assuranceC = '';
         $registrationAuthority = '';
-        
+
         $entityChild =  $child->firstChild;
         while ($entityChild && $saveEntity) {
           switch ($entityChild->nodeName) {
@@ -240,7 +240,7 @@ function checkEntities(&$xml) {
                   default:
                     break;
                 }
-                $organization = sprintf('<a href="%s">%s</a>', $orgURL, $orgName);
+                $organization = sprintf('<a href="%s">%s</a>', $orgURL, $orgName); #NOSONAR used above
               }
               break;
             case 'md:ContactPerson' :

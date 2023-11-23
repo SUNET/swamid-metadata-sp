@@ -87,7 +87,7 @@ $entitiesHandler->closeCursor();
 
 function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut, $baseURL;
- 
+
   $mailContacts = new PHPMailer(true);
   $mailContacts->isSMTP();
   $mailContacts->Host = $SMTPHost;
@@ -98,12 +98,12 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   $mailContacts->Username = $SASLUser;
   $mailContacts->Password = $SASLPassword;
   $mailContacts->SMTPSecure = 'tls';
-  
+
   //Recipients
   $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
   $mailContacts->addBCC('bjorn@sunet.se');
   $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
-  
+
   $addresses = getTechnicalAndAdministrativeContacts($id);
   if ($SendOut) {
     foreach ($addresses as $address) {
@@ -140,7 +140,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
   $mailContacts->Subject  = 'Warning : SWAMID metadata for ' . $shortEntityid . ' needs to be validated';
-  
+
   try {
     $mailContacts->send();
   } catch (Exception $e) {
