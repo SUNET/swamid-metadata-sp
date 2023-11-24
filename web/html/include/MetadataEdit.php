@@ -230,16 +230,16 @@ class MetadataEdit {
           $attributeType = 'urn:oasis:names:tc:SAML:attribute:assurance-certification';
           break;
         case 'entity-category' :
-          $attributeType = 'http://macedir.org/entity-category';
+          $attributeType = 'http://macedir.org/entity-category'; # NOSONAR Should be http://
           break;
         case 'entity-category-support' :
-          $attributeType = 'http://macedir.org/entity-category-support';
+          $attributeType = 'http://macedir.org/entity-category-support'; # NOSONAR Should be http://
           break;
         case 'subject-id:req' :
           $attributeType = 'urn:oasis:names:tc:SAML:profiles:subject-id:req';
           break;
         case 'swamid/assurance-requirement' :
-          $attributeType ='http://www.swamid.se/assurance-requirement';
+          $attributeType ='http://www.swamid.se/assurance-requirement'; # NOSONAR Should be http://
           break;
         default :
           printf ('Missing type (%s)', urlencode($_GET['type']));
@@ -2955,7 +2955,7 @@ class MetadataEdit {
               break;
             case 'removed' :
               $copy = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%s&NameFormat=%s&action=Add">[copy]</a> ',
-                $this->dbIdNr, $this->dbOldIdNr, $index, $name, $data['isRequired'], $data['nameFormat']);
+                $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($name), $data['isRequired'], $data['nameFormat']);
               $state = 'danger';
               break;
             default :
@@ -3230,7 +3230,7 @@ class MetadataEdit {
           break;
         case 'security' :
           $type = 'other';
-          $subType = 'http://refeds.org/metadata/contactType/security';
+          $subType = 'http://refeds.org/metadata/contactType/security'; # NOSONAR Should be http://
           break;
         default :
           exit;
@@ -3275,7 +3275,7 @@ class MetadataEdit {
                 $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
                 $contactPerson->setAttribute('contactType', $type);
                 if ($subType) {
-                  $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata');
+                  $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
                   $contactPerson->setAttribute('remd:contactType', $subType);
                 }
                 $entityDescriptor->insertBefore($contactPerson, $child);
@@ -3288,7 +3288,7 @@ class MetadataEdit {
             $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
             $contactPerson->setAttribute('contactType', $type);
             if ($subType) {
-              $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata');
+              $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
               $contactPerson->setAttribute('remd:contactType', $subType);
             }
             $entityDescriptor->appendChild($contactPerson);
@@ -3611,7 +3611,7 @@ class MetadataEdit {
         # Add if missing
         $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
         $registrationInfo = $this->newXml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
-        $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/');
+        $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
         $registrationInfo->setAttribute('registrationInstant', $instant['ts']);
         $extensions->appendChild($registrationInfo);
       }
@@ -3627,7 +3627,7 @@ class MetadataEdit {
         }
       }
       if (!$registrationPolicy) {
-        $registrationPolicy = $this->newXml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps');
+        $registrationPolicy = $this->newXml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
         $registrationPolicy->setAttribute('xml:lang', 'en');
         $registrationInfo->appendChild($registrationPolicy);
       }
@@ -3647,10 +3647,10 @@ class MetadataEdit {
           $attributeType = 'urn:oasis:names:tc:SAML:attribute:assurance-certification';
           break;
         case 'entity-category' :
-          $attributeType = 'http://macedir.org/entity-category';
+          $attributeType = 'http://macedir.org/entity-category'; # NOSONAR Should be http://
           break;
         case 'entity-category-support' :
-          $attributeType = 'http://macedir.org/entity-category-support';
+          $attributeType = 'http://macedir.org/entity-category-support'; # NOSONAR Should be http://
           break;
         case 'subject-id:req' :
           $attributeType = 'urn:oasis:names:tc:SAML:profiles:subject-id:req';
@@ -4384,7 +4384,7 @@ class MetadataEdit {
 
       $oldContactPersons[$contactType] = array (
         'subcontactType' => ($contactPerson['subcontactType'] == 'security')
-          ? 'http://refeds.org/metadata/contactType/security'
+          ? 'http://refeds.org/metadata/contactType/security' # NOSONAR Should be http://
           : '',
         1 => array('part' => self::SAML_MD_COMPANY, 'value' => $contactPerson['company']),
         2 => array('part' => self::SAML_MD_GIVENNAME, 'value' => $contactPerson['givenName']),
@@ -4436,7 +4436,7 @@ class MetadataEdit {
               $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
               $contactPerson->setAttribute('contactType', $type);
               if ($oldContactPerson['subcontactType']) {
-                $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata');
+                $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
                 $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
               }
               $entityDescriptor->insertBefore($contactPerson, $child);
@@ -4459,7 +4459,7 @@ class MetadataEdit {
         $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
         $contactPerson->setAttribute('contactType', $type);
         if ($oldContactPerson['subcontactType']) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata');
+          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
           $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
         }
         $entityDescriptor->appendChild($contactPerson);

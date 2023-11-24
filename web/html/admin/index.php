@@ -38,9 +38,9 @@ if (isset($_SERVER['eduPersonAssurance'])) {
       $assuranceHandler->bindValue(BIND_ASSURANCE,
         substr(str_replace ('https://refeds.org/assurance/IAP/', 'RAF-', $eduPersonAssurance),0,10));
       $assuranceHandler->execute();
-    } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') {
+    } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
       $assuranceHandler->bindValue(BIND_ASSURANCE,
-      substr(str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance),0,10));
+      substr(str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance),0,10)); # NOSONAR Should be http://
       $assuranceHandler->execute();
     }
   }
@@ -63,12 +63,12 @@ $filterFirst = true;
 if (isset($_SERVER['Meta-Assurance-Certification'])) {
   $AssuranceCertificationFound = false;
   foreach (explode(';',$_SERVER['Meta-Assurance-Certification']) as $AssuranceCertification) {
-    if ($AssuranceCertification == 'http://www.swamid.se/policy/assurance/al1') {
+    if ($AssuranceCertification == 'http://www.swamid.se/policy/assurance/al1') { # NOSONAR Should be http://
       $AssuranceCertificationFound = true;
     }
   }
   if (! $AssuranceCertificationFound) {
-    $errors .= sprintf('%s has no AssuranceCertification (http://www.swamid.se/policy/assurance/al1) ',
+    $errors .= sprintf('%s has no AssuranceCertification (http://www.swamid.se/policy/assurance/al1) ', # NOSONAR Should be http://
       $_SERVER['Shib-Identity-Provider']);
   }
 }

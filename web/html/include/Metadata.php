@@ -81,7 +81,7 @@ class Metadata {
   const SAML_ALG_DIGESTMETHOD = 'alg:DigestMethod';
   const SAML_ALG_SIGNATUREMETHOD = 'alg:SignatureMethod';
   const SAML_ALG_SIGNINGMETHOD = 'alg:SigningMethod';
-  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1';
+  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
   const SAML_DS_SIGNATURE = 'ds:Signature';
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
@@ -405,7 +405,7 @@ class Metadata {
           $entityAttributesHandler->bindParam(self::BIND_ID, $entity['entity_id']);
           $entityAttributesHandler->execute();
           while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-            if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') {
+            if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') { # NOSONAR Should be http://
               $coCoV1 = true;
             }
           }
@@ -655,11 +655,11 @@ class Metadata {
 
     if (! $data->hasAttribute('NameFormat') && $data->hasAttribute('Name')) {
       switch ($data->getAttribute('Name')) {
-        case 'http://macedir.org/entity-category' :
-        case 'http://macedir.org/entity-category-support' :
+        case 'http://macedir.org/entity-category' : # NOSONAR Should be http://
+        case 'http://macedir.org/entity-category-support' : # NOSONAR Should be http://
         case 'urn:oasis:names:tc:SAML:attribute:assurance-certification' :
         case 'urn:oasis:names:tc:SAML:profiles:subject-id:req' :
-        case 'http://www.swamid.se/assurance-requirement' :
+        case 'http://www.swamid.se/assurance-requirement' : # NOSONAR Should be http://
           $data->setAttribute('NameFormat', self::SAMLNF_URI);
           $this->result .= sprintf(
             "Added NameFormat %s to Extensions/EntityAttributes/Attribute/%s.\n",
@@ -673,10 +673,10 @@ class Metadata {
     }
     if ($data->getAttribute('NameFormat') == self::SAMLNF_URI) {
       switch ($data->getAttribute('Name')) {
-        case 'http://macedir.org/entity-category' :
+        case 'http://macedir.org/entity-category' : # NOSONAR Should be http://
           $attributeType = 'entity-category';
           break;
-        case 'http://macedir.org/entity-category-support' :
+        case 'http://macedir.org/entity-category-support' : # NOSONAR Should be http://
           $attributeType = 'entity-category-support';
           break;
         case 'urn:oasis:names:tc:SAML:attribute:assurance-certification' :
@@ -685,7 +685,7 @@ class Metadata {
         case 'urn:oasis:names:tc:SAML:profiles:subject-id:req' :
           $attributeType = 'subject-id:req';
           break;
-        case 'http://www.swamid.se/assurance-requirement' :
+        case 'http://www.swamid.se/assurance-requirement' : # NOSONAR Should be http://
           $attributeType = 'swamid/assurance-requirement';
           break;
         default :
@@ -1134,7 +1134,7 @@ class Metadata {
         break;
       case 'other' :
         if ($data->getAttribute('remd:contactType')) {
-          if ($data->getAttribute('remd:contactType') == 'http://refeds.org/metadata/contactType/security') {
+          if ($data->getAttribute('remd:contactType') == 'http://refeds.org/metadata/contactType/security') { # NOSONAR Should be http://
             $subcontactType =  'security';
           } else {
             $subcontactType =  'unknown';
@@ -1422,16 +1422,15 @@ class Metadata {
     $entityAttributesHandler->execute();
     while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       switch ($entityAttribute['attribute']) {
-        #case 'http://refeds.org/category/hide-from-discovery' :
-        #  if ($entityAttribute->type == 'entity-category' && $this->isIdP)
-        #  break;
-        case 'http://refeds.org/category/research-and-scholarship' :
-          if ($entityAttribute['type'] == 'entity-category' && $this->isSP)
+        case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
+          if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
             $this->isSP_RandS = true;
+          }
           break;
-        case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
-          if ($entityAttribute['type'] == 'entity-category' && $this->isSP)
+        case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
+          if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
             $this->isSP_CoCov1 = true;
+          }
           break;
         case 'https://refeds.org/category/code-of-conduct/v2' :
           if ($entityAttribute['type'] == 'entity-category' && $this->isSP)
@@ -1699,8 +1698,9 @@ class Metadata {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'assurance-certification');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        if ($entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' )
+        if ($entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' ) { # NOSONAR Should be http://
           $swamid519error = false;
+        }
       }
       if ($swamid519error) {
         $this->error .= 'SWAMID Tech 5.1.9: SWAMID Identity Assurance Profile compliance MUST';
@@ -2861,7 +2861,7 @@ class Metadata {
     if (! $RegistrationInfo) {
       # Add if missing
       $ts=date("Y-m-d\TH:i:s\Z");
-      $entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/',
+      $entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
         'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
       $RegistrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
       $RegistrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/');
@@ -2880,7 +2880,7 @@ class Metadata {
       }
     }
     if (!$RegistrationPolicy) {
-      $RegistrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps');
+      $RegistrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
       $RegistrationPolicy->setAttribute('xml:lang', 'en');
       $RegistrationInfo->appendChild($RegistrationPolicy);
     }

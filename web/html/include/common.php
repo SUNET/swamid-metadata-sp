@@ -1,33 +1,28 @@
 <?php
 $this->standardAttributes = array(
   'assurance-certification' => array(
-    array('type' => 'IdP',    'value' => 'http://www.swamid.se/policy/assurance/al1', 'swamidStd' => true),
-    array('type' => 'IdP',    'value' => 'http://www.swamid.se/policy/assurance/al2', 'swamidStd' => true),
-    array('type' => 'IdP',    'value' => 'http://www.swamid.se/policy/assurance/al3', 'swamidStd' => true),
+    array('type' => 'IdP',    'value' => 'http://www.swamid.se/policy/assurance/al1', 'swamidStd' => true), # NOSONAR Should be http://
+    array('type' => 'IdP',    'value' => 'http://www.swamid.se/policy/assurance/al2', 'swamidStd' => true), # NOSONAR Should be http://
+    array('type' => 'IdP',    'value' => 'http://www.swamid.se/policy/assurance/al3', 'swamidStd' => true), # NOSONAR Should be http://
     array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi', 'swamidStd' => true),
     array('type' => 'IdP/SP', 'value' => 'https://refeds.org/sirtfi2', 'swamidStd' => true)),
   'entity-category' => array(
-    array('type' => 'SP',  'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
+    array('type' => 'SP',  'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true), # NOSONAR Should be http://
     array('type' => 'SP',  'value' => 'https://refeds.org/category/anonymous', 'swamidStd' => true),
     array('type' => 'SP',  'value' => 'https://refeds.org/category/pseudonymous', 'swamidStd' => true),
     array('type' => 'SP',  'value' => 'https://refeds.org/category/personalized', 'swamidStd' => true),
-    array('type' => 'SP',  'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1',
+    array('type' => 'SP',  'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', # NOSONAR Should be http://
       'swamidStd' => true),
     array('type' => 'SP',  'value' => 'https://refeds.org/category/code-of-conduct/v2', 'swamidStd' => true),
     array('type' => 'SP',  'value' => 'https://myacademicid.org/entity-categories/esi', 'swamidStd' => true),
-    array('type' => 'SP',  'value' => 'http://www.swamid.se/category/eu-adequate-protection', 'swamidStd' => false),
-    array('type' => 'SP',  'value' => 'http://www.swamid.se/category/hei-service', 'swamidStd' => false),
-    array('type' => 'SP',  'value' => 'http://www.swamid.se/category/nren-service', 'swamidStd' => false),
-    array('type' => 'SP',  'value' => 'http://www.swamid.se/category/research-and-education', 'swamidStd' => false),
-    array('type' => 'SP',  'value' => 'http://www.swamid.se/category/sfs-1993-1153', 'swamidStd' => false),
-    array('type' => 'IdP', 'value' => 'http://refeds.org/category/hide-from-discovery', 'swamidStd' => true)),
+    array('type' => 'IdP', 'value' => 'http://refeds.org/category/hide-from-discovery', 'swamidStd' => true)), # NOSONAR Should be http://
 
   'entity-category-support' => array(
     array('type' => 'IdP', 'value' => 'https://refeds.org/category/anonymous', 'swamidStd' => true),
     array('type' => 'IdP', 'value' => 'https://refeds.org/category/pseudonymous', 'swamidStd' => true),
     array('type' => 'IdP', 'value' => 'https://refeds.org/category/personalized', 'swamidStd' => true),
-    array('type' => 'IdP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true),
-    array('type' => 'IdP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1',
+    array('type' => 'IdP', 'value' => 'http://refeds.org/category/research-and-scholarship', 'swamidStd' => true), # NOSONAR Should be http://
+    array('type' => 'IdP', 'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', # NOSONAR Should be http://
       'swamidStd' => true),
     array('type' => 'IdP', 'value' => 'https://myacademicid.org/entity-categories/esi', 'swamidStd' => true),
     array('type' => 'IdP', 'value' => 'https://refeds.org/category/code-of-conduct/v2', 'swamidStd' => true)),

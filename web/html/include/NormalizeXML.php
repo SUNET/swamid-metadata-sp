@@ -13,14 +13,14 @@ class NormalizeXML {
       'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol' => 'idpdisc',
       'urn:oasis:names:tc:SAML:metadata:ui' => 'mdui',
       'urn:mace:shibboleth:metadata:1.0' => 'shibmd',
-      'http://refeds.org/metadata' => 'remd',
-      'http://www.w3.org/2000/09/xmldsig#' => 'ds',
-      'http://www.w3.org/2001/XMLSchema' => 'xs',
-      'http://www.w3.org/2001/XMLSchema-instance' => 'xsi',
+      'http://refeds.org/metadata' => 'remd', # NOSONAR Should be http://
+      'http://www.w3.org/2000/09/xmldsig#' => 'ds', # NOSONAR Should be http://
+      'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
+      'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
       'urn:oasis:names:tc:SAML:metadata:algsupport' => 'alg',
       #ADFS / M$
-      'http://docs.oasis-open.org/wsfed/federation/200706' => 'fed',
-      'http://docs.oasis-open.org/wsfed/authorization/200706' => 'auth');
+      'http://docs.oasis-open.org/wsfed/federation/200706' => 'fed', # NOSONAR Should be http://
+      'http://docs.oasis-open.org/wsfed/authorization/200706' => 'auth'); # NOSONAR Should be http://
 
     $this->entityID = '';
     $this->error = 'No XML loaded';
@@ -52,11 +52,11 @@ class NormalizeXML {
         $this->checkNode($newChild, $child, $doc);
         if ($name == self::SAML_MD_ENTITYDESCRIPTOR) {
           if (isset($this->nsList['xsi']) && ! isset($this->nsList['xs'])) {
-            $this->nsList['xs'] = array('uri' =>'http://www.w3.org/2001/XMLSchema');
+            $this->nsList['xs'] = array('uri' =>'http://www.w3.org/2001/XMLSchema'); # NOSONAR Should be http://
           }
 
           foreach ($this->nsList as $ns => $uriArray) {
-            $newChild->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:'.$ns, $uriArray['uri']);
+            $newChild->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:'.$ns, $uriArray['uri']); # NOSONAR Should be http://
           }
           if ($newChild->hasAttribute('ID')) { $newChild->removeAttribute('ID'); }
         }
@@ -138,7 +138,7 @@ class NormalizeXML {
 
   private function checkNameSpaceAttribute($attribute) {
     $uri = $attribute->namespaceURI;
-    if ($uri == 'http://www.w3.org/XML/1998/namespace') {
+    if ($uri == 'http://www.w3.org/XML/1998/namespace') { # NOSONAR Should be http://
       $ns = 'xml';
     } else {
       if (isset($this->knownList[$uri])) {

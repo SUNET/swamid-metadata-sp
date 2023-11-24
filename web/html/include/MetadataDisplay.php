@@ -9,12 +9,12 @@ class MetadataDisplay {
   const BIND_URL = ':URL';
 
   const SAML_EC_ANONYMOUS = 'https://refeds.org/category/anonymous';
-  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1';
+  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
   const SAML_EC_COCOV2 = 'https://refeds.org/category/code-of-conduct/v2';
   const SAML_EC_ESI = 'https://myacademicid.org/entity-categories/esi';
   const SAML_EC_PERSONALIZED = 'https://refeds.org/category/personalized';
   const SAML_EC_PSEUDONYMOUS = 'https://refeds.org/category/pseudonymous';
-  const SAML_EC_RANDS = 'http://refeds.org/category/research-and-scholarship';
+  const SAML_EC_RANDS = 'http://refeds.org/category/research-and-scholarship'; # NOSONAR Should be http://
 
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
@@ -1193,7 +1193,7 @@ class MetadataDisplay {
               Verify at <a href="https://www.ssllabs.com/ssltest/analyze.html?d=%s">SSL Labs</a></td></tr>%s',
               urlencode($url), "\n");
             break;
-          case 'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :
+          case 'Policy missing link to http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
             printf ('      <tr><th>Possible solution</th>
               <td>You are missing link / have a java-script to generate this page.<br>
               Verify with curl -s %s | grep http://www.geant.net/uri/dataprotection-code-of-conduct/v1<br>
@@ -1905,11 +1905,11 @@ class MetadataDisplay {
     $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
     $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
     $idps - $assuranceCount['RAF-low'],
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'],
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] -
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'],
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] -
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2']);
+    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
+    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
+      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
+    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] - # NOSONAR Should be http://
+      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2']); # NOSONAR Should be http://
   }
 
   public function showEntityStatistics() {
