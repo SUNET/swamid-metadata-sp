@@ -1027,7 +1027,7 @@ function validateEntity($entitiesId) {
 function move2Pending($entitiesId) {
   global $db, $html, $display, $userLevel, $menuActive;
   global $EPPN, $mail, $fullName;
-  global $mailContacts, $mailRequester, $SendOut;
+  global $mailContacts, $mailRequester, $SendOut, $Mode;
 
   $draftMetadata = new Metadata($entitiesId);
 
@@ -1086,23 +1086,47 @@ function move2Pending($entitiesId) {
         $menuActive = 'wait';
         showMenu();
 
-        $displayName = $draftMetadata->entityDisplayName();
-
         setupMail();
 
-        $addresses = $draftMetadata->getTechnicalAndAdministrativeContacts();
-        if ($SendOut) {
-          $mailRequester->addAddress($mail);
-          foreach ($addresses as $address) {
-            $mailContacts->addAddress($address);
-          }
+        $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $draftMetadata->entityID());
+        $publishedMetadata = new Metadata($draftMetadata->entityID(), 'prod');
+
+        if ($publishedMetadata->entityExists()) {
+          $mailContacts->Subject  = 'Info : Updated SWAMID metadata for ' . $shortEntityid;
+          $mailRequester->Subject = 'Updated SWAMID metadata for ' . $shortEntityid;
+          $shadowMetadata = new Metadata($draftMetadata->entityID(), 'Shadow');
+          $shadowMetadata->importXML($publishedMetadata->xml());
+          $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
+          $shadowMetadata->validateXML();
+          $shadowMetadata->validateSAML();
+          $oldEntitiesId = $shadowMetadata->id();
+        } else {
+          $mailContacts->Subject  = 'Info : New SWAMID metadata for ' . $shortEntityid;
+          $mailRequester->Subject = 'New SWAMID metadata for ' . $shortEntityid;
+          $oldEntitiesId = 0;
         }
 
-        $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+        if ($Mode == 'QA') {
+          printf ("    <p>Your entity will be published within 15 to 30 minutes</p>\n");
+          printf ('    <hr>
+          <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
+            $entitiesId);
+        } else {
+          $displayName = $draftMetadata->entityDisplayName();
 
-        //Content
-        $mailContacts->isHTML(true);
-        $mailContacts->Body = sprintf("<!DOCTYPE html>
+          $addresses = $draftMetadata->getTechnicalAndAdministrativeContacts();
+          if ($SendOut) {
+            $mailRequester->addAddress($mail);
+            foreach ($addresses as $address) {
+              $mailContacts->addAddress($address);
+            }
+          }
+
+          $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+
+          //Content
+          $mailContacts->isHTML(true);
+          $mailContacts->Body = sprintf("<!DOCTYPE html>
           <html lang=\"en\">
             <head>
               <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
@@ -1120,8 +1144,8 @@ function move2Pending($entitiesId) {
               On behalf of SWAMID Operations</p>
             </body>
           </html>",
-          $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId);
-        $mailContacts->AltBody = sprintf("Hi.
+            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId);
+          $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested an update of \"%s\" (%s)
           \nYou have received this email because you are either the new or old technical and/or administrative contact.
           \nYou can see the new version at %s/?showEntity=%d
@@ -1129,10 +1153,10 @@ function move2Pending($entitiesId) {
           \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
           --
           On behalf of SWAMID Operations",
-          $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId);
+            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId);
 
-        $mailRequester->isHTML(true);
-        $mailRequester->Body = sprintf("<!DOCTYPE html>
+          $mailRequester->isHTML(true);
+          $mailRequester->Body = sprintf("<!DOCTYPE html>
           <html lang=\"en\">
             <head>
               <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
@@ -1153,8 +1177,9 @@ function move2Pending($entitiesId) {
               On behalf of SWAMID Operations</p>
             </body>
           </html>",
-          $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
-        $mailRequester->AltBody = sprintf("Hi.
+            $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId,
+            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
+          $mailRequester->AltBody = sprintf("Hi.
           \nYou have requested an update of \"%s\" (%s)
           \nTo continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
           If you don’t do this the publication request will not be processed.
@@ -1163,42 +1188,30 @@ function move2Pending($entitiesId) {
           \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
           --
           On behalf of SWAMID Operations",
-          $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
+            $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
 
-        $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $draftMetadata->entityID());
-        $publishedMetadata = new Metadata($draftMetadata->entityID(), 'prod');
+          try {
+            $mailContacts->send();
+          } catch (Exception $e) {
+            echo 'Message could not be sent to contacts.<br>';
+            echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+          }
 
-        if ($publishedMetadata->entityExists()) {
-          $mailContacts->Subject  = 'Info : Updated SWAMID metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'Updated SWAMID metadata for ' . $shortEntityid;
-          $shadowMetadata = new Metadata($draftMetadata->entityID(), 'Shadow');
-          $shadowMetadata->importXML($publishedMetadata->xml());
-          $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
-          $shadowMetadata->validateXML();
-          $shadowMetadata->validateSAML();
-          $oldEntitiesId = $shadowMetadata->id();
-        } else {
-          $mailContacts->Subject  = 'Info : New SWAMID metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'New SWAMID metadata for ' . $shortEntityid;
-          $oldEntitiesId = 0;
+          try {
+            $mailRequester->send();
+          } catch (Exception $e) {
+            echo 'Message could not be sent to requester.<br>';
+            echo 'Mailer Error: ' . $mailRequester->ErrorInfo . '<br>';
+          }
+
+          printf ("    <p>You should have got an email with information on how to proceed</p>
+          <p>Information has also been sent to the following new or old technical and/or administrative contacts:</p>
+          <ul>
+            <li>%s</li>\n          </ul>\n", implode ("</li>\n            <li>",$addresses));
+          printf ('    <hr>
+            <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
+            $entitiesId);
         }
-
-        try {
-          $mailContacts->send();
-        } catch (Exception $e) {
-          echo 'Message could not be sent to contacts.<br>';
-          echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
-        }
-
-        try {
-          $mailRequester->send();
-        } catch (Exception $e) {
-          echo 'Message could not be sent to requester.<br>';
-          echo 'Mailer Error: ' . $mailRequester->ErrorInfo . '<br>';
-        }
-
-        printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following new or old technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
-        printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$entitiesId);
         $draftMetadata->updateFeedByValue($_GET['publishedIn']);
         $draftMetadata->moveDraftToPending($oldEntitiesId);
       } else {
@@ -1224,14 +1237,23 @@ function move2Pending($entitiesId) {
         }
         printf('    <h5>The entity should be published in:</h5>
     <form>
-      <input type="hidden" name="move2Pending" value="%d">
-      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
+      <input type="hidden" name="move2Pending" value="%d">%s',
+          $entitiesId,"\n");
+        if ($Mode == 'QA') {
+          printf('      <input type="radio" id="SWAMID" name="publishedIn" value="2" checked>
+      <label for="SWAMID">SWAMID QA</label>%s',"\n");
+        } else {
+          printf('      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
       <label for="SWAMID_eduGAIN">SWAMID and eduGAIN</label><br>
       <input type="radio" id="SWAMID_Testing" name="publishedIn" value="3"%s>
       <label for="SWAMID_Testing">SWAMID</label><br>
       <input type="radio" id="Testing" name="publishedIn" value="1"%s>
-      <label for="Testing">Testing only</label>
-      <br>
+      <label for="Testing">Testing only</label>%s',
+          $oldPublishedValue == 7 ? ' checked' : '',
+          $oldPublishedValue == 3 ? ' checked' : '',
+          $oldPublishedValue == 1 ? ' checked' : '', "\n");
+        }
+        printf('      <br>
       <h5> Confirmation:</h5>
       <p>Registration criteria from SWAMID SAML WebSSO Technology Profile:
         %s
@@ -1246,10 +1268,7 @@ function move2Pending($entitiesId) {
       <input type="submit" name="action" value="Request publication">
     </form>
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>',
-        $entitiesId,
-        $oldPublishedValue == 7 ? ' checked' : '',
-        $oldPublishedValue == 3 ? ' checked' : '',
-        $oldPublishedValue == 1 ? ' checked' : '', $infoText, $sections, $entitiesId);
+          $infoText, $sections, $entitiesId);
       }
     } else {
       printf('
