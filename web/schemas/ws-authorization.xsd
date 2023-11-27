@@ -27,7 +27,7 @@ MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 		   targetNamespace='http://docs.oasis-open.org/wsfed/authorization/200706'
 		   elementFormDefault='qualified' >
   <xs:import namespace='http://www.w3.org/2001/04/xmlenc#'
-             schemaLocation='http://www.w3.org/TR/2002/REC-xmlenc-core-20021210/xenc-schema.xsd'/>
+             schemaLocation='xenc-schema.xsd'/>
   
   <!-- Section 9.2 -->
   <xs:element name='AdditionalContext' type='tns:AdditionalContextType' />
