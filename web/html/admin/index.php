@@ -1766,7 +1766,7 @@ function requestAccess($entitiesId) {
           echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
         }
         $menuActive = '';
-        showInfo($info);
+        showText($info, true, false);
       } else {
         $errors .= isset($_GET['FormVisit']) ? "You must check the box to confirm.\n" : '';
         $html->showHeaders(HTML_TITLE . $metadata->entityID());
@@ -1900,33 +1900,24 @@ function approveAccessRequest($code) {
         }
         showText($info);
       } else {
-        showError($result['info']);
+        showText($result['info'], false, true);
       }
     } else {
-      showError('Invalid code');
+      showText('Invalid code', false, true);
     }
   } else {
-    showError('Invalid code');
+    showText('Invalid code', false, true);
   }
 }
 
-
 function showText($text, $showMenu = false, $error = false) {
   global $html, $menuActive;
-  $html->showHeaders('Metadata SWAMID');
-  if ($showMenu) showMenu();
-  printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s', "\n", "\n", $text, "\n", "\n", "\n");
-}
-
-function showError($text) {
-  global $html;
-  $html->showHeaders(HTML_TITLE . 'Error');
-  printf('%s', $text);
-}
-
-function showInfo($text) {
-  global $html, $menuActive;
-  $html->showHeaders('Metadata SWAMID');
-  showMenu();
-  printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s', "\n", "\n", $text, "\n", "\n", "\n");
+  if ($error) {
+    $html->showHeaders(HTML_TITLE . 'Error');
+  } else {
+    $html->showHeaders(HTML_TITLE . 'Info');
+  }
+  if ($showMenu) { showMenu(); }
+  printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s',
+    "\n", "\n", $text, "\n", "\n", "\n");
 }
