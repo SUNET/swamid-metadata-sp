@@ -82,7 +82,6 @@ class Metadata {
   const SAML_ALG_SIGNATUREMETHOD = 'alg:SignatureMethod';
   const SAML_ALG_SIGNINGMETHOD = 'alg:SigningMethod';
   const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
-  const SAML_DS_SIGNATURE = 'ds:Signature';
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
   const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
@@ -112,10 +111,8 @@ class Metadata {
   const SAML_MD_ORGANIZATIONURL = 'md:OrganizationURL';
   const SAML_MD_PDPDESCRIPTOR = 'md:PDPDescriptor';
   const SAML_MD_REQUESTEDATTRIBUTE = 'md:RequestedAttribute';
-  const SAML_MD_ROLEDESCRIPTOR = 'md:RoleDescriptor';
   const SAML_MD_SERVICEDESCRIPTION = 'md:ServiceDescription';
   const SAML_MD_SERVICENAME = 'md:ServiceName';
-  const SAML_MD_SIGNATURE = 'md:Signature';
   const SAML_MD_SINGLELOGOUTSERVICE = 'md:SingleLogoutService';
   const SAML_MD_SINGLESIGNONSERVICE = 'md:SingleSignOnService';
   const SAML_MD_SPSSODESCRIPTOR = 'md:SPSSODescriptor';
@@ -134,6 +131,7 @@ class Metadata {
   const SAML_MDUI_LOGO = 'mdui:Logo';
   const SAML_MDUI_PRIVACYSTATEMENTURL = 'mdui:PrivacyStatementURL';
   const SAML_MDUI_UIINFO = 'mdui:UIInfo';
+  CONST SAML_PSC_REQUESTEDPRINCIPALSELECTION = 'psc:RequestedPrincipalSelection';
   const SAML_SHIBMD_SCOPE = 'shibmd:Scope';
   const SAML_SAMLA_ATTRIBUTE = 'samla:Attribute';
   const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
@@ -453,7 +451,6 @@ class Metadata {
     $this->xml->formatOutput = true;
     $this->xml->loadXML($xml);
     $this->xml->encoding = 'UTF-8';
-    $this->cleanOutRoleDescriptor();
     $this->cleanOutAttribuesInIDPSSODescriptor();
     if ($this->entityExists && $this->status == 1) {
       # Update entity in database
@@ -533,23 +530,13 @@ class Metadata {
     $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
 
-    $swamid5130error = false;
-    $cleanOutSignature = false;
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1
     $entityDescriptor = $this->getEntityDescriptor($this->xml);
     $child = $entityDescriptor->firstChild;
     while ($child) {
       switch ($child->nodeName) {
-        case self::SAML_DS_SIGNATURE :
-          // Should not be in SWAMID-metadata
-          $cleanOutSignature = true;
-          break;
         case self::SAML_MD_EXTENSIONS :
           $this->parseExtensions($child);
-          break;
-        case self::SAML_MD_ROLEDESCRIPTOR :
-          //5.1.29 Identity Provider metadata MUST NOT include RoleDescriptor elements.
-          $swamid5130error = true;
           break;
         case self::SAML_MD_IDPSSODESCRIPTOR :
           $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 1 WHERE `id` = :Id')->execute(
@@ -584,13 +571,7 @@ class Metadata {
       }
       $child = $child->nextSibling;
     }
-    if ($cleanOutSignature) {
-      $this->cleanOutSignature();
-    }
-    if ($swamid5130error) {
-      $this->cleanOutRoleDescriptor();
-    }
-
+    
     $resultHandler = $this->metaDb->prepare("UPDATE Entities
       SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput,
         `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `xml` = :Xml, `lastValidated` = NOW()
@@ -805,6 +786,10 @@ class Metadata {
           $this->error .=
             "EntityAttributes found in IDPSSODescriptor/Extensions should be below Extensions at root level.\n";
           break;
+        case self::SAML_ALG_DIGESTMETHOD :
+        case self::SAML_ALG_SIGNINGMETHOD :
+        case self::SAML_PSC_REQUESTEDPRINCIPALSELECTION :
+          break;
         default :
           $this->result .= sprintf("IDPSSODescriptor->Extensions->%s missing in validator.\n", $child->nodeName);
       }
@@ -860,7 +845,6 @@ class Metadata {
     while ($child) {
       switch ($child->nodeName) {
         # 2.4.1
-        #case self::SAML_MD_SIGNATURE :
         case self::SAML_MD_EXTENSIONS :
           $this->parseSPSSODescriptorExtensions($child);
           break;
@@ -2366,47 +2350,6 @@ class Metadata {
   }
 
   #############
-  # Removes RoleDescriptor.
-  # swamid5130error
-  #############
-  private function cleanOutRoleDescriptor() {
-    $removed = false;
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_MD_ROLEDESCRIPTOR) {
-        $remChild = $child;
-        $child = $child->nextSibling;
-        $entityDescriptor->removeChild($remChild);
-        $removed = true;
-      } else {
-        $child = $child->nextSibling;
-      }
-    }
-    if ($removed) {
-      $this->error .= $this->selectError('5.1.30','6.1.29',
-        'entityID MUST NOT include RoleDescriptor elements. Have been removed.');
-    }
-  }
-
-  #############
-  # Removes Signature.
-  #############
-  private function cleanOutSignature() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_DS_SIGNATURE) {
-        $remChild = $child;
-        $child = $child->nextSibling;
-        $entityDescriptor->removeChild($remChild);
-      } else {
-        $child = $child->nextSibling;
-      }
-    }
-  }
-
-  #############
   # Removes AssertionConsumerService with binding = HTTP-Redirect.
   # swamid6116error
   #############
@@ -2836,7 +2779,6 @@ class Metadata {
         case self::SAML_MD_EXTENSIONS :
           $extensions = $child;
           break;
-        case self::SAML_MD_ROLEDESCRIPTOR :
         case self::SAML_MD_SPSSODESCRIPTOR :
         case self::SAML_MD_IDPSSODESCRIPTOR :
         case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
@@ -2846,10 +2788,10 @@ class Metadata {
         case self::SAML_MD_ORGANIZATION :
         case self::SAML_MD_CONTACTPERSON :
         case self::SAML_MD_ADDITIONALMETADATALOCATION :
+        default :
           $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
           $entityDescriptor->insertBefore($extensions, $child);
           break;
-        default :
       }
       $child = $child->nextSibling;
     }

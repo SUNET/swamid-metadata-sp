@@ -1,7 +1,6 @@
 <?php
 class MetadataEdit {
   # Setup
-  const SAML_DS_SIGNATURE = 'ds:Signature';
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
   const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
@@ -24,10 +23,8 @@ class MetadataEdit {
   const SAML_MD_ORGANIZATIONURL = 'md:OrganizationURL';
   const SAML_MD_PDPDESCRIPTOR = 'md:PDPDescriptor';
   const SAML_MD_REQUESTEDATTRIBUTE = 'md:RequestedAttribute';
-  const SAML_MD_ROLEDESCRIPTOR = 'md:RoleDescriptor';
   const SAML_MD_SERVICEDESCRIPTION = 'md:ServiceDescription';
   const SAML_MD_SERVICENAME = 'md:ServiceName';
-  const SAML_MD_SIGNATURE = 'md:Signature';
   const SAML_MD_SINGLELOGOUTSERVICE = 'md:SingleLogoutService';
   const SAML_MD_SPSSODESCRIPTOR = 'md:SPSSODescriptor';
   const SAML_MD_SURNAME = 'md:SurName';
@@ -255,7 +252,6 @@ class MetadataEdit {
           case self::SAML_MD_EXTENSIONS :
             $extensions = $child;
             break;
-          case self::SAML_MD_ROLEDESCRIPTOR :
           case self::SAML_MD_SPSSODESCRIPTOR :
           case self::SAML_MD_IDPSSODESCRIPTOR :
           case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
@@ -265,10 +261,10 @@ class MetadataEdit {
           case self::SAML_MD_ORGANIZATION :
           case self::SAML_MD_CONTACTPERSON :
           case self::SAML_MD_ADDITIONALMETADATALOCATION :
+          default :
             $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
             $entityDescriptor->insertBefore($extensions, $child);
             break;
-          default :
         }
         $child = $child->nextSibling;
       }
@@ -709,8 +705,6 @@ class MetadataEdit {
             $extensions = false;
             while ($child && ! $extensions) {
               switch ($child->nodeName) {
-                case self::SAML_DS_SIGNATURE :
-                  break;
                 case self::SAML_MD_EXTENSIONS :
                   $extensions = $child;
                   break;
@@ -929,8 +923,6 @@ class MetadataEdit {
               $extensions = false;
               while ($child && ! $extensions) {
                 switch ($child->nodeName) {
-                  case self::SAML_DS_SIGNATURE :
-                    break;
                   case self::SAML_MD_EXTENSIONS :
                     $extensions = $child;
                     break;
@@ -1355,8 +1347,6 @@ class MetadataEdit {
               $extensions = false;
               while ($child && ! $extensions) {
                 switch ($child->nodeName) {
-                  case self::SAML_DS_SIGNATURE :
-                    break;
                   case self::SAML_MD_EXTENSIONS :
                     $extensions = $child;
                     break;
@@ -2396,7 +2386,6 @@ class MetadataEdit {
               $attributeConsumingService = false;
               while ($child && ! $attributeConsumingService) {
                 switch ($child->nodeName) {
-                  case self::SAML_MD_SIGNATURE :
                   case self::SAML_MD_EXTENSIONS :
                   case self::SAML_MD_KEYDESCRIPTOR :
                   case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
@@ -2406,8 +2395,9 @@ class MetadataEdit {
                   case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
                     break;
                   case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
-                    if ($child->getAttribute('index') == $indexValue)
+                    if ($child->getAttribute('index') == $indexValue) {
                       $attributeConsumingService = $child;
+                    }
                     break;
                   default :
                 }
@@ -2493,7 +2483,6 @@ class MetadataEdit {
               $attributeConsumingService = false;
               while ($child && ! $attributeConsumingService) {
                 switch ($child->nodeName) {
-                  case self::SAML_MD_SIGNATURE :
                   case self::SAML_MD_EXTENSIONS :
                   case self::SAML_MD_KEYDESCRIPTOR :
                   case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
@@ -3576,7 +3565,6 @@ class MetadataEdit {
           case self::SAML_MD_EXTENSIONS :
             $extensions = $child;
             break;
-          case self::SAML_MD_ROLEDESCRIPTOR :
           case self::SAML_MD_SPSSODESCRIPTOR :
           case self::SAML_MD_IDPSSODESCRIPTOR :
           case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
@@ -3586,10 +3574,10 @@ class MetadataEdit {
           case self::SAML_MD_ORGANIZATION :
           case self::SAML_MD_CONTACTPERSON :
           case self::SAML_MD_ADDITIONALMETADATALOCATION :
+          default :
             $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
             $entityDescriptor->insertBefore($extensions, $child);
             break;
-          default :
         }
         $child = $child->nextSibling;
       }
@@ -3673,7 +3661,6 @@ class MetadataEdit {
           case self::SAML_MD_EXTENSIONS :
             $extensions = $child;
             break;
-          case self::SAML_MD_ROLEDESCRIPTOR :
           case self::SAML_MD_SPSSODESCRIPTOR :
           case self::SAML_MD_IDPSSODESCRIPTOR :
           case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
@@ -3683,6 +3670,7 @@ class MetadataEdit {
           case self::SAML_MD_ORGANIZATION :
           case self::SAML_MD_CONTACTPERSON :
           case self::SAML_MD_ADDITIONALMETADATALOCATION :
+          default :
             $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
             $entityDescriptor->insertBefore($extensions, $child);
             break;
@@ -3786,7 +3774,7 @@ class MetadataEdit {
     $scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
     $scopesInsertHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
-      $oldScopes[$scope['scope']] = true;
+      $oldScopes[$scope['scope']] = $scope['regexp'];
     }
     if ($oldScopes) {
       $entityDescriptor = $this->getEntityDescriptor($this->newXml);
@@ -3805,8 +3793,6 @@ class MetadataEdit {
         $extensions = false;
         while ($child && ! $extensions) {
           switch ($child->nodeName) {
-            case self::SAML_DS_SIGNATURE :
-              break;
             case self::SAML_MD_EXTENSIONS :
               $extensions = $child;
               break;
@@ -3890,8 +3876,6 @@ class MetadataEdit {
         $extensions = false;
         while ($child && ! $extensions) {
           switch ($child->nodeName) {
-            case self::SAML_DS_SIGNATURE :
-              break;
             case self::SAML_MD_EXTENSIONS :
               $extensions = $child;
               break;
@@ -4006,8 +3990,6 @@ class MetadataEdit {
         $extensions = false;
         while ($child && ! $extensions) {
           switch ($child->nodeName) {
-            case self::SAML_DS_SIGNATURE :
-              break;
             case self::SAML_MD_EXTENSIONS :
               $extensions = $child;
               break;

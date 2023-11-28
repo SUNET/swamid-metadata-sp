@@ -2,6 +2,7 @@
 class NormalizeXML {
   # Setup
   const SAML_MD_ENTITYDESCRIPTOR = 'md:EntityDescriptor';
+
   public function __construct() {
     $this->nsList = array();
     $this->knownList = array(
@@ -18,47 +19,38 @@ class NormalizeXML {
       'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
       'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
       'urn:oasis:names:tc:SAML:metadata:algsupport' => 'alg',
+      'http://id.swedenconnect.se/authn/1.0/principal-selection/ns' => 'psc',
       #ADFS / M$
       'http://docs.oasis-open.org/wsfed/federation/200706' => 'fed', # NOSONAR Should be http://
       'http://docs.oasis-open.org/wsfed/authorization/200706' => 'auth'); # NOSONAR Should be http://
 
-    $this->entityID = '';
     $this->error = 'No XML loaded';
     $this->status = false;
     $this->nextNS = 1;
+    $this->entityID = false;
+    $this->newDoc = new DOMDocument('1.0', 'UTF-8');
+    $this->newDoc->formatOutput = true;
   }
 
-  private function checkNode(&$new, $data, $doc) {
+  # Check Node and sub-nodes
+  private function checkNode(&$new, &$data, &$doc) {
     foreach ($data->childNodes as $child) {
+      # Remove Signature
+      if ($child->namespaceURI == 'http://www.w3.org/2000/09/xmldsig#' && $child->localName == 'Signature') {
+        continue;
+      }
+      # Remove RoleDescriptor
+      if ($child->namespaceURI == 'urn:oasis:names:tc:SAML:2.0:metadata' && $child->localName == 'RoleDescriptor') {
+        continue;
+      }
       if ($this->hasChild($child)) {
         $name = $this->checkNameSpaceNode($child);
         $newChild = $doc->createElement($name);
         $new->appendChild($newChild);
-        if ($child->hasAttributes() )  {
-          $nrOfAttribues = $child->attributes->count();
-          for ($index = 0; $index < $nrOfAttribues; $index++) {
-            # Remove unwanted attributes
-            if ($child->attributes->item($index)->name == 'validUntil') { continue; }
-            if ($child->attributes->item($index)->name == 'cacheDuration') { continue; }
-            if ($child->attributes->item($index)->prefix) {
-              $newChild->setAttribute($this->checkNameSpaceAttribute(
-                $child->attributes->item($index)).':'.$child->attributes->item($index)->name,
-                $child->attributes->item($index)->value);
-            } else {
-              $newChild->setAttribute($child->attributes->item($index)->name, $child->attributes->item($index)->value);
-            }
-          }
-        }
+        $this->checkAttributes($child, $newChild);
         $this->checkNode($newChild, $child, $doc);
         if ($name == self::SAML_MD_ENTITYDESCRIPTOR) {
-          if (isset($this->nsList['xsi']) && ! isset($this->nsList['xs'])) {
-            $this->nsList['xs'] = array('uri' =>'http://www.w3.org/2001/XMLSchema'); # NOSONAR Should be http://
-          }
-
-          foreach ($this->nsList as $ns => $uriArray) {
-            $newChild->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:'.$ns, $uriArray['uri']); # NOSONAR Should be http://
-          }
-          if ($newChild->hasAttribute('ID')) { $newChild->removeAttribute('ID'); }
+          $this->updateEntityDescriptor($newChild);
         }
       } else {
         switch ($child->nodeType) {
@@ -70,20 +62,7 @@ class NormalizeXML {
               $newText = $doc->createTextNode(trim($child->nodeValue));
               $newChild->appendChild($newText);
             }
-            if ($child->hasAttributes() )  {
-              $nrOfAttribues = $child->attributes->count();
-              for ($index = 0; $index < $nrOfAttribues; $index++) {
-                if ($child->attributes->item($index)->prefix) {
-                  $newChild->setAttribute($this->checkNameSpaceAttribute(
-                    $child->attributes->item($index)).':'.$child->attributes->item($index)->name,
-                    $child->attributes->item($index)->value);
-                } else {
-                  $newChild->setAttribute(
-                    $child->attributes->item($index)->name,
-                    $child->attributes->item($index)->value);
-                }
-              }
-            }
+            $this->checkAttributes($child, $newChild);
             break;
           case 3 :
             // TEXT_NODE
@@ -96,6 +75,8 @@ class NormalizeXML {
       }
     }
   }
+
+  # CHeck if a Node has a child
   private function hasChild($node) {
     if ($node->hasChildNodes()) {
       foreach ($node->childNodes as $child) {
@@ -106,14 +87,35 @@ class NormalizeXML {
     }
     return false;
   }
-  private function checkNameSpaceNode($node) {
-    $nameParts = explode(':', $node->nodeName, 2);
-    if (isset($nameParts[1])) {
-      $suggestedNS = $nameParts[0];
-      $name = $nameParts[1];
-    } else {
-      $name = $nameParts[0];
+
+  # Check Attribute
+  private function checkAttributes(&$child, &$newChild) {
+    if ($child->hasAttributes() )  {
+      $nrOfAttribues = $child->attributes->count();
+      for ($index = 0; $index < $nrOfAttribues; $index++) {
+        $value = $child->attributes->item($index)->value;
+        if ($child->attributes->item($index)->namespaceURI == 'http://www.w3.org/2001/XMLSchema-instance'  &&
+          $child->attributes->item($index)->name == 'type'){
+          $valueParts = explode(':', $value, 2);
+          $value = ($valueParts[1] == 'string') ? 'xs:string' : $value;
+        }
+        if ($child->attributes->item($index)->prefix) {
+          $newChild->setAttribute($this->checkNameSpaceAttribute(
+            $child->attributes->item($index)).':'.$child->attributes->item($index)->name,
+            $value);
+        } else {
+          $newChild->setAttribute(
+            $child->attributes->item($index)->name,
+            $value);
+        }
+      }
     }
+  }
+
+  # Check Namespace of node and add to list if missing. Also normalize Namespace
+  private function checkNameSpaceNode(&$node) {
+    $suggestedNS = $node->prefix;
+    $name = $node->localName;
     $uri = $node->namespaceURI;
     while ($uri == '' && $suggestedNS != '') {
       foreach ($this->knownList as $knowURI => $knowNS) {
@@ -136,7 +138,8 @@ class NormalizeXML {
     return $ns . ':' . $name;
   }
 
-  private function checkNameSpaceAttribute($attribute) {
+  # Check Namespace of Attribute and add to list if missing. Also normalize Namespace
+  private function checkNameSpaceAttribute(&$attribute) {
     $uri = $attribute->namespaceURI;
     if ($uri == 'http://www.w3.org/XML/1998/namespace') { # NOSONAR Should be http://
       $ns = 'xml';
@@ -155,6 +158,7 @@ class NormalizeXML {
     return $ns;
   }
 
+  # error-handler to catch errors while loading XML
   public function checkDOMError ($number, $error){ #NOSONAR $number is in call!!!
     $errorParts = explode(' ', $error);
     if ($errorParts[0] == 'DOMDocument::load():') {
@@ -166,6 +170,7 @@ class NormalizeXML {
     }
   }
 
+  # Load XML from file and parse into $this->newDoc
   public function fromFile($filename) {
     $this->nsList = array();
     if (file_exists($filename)) {
@@ -174,24 +179,7 @@ class NormalizeXML {
         $doc = new DOMDocument('1.0', 'UTF-8');
         set_error_handler(array($this, 'checkDOMError'));
         if ( $doc->load($filename) ) {
-          $this->newDoc = new DOMDocument('1.0', 'UTF-8');
-          $this->newDoc->formatOutput = true;
-          $this->checkNode($this->newDoc, $doc, $this->newDoc);
-          $this->entityID = false;
-          $child = $this->newDoc->firstChild;
-          while ($child && ! $this->entityID) {
-            if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
-              $this->entityID = $child->getAttribute('entityID');
-            }
-            $child = $child->nextSibling;
-          }
-          if ($this->entityID) {
-            $this->error = '';
-            $this->status = true;
-          } else {
-            $this->error = 'Cant find entityID in EntityDescriptor';
-            $this->status = false;
-          }
+          $this->parseXML($doc);
         }
         restore_error_handler();
       } else {
@@ -204,33 +192,46 @@ class NormalizeXML {
     }
   }
 
+  # Load XML from string and parse into $this->newDoc
   public function fromString($xml) {
     $this->nsList = array();
     $doc = new DOMDocument('1.0', 'UTF-8');
     set_error_handler(array($this, 'checkDOMError'));
     if ($doc->loadXML($xml)) {
-      $this->newDoc = new DOMDocument('1.0', 'UTF-8');
-      $this->newDoc->formatOutput = true;
-      $this->checkNode($this->newDoc, $doc, $this->newDoc);
-      $this->entityID = false;
-      $child = $this->newDoc->firstChild;
-      while ($child && ! $this->entityID) {
-        if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
-          $this->entityID = $child->getAttribute('entityID');
-        }
-        $child = $child->nextSibling;
-      }
-      if ($this->entityID) {
-        $this->error = '';
-        $this->status = true;
-      } else {
-        $this->error = 'Cant find entityID in EntityDescriptor';
-        $this->status = false;
-      }
+      $this->parseXML($doc);
     }
     restore_error_handler();
   }
 
+  # Parse XML info $this->newDoc
+  private function parseXML($doc) {
+    $this->checkNode($this->newDoc, $doc, $this->newDoc);
+    if ($this->entityID) {
+      $this->error = '';
+      $this->status = true;
+    } else {
+      $this->error = 'Cant find entityID in EntityDescriptor';
+      $this->status = false;
+    }
+  }
+
+  # Updates EntityDescriptor with all Namespaces found in XML
+  private function updateEntityDescriptor(&$dom){
+    if (isset($this->nsList['xsi']) && ! isset($this->nsList['xs'])) {
+      $this->nsList['xs'] = array('uri' =>'http://www.w3.org/2001/XMLSchema'); # NOSONAR Should be http://
+    }
+
+    foreach ($this->nsList as $ns => $uriArray) {
+      $dom->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:'.$ns, $uriArray['uri']); # NOSONAR Should be http://
+    }
+    $this->entityID = $dom->getAttribute('entityID');
+    # Remove unwanted attributes
+    if ($dom->hasAttribute('validUntil')) { $dom->removeAttribute('validUntil'); }
+    if ($dom->hasAttribute('cacheDuration')) { $dom->removeAttribute('cacheDuration'); }
+    if ($dom->hasAttribute('ID')) { $dom->removeAttribute('ID'); }
+  }
+
+  # Return parsed XML
   public function getXML() {
     if ($this->status) {
       return $this->newDoc->saveXML();
@@ -239,6 +240,7 @@ class NormalizeXML {
     }
   }
 
+  #Return entityID of parsed XML
   public function getEntityID() {
     if ($this->status) {
       return $this->entityID;
@@ -247,14 +249,17 @@ class NormalizeXML {
     }
   }
 
+  # Return status of parsing
   public function getStatus() {
     return $this->status;
   }
 
+  # Return errors from parsing
   public function getError() {
     return $this->error;
   }
 
+  # Loads an XML and return the same but without RegistrationInfo
   public function cleanOutRegistrationInfo($xml2clean) {
     $continue = true;
     $xml = new DOMDocument;
