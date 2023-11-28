@@ -1484,6 +1484,10 @@ class Metadata {
       // 6.1.14, 6.2.x
       $this->checkRequiredSAMLcertificates('SPSSO');
     }
+    if ($this->isAA) {
+      // 5.1.20, 5.2.x
+      $this->checkRequiredSAMLcertificates('AttributeAuthority');
+    }
 
     // 5.1.22 / 6.1.20
     $this->checkRequiredOrganizationElements();
@@ -1860,7 +1864,7 @@ class Metadata {
 
   // 5.1.20, 5.2.x / 6.1.14, 6.2.x
   private function checkRequiredSAMLcertificates($type) {
-    $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false);
+    $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false, 'AttributeAuthority' => false);
     $keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
       FROM KeyInfo
       WHERE `entity_id` = :Id AND `type` =:Type
@@ -1901,6 +1905,7 @@ class Metadata {
           if ($keyInfo['notValidAfter'] > $timeNow ) {
             if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
               $keyInfoArray['IDPSSO'] = true;
+              $keyInfoArray['AttributeAuthority'] = true;
             }
             $validSigningFound = true;
           } elseif ($validSigningFound) {
@@ -1913,6 +1918,7 @@ class Metadata {
             if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
               $keyInfoArray['SPSSO'] = true;
               $keyInfoArray['IDPSSO'] = true;
+              $keyInfoArray['AttributeAuthority'] = true;
             }
             $validEncryptionFound = true;
             $validSigningFound = true;
@@ -1973,8 +1979,11 @@ class Metadata {
     if (! $keyInfoArray[$type]) {
       if ($type == 'IDPSSO') {
         $this->error .=
-          "SWAMID Tech 5.1.20: Identity Providers there MUST have at least one valid signing certificate.\n";
-        } else {
+          "SWAMID Tech 5.1.20: Identity Providers MUST have at least one valid signing certificate.\n";
+      } elseif ($type == 'AttributeAuthority') {
+        $this->error .=
+          "SWAMID Tech 5.1.20: Attribute Authorities MUST have at least one valid signing certificate.\n";
+      } else {
         $this->error .=
           "SWAMID Tech 6.1.14: Service Providers MUST have at least one valid encryption certificate.\n";
       }
@@ -2044,38 +2053,38 @@ class Metadata {
       if ($swamid521error == 1) {
         if ($smalKeyFound) {
           $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-            ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+            ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
           $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
         } else {
-          $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+          $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
           $this->warning .= " Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n";
         }
       } elseif ($swamid521error == 2) {
         $this->error .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable',
-          ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+          ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
         $this->error .= ' key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate';
         $this->error .= " should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
       }
     } else {
       if ($smalKeyFound) {
         $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-          ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+          ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
         $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
       }
     }
     if ($swamid5212030error) {
       $this->warning .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength',
-        ($type == 'IDPSSO') ? '5.2.1' : '6.2.1');
+        ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
       $this->warning .= " (in the sense of NIST SP 800-57) than a 3072-bit RSA key if valid after 2030-12-31.\n";
     }
 
     if ($swamid522error) {
       $this->error .= sprintf('SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New',
-        ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
+        ($type == 'SPSSO') ? '6.2.2' : '5.2.2');
       $this->error .= " certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
     } elseif ($swamid522errorNB) {
       $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Signing and encryption certificates',
-        ($type == 'IDPSSO') ? '5.2.2' : '6.2.2');
+        ($type == 'SPSSO') ? '6.2.2' : '5.2.2');
       $this->errorNB .= " MUST NOT be expired.\n";
     }
 
@@ -2084,7 +2093,7 @@ class Metadata {
     }
 
     if ($swamid523warning) {
-      $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'IDPSSO') ? '5.2.3' : '6.2.3');
+      $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? '6.2.3' : '5.2.3');
       $this->warning .= " Signing and encryption certificates SHOULD be self-signed.\n";
     }
   }

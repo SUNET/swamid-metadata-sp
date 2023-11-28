@@ -41,7 +41,7 @@ class MetadataDisplay {
   ####
   public function showStatusbar($entityId, $admin = false){
     $entityHandler = $this->metaDb->prepare('
-      SELECT `entityID`, `isIdP`, `isSP`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
+      SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
       FROM Entities WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $entityId);
     $urlHandler1 = $this->metaDb->prepare('
@@ -70,6 +70,7 @@ class MetadataDisplay {
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $errors = '';
       $warnings = '';
+      $notice = '';
 
       if ($entity['isIdP']) {
         $ecsTagged = array(self::SAML_EC_ESI => false,
@@ -213,9 +214,18 @@ class MetadataDisplay {
         <b>Warnings:</b><br>
         %s%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "<br>", $warnings), "\n", "\n");
       }
+
+      if ($entity['isAA']) {
+        $notice .= 'The AttributeAuthority is a part of the Identity Provider and follow the same rules for SWAMID Tech 5.1.21 and 5.2.x.<br>';
+        $notice .= 'If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.<br>';
+      }
       if ($entity['validationOutput'] != '') {
-        printf('%s    <div class="row alert alert-primary" role="alert">%s</div>',
-          "\n", str_ireplace("\n", "<br>", $entity['validationOutput']));
+        $notice .= $entity['validationOutput'];
+      }
+      if ($notice != '') {
+        printf('%s    <div class="row alert alert-primary" role="alert">%s      <div class="col">
+        <b>Notice:</b><br>
+        %s%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "<br>", $notice), "\n", "\n");
       }
     }
     if ($admin && $entity['status'] < 4) {
