@@ -1032,6 +1032,8 @@ function move2Pending($entitiesId) {
   $draftMetadata = new Metadata($entitiesId);
 
   if ($draftMetadata->entityExists()) {
+    $draftMetadata->validateXML();
+    $draftMetadata->validateSAML();
     if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
       $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
       $infoText = '<ul>
