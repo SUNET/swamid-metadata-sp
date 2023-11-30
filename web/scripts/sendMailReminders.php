@@ -56,13 +56,12 @@ while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     if (! isset($reminders[$entity['id']])) {
       $reminders[$entity['id']] = 0;
     }
-    /*if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
+    if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
       printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
       $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 3));
       sendEntityConfirmation($entity['id'], $entity['entityID'],
         iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
-      unset(reminders[$entity['id']]);
-    } else*/if ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
+    } elseif ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
       printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
       $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
       sendEntityConfirmation($entity['id'], $entity['entityID'],
@@ -121,7 +120,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     to remove the entity from SWAMID metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact.</p>
     <p>You can confirm, update or remove your entity at
-    <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a> .</p>
+    <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
     <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
     --<br>
     On behalf of SWAMID Operations</p>
@@ -132,7 +131,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     the Technology Profile. If not annually confirmed the Operations team will start the process to remove the entity
     from SWAMID metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact.
-    \nYou can confirm, update or remove your entity at %s/admin/?showEntity=%d .
+    \nYou can confirm, update or remove your entity at %sadmin/?showEntity=%d .
     \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
     --
     On behalf of SWAMID Operations",
