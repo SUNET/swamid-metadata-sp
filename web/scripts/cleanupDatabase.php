@@ -23,8 +23,8 @@ try {
 $removeDate = '1971-01-01';
 $removeDateShadow = '1971-01-01';
 $flagDates = $db->query('SELECT
-  NOW() - INTERVAL 17 MONTH AS `removeDate`,
-  NOW() - INTERVAL 18 MONTH AS `removeDateShadow`', PDO::FETCH_ASSOC);
+  NOW() - INTERVAL 3 MONTH AS `removeDate`,
+  NOW() - INTERVAL 4 MONTH AS `removeDateShadow`', PDO::FETCH_ASSOC);
 foreach ($flagDates as $dates) {
   # Need to use foreach to fetch row. $flagDates is a PDOStatement
   $removeDate = $dates['removeDate'];
