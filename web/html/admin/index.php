@@ -245,10 +245,6 @@ if (isset($_FILES['XMLfile'])) {
   if (checkAccess($_GET['removeSSO'],$EPPN,$userLevel,10, true)) {
     removeSSO($_GET['removeSSO'], $_GET['type']);
   }
-} elseif (isset($_GET['removeKey']) && isset($_GET['type']) && isset($_GET['use']) && isset($_GET['serialNumber'])) {
-  if (checkAccess($_GET['removeKey'],$EPPN,$userLevel,10, true)) {
-    removeKey($_GET['removeKey'], $_GET['type'], $_GET['use'], $_GET['serialNumber']);
-  }
 } elseif (isset($_GET['rawXML'])) {
   $display->showRawXML($_GET['rawXML']);
 } elseif (isset(($_GET['approveAccessRequest']))) {
@@ -956,17 +952,6 @@ function removeSSO($entitiesId, $type) {
   require_once '../include/MetadataEdit.php';
   $metadata = new MetadataEdit($entitiesId);
   $metadata->removeSSO($type);
-  validateEntity($entitiesId);
-  showEntity($entitiesId);
-}
-
-####
-# Remove an IDPSSO / SPSSO Key that is old & unused
-####
-function removeKey($entitiesId, $type, $use, $serialNumber) {
-  require_once '../include/MetadataEdit.php';
-  $metadata = new MetadataEdit($entitiesId);
-  $metadata->removeKey($type, $use, $serialNumber);
   validateEntity($entitiesId);
   showEntity($entitiesId);
 }

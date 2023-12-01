@@ -4466,6 +4466,9 @@ class MetadataEdit {
       case 'IdP' :
         $ssoDescriptor = self::SAML_MD_IDPSSODESCRIPTOR;
         break;
+      case 'AttributeAuthority' :
+        $ssoDescriptor = self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR;
+        break;
       default :
         printf ("Unknown type : %s", htmlspecialchars($type));
         return;
@@ -4481,81 +4484,6 @@ class MetadataEdit {
       $child = $child->nextSibling;
     }
     $this->saveXML();
-  }
-  public function removeKey($type, $use, $serialNumber) {
-    switch ($type) {
-      case 'SPSSO' :
-        $descriptor = self::SAML_MD_SPSSODESCRIPTOR;
-        break;
-      case 'IDPSSO' :
-        $descriptor = self::SAML_MD_IDPSSODESCRIPTOR;
-        break;
-    }
-    $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-    # Find SSODecriptor in XML
-    $child = $entityDescriptor->firstChild;
-    $ssoDescriptor = false;
-    while ($child && ! $ssoDescriptor) {
-      if ($child->nodeName == $descriptor) {
-        $ssoDescriptor = $child;
-      }
-      $child = $child->nextSibling;
-    }
-    if ($ssoDescriptor) {
-      $child = $ssoDescriptor->firstChild;
-      $removeKeyDescriptor = false;
-      $changed = false;
-      while ($child) {
-        // Loop thrue all KeyDescriptor:s not just the first one!
-        if ($child->nodeName == self::SAML_MD_KEYDESCRIPTOR) {
-          $usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
-          if ( $usage == $use ) {
-            $keyDescriptor = $child; // Save to be able to remove this KeyDescriptor
-            $descriptorChild = $keyDescriptor->firstChild;
-            while ($descriptorChild && !$removeKeyDescriptor) {
-              if ($descriptorChild->nodeName == 'ds:KeyInfo') {
-                $infoChild = $descriptorChild->firstChild;
-                while ($infoChild && !$removeKeyDescriptor) {
-                  if ($infoChild->nodeName == 'ds:X509Data') {
-                    $x509Child = $infoChild->firstChild;
-                    while ($x509Child&& !$removeKeyDescriptor) {
-                      if ($x509Child->nodeName == 'ds:X509Certificate') {
-                        $cert = "-----BEGIN CERTIFICATE-----\n" . chunk_split(str_replace(array(' ',"\n") ,array('',''),trim($x509Child->textContent)),64) . "-----END CERTIFICATE-----\n";
-                        if ($certInfo = openssl_x509_parse( $cert)) {
-                          if ($certInfo['serialNumber'] == $serialNumber)
-                            $removeKeyDescriptor = true;
-                        }
-                      }
-                      $x509Child = $x509Child->nextSibling;
-                    }
-                  }
-                  $infoChild = $infoChild->nextSibling;
-                }
-              }
-              $descriptorChild = $descriptorChild->nextSibling;
-            }
-          }
-        }
-        $child = $child->nextSibling;
-        // Remove
-        if ($removeKeyDescriptor) {
-          $ssoDescriptor->removeChild($keyDescriptor);
-          $keyInfoDeleteHandler = $this->metaDb->prepare('DELETE FROM KeyInfo WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `serialNumber` = :SerialNumber;');
-          $keyInfoDeleteHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-          $keyInfoDeleteHandler->bindParam(self::BIND_TYPE, $type);
-          $keyInfoDeleteHandler->bindParam(self::BIND_USE, $use);
-          $keyInfoDeleteHandler->bindParam(self::BIND_SERIALNUMBER, $serialNumber);
-          $keyInfoDeleteHandler->execute();
-          // Reset flag for next KeyDescriptor
-          $removeKeyDescriptor = false;
-          $changed = true;
-        }
-      }
-      if ($changed) {
-        $this->saveXML();
-      }
-    }
   }
 
   public function saveXML() {
