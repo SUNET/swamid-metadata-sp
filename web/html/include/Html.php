@@ -50,7 +50,7 @@ class HTML {
     body {
       padding-top: 20px;
       padding-bottom: 20px;
-      <?= $this->mode == 'QA' ? 
+      <?= $this->mode == 'QA' ?
         'background-color: #F05523;' :
         ''?><?= $this->mode == 'Lab' ? 'background-color: #8B0000;' : ''?>
     }
@@ -176,8 +176,8 @@ class HTML {
       //var fileName = $(this).val().split("\\").pop();
       var fileName = $(this).val().split("\\\\").pop();
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
-    });<?php 
-      print "  </script>\n"; 
+    });<?php
+      print "  </script>\n";
     } ?>
 </body>
 </html>

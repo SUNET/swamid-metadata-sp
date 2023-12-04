@@ -1362,6 +1362,58 @@ class MetadataDisplay {
   }
 
   public function showErrorList($download = false) {
+    if ($download) {
+      header('Content-Type: text/csv; charset=utf-8');
+      header('Content-Disposition: attachment; filename=errorlog.csv');
+      print "Type,Feed,Entity,Contact address\n";
+    } else {
+      # Default values
+      $errorsActive='';
+      $errorsSelected='false';
+      $errorsShow='';
+      #
+      $remindersActive='';
+      $remindersSelected='false';
+      $remindersShow='';
+
+      //if (isset($_GET["tab"]) && $_GET["tab"] == 'reminders') {
+        $remindersActive=' active';
+        $remindersSelected='true';
+        $remindersShow=' show';
+      /*} else {
+        $errorsActive=' active';
+        $errorsSelected='true';
+        $errorsShow=' show';
+      }*/
+
+      printf('    <div class="row">
+      <div class="col">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link%s" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
+              aria-controls="errors" aria-selected="%s">Errors</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="reminders-tab" data-toggle="tab" href="#reminders" role="tab"
+              aria-controls="reminders" aria-selected="%s">Reminders</a>
+          </li>
+        </ul>
+      </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade%s%s" id="errors" role="tabpanel" aria-labelledby="errors-tab">%s',
+          $errorsActive, $errorsSelected, $remindersActive, $remindersSelected, "\n", "\n",
+          $errorsShow, $errorsActive, "\n");
+    }
+    $this->showErrorEntitiesList($download);
+    if (! $download) {
+      printf('      </div><!-- End tab-pane errors -->
+      <div class="tab-pane fade%s%s" id="reminders" role="tabpanel" aria-labelledby="reminders-tab">%s',
+        $remindersShow, $remindersActive, "\n");
+      $this->showErrorMailReminders();
+      printf('      </div><!-- End tab-pane reminders -->%s    </div><!-- End tab-content -->%s',
+        "\n", "\n");
+    }
+  }
+  private function showErrorEntitiesList($download) {
     $emails = array();
     if (isset($_GET['showTesting'])) {
       $entityHandler = $this->metaDb->prepare(
@@ -1375,82 +1427,131 @@ class MetadataDisplay {
     $entityHandler->execute();
     $contactPersonHandler = $this->metaDb->prepare(
       'SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
-    if ($download) {
-      header('Content-Type: text/csv; charset=utf-8');
-      header('Content-Disposition: attachment; filename=errorlog.csv');
-      print "Type,Feed,Entity,Contact address\n";
-    } else {
-      printf ('    <a href=".?action=ErrorListDownload">
-      <button type="button" class="btn btn-primary">Download CSV</button>
-    </a>
-    <a href=".?action=ErrorList&showTesting">
-      <button type="button" class="btn btn-primary">Include testing</button>
-    </a>
-    <br>
-    <table id="error-table" class="table table-striped table-bordered">
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Feed</th>
-          <th>Entity</th>
-          <th>Contact address</th>
-          <th>Error</th>
-        </tr>
-      </thead>%s', "\n");
-    }
+
+    printf('        <br>
+        <h5>Entities with errors</h5>
+        <a href=".?action=ErrorListDownload">
+          <button type="button" class="btn btn-primary">Download CSV</button>
+        </a>
+        <a href=".?action=ErrorList&showTesting">
+          <button type="button" class="btn btn-primary">Include testing</button>
+        </a>
+        <br>
+        <table id="error-table" class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Feed</th>
+              <th>Entity</th>
+              <th>Contact address</th>
+              <th>Error</th>
+            </tr>
+          </thead>%s',
+      "\n");
+      while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+        $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
+        $contactPersonHandler->execute();
+        $emails['administrative'] = '';
+        $emails['support'] = '';
+        $emails['technical'] = '';
+        while ($contact = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
+          $emails[$contact['contactType']] = substr($contact['emailAddress'],7);
+        }
+        if ($emails['technical'] != '' ) {
+          $email = $emails['technical'];
+        } elseif($emails['administrative'] != '') {
+          $email = $emails['administrative'];
+        } elseif ($emails['support'] != '' ) {
+          $email = $emails['support'];
+        } else
+          $email = 'Missing';
+        if ($entity['isIdP']) {
+          $type = ($entity['isSP']) ? 'IdP & SP' : 'IdP';
+        } else {
+          $type = 'SP';
+        }
+        switch ($entity['publishIn']) {
+          case 1 :
+            $feed = 'T';
+            break;
+          case 3 :
+            $feed = 'S';
+            break;
+          case 7 :
+            $feed = 'E';
+            break;
+          default :
+            $feed = '?';
+        }
+        if ($download) {
+          printf ('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
+        } else {
+          printf ('          <tr>
+            <td>%s</td>
+            <td>%s</td>
+            <td>
+              <a href="?showEntity=%d"><span class="text-truncate">%s</span>
+            </td>
+            <td>%s</td>
+            <td>%s</td>%s          </tr>%s',
+            $type, $feed, $entity['id'], $entity['entityID'], $email,
+            str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
+        }
+      }
+      print "        </table>\n";
+  }
+  private function showErrorMailReminders() {
+    $entityHandler = $this->metaDb->prepare(
+      'SELECT MailReminders.*, entityID, lastConfirmed
+      FROM MailReminders, Entities
+      LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
+      WHERE `Entities`.`id` = `MailReminders`.`entity_id`
+      ORDER BY `entityID`, `type`');
+    $entityHandler->execute();
+    printf ('        <br>
+        <h5>Entities that we sent mail reminders to</h5>
+        <p>Updated every wednesday at 7:15 UTC</p>
+        <table id="reminder-table" class="table table-striped table-bordered">
+          <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed</th></tr></thead>%s',
+      "\n");
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
-      $contactPersonHandler->execute();
-      $emails['administrative'] = '';
-      $emails['support'] = '';
-      $emails['technical'] = '';
-      while ($contact = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
-        $emails[$contact['contactType']] = substr($contact['emailAddress'],7);
-      }
-      if ($emails['technical'] != '' ) {
-        $email = $emails['technical'];
-      } elseif($emails['administrative'] != '') {
-        $email = $emails['administrative'];
-      } elseif ($emails['support'] != '' ) {
-        $email = $emails['support'];
-      } else
-        $email = 'Missing';
-      if ($entity['isIdP']) {
-        $type = ($entity['isSP']) ? 'IdP & SP' : 'IdP';
+      if ($entity['type'] == 1) {
+        // Confirmation/Validation reminder
+        switch ($entity['level']) {
+          case 1 :
+            $reason = 'Not validated/confirmed for 10 months';
+            break;
+          case 2 :
+            $reason = 'Not validated/confirmed for 11 months';
+            break;
+          case 3:
+            $reason = 'Not validated/confirmed for 12 months';
+            break;
+          default :
+            $reason = 'Not validated/confirmed';
+        }
       } else {
-        $type = 'SP';
+        switch ($entity['level']) {
+          case 1 :
+            $reason = 'Certificate will expire within a month';
+            break;
+          case 2 :
+            $reason = 'Certificate have expired';
+            break;
+          default :
+            $reason = 'Certificate error';
+        }
       }
-      switch ($entity['publishIn']) {
-        case 1 :
-          $feed = 'T';
-          break;
-        case 3 :
-          $feed = 'S';
-          break;
-        case 7 :
-          $feed = 'E';
-          break;
-        default :
-          $feed = '?';
-      }
-      if ($download) {
-        printf ('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
-      } else {
-        printf ('      <tr>
-        <td>%s</td>
-        <td>%s</td>
-        <td>
-          <a href="?showEntity=%d"><span class="text-truncate">%s</span>
-        </td>
-        <td>%s</td>
-        <td>%s</td>%s      </tr>%s',
-          $type, $feed, $entity['id'], $entity['entityID'], $email,
-          str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
-      }
+      printf(
+        '          <tr>
+            <td><a href=./?showEntity=%d target="_blank">%s</a></td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+          </tr>%s',
+        $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $entity['lastConfirmed'],"\n");
     }
-    if (! $download) {
-      print "    </table>\n";
-    }
+    printf ('        </table>%s', "\n");
   }
 
   public function showXMLDiff($entityId1, $entityId2) {

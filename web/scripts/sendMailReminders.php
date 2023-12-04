@@ -190,7 +190,6 @@ function oldCerts() {
         default :
           printf ("Missing %s\n",$key['use']);
       }
-      #printf("%s:%s %d %d %d\n", $keyType, $key['use'], $keyStatus, $sign, $encr);
     }
     if ($keyStatus > 0) {
       $errorText .= parserKeyError($keyStatus, $keyType);

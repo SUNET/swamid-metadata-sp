@@ -571,7 +571,7 @@ class Metadata {
       }
       $child = $child->nextSibling;
     }
-    
+
     $resultHandler = $this->metaDb->prepare("UPDATE Entities
       SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput,
         `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `xml` = :Xml, `lastValidated` = NOW()

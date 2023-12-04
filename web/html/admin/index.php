@@ -356,10 +356,11 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'ErrorList' :
           $menuActive = 'Errors';
-          $html->showHeaders(HTML_TITLE . 'Errror status');
+          $html->showHeaders(HTML_TITLE . 'Error status');
           showMenu();
           $display->showErrorList();
           $html->addTableSort('error-table');
+          $html->addTableSort('reminder-table');
           break;
         case 'ErrorListDownload' :
           if ($userLevel > 1) {
