@@ -1376,15 +1376,15 @@ class MetadataDisplay {
       $remindersSelected='false';
       $remindersShow='';
 
-      //if (isset($_GET["tab"]) && $_GET["tab"] == 'reminders') {
+      if (isset($_GET["tab"]) && $_GET["tab"] == 'reminders') {
         $remindersActive=' active';
         $remindersSelected='true';
         $remindersShow=' show';
-      /*} else {
+      } else {
         $errorsActive=' active';
         $errorsSelected='true';
         $errorsShow=' show';
-      }*/
+      }
 
       printf('    <div class="row">
       <div class="col">
@@ -1433,8 +1433,8 @@ class MetadataDisplay {
         <a href=".?action=ErrorListDownload">
           <button type="button" class="btn btn-primary">Download CSV</button>
         </a>
-        <a href=".?action=ErrorList&showTesting">
-          <button type="button" class="btn btn-primary">Include testing</button>
+        <a href=".?action=ErrorList&%s">
+          <button type="button" class="btn btn-primary">%s testing</button>
         </a>
         <br>
         <table id="error-table" class="table table-striped table-bordered">
@@ -1447,7 +1447,8 @@ class MetadataDisplay {
               <th>Error</th>
             </tr>
           </thead>%s',
-      "\n");
+      isset($_GET['showTesting']) ? 'hideTesting' : 'showTesting',
+      isset($_GET['showTesting']) ? 'Hide' : 'Include', "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
         $contactPersonHandler->execute();
