@@ -1427,6 +1427,11 @@ class Metadata {
         default:
       }
     }
+
+    if ($this->feedValue == 1) {
+      $this->error .= 'SWAMID-Testing is deprecated and will be removed after 2024-06-30. It is no longer possible to update this entity.';
+    }
+
     // 5.1.1 -> 5.1.5 / 6.1.1 -> 6.1.5
     $this->checkLangElements();
 

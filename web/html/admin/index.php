@@ -533,7 +533,8 @@ function showEntityList($status = 1) {
         <th>%s (UTC)</th>
         <th>%s (UTC)</th>
         <th><a href="?%s&warnings">warning%s</a> / <a href="?%s&errors">errors%s</a></th></tr>%s',
-    $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow, htmlspecialchars($query), $action, $filter,
+    $filter, $feedOrder, $feedArrow, $filter, $entityIDOrder, $entityIDArrow,
+    htmlspecialchars($query), $action, $filter,
     $orgOrder, $orgArrow, ($status == 1) ? 'Last Updated' : 'Created' ,
     ($status == 1) ? 'Last Confirmed' : 'Last Validated',
     $filter, $warningArrow, $filter, $errorArrow, "\n");
@@ -624,9 +625,13 @@ function showEntity($entitiesId)  {
       case 1:
         printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
         <button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>',
-          "\n", $entitiesId, getErrors($entitiesId) == '' ? 'success' : 'danger');
-        printf('%s      <a href=".?action=createDraft&Entity=%d">
-        <button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $entitiesId);
+          "\n", $entitiesId, getErrors($entitiesId) == '' ? 'success' : 'secondary');
+        if ($entity['publishIn'] == 1) {
+          printf('%s          <button type="button" class="btn btn-outline-secondary">Create draft</button>', "\n");
+        } else {
+          printf('%s      <a href=".?action=createDraft&Entity=%d">
+          <button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $entitiesId);
+        }
         printf('%s      <a href=".?action=Request+removal&Entity=%d">
         <button type="button" class="btn btn-outline-danger">Request removal</button></a>', "\n", $entitiesId);
         break;
