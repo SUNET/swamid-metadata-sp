@@ -87,6 +87,7 @@ if (isset($_SERVER['eduPersonPrincipalName'])) {
 $foundEmployee = false;
 $foundStudent = false;
 $foundMember = false;
+$foundAffiliate = false;
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
     switch(explode('@',$ScopedAffiliation)[0]) {
@@ -98,6 +99,9 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
         break;
       case 'member' :
         $foundMember = true;
+        break;
+      case 'affiliate' :
+        $foundAffiliate = true;
         break;
       default:
     }
@@ -133,11 +137,21 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
 if ($foundMember) {
   if ($foundStudent && ! $foundEmployee) {
     $errors .=
-    'Missing employee in either eduPersonScopedAffiliation or eduPersonAffiliation in SAML response<br>';
+      'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
+    $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+    $errors .=
+      'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
+    $errors .=
+      'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
   }
-} else {
+} elseif (!$foundAffiliate) {
   $errors .=
-      'Missing member in either eduPersonScopedAffiliation or eduPersonAffiliation in SAML response<br>';
+      'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
+  $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  $errors .=
+    'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
+  $errors .=
+    'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
 }
 
 if ( isset($_SERVER['mail'])) {
