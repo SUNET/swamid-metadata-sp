@@ -34,6 +34,7 @@ class MetadataDisplay {
       echo "Error: " . $e->getMessage();
     }
     $this->collapseIcons = array();
+    $this->Mode = $Mode;
   }
 
   ####
@@ -162,7 +163,8 @@ class MetadataDisplay {
         foreach ($ecsTested as $tag => $tested) {
           if (! $ecsTested[$tag]) {
             $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
-            $warnings .= sprintf(' at <a href="https://%s.release-check.swamid.se/">Release-check</a>%s', $tag, "\n");
+            $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
+              $tag, $this->Mode == 'QA' ? 'qa.' : '', "\n");
           }
         }
         // Error URLs
