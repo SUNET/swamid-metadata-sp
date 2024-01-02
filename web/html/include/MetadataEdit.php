@@ -1277,10 +1277,10 @@ class MetadataEdit {
             if ($element == 'Logo') {
               $copy = sprintf('<a href ="?edit=%s&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&height=%d&width=%d&action=Add">[copy]</a> ',
                 $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang,
-                $data['value'], $data['height'], $data['width']);
+                urlencode($data['value']), $data['height'], $data['width']);
             } else {
               $copy = sprintf('<a href ="?edit=%s&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-                $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang, $data['value']);
+                $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang, urlencode($data['value']));
             }
             $state = 'danger';
             break;
