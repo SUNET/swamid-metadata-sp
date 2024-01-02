@@ -2820,7 +2820,7 @@ class Metadata {
       $entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
         'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
       $RegistrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
-      $RegistrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/');
+      $RegistrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
       $RegistrationInfo->setAttribute('registrationInstant', $ts);
       $extensions->appendChild($RegistrationInfo);
     }

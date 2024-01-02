@@ -3940,7 +3940,7 @@ class MetadataEdit {
           foreach ($data as $lang => $sizeValue) {
             foreach ($sizeValue as $size => $value) {
               # Add if missing
-              $MduiElement = $this->newXml->createElement($element, $value['value']);
+              $MduiElement = $this->newXml->createElement($element, htmlspecialchars($value['value']));
               if ($lang != '')
                 $MduiElement->setAttribute('xml:lang', $lang);
               if ($size != '0x0') {

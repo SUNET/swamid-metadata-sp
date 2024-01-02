@@ -19,7 +19,7 @@ class NormalizeXML {
       'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
       'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
       'urn:oasis:names:tc:SAML:metadata:algsupport' => 'alg',
-      'http://id.swedenconnect.se/authn/1.0/principal-selection/ns' => 'psc',
+      'http://id.swedenconnect.se/authn/1.0/principal-selection/ns' => 'psc', # NOSONAR Should be http://
       #ADFS / M$
       'http://docs.oasis-open.org/wsfed/federation/200706' => 'fed', # NOSONAR Should be http://
       'http://docs.oasis-open.org/wsfed/authorization/200706' => 'auth'); # NOSONAR Should be http://
