@@ -1675,7 +1675,7 @@ class MetadataDisplay {
     $entityAttributesHandler = $this->metaDb->prepare(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
       FROM EntityAttributes, Entities
-      WHERE type = 'entity-category-support' AND `entity_id` = `id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
+      WHERE type = 'entity-category-support' AND `entity_id` = `Entities`.`id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
       GROUP BY `attribute`");
     $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1842,7 +1842,7 @@ class MetadataDisplay {
     }
 
     $metaAssuranceHandler = $this->metaDb->prepare(
-      "SELECT COUNT(`id`) AS `count`, `attribute`
+      "SELECT COUNT(`Entities`.`id`) AS `count`, `attribute`
       FROM `Entities`, `EntityAttributes`
       WHERE `Entities`.`id` = `EntityAttributes`.`entity_id`
         AND `status` = 1

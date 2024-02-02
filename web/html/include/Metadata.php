@@ -386,7 +386,7 @@ class Metadata {
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $ssoUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
-        FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL AND `status`< 4');
+        FROM `Mdui`, `Entities` WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
       $organizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
@@ -1765,8 +1765,8 @@ class Metadata {
       'PrivacyStatementURL' => false,
       'Logo' => false);
     $mduiDNUniqHandler = $this->metaDb->prepare("SELECT `entityID`
-      FROM Entities, Mdui
-      WHERE `id` = `entity_id`
+      FROM `Entities`, `Mdui`
+      WHERE `Entities`.`id` = `entity_id`
         AND `type`  = 'IDPSSO'
         AND `element` = 'DisplayName'
         AND `data` = :Data
@@ -1777,7 +1777,7 @@ class Metadata {
     $mduiDNUniqHandler->bindParam(self::BIND_LANG, $lang);
     $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $mduiHandler = $this->metaDb->prepare('SELECT `entityID`, `element`, `data`, `lang`
-      FROM Entities, Mdui WHERE `id` = `entity_id` AND `entity_id` = :Id AND `type`  = :Type');
+      FROM `Entities`, `Mdui` WHERE `Entities`.`id` = `entity_id` AND `entity_id` = :Id AND `type`  = :Type');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->bindValue(self::BIND_TYPE, 'IDPSSO');
     $mduiHandler->execute();
@@ -2893,11 +2893,11 @@ class Metadata {
     # If entity in Published will only match one.
     # If entity in draft, will match both draft and published and get addresses from both.
     $contactHandler = $this->metaDb->prepare("SELECT DISTINCT emailAddress
-      FROM Entities, ContactPerson
-      WHERE id = entity_id
-        AND ((entityID = :EntityID AND status = 1) OR (id = :Entity_id AND status = 3))
-        AND (contactType='technical' OR contactType='administrative')
-        AND emailAddress <> ''");
+      FROM `Entities`, `ContactPerson`
+      WHERE `Entities`.`id` = `entity_id`
+        AND ((`entityID` = :EntityID AND `status` = 1) OR (`Entities`.`id` = :Entity_id AND `status` = 3))
+        AND (`contactType`='technical' OR `contactType`='administrative')
+        AND `emailAddress` <> ''");
     $contactHandler->bindParam(self::BIND_ENTITYID,$this->entityID);
     $contactHandler->bindParam(self::BIND_ENTITY_ID,$this->dbIdNr);
     $contactHandler->execute();
@@ -2979,14 +2979,22 @@ class Metadata {
   public function isResponsible() {
     if ($this->user['id'] > 0) {
       $userHandler = $this->metaDb->prepare('SELECT *
-        FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :EntityID' );
+        FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :Entity_id' );
       $userHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
-      $userHandler->bindParam(self::BIND_ENTITYID, $this->dbIdNr);
+      $userHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
       $userHandler->execute();
       return $userHandler->fetch(PDO::FETCH_ASSOC);
     } else {
       return false;
     }
+  }
+
+  public function getResponsibles() {
+    $usersHandler = $this->metaDb->prepare('SELECT `id`, `userID`, `email`, `fullName`
+      FROM EntityUser, Users WHERE `entity_id` = :Entity_id AND id = user_id ORDER BY `userID`;');
+    $usersHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+    $usersHandler->execute();
+    return $usersHandler->fetchAll(PDO::FETCH_ASSOC);
   }
 
   public function createAccessRequest($userId) {
@@ -3057,6 +3065,14 @@ class Metadata {
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $approvedBy);
+    $entityUserHandler->execute();
+  }
+
+  public function removeAccessFromEntity($userId) {
+    $entityUserHandler = $this->metaDb->prepare('DELETE FROM EntityUser
+      WHERE `entity_id` = :Entity_id AND `user_id` = :User_id');
+    $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
+    $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityUserHandler->execute();
   }
 

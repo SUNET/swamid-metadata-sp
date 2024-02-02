@@ -122,7 +122,6 @@ function oldCerts() {
   $entitiesHandler->bindValue(':Date', $warn1Date);
   $entitiesHandler->execute();
   while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-    #printf ("Checking %s\n", $entity['entityID']);
     $keyHandler->bindValue(':Id', $entity['id']);
     $keyHandler->execute();
     $keyType = 'None';

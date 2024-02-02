@@ -29,8 +29,8 @@ try {
 
 /* BEGIN RAF Logging */
 $assuranceHandler = $db->prepare(
-  'INSERT INTO `assuranceLog` (`entityID`, `assurance`)
-    VALUES (:EntityID, :Assurance) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
+  'INSERT INTO `assuranceLog` (`entityID`, `assurance`, `logDate`)
+    VALUES (:EntityID, :Assurance, NOW()) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
 $assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
 if (isset($_SERVER['eduPersonAssurance'])) {
   foreach (explode(';', $_SERVER['eduPersonAssurance']) as $eduPersonAssurance) {
@@ -1310,6 +1310,9 @@ function annualConfirmation($entitiesId){
     if ($errors == '') {
       $user_id = $metadata->getUserId($EPPN);
       if ($metadata->isResponsible()) {
+        if (isset ($_GET['user_id']) && $user_id <> $_GET['user_id']) {
+          $metadata->removeAccessFromEntity($_GET['user_id']);
+        }
         # User have access to entity
         if ( $metadata->isIdP() && $metadata->isSP()) {
           $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
@@ -1383,7 +1386,15 @@ function annualConfirmation($entitiesId){
     </form>
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>%s',
             $entitiesId, $infoText, $sections, $entitiesId, "\n");
+          printf('    <br><br><h5>The following have admin-access to this entity</h5><ul>%s', "\n");
+          foreach ($metadata->getResponsibles() as $user) {
+            $delete = $user_id == $user['id'] ? '' :
+              sprintf('<a href="?action=Annual+Confirmation&Entity=%d&user_id=%d"><i class="fas fa-trash"></i></a>',$entitiesId, $user['id']);
+            printf ('      <li>%s%s (%s)</li>%s', $delete, $user['fullName'], $user['userID'], "\n");
+          }
+          printf('    <ul>%s', "\n");
         }
+
       } else {
         # User have no access yet.
         requestAccess($entitiesId);
