@@ -1116,6 +1116,14 @@ class MetadataDisplay {
   ####
   # Shows XML for entiry
   ####
+  public function showMdqUrl($entityID, $Mode) {
+    $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, $entityId, 0);
+    $url = sprintf('https://mds.swamid.se/%sentities/%s', $Mode == 'QA' ? 'qa/' : '', urlencode($entityID));
+    printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
+      $url, $url, "\n");
+    $this->showCollapseEnd('MDQ', 0);
+  }
+
   public function showXML($entityId) {
     printf ('
     <h4>

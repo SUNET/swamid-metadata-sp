@@ -529,6 +529,9 @@ class Metadata {
       array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
+    $this->isIdP = false;
+    $this->isSP = false;
+    $this->isAA = false;
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1
     $entityDescriptor = $this->getEntityDescriptor($this->xml);

@@ -559,7 +559,7 @@ function showEntityList($status = 1) {
 # Shows Entity information
 ####
 function showEntity($entitiesId)  {
-  global $db, $html, $display, $userLevel, $menuActive, $EPPN;
+  global $db, $html, $display, $userLevel, $menuActive, $EPPN, $Mode;
   $entityHandler = $db->prepare(
     'SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
     FROM Entities WHERE `id` = :Id;');
@@ -729,6 +729,7 @@ function showEntity($entitiesId)  {
     if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, $allowEdit); }
     $display->showOrganization($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
+    $display->showMdqUrl($entity['entityID'], $Mode);
     $display->showXML($entitiesId);
     $display->showEditors($entitiesId);
 

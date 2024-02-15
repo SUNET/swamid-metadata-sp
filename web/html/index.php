@@ -149,7 +149,7 @@ function showMenu($menuActive, $query = '') {
 # Shows Entity information
 ####
 function showEntity($entity_id, $urn = false)  {
-  global $db, $html, $display;
+  global $db, $html, $display, $Mode;
   $entityHandler = $urn ?
     $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
       FROM Entities WHERE entityID = :Id AND status = 1;') :
@@ -245,6 +245,7 @@ function showEntity($entity_id, $urn = false)  {
     if ($entity['isAA'] ) { $display->showAA($entities_id, $oldEntity_id); }
     $display->showOrganization($entities_id, $oldEntity_id);
     $display->showContacts($entities_id, $oldEntity_id);
+    $display->showMdqUrl($entity['entityID'], $Mode);
     $display->showXML($entities_id);
   } else {
     $html->showHeaders('Metadata SWAMID - NotFound');
