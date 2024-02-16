@@ -1117,7 +1117,7 @@ class MetadataDisplay {
   # Shows XML for entiry
   ####
   public function showMdqUrl($entityID, $Mode) {
-    $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, $entityId, 0);
+    $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, 0, 0);
     $url = sprintf('https://mds.swamid.se/%sentities/%s', $Mode == 'QA' ? 'qa/' : '', urlencode($entityID));
     printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
       $url, $url, "\n");
@@ -1372,11 +1372,7 @@ class MetadataDisplay {
   }
 
   public function showErrorList($download = false) {
-    if ($download) {
-      header('Content-Type: text/csv; charset=utf-8');
-      header('Content-Disposition: attachment; filename=errorlog.csv');
-      print "Type,Feed,Entity,Contact address\n";
-    } else {
+    if (! $download) {
       # Default values
       $errorsActive='';
       $errorsSelected='false';
@@ -1438,7 +1434,12 @@ class MetadataDisplay {
     $contactPersonHandler = $this->metaDb->prepare(
       'SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
 
-    printf('        <br>
+    if ($download) {
+      header('Content-Type: text/csv; charset=utf-8');
+      header('Content-Disposition: attachment; filename=errorlog.csv');
+      print "Type,Feed,Entity,Contact address\n";
+    } else {
+      printf('        <br>
         <h5>Entities with errors</h5>
         <a href=".?action=ErrorListDownload">
           <button type="button" class="btn btn-primary">Download CSV</button>
@@ -1457,59 +1458,61 @@ class MetadataDisplay {
               <th>Error</th>
             </tr>
           </thead>%s',
-      isset($_GET['showTesting']) ? 'hideTesting' : 'showTesting',
-      isset($_GET['showTesting']) ? 'Hide' : 'Include', "\n");
-      while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
-        $contactPersonHandler->execute();
-        $emails['administrative'] = '';
-        $emails['support'] = '';
-        $emails['technical'] = '';
-        while ($contact = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
-          $emails[$contact['contactType']] = substr($contact['emailAddress'],7);
-        }
-        if ($emails['technical'] != '' ) {
-          $email = $emails['technical'];
-        } elseif($emails['administrative'] != '') {
-          $email = $emails['administrative'];
-        } elseif ($emails['support'] != '' ) {
-          $email = $emails['support'];
-        } else
-          $email = 'Missing';
-        if ($entity['isIdP']) {
-          $type = ($entity['isSP']) ? 'IdP & SP' : 'IdP';
-        } else {
-          $type = 'SP';
-        }
-        switch ($entity['publishIn']) {
-          case 1 :
-            $feed = 'T';
-            break;
-          case 3 :
-            $feed = 'S';
-            break;
-          case 7 :
-            $feed = 'E';
-            break;
-          default :
-            $feed = '?';
-        }
-        if ($download) {
-          printf ('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
-        } else {
-          printf ('          <tr>
-            <td>%s</td>
-            <td>%s</td>
-            <td>
-              <a href="?showEntity=%d"><span class="text-truncate">%s</span>
-            </td>
-            <td>%s</td>
-            <td>%s</td>%s          </tr>%s',
-            $type, $feed, $entity['id'], $entity['entityID'], $email,
-            str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
-        }
+        isset($_GET['showTesting']) ? 'hideTesting' : 'showTesting',
+        isset($_GET['showTesting']) ? 'Hide' : 'Include', "\n");
+    }
+    while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+      $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
+      $contactPersonHandler->execute();
+      $emails['administrative'] = '';
+      $emails['support'] = '';
+      $emails['technical'] = '';
+      while ($contact = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
+        $emails[$contact['contactType']] = substr($contact['emailAddress'],7);
       }
-      print "        </table>\n";
+      if ($emails['technical'] != '' ) {
+        $email = $emails['technical'];
+      } elseif($emails['administrative'] != '') {
+        $email = $emails['administrative'];
+      } elseif ($emails['support'] != '' ) {
+        $email = $emails['support'];
+      } else {
+        $email = 'Missing';
+      }
+      if ($entity['isIdP']) {
+        $type = ($entity['isSP']) ? 'IdP & SP' : 'IdP';
+      } else {
+        $type = 'SP';
+      }
+      switch ($entity['publishIn']) {
+        case 1 :
+          $feed = 'T';
+          break;
+        case 3 :
+          $feed = 'S';
+          break;
+        case 7 :
+          $feed = 'E';
+          break;
+        default :
+          $feed = '?';
+      }
+      if ($download) {
+        printf ('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
+      } else {
+        printf ('          <tr>
+          <td>%s</td>
+          <td>%s</td>
+          <td>
+            <a href="?showEntity=%d"><span class="text-truncate">%s</span>
+          </td>
+          <td>%s</td>
+          <td>%s</td>%s          </tr>%s',
+          $type, $feed, $entity['id'], $entity['entityID'], $email,
+          str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
+      }
+    }
+    if (!$download) {print "        </table>\n"; }
   }
   private function showErrorMailReminders() {
     $entityHandler = $this->metaDb->prepare(
@@ -2120,7 +2123,52 @@ class MetadataDisplay {
       $labels, $idps, $sps, "\n", "\n");
   }
 
-  public function showScopeLists() {
+  public function showEntitiesInfo() {
+    # Default values
+    $scopesActive=' active';
+    $scopesSelected='true';
+    $scopesShow=' show';
+    #
+    $organizationsActive='';
+    $organizationsSelected='false';
+    $organizationsShow='';
+
+    if (isset($_GET["tab"])) {
+      switch ($_GET["tab"]) {
+        case 'organizations' :
+          $organizationsActive=' active';
+          $organizationsSelected='true';
+          $organizationsShow=' show';
+          break;
+        default :
+      }
+    }
+
+    printf('    <div class="row">
+      <div class="col">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link%s" id="scope-tab" data-toggle="tab" href="#scopes" role="tab"
+              aria-controls="scopes" aria-selected="%s">Scopes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="organizations-tab" data-toggle="tab" href="#organizations" role="tab"
+              aria-controls="organizations" aria-selected="%s">Organizations</a>
+          </li>
+        </ul>
+      </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade%s%s" id="scopes" role="tabpanel" aria-labelledby="scopes-tab">%s',
+        $scopesActive, $scopesSelected, $organizationsActive, $organizationsSelected, "\n", "\n",
+        $scopesShow, $scopesActive, "\n");
+    $this->showScopeList();
+    printf('      </div><!-- End tab-pane scopes -->
+      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">%s',
+        $organizationsShow, $organizationsActive, "\n");
+    $this->showOrganizationLists();
+    printf('      </div><!-- End tab-pane organizations -->%s    </div><!-- End tab-content -->%s',
+      "\n", "\n");
+  }
+  private function showScopeList() {
     printf ('        <table id="scope-table" class="table table-striped table-bordered">
           <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n");
     $scopeHandler = $this->metaDb->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
@@ -2141,7 +2189,36 @@ class MetadataDisplay {
         $scope['scope'], $scope['id'], $scope['entityID'], $scope['data'], "\n");
     }
     printf ('        </table>%s', "\n");
+  }
 
+  private function showOrganizationLists() {
+    $organizationHandler = $this->metaDb->prepare(
+      "SELECT COUNT(id) AS count, Org1.data AS OrganizationName, Org2.data AS OrganizationDisplayName
+      FROM Entities
+      LEFT JOIN Organization Org1
+        ON Entities.id = Org1.entity_id AND Org1.element = 'OrganizationName' AND Org1.lang = :Lang
+      LEFT JOIN Organization Org2
+        ON Entities.id = Org2.entity_id AND Org2.element = 'OrganizationDisplayName' AND Org2.lang = :Lang
+      WHERE Entities.status = 1 AND Entities.publishIn > 1 GROUP BY OrganizationName, OrganizationDisplayName");
+    $organizationHandler->execute(array('Lang' => 'sv'));
+    $this->printOrgList($organizationHandler, 'sv');
+    $organizationHandler->execute(array('Element' => 'OrganizationDisplayName', 'Lang' => 'en'));
+    $this->printOrgList($organizationHandler, 'en');
+  }
+  private function printOrgList($organizationHandler, $lang){
+    printf ('        <h4>Lang = %s</h4>
+        <table id="Organization%s-table" class="table table-striped table-bordered">
+          <thead><tr><th>OrganizationName</th><th>OrganizationDisplayName</th><th>Count</th></tr></thead>%s',
+      $lang, $lang, "\n");
+    while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+      printf ('          <tr>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%d</td>
+          </tr>%s',
+        $organization['OrganizationName'], $organization['OrganizationDisplayName'], $organization['count'], "\n");
+    }
+    printf ('        </table>%s', "\n");
   }
 
   public function showHelp() {

@@ -399,11 +399,11 @@ if (isset($_FILES['XMLfile'])) {
           }
           $display->showPendingList();
           break;
-        case 'showScopes' :
-          $menuActive = 'Scopes';
-          $html->showHeaders(HTML_TITLE . 'Show scopes');
+        case 'entitiesInfo' :
+          $menuActive = 'entitiesInfo';
+          $html->showHeaders(HTML_TITLE . 'Show EntityInfo');
           showMenu();
-          $display->showScopeLists();
+          $display->showEntitiesInfo();
           $html->addTableSort('scope-table');
           break;
         default :
@@ -1000,8 +1000,8 @@ function showMenu() {
     $filter, $menuActive == 'wait' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>',
     $filter, $menuActive == 'upload' ? '' : HTML_OUTLINE);
-  printf('<a href=".?action=showScopes%s"><button type="button" class="btn btn%s-primary">IdP scopes</button></a>',
-    $filter, $menuActive == 'showScopes' ? '' : HTML_OUTLINE);
+  printf('<a href=".?action=entitiesInfo%s"><button type="button" class="btn btn%s-primary">Entities Info</button></a>',
+    $filter, $menuActive == 'entitiesInfo' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>',
     $filter, $menuActive == 'EntityStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>',
