@@ -2125,9 +2125,9 @@ class MetadataDisplay {
 
   public function showEntitiesInfo() {
     # Default values
-    $scopesActive=' active';
-    $scopesSelected='true';
-    $scopesShow=' show';
+    $scopesActive='';
+    $scopesSelected='false';
+    $scopesShow='';
     #
     $organizationsActive='';
     $organizationsSelected='false';
@@ -2141,7 +2141,14 @@ class MetadataDisplay {
           $organizationsShow=' show';
           break;
         default :
+          $scopesActive=' active';
+          $scopesSelected='true';
+          $scopesShow=' show';
       }
+    } else {
+      $scopesActive=' active';
+      $scopesSelected='true';
+      $scopesShow=' show';
     }
 
     printf('    <div class="row">
@@ -2193,30 +2200,90 @@ class MetadataDisplay {
 
   private function showOrganizationLists() {
     $organizationHandler = $this->metaDb->prepare(
-      "SELECT COUNT(id) AS count, Org1.data AS OrganizationName, Org2.data AS OrganizationDisplayName
-      FROM Entities
-      LEFT JOIN Organization Org1
-        ON Entities.id = Org1.entity_id AND Org1.element = 'OrganizationName' AND Org1.lang = :Lang
-      LEFT JOIN Organization Org2
-        ON Entities.id = Org2.entity_id AND Org2.element = 'OrganizationDisplayName' AND Org2.lang = :Lang
-      WHERE Entities.status = 1 AND Entities.publishIn > 1 GROUP BY OrganizationName, OrganizationDisplayName");
+      "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
+        `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
+      FROM `Entities`
+      LEFT JOIN `Organization` Org1
+        ON `Entities`.`id` = `Org1`.`entity_id` AND `Org1`.`element` = 'OrganizationName' AND `Org1`.`lang` = :Lang
+      LEFT JOIN `Organization` Org2
+        ON `Entities`.`id` = `Org2`.`entity_id` AND `Org2`.`element` = 'OrganizationDisplayName'
+        AND `Org2`.`lang` = :Lang
+      LEFT JOIN `Organization` Org3
+        ON `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL' AND `Org3`.`lang` = :Lang
+      WHERE `Entities`.`status` = 1 AND `Entities`.`publishIn` > 1
+      GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`");
+    if (isset($_GET['name']) && isset($_GET['display']) && isset($_GET['url']) && isset($_GET['lang'])) {
+      $entitiesHandler = $this->metaDb->prepare(
+        "SELECT `id`, `entityID`, `Org1`.`data` AS `OrganizationName`,
+          `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
+        FROM `Entities`, `Organization` AS Org1, `Organization` AS Org2, `Organization` AS Org3
+        WHERE `Entities`.`status` = 1 AND `Entities`.`publishIn` > 1
+          AND `Entities`.`id` = `Org1`.`entity_id` AND `Org1`.`element` = 'OrganizationName'
+          AND `Org1`.`lang` = :Lang AND `Org1`.`data` = :OrganizationName
+          AND `Entities`.`id` = `Org2`.`entity_id` AND `Org2`.`element` = 'OrganizationDisplayName'
+          AND `Org2`.`lang` = :Lang AND `Org2`.`data` = :OrganizationDisplayName
+          AND `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL'
+          AND `Org3`.`lang` = :Lang AND `Org3`.`data` = :OrganizationURL
+        ORDER BY `entityID`");
+      $entitiesHandler->execute(array('OrganizationName' => $_GET['name'],
+        'OrganizationDisplayName' => $_GET['display'],
+        'OrganizationURL' => $_GET['url'],
+        'Lang' => $_GET['lang']));
+      printf ('        <h4>Entities</h4>
+        <table id="Entities-table" class="table table-striped table-bordered">
+          <thead><tr>
+            <th>entityID</th>
+            <th>OrganizationName</th>
+            <th>OrganizationDisplayName</th>
+            <th>OrganizationURL</th>
+          </tr></thead>%s',
+        "\n");
+      while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('          <tr>
+            <td><a href="?showEntity=%d">%s</a></td>
+            <td>%s</td>
+            <td>%s</td>
+            <td>%s</td>
+          </tr>%s',
+          $entity['id'], $entity['entityID'],
+          $entity['OrganizationName'], $entity['OrganizationDisplayName'],
+          $entity['OrganizationURL'], "\n");
+      }
+      printf ('        </table>%s', "\n");
+    }
     $organizationHandler->execute(array('Lang' => 'sv'));
     $this->printOrgList($organizationHandler, 'sv');
-    $organizationHandler->execute(array('Element' => 'OrganizationDisplayName', 'Lang' => 'en'));
+    print "        <br>\n";
+    $organizationHandler->execute(array('Lang' => 'en'));
     $this->printOrgList($organizationHandler, 'en');
   }
   private function printOrgList($organizationHandler, $lang){
     printf ('        <h4>Lang = %s</h4>
         <table id="Organization%s-table" class="table table-striped table-bordered">
-          <thead><tr><th>OrganizationName</th><th>OrganizationDisplayName</th><th>Count</th></tr></thead>%s',
+          <thead><tr>
+            <th>OrganizationName</th>
+            <th>OrganizationDisplayName</th>
+            <th>OrganizationURL</th>
+            <th>Count</th>
+          </tr></thead>%s',
       $lang, $lang, "\n");
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf ('          <tr>
+      if ($organization['OrganizationName'] != '' && $organization['OrganizationDisplayName'] != '' &&
+        $organization['OrganizationURL'] != '') {
+        printf ('          <tr>
             <td>%s</td>
             <td>%s</td>
-            <td>%d</td>
+            <td>%s</td>
+            <td><a href="?action=entitiesInfo&tab=organizations&name=%s&display=%s&url=%s&lang=%s">
+              %d
+            </a></td>
           </tr>%s',
-        $organization['OrganizationName'], $organization['OrganizationDisplayName'], $organization['count'], "\n");
+          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
+          $organization['OrganizationURL'],
+          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
+          $organization['OrganizationURL'], $lang,
+          $organization['count'], "\n");
+      }
     }
     printf ('        </table>%s', "\n");
   }

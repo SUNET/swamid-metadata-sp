@@ -405,6 +405,8 @@ if (isset($_FILES['XMLfile'])) {
           showMenu();
           $display->showEntitiesInfo();
           $html->addTableSort('scope-table');
+          $html->addTableSort('Organizationsv-table');
+          $html->addTableSort('Organizationen-table');
           break;
         default :
           showEntityList();
