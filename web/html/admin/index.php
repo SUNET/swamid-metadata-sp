@@ -279,7 +279,6 @@ if (isset($_FILES['XMLfile'])) {
             if ($newEntity_id = $metadata->createDraft()) {
               $metadata->validateXML();
               $metadata->validateSAML();
-              $metadata->copyResponsible($entitiesId);
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -731,7 +730,7 @@ function showEntity($entitiesId)  {
     if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, $allowEdit); }
     $display->showOrganization($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
-    $display->showMdqUrl($entity['entityID'], $Mode);
+    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $Mode); }
     $display->showXML($entitiesId);
     $display->showEditors($entitiesId);
 

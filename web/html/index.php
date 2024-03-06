@@ -245,7 +245,7 @@ function showEntity($entity_id, $urn = false)  {
     if ($entity['isAA'] ) { $display->showAA($entities_id, $oldEntity_id); }
     $display->showOrganization($entities_id, $oldEntity_id);
     $display->showContacts($entities_id, $oldEntity_id);
-    $display->showMdqUrl($entity['entityID'], $Mode);
+    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $Mode); }
     $display->showXML($entities_id);
   } else {
     $html->showHeaders('Metadata SWAMID - NotFound');
