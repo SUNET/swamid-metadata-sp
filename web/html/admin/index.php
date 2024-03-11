@@ -298,7 +298,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'forceAccess' :
           $metadata = new Metadata($entitiesId);
-          $metadata->addAccess2Entity($metadata->getUserId($EPPN), $EPPN);
+          $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
           showEntity($entitiesId);
           break;
         default :
@@ -1303,18 +1303,19 @@ function move2Pending($entitiesId) {
 
 function annualConfirmation($entitiesId){
   global $html, $menuActive;
-  global $EPPN, $mail, $fullName;
+  global $EPPN, $mail, $fullName, $userLevel;
 
   $metadata = new Metadata($entitiesId);
   if ($metadata->status() == 1) {
+    $confirm = false;
     # Entity is Published
     $errors = getErrors($entitiesId);
+    $user_id = $metadata->getUserId($EPPN);
+    if (isset ($_GET['user_id']) && ($user_id <> $_GET['user_id'] || $userLevel > 19) && $metadata->isResponsible()) {
+      $metadata->removeAccessFromEntity($_GET['user_id']);
+    }
     if ($errors == '') {
-      $user_id = $metadata->getUserId($EPPN);
       if ($metadata->isResponsible()) {
-        if (isset ($_GET['user_id']) && $user_id <> $_GET['user_id']) {
-          $metadata->removeAccessFromEntity($_GET['user_id']);
-        }
         # User have access to entity
         if ( $metadata->isIdP() && $metadata->isSP()) {
           $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
@@ -1357,7 +1358,6 @@ function annualConfirmation($entitiesId){
           $errors .= isset($_GET['FormVisit'])
             ? "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n"
             : '';
-          $confirm = false;
         }
 
         if ($confirm) {
@@ -1388,23 +1388,33 @@ function annualConfirmation($entitiesId){
     </form>
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>%s',
             $entitiesId, $infoText, $sections, $entitiesId, "\n");
-          printf('    <br><br><h5>The following have admin-access to this entity</h5><ul>%s', "\n");
-          foreach ($metadata->getResponsibles() as $user) {
-            $delete = $user_id == $user['id'] ? '' :
-              sprintf('<a href="?action=Annual+Confirmation&Entity=%d&user_id=%d"><i class="fas fa-trash"></i></a>',$entitiesId, $user['id']);
-            printf ('      <li>%s%s (%s)</li>%s', $delete, $user['fullName'], $user['userID'], "\n");
-          }
-          printf('    <ul>%s', "\n");
         }
-
       } else {
         # User have no access yet.
         requestAccess($entitiesId);
       }
     } else {
       $html->showHeaders(HTML_TITLE . $metadata->entityID());
-      printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <b>Please fix the following errors before confirming:</b><br>%s        %s%s      </div>%s    </div>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>%s', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n", "\n", $entitiesId, "\n");
+      printf('%s    <div class="row alert alert-danger" role="alert">
+      <div class="col">
+        <b>Please fix the following errors before confirming:</b><br>
+        %s
+      </div>
+    </div>
+    <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-primary">Return to Entity</button></a>%s',
+        "\n", str_ireplace("\n", "<br>", $errors), $entitiesId, "\n");
     }
+    if (! $confirm) {
+      printf('    <br><br><h5>The following have admin-access to this entity</h5><ul>%s', "\n");
+      foreach ($metadata->getResponsibles() as $user) {
+        $delete = ($user_id == $user['id'] && $userLevel < 20) ? '' :
+          sprintf('<a href="?action=Annual+Confirmation&Entity=%d&user_id=%d"><i class="fas fa-trash"></i></a>',
+            $entitiesId, $user['id']);
+        printf ('      <li>%s%s (%s)</li>%s', $delete, $user['fullName'], $user['userID'], "\n");
+      }
+    }
+    printf('    </ul>%s', "\n");
+
   } else {
     $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
