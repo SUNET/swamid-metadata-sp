@@ -1185,7 +1185,7 @@ class MetadataDisplay {
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $ssoUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
-        FROM Mdui, Entities WHERE entity_id = id AND `data` = :URL');
+        FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
       $organizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`

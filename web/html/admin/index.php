@@ -1219,6 +1219,8 @@ function move2Pending($entitiesId) {
         }
         $draftMetadata->updateFeedByValue($_GET['publishedIn']);
         $draftMetadata->moveDraftToPending($oldEntitiesId);
+        $draftMetadata->getUser($EPPN, true);
+        $draftMetadata->updateResponsible($EPPN);
       } else {
         $menuActive = 'new';
         showMenu();
