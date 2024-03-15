@@ -1,45 +1,50 @@
 CREATE TABLE `AccessRequests` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
   `hash` varchar(32) DEFAULT NULL,
   `requestDate` datetime DEFAULT NULL,
-  UNIQUE KEY `entity_id_user_id` (`entity_id`,`user_id`),
-  KEY `AccessRequests_FK_user_id` (`user_id`),
-  CONSTRAINT `AccessRequests_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `AccessRequests_FK_user_id` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`,`user_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `AccessRequests_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AccessRequests_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `AttributeConsumingService` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `Service_index` smallint(5) unsigned DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `Service_index` smallint(5) unsigned NOT NULL,
   `isDefault` tinyint(3) unsigned DEFAULT NULL,
-  KEY `AttributeConsumingService_FK_entity_id` (`entity_id`),
-  CONSTRAINT `AttributeConsumingService_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`,`Service_index`),
+  CONSTRAINT `AttributeConsumingService_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `AttributeConsumingService_RequestedAttribute` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `Service_index` smallint(5) unsigned DEFAULT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_id` int(10) unsigned NOT NULL,
+  `Service_index` smallint(5) unsigned NOT NULL,
   `FriendlyName` varchar(256) DEFAULT NULL,
   `Name` varchar(256) DEFAULT NULL,
   `NameFormat` varchar(256) DEFAULT NULL,
   `isRequired` tinyint(3) unsigned DEFAULT NULL,
-  KEY `AttributeConsumingService_RequestedAttribute_FK_entity_id` (`entity_id`),
-  CONSTRAINT `AttributeConsumingService_RequestedAttribute_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`id`),
+  KEY `entity_id` (`entity_id`),
+  CONSTRAINT `AttributeConsumingService_RequestedAttribute_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `AttributeConsumingService_Service` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `Service_index` smallint(5) unsigned DEFAULT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_id` int(10) unsigned NOT NULL,
+  `Service_index` smallint(5) unsigned NOT NULL,
   `element` varchar(20) DEFAULT NULL,
   `lang` char(10) DEFAULT NULL,
   `data` text DEFAULT NULL,
-  KEY `AttributeConsumingService_Service_FK_entity_id` (`entity_id`),
-  CONSTRAINT `AttributeConsumingService_Service_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`id`),
+  KEY `entity_id` (`entity_id`),
+  CONSTRAINT `AttributeConsumingService_Service_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `ContactPerson` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_id` int(10) unsigned NOT NULL,
   `contactType` enum('technical','support','administrative','billing','other') DEFAULT NULL,
   `extensions` varchar(256) DEFAULT NULL,
   `company` varchar(256) DEFAULT NULL,
@@ -48,8 +53,9 @@ CREATE TABLE `ContactPerson` (
   `emailAddress` varchar(256) DEFAULT NULL,
   `telephoneNumber` varchar(256) DEFAULT NULL,
   `subcontactType` varchar(256) DEFAULT NULL,
-  KEY `ContactPerson_FK_entity_id` (`entity_id`),
-  CONSTRAINT `ContactPerson_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`id`),
+  KEY `entity_id` (`entity_id`),
+  CONSTRAINT `ContactPerson_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `Entities` (
@@ -73,62 +79,66 @@ CREATE TABLE `Entities` (
 );
 
 CREATE TABLE `EntitiesStatistics` (
-  `date` datetime DEFAULT NULL,
+  `date` datetime NOT NULL,
   `NrOfEntites` int(10) unsigned DEFAULT NULL,
   `NrOfSPs` int(10) unsigned DEFAULT NULL,
-  `NrOfIdPs` int(10) unsigned DEFAULT NULL
+  `NrOfIdPs` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`date`)
 );
 
 CREATE TABLE `EntitiesStatus` (
-  `date` datetime DEFAULT NULL,
+  `date` datetime NOT NULL,
   `ErrorsTotal` int(10) unsigned DEFAULT NULL,
   `ErrorsSPs` int(10) unsigned DEFAULT NULL,
   `ErrorsIdPs` int(10) unsigned DEFAULT NULL,
   `NrOfEntites` int(10) unsigned DEFAULT NULL,
   `NrOfSPs` int(10) unsigned DEFAULT NULL,
   `NrOfIdPs` int(10) unsigned DEFAULT NULL,
-  `Changed` int(10) unsigned DEFAULT NULL
+  `Changed` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`date`)
 );
 
 CREATE TABLE `EntityAttributes` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_id` int(10) unsigned NOT NULL,
   `type` varchar(30) DEFAULT NULL,
   `attribute` varchar(256) DEFAULT NULL,
-  KEY `EntityAttributes_FK_entity_id` (`entity_id`),
-  CONSTRAINT `EntityAttributes_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`id`),
+  KEY `entity_id` (`entity_id`),
+  CONSTRAINT `EntityAttributes_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `EntityConfirmation` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
   `lastConfirmed` datetime DEFAULT NULL,
-  UNIQUE KEY `entity_id` (`entity_id`),
-  KEY `EntityConfirmation_FK_user_id` (`user_id`),
-  CONSTRAINT `EntityConfirmation_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `EntityConfirmation_FK_user_id` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `EntityConfirmation_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `EntityConfirmation_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `EntityURLs` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
   `URL` text DEFAULT NULL,
-  `type` varchar(20) DEFAULT NULL,
-  UNIQUE KEY `entity_id_type` (`entity_id`,`type`),
-  CONSTRAINT `EntityURLs_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  `type` varchar(20) NOT NULL,
+  PRIMARY KEY (`entity_id`,`type`),
+  CONSTRAINT `EntityURLs_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `EntityUser` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `user_id` int(10) unsigned DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
   `approvedBy` text DEFAULT NULL,
   `lastChanged` datetime DEFAULT NULL,
-  UNIQUE KEY `entity_id_user_id` (`entity_id`,`user_id`),
-  KEY `EntityUser_FK_user_id` (`user_id`),
-  CONSTRAINT `EntityUser_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `EntityUser_FK_user_id` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`,`user_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `EntityUser_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `EntityUser_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `ExternalEntities` (
-  `entityID` varchar(256) DEFAULT NULL,
+  `entityID` varchar(256) NOT NULL,
   `updated` tinyint(3) unsigned DEFAULT NULL,
   `isIdP` tinyint(3) unsigned DEFAULT NULL,
   `isSP` tinyint(3) unsigned DEFAULT NULL,
@@ -141,11 +151,13 @@ CREATE TABLE `ExternalEntities` (
   `ecs` text DEFAULT NULL,
   `ec` text DEFAULT NULL,
   `assurancec` text DEFAULT NULL,
-  `ra` text DEFAULT NULL
+  `ra` text DEFAULT NULL,
+  PRIMARY KEY (`entityID`)
 );
 
 CREATE TABLE `KeyInfo` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_id` int(10) unsigned NOT NULL,
   `type` enum('SPSSO','IDPSSO','AttributeAuthority') DEFAULT NULL,
   `use` enum('both','signing','encryption') DEFAULT NULL,
   `order` tinyint(3) unsigned DEFAULT NULL,
@@ -156,64 +168,69 @@ CREATE TABLE `KeyInfo` (
   `bits` smallint(5) unsigned DEFAULT NULL,
   `key_type` varchar(256) DEFAULT NULL,
   `serialNumber` varchar(44) DEFAULT NULL,
-  KEY `KeyInfo_FK_entity_id` (`entity_id`),
-  CONSTRAINT `KeyInfo_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`id`),
+  KEY `entity_id` (`entity_id`),
+  CONSTRAINT `KeyInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `MailReminders` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `type` tinyint(3) unsigned DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `type` tinyint(3) unsigned NOT NULL,
   `level` tinyint(3) unsigned DEFAULT NULL,
   `mailDate` datetime DEFAULT NULL,
-  UNIQUE KEY `entity_id_type` (`entity_id`,`type`),
-  CONSTRAINT `MailReminders_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`,`type`),
+  CONSTRAINT `MailReminders_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `Mdui` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entity_id` int(10) unsigned NOT NULL,
   `type` enum('SPSSO','IDPSSO','IDPDisco') DEFAULT NULL,
   `lang` char(10) DEFAULT NULL,
-  `height` smallint(6) DEFAULT NULL,
-  `width` smallint(6) DEFAULT NULL,
+  `height` smallint(5) unsigned DEFAULT NULL,
+  `width` smallint(5) unsigned DEFAULT NULL,
   `element` varchar(25) DEFAULT NULL,
   `data` text DEFAULT NULL,
-  KEY `Mdui_FK_entity_id` (`entity_id`),
-  CONSTRAINT `Mdui_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`id`),
+  KEY `entity_id` (`entity_id`),
+  CONSTRAINT `Mdui_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `Organization` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `lang` char(10) DEFAULT NULL,
-  `element` varchar(25) DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `lang` char(10) NOT NULL,
+  `element` varchar(25) NOT NULL,
   `data` text DEFAULT NULL,
-  KEY `Organization_FK_entity_id` (`entity_id`),
-  CONSTRAINT `Organization_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`,`lang`,`element`),
+  CONSTRAINT `Organization_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `Scopes` (
-  `entity_id` int(10) unsigned DEFAULT NULL,
-  `scope` varchar(256) DEFAULT NULL,
+  `entity_id` int(10) unsigned NOT NULL,
+  `scope` varchar(256) NOT NULL,
   `regexp` tinyint(3) unsigned DEFAULT NULL,
-  KEY `Scopes_FK_entity_id` (`entity_id`),
-  CONSTRAINT `Scopes_FK_entity_id` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`entity_id`,`scope`),
+  CONSTRAINT `Scopes_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
 CREATE TABLE `TestResults` (
-  `entityID` varchar(256) DEFAULT NULL,
-  `test` varchar(20) DEFAULT NULL,
+  `entityID` varchar(256) NOT NULL,
+  `test` varchar(20) NOT NULL,
   `time` datetime DEFAULT NULL,
   `result` varchar(70) DEFAULT NULL,
-  UNIQUE KEY `entityID_test` (`entityID`,`test`)
+  PRIMARY KEY (`entityID`,`test`)
 );
 
 CREATE TABLE `URLs` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `URL` text DEFAULT NULL,
   `type` tinyint(3) unsigned DEFAULT NULL,
   `status` tinyint(3) unsigned DEFAULT NULL,
   `cocov1Status` tinyint(3) unsigned DEFAULT NULL,
   `lastSeen` datetime DEFAULT NULL,
   `lastValidated` datetime DEFAULT NULL,
-  `validationOutput` text DEFAULT NULL
+  `validationOutput` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
 );
 
 CREATE TABLE `Users` (
@@ -226,8 +243,8 @@ CREATE TABLE `Users` (
 );
 
 CREATE TABLE `assuranceLog` (
-  `entityID` varchar(256) DEFAULT NULL,
-  `assurance` varchar(10) DEFAULT NULL,
-  `logDate` date DEFAULT curdate(),
-  UNIQUE KEY `entityID_assurance` (`entityID`,`assurance`) USING HASH
+  `entityID` varchar(256) NOT NULL,
+  `assurance` varchar(10) NOT NULL,
+  `logDate` date DEFAULT NULL,
+  PRIMARY KEY (`entityID`,`assurance`)
 );
