@@ -94,6 +94,7 @@ $html->showFooter($collapseIcons);
 
 function showSoftwares(){
   global $db, $collapseIcons;
+  $softwareAgeHandler = $db->prepare('SELECT MIN(`lastSeen`) AS startSeen FROM `hostSoftware`');
   $softwaresHandler = $db->prepare(
     'SELECT COUNT (`hosts_id`) AS count, `id`, `name`
     FROM `softwares`, `hostSoftware`
@@ -105,6 +106,11 @@ function showSoftwares(){
     FROM `hosts`, `hostSoftware`
     WHERE `hosts_id` = `hosts`.`id` AND `softwares_id` = :SoftwareID
     ORDER BY `ip`');
+  $softwareAgeHandler->execute();
+  if ($softwareAge = $softwareAgeHandler->fetch(PDO::FETCH_ASSOC)) {
+    printf('
+    <h5>Software seen since %s</h5>', $softwareAge['startSeen']);
+  }
   $softwaresHandler->execute();
   while ($software = $softwaresHandler->fetch(PDO::FETCH_ASSOC)) {
     $name = str_replace(array(' ', '$', ':', '{', '}', '/', '(', ')', ';', ','), '_', $software['name']);
@@ -193,16 +199,18 @@ function printFeedRow($hostInfo, $feeds) {
 
 function showFeeds() {
   global $db;
-
+  $feedAgeHandler = $db->prepare('SELECT MIN(`lastSeen`) AS startSeen FROM `hostFeed`');
   $feedsHandler = $db->prepare('SELECT * FROM feeds ORDER BY name');
   $hostsHandler = $db->prepare(
     'SELECT `hosts`.`id`, `ip`, `hosts`.`name`, `feeds_id`
     FROM `hosts`, `hostFeed`
     WHERE `hosts_id` = `hosts`.`id`
     ORDER BY `ip`');
-  printf ('        <h5>Feeds</h5>
+  $feedAgeHandler->execute();
+  $feedAge = $feedAgeHandler->fetch(PDO::FETCH_ASSOC);
+  printf ('        <h5>Feeds seen since %s</h5>
   <table id="feed-table" class="table table-striped table-bordered">
-    <thead><tr><th>Host</th>');
+    <thead><tr><th>Host</th>', $feedAge['startSeen']);
   $feedsHandler->execute();
   $feedCount = 0;
   while ($feed = $feedsHandler->fetch(PDO::FETCH_ASSOC)) {
