@@ -188,6 +188,7 @@ if ($errors != '') {
 
 switch ($EPPN) {
   case 'bjorn@sunet.se' :
+  case 'pax@sunet.se' :
   case 'jocar@sunet.se' :
   case 'mifr@sunet.se' :
     $userLevel = 20;
@@ -197,12 +198,8 @@ switch ($EPPN) {
     $userLevel = 10;
     break;
   case 'johpe12@liu.se' :
-  case 'pax@sunet.se' :
   case 'toylon98@umu.se' :
     $userLevel = 5;
-    break;
-  case 'pontus.fagerstrom@sunet.se' :
-    $userLevel = 2;
     break;
   default :
     $userLevel = 1;
@@ -1011,16 +1008,15 @@ function showMenu() {
     $filter, $menuActive == 'RAFStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>',
     $filter, $menuActive == 'Errors' ? '' : HTML_OUTLINE);
-
   if ( $userLevel > 4 ) {
-    printf('%s    <a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>',
-      "\n", $filter, $menuActive == 'URLlist' ? '' : HTML_OUTLINE);
+    printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>',
+      $filter, $menuActive == 'URLlist' ? '' : HTML_OUTLINE);
+    printf('<a href="./mds.php" target="_blank"><button type="button" class="btn btn%s-primary">MDS</button></a>',
+      HTML_OUTLINE);
   }
   if ( $userLevel > 10 ) {
-    printf('%s    <a href=".?action=CleanPending%s">
-      <button type="button" class="btn btn%s-primary">Clean Pending</button>
-    </a>',
-      "\n", $filter, $menuActive == 'CleanPending' ? '' : HTML_OUTLINE);
+    printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>',
+      $filter, $menuActive == 'CleanPending' ? '' : HTML_OUTLINE);
   }
   print "\n    <br>\n    <br>\n";
 }
