@@ -1603,10 +1603,10 @@ class MetadataDisplay {
 
   public function showPendingList() {
     $entitiesHandler = $this->metaDb->prepare(
-      'SELECT Entities.`id`, `entityID`, `xml`, `lastUpdated`, `email`
+      'SELECT Entities.`id`, `entityID`, `xml`, `lastUpdated`, `email`, `lastChanged`
       FROM Entities, EntityUser, Users
       WHERE `status` = 2 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id`
-      ORDER BY lastUpdated ASC, `entityID`');
+      ORDER BY lastUpdated ASC, `entityID`, `lastChanged` DESC');
     $entityHandler = $this->metaDb->prepare(
       'SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
     $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
@@ -1619,7 +1619,13 @@ class MetadataDisplay {
 
     printf ('    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Updater</th><th>Time</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", );
+    $lastId = 0;
     while ($pendingEntity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($lastId == $pendingEntity['id']) {
+        # Only show one line for each entity
+        continue;
+      }
+      $lastId = $pendingEntity['id'];
       $entityID = $pendingEntity['entityID'];
 
       $normalize->fromString($pendingEntity['xml']);
