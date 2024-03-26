@@ -511,7 +511,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
     <p>The entity \"%s\" (%s) has been in %s for %d week(s).
     If nothing happens your %s will be removed short after %s.</p>
     <p>You have received this email because you are the last person updating this entity.</p>
-    <p>You can view or cancel your %s at
+    %s<p>You can view or cancel your %s at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
     <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
     --<br>
@@ -519,17 +519,21 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
   </body>\n</html>",
   $displayName, $entityID, $pending ? 'Pending' : 'Drafts', $weeks,
   $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
-  $pending ? 'request' : 'draft', $baseURL, $id, $baseURL, $id);
+  $pending ? '<p>To get a change published forward this mail to operations@swamid.se</p>' : '',
+  $pending ? 'request' : 'draft',
+  $baseURL, $id, $baseURL, $id);
   $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has been in %s for %d week(s).
     If nothing happens your %s will be removed short after %s.
     \nYou have received this email because you are the last person updating this entity.
-    \nYou can view or cancel your %s at %sadmin/?showEntity=%d .
+    %s\nYou can view or cancel your %s at %sadmin/?showEntity=%d .
     \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
     --
     On behalf of SWAMID Operations",
     $displayName, $entityID, $pending ? 'Pending' : 'Drafts', $weeks,
     $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
-    $pending ? 'request' : 'draft', $baseURL, $id);
+    $pending ? "\nTo get a change published forward this mail to operations@swamid.se" : '',
+    $pending ? 'request' : 'draft',
+    $baseURL, $id);
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
   $mailContacts->Subject  = sprintf ('Warning : SWAMID %s metadata for %s needs to be acted on',
