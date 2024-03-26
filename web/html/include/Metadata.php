@@ -295,6 +295,9 @@ class Metadata {
         } else {
           switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
             case 200 :
+             /* if (curl_getinfo($ch, CURLINFO_CONTENT_TYPE) == 'image/png') {
+                print_r($size = getimagesize($url['URL']));
+              }*/
               switch ($url['type']) {
                 case 1 :
                 case 2 :
@@ -2505,8 +2508,14 @@ class Metadata {
   # Copies which user that is responsible for an entity from another entity
   #############
   public function copyResponsible($otherEntity_id) {
-    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged) ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
-    $otherEntityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `approvedBy`, `lastChanged` FROM EntityUser WHERE `entity_id` = :OtherEntity_Id');
+    $entityUserHandler = $this->metaDb->prepare(
+      'INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
+      VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged)
+      ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
+    $otherEntityUserHandler = $this->metaDb->prepare(
+      'SELECT `user_id`, `approvedBy`, `lastChanged`
+      FROM EntityUser
+      WHERE `entity_id` = :OtherEntity_Id');
 
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $otherEntityUserHandler->bindParam(self::BIND_OTHERENTITY_ID, $otherEntity_id);
@@ -2517,16 +2526,6 @@ class Metadata {
       $entityUserHandler->bindParam(self::BIND_LASTCHANGED, $otherEntityUser['lastChanged']);
       $entityUserHandler->execute();
     }
-  }
-
-  #############
-  # Updates lastUpdated for an entity
-  #############
-  public function updateLastUpdated($date) {
-    $entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities SET `lastUpdated` = :Date WHERE `id` = :Id');
-    $entityHandlerUpdate->bindValue(self::BIND_ID, $this->dbIdNr);
-    $entityHandlerUpdate->bindValue(self::BIND_DATE, $date);
-    $entityHandlerUpdate->execute();
   }
 
   #############
@@ -2769,7 +2768,8 @@ class Metadata {
   public function moveDraftToPending($publishedEntity_id) {
     $this->addRegistrationInfo();
     $entityHandler = $this->metaDb->prepare('UPDATE Entities
-      SET `status` = 2, `publishedId` = :PublishedId, `xml` = :Xml WHERE `status` = 3 AND `id` = :Id');
+      SET `status` = 2, `publishedId` = :PublishedId, `lastUpdated` = NOW(), `xml` = :Xml
+      WHERE `status` = 3 AND `id` = :Id');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityHandler->bindParam(self::BIND_PUBLISHEDID, $publishedEntity_id);
     $entityHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
@@ -2932,7 +2932,7 @@ class Metadata {
       $userHandler = $this->metaDb->prepare('SELECT `id`, `email`, `fullName` FROM Users WHERE `userID` = :Id');
       $userHandler->bindValue(self::BIND_ID, strtolower($userID));
       $userHandler->execute();
-      if ($this->user = $this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
           $userHandler = $this->metaDb->prepare('UPDATE Users
             SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');

@@ -1516,8 +1516,8 @@ class MetadataDisplay {
   }
   private function showErrorMailReminders() {
     $entityHandler = $this->metaDb->prepare(
-      'SELECT MailReminders.*, entityID, lastConfirmed
-      FROM MailReminders, Entities
+      'SELECT MailReminders.*, `entityID`, `lastConfirmed`, `lastValidated`
+      FROM `MailReminders`, `Entities`
       LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
       WHERE `Entities`.`id` = `MailReminders`.`entity_id`
       ORDER BY `entityID`, `type`');
@@ -1526,36 +1526,73 @@ class MetadataDisplay {
         <h5>Entities that we sent mail reminders to</h5>
         <p>Updated every wednesday at 7:15 UTC</p>
         <table id="reminder-table" class="table table-striped table-bordered">
-          <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed</th></tr></thead>%s',
+          <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed/Validated</th></tr></thead>%s',
       "\n");
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($entity['type'] == 1) {
-        // Confirmation/Validation reminder
-        switch ($entity['level']) {
-          case 1 :
-            $reason = 'Not validated/confirmed for 10 months';
-            break;
-          case 2 :
-            $reason = 'Not validated/confirmed for 11 months';
-            break;
-          case 3:
-            $reason = 'Not validated/confirmed for 12 months';
-            break;
-          default :
-            $reason = 'Not validated/confirmed';
+      switch ($entity['type']) {
+        case 1 :
+          // Confirmation/Validation reminder
+          switch ($entity['level']) {
+            case 1 :
+              $reason = 'Not validated/confirmed for 10 months';
+              break;
+            case 2 :
+              $reason = 'Not validated/confirmed for 11 months';
+              break;
+            case 3:
+              $reason = 'Not validated/confirmed for 12 months';
+              break;
+            default :
+              $reason = 'Not validated/confirmed';
+          }
+          $date = $entity['lastConfirmed'];
+          break;
+        case 2:
+          // Cert expire
+          switch ($entity['level']) {
+            case 1 :
+              $reason = 'Certificate will expire within a month';
+              break;
+            case 2 :
+              $reason = 'Certificate have expired';
+              break;
+            default :
+              $reason = 'Certificate error';
+          }
+          $date = $entity['lastConfirmed'];
+          break;
+        case 3 :
+          // Peending queue
+          switch ($entity['level']) {
+            case 1 :
+              $reason = '1 week in pending queue';
+              break;
+            case 2 :
+              $reason = '4 weeks in pending queue';
+              break;
+            case 3:
+              $reason = '11 weeks in pending queue';
+              break;
+            default :
+              $reason = 'To long in pending queue';
+          }
+          $date = $entity['lastValidated'];
+          break;
+        case 4 :
+          // Drafts queue
+          switch ($entity['level']) {
+            case 1 :
+              $reason = '2 weeks in drafts queue';
+              break;
+            case 2 :
+              $reason = '7 weeks in drafts queue';
+              break;
+            default :
+              $reason = 'To long in drafts queue';
+          }
+          $date = $entity['lastValidated'];
+          break;
         }
-      } else {
-        switch ($entity['level']) {
-          case 1 :
-            $reason = 'Certificate will expire within a month';
-            break;
-          case 2 :
-            $reason = 'Certificate have expired';
-            break;
-          default :
-            $reason = 'Certificate error';
-        }
-      }
       printf(
         '          <tr>
             <td><a href=./?showEntity=%d target="_blank">%s</a></td>
@@ -1563,7 +1600,7 @@ class MetadataDisplay {
             <td>%s</td>
             <td>%s</td>
           </tr>%s',
-        $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $entity['lastConfirmed'],"\n");
+        $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $date,"\n");
     }
     printf ('        </table>%s', "\n");
   }
