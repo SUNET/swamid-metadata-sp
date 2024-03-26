@@ -729,8 +729,10 @@ function showEntity($entitiesId)  {
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
     if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $Mode); }
     $display->showXML($entitiesId);
+    if ($oldEntitiesId > 0 && $userLevel > 10) {
+      $display->showDiff($entitiesId, $oldEntitiesId);
+    }
     $display->showEditors($entitiesId);
-
   } else {
     $html->showHeaders(HTML_TITLE . 'NotFound');
     print "Can't find Entity";

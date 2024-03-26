@@ -1155,6 +1155,12 @@ class MetadataDisplay {
     exit;
   }
 
+  public function showDiff($entityId, $otherEntityId) {
+    $this->showCollapse('XML Diff', 'XMLDiff', false, 0, false);
+    $this->showXMLDiff($entityId, $otherEntityId);
+    $this->showCollapseEnd('XMLDiff');
+  }
+
   public function showEditors($entityId){
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
     $usersHandler = $this->metaDb->prepare('SELECT `userID`, `email`, `fullName`
