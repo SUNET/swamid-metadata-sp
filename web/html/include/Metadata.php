@@ -52,6 +52,7 @@ class Metadata {
   const BIND_LASTCONFIRMED = ':LastConfirmed';
   const BIND_NAME = ':Name';
   const BIND_NAMEFORMAT = ':NameFormat';
+  const BIND_NOSIZE = ':NoSize';
   const BIND_NOTVALIDAFTER = ':NotValidAfter';
   const BIND_ORDER = ':Order';
   const BIND_OTHERENTITY_ID = ':OtherEntity_Id';
@@ -251,20 +252,21 @@ class Metadata {
     }
   }
 
-  public function validateURLs($limit=10){
+  public function validateURLs($limit=10, $verbose = false){
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_HEADER, 1);
+    curl_setopt($ch, CURLOPT_HEADER, 0);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_USERAGENT, 'https://metadata.swamid.se/validate');
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
-    curl_setopt($ch, CURLINFO_HEADER_OUT, 1);
+    curl_setopt($ch, CURLINFO_HEADER_OUT, 0);
 
     $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs
-      SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status, `validationOutput` = :Result
-        WHERE `URL` = :URL;");
+      SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status,
+        `height` = :Height, `width` = :Width, `nosize` = :NoSize, `validationOutput` = :Result
+      WHERE `URL` = :URL;");
     if ($limit > 10) {
       $sql = "SELECT `URL`, `type` FROM URLs
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
@@ -280,77 +282,96 @@ class Metadata {
     $urlHandler = $this->metaDb->prepare($sql);
     $urlHandler->execute();
     $count = 0;
+    if ($verbose) {
+      printf ('    <table class="table table-striped table-bordered">%s', "\n");
+    }
     while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
       $urlUpdateHandler->bindValue(self::BIND_URL, $url['URL']);
 
       curl_setopt($ch, CURLOPT_URL, $url['URL']);
-      $continue = true;
-      while ($continue) {
-        $output = curl_exec($ch);
-        if (curl_errno($ch)) {
-          $urlUpdateHandler->bindValue(self::BIND_RESULT, curl_error($ch));
-          $urlUpdateHandler->bindValue(self::BIND_STATUS, 3);
-          $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-          $continue = false;
-        } else {
-          switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
-            case 200 :
-             /* if (curl_getinfo($ch, CURLINFO_CONTENT_TYPE) == 'image/png') {
-                print_r($size = getimagesize($url['URL']));
-              }*/
-              switch ($url['type']) {
-                case 1 :
-                case 2 :
-                  $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Reachable');
+      $height = 0;
+      $width = 0;
+      $nosize = 0;
+      $verboseInfo = sprintf('<tr><td>%s</td><td>', $url['URL']);
+      $output = curl_exec($ch);
+      if (curl_errno($ch)) {
+        $verboseInfo .= 'Curl error';
+        $urlUpdateHandler->bindValue(self::BIND_RESULT, curl_error($ch));
+        $urlUpdateHandler->bindValue(self::BIND_STATUS, 3);
+        $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+      } else {
+        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
+          case 200 :
+            $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
+              if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
+                $nosize = 1;
+              } else {
+                $size = getimagesizefromstring($output);
+                $width = $size[0];
+                $height = $size[1];
+              }
+            }
+            switch ($url['type']) {
+              case 1 :
+              case 2 :
+                $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Reachable');
+                $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
+                $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
+                break;
+              case 3 :
+                if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
+                  $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Policy OK');
                   $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
                   $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
-                  break;
-                case 3 :
-                  if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
-                    $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Policy OK');
-                    $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                    $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
-                  } else {
-                    $urlUpdateHandler->bindValue(self::BIND_RESULT,
-                      'Policy missing link to ' . self::SAML_EC_COCOV1);
-                    $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                    $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-                  }
-                  break;
-                default :
-                  break;
-              }
-              $continue = false;
-              break;
-            case 403 :
-              $urlUpdateHandler->bindValue(self::BIND_RESULT, "Access denied. Can't check URL.");
-              $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-              $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-              $continue = false;
-              break;
-            case 404 :
-              $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Page not found.');
-              $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-              $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-              $continue = false;
-              break;
-            case 503 :
-              $urlUpdateHandler->bindValue(self::BIND_RESULT, "Service Unavailable. Can't check URL.");
-              $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-              $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-              $continue = false;
-              break;
-            default :
-              $urlUpdateHandler->bindValue(self::BIND_RESULT,
-                "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
-              $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-              $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-              $continue = false;
-          }
+                } else {
+                  $urlUpdateHandler->bindValue(self::BIND_RESULT,
+                    'Policy missing link to ' . self::SAML_EC_COCOV1);
+                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
+                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+                }
+                break;
+              default :
+                break;
+            }
+            break;
+          case 403 :
+            $verboseInfo .= '403';
+            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Access denied. Can't check URL.");
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+            break;
+          case 404 :
+            $verboseInfo .= '404';
+            $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Page not found.');
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+            break;
+          case 503 :
+            $verboseInfo .= '503';
+            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Service Unavailable. Can't check URL.");
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+            break;
+          default :
+            $verboseInfo .= $http_code;
+            $urlUpdateHandler->bindValue(self::BIND_RESULT,
+              "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
         }
       }
+      $urlUpdateHandler->bindValue(self::BIND_HEIGHT, $height);
+      $urlUpdateHandler->bindValue(self::BIND_WIDTH, $width);
+      $urlUpdateHandler->bindValue(self::BIND_NOSIZE, $nosize);
       $urlUpdateHandler->execute();
       $count ++;
+      if ($verbose) {
+        printf ('      %s</td></tr>%s', $verboseInfo, "\n");
+      }
+    }
+    if ($verbose) {
+      printf ('    </table>%s', "\n");
     }
     curl_close($ch);
     if ($limit > 10) {
@@ -358,11 +379,11 @@ class Metadata {
     }
   }
 
-  public function revalidateURL($url) {
+  public function revalidateURL($url, $verbose = false) {
     $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
     $urlUpdateHandler->bindParam(self::BIND_URL, $url);
     $urlUpdateHandler->execute();
-    $this->validateURLs(5);
+    $this->validateURLs(5, $verbose);
   }
 
   public function checkOldURLS($age = 30, $verbose = false) {
@@ -1185,6 +1206,7 @@ class Metadata {
     $ssoUIIHandler = $this->metaDb->prepare('INSERT INTO Mdui
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
       VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Value)');
+    $urlHandler = $this->metaDb->prepare('SELECT `nosize`, `height`, `width`, `status` FROM URLs WHERE `URL` = :URL');
 
     $ssoUIIHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $ssoUIIHandler->bindValue(self::BIND_TYPE, $type);
@@ -1198,6 +1220,8 @@ class Metadata {
     $child = $data->firstChild;
     while ($child) {
       if ($child->nodeType != 8) {
+        $height = 0;
+        $width = 0;
         $lang = $child->getAttribute('xml:lang') ?
           $child->getAttribute('xml:lang') : '';
         $urltype = 1;
@@ -1208,20 +1232,31 @@ class Metadata {
             $element = substr($child->nodeName, 5);
             $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
             $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
+            $urlHandler->execute(array(self::BIND_URL => trim($child->textContent)));
+            if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+              if ($urlInfo['height'] != $height && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
+                $this->error .= sprintf(
+                  "Logo (%dx%d) lang=%s is marked with height %s in metadata but actual height is %d.\n",
+                  $height, $width, $lang, $height, $urlInfo['height']);
+              }
+              if ($urlInfo['width'] != $width && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
+                $this->error .= sprintf(
+                  "Logo (%dx%d) lang=%s is marked with width %s in metadata but actual width is %d.\n",
+                  $height, $width, $lang, $width, $urlInfo['width']);
+              }
+            } else {
+              $this->warning .= sprintf("Logo (%dx%d) lang=%s is not checked.\n", $height, $width, $lang);
+            }
             break;
           case self::SAML_MDUI_INFORMATIONURL :
           case self::SAML_MDUI_PRIVACYSTATEMENTURL :
             $this->addURL(trim($child->textContent), $urltype);
             $element = substr($child->nodeName, 5);
-            $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-            $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
             break;
           case self::SAML_MDUI_DISPLAYNAME :
           case self::SAML_MDUI_DESCRIPTION :
           case self::SAML_MDUI_KEYWORDS :
             $element = substr($child->nodeName, 5);
-            $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-            $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
             break;
           default :
             $this->result .= sprintf ("Unknown Element (%s) in %s->UIInfo.\n", $child->nodeName, $type);

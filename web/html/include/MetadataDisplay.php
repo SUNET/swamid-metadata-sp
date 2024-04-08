@@ -590,6 +590,7 @@ class MetadataDisplay {
     $otherMDUIElements = array();
     $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
     $mduiHandler->execute();
+    $urlHandler = $this->metaDb->prepare('SELECT `nosize`, `height`, `width` FROM URLs WHERE `URL` = :URL');
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
       $size = $mdui['height'].'x'.$mdui['width'];
@@ -646,9 +647,27 @@ class MetadataDisplay {
       }
       switch ($element) {
         case 'Logo' :
+          $urlHandler->execute(array(self::BIND_URL => $data));
+          $statusText = '';
+          if ($URLInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($URLInfo['height'] == $mdui['height'] || $URLInfo['nosize'] == 1) {
+              $statusIcon = '';
+            } else {
+              $statusIcon = '<i class="fas fa-exclamation"></i>';
+              $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
+                $mdui['height'], $URLInfo['height']);
+            }
+            if ($URLInfo['width'] != $mdui['width'] && $URLInfo['nosize'] == 0) {
+              $statusIcon = '<i class="fas fa-exclamation"></i>';
+              $statusText .= sprintf('<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
+                $mdui['width'], $URLInfo['width']);
+            }
+          } else {
+            $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
+          }
           $data = sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $data, $state, $data);
-          printf ('%s                  <li><span class="text-%s">%s (%s) = %s</span></li>',
-          "\n", $state, $element, $size, $data);
+          printf ('%s                  <li>%s <span class="text-%s">%s (%s) = %s</span>%s</li>',
+            "\n", $statusIcon, $state, $element, $size, $data, $statusText);
           break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
@@ -1182,7 +1201,7 @@ class MetadataDisplay {
       $coCoV1 = false;
       $logo = false;
       $urlType = 0;
-      $urlHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated`
+      $urlHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
         FROM URLs WHERE `URL` = :URL');
       $urlHandler->bindValue(self::BIND_URL, $url);
       $urlHandler->execute();
@@ -1210,9 +1229,19 @@ class MetadataDisplay {
             %s (UTC) <a href=".?action=%s&URL=%s&recheck">
               <button type="button" class="btn btn-primary">Recheck now</button>
             </a>
+            <a href=".?action=%s&URL=%s&recheck&verbose">
+              <button type="button" class="btn btn-primary">Recheck now (verbose)</button>
+            </a>
           </td>
-        </tr>%s', $urlInfo['lastValidated'], htmlspecialchars($_GET['action']) ,urlencode($url), "\n");
-        printf ('      <tr><th>Status</th><td>%s</td></tr>%s', $urlInfo['validationOutput'] , "\n");
+        </tr>
+        <tr><th>Status</th><td>%s</td></tr>%s',
+          $urlInfo['lastValidated'], htmlspecialchars($_GET['action']) ,
+          urlencode($url), htmlspecialchars($_GET['action']) ,
+          urlencode($url), $urlInfo['validationOutput'] , "\n");
+        if ($urlInfo['height'] > 0 && $urlInfo['width'] > 0 ) {
+          printf ('      <tr><th>Height</th><td>%s</td></tr>
+        <tr><th>Width</th><td>%s</td></tr>%s', $urlInfo['height'], $urlInfo['width'], "\n");
+        }
         switch ($urlInfo['validationOutput']) {
           case 'SSL certificate problem: unable to get local issuer certificate' :
             printf ('      <tr><th>Possible solution</th><td>You are missing intermediate certificate(s).<br>

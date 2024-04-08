@@ -227,6 +227,9 @@ CREATE TABLE `URLs` (
   `type` tinyint(3) unsigned DEFAULT NULL,
   `status` tinyint(3) unsigned DEFAULT NULL,
   `cocov1Status` tinyint(3) unsigned DEFAULT NULL,
+  `height` smallint(5) unsigned DEFAULT NULL,
+  `width` smallint(5) unsigned DEFAULT NULL,
+  `nosize` tinyint(3) unsigned DEFAULT NULL
   `lastSeen` datetime DEFAULT NULL,
   `lastValidated` datetime DEFAULT NULL,
   `validationOutput` text DEFAULT NULL,
