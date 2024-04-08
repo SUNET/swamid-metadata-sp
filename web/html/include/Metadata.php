@@ -1163,27 +1163,32 @@ class Metadata {
 
     $child = $data->firstChild;
     while ($child) {
+      $value = trim($child->textContent);
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :
-          $extensions = trim($child->textContent);
+          $extensions = $value;
           break;
         case self::SAML_MD_COMPANY :
-          $company = trim($child->textContent);
+          $company = $value;
           break;
         case self::SAML_MD_GIVENNAME :
-          $givenName = trim($child->textContent);
+          $givenName = $value;
           break;
         case self::SAML_MD_SURNAME :
-          $surName = trim($child->textContent);
+          $surName = $value;
           break;
         case self::SAML_MD_EMAILADDRESS :
-          $emailAddress = trim($child->textContent);
+          $emailAddress = $value;
           break;
         case self::SAML_MD_TELEPHONENUMBER :
-          $telephoneNumber = trim($child->textContent);
+          $telephoneNumber = $value;
           break;
         default :
           $this->result .= sprintf("ContactPerson->%s missing in validator.\n", $child->nodeName);
+      }
+      if ($value == '') {
+        $this->error .= sprintf ("Error in uploaded XML. Element %s in contact type=%s is empty!\n",
+          $child->nodeName, $data->getAttribute('contactType'));
       }
       $child = $child->nextSibling;
     }
@@ -1225,14 +1230,15 @@ class Metadata {
         $lang = $child->getAttribute('xml:lang') ?
           $child->getAttribute('xml:lang') : '';
         $urltype = 1;
+        $value = trim($child->textContent);
         switch ($child->nodeName) {
           case self::SAML_MDUI_LOGO :
             $urltype = 2;
-            $this->addURL(trim($child->textContent), $urltype);
+            $this->addURL($value, $urltype);
             $element = substr($child->nodeName, 5);
             $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
             $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
-            $urlHandler->execute(array(self::BIND_URL => trim($child->textContent)));
+            $urlHandler->execute(array(self::BIND_URL => $value));
             if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
               if ($urlInfo['height'] != $height && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
                 $this->error .= sprintf(
@@ -1250,7 +1256,7 @@ class Metadata {
             break;
           case self::SAML_MDUI_INFORMATIONURL :
           case self::SAML_MDUI_PRIVACYSTATEMENTURL :
-            $this->addURL(trim($child->textContent), $urltype);
+            $this->addURL($value, $urltype);
             $element = substr($child->nodeName, 5);
             break;
           case self::SAML_MDUI_DISPLAYNAME :
@@ -1263,7 +1269,6 @@ class Metadata {
             $element = 'Unknown';
         }
 
-        $value = trim($child->textContent);
         $ssoUIIHandler->execute();
         if ($value == '') {
           $this->error .= sprintf ("Missing value for element %s in %s->MDUI.\n", $element, $type);
