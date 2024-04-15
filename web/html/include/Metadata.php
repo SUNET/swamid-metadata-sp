@@ -383,6 +383,7 @@ class Metadata {
     $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
     $urlUpdateHandler->bindParam(self::BIND_URL, $url);
     $urlUpdateHandler->execute();
+    $this->checkURLStatus($url, $verbose);
     $this->validateURLs(5, $verbose);
   }
 
@@ -731,6 +732,32 @@ class Metadata {
 
     $swamid5131error = false;
     $keyOrder = 0;
+    $saml2found = false;
+    $saml1found = false;
+    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
+    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
+      switch ($protocol) {
+        case 'urn:oasis:names:tc:SAML:2.0:protocol' :
+          $saml2found = true;
+          break;
+        case 'urn:oasis:names:tc:SAML:1.0:protocol' :
+        case 'urn:oasis:names:tc:SAML:1.1:protocol' :
+          $saml1found = true;
+          break;
+        case 'urn:mace:shibboleth:1.0' :
+          break;
+        case '' :
+          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
+          break;
+        default :
+          $this->result .= sprintf("Protocol %s missing in validator for IDPSSODescriptor.\n", $protocol);
+      }
+    }
+    if (! $saml2found) {
+      $this->error .= "IDPSSODescriptor is missing support for SAML2.\n";
+    } elseif ($saml1found) {
+      $this->errorNB .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
     $child = $data->firstChild;
     while ($child) {
@@ -867,6 +894,33 @@ class Metadata {
   private function parseSPSSODescriptor($data) {
     $this->swamid6116error = false;
     $keyOrder = 0;
+    $saml2found = false;
+    $saml1found = false;
+    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
+    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
+      switch ($protocol) {
+        case 'urn:oasis:names:tc:SAML:2.0:protocol' :
+          $saml2found = true;
+          break;
+        case 'urn:oasis:names:tc:SAML:1.0:protocol' :
+        case 'urn:oasis:names:tc:SAML:1.1:protocol' :
+          $saml1found = true;
+          break;
+        case 'urn:mace:shibboleth:1.0' :
+          $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n", $protocol);
+          break;
+        case '' :
+          $this->warning .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
+          break;
+        default :
+          $this->result .= sprintf("Protocol %s missing in validator for SPSSODescriptor.\n", $protocol);
+      }
+    }
+    if (! $saml2found) {
+      $this->error .= "SPSSODescriptor is missing support for SAML2.\n";
+    } elseif ($saml1found) {
+      $this->errorNB .= "SPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
     $child = $data->firstChild;
     while ($child) {
@@ -885,7 +939,7 @@ class Metadata {
           $this->checkSAMLEndpointURL($child,'SPSSO');
           break;
         case self::SAML_MD_NAMEIDFORMAT :
-          # Skippar då SWAMID inte använder denna del
+          $this->checkNameIDFormat($child->textContent, $saml2found, $saml1found);
           break;
         # 2.4.4
         case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
@@ -2148,6 +2202,29 @@ class Metadata {
           "%s https://. Problem in SPSSODescriptor->%s[Binding=%s].\n",
           'SWAMID Tech 6.1.15: All SAML endpoints MUST start with', $name, $binding);
       }
+    }
+  }
+
+  private function checkNameIDFormat($nameIDFormat, $saml2, $saml1) {
+    switch ($nameIDFormat) {
+      case 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress' :
+      case 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified' :
+      case 'urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName' :
+      case 'urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName' :
+        if (! $saml1) {
+          $this->error = sprintf("Signaling support for %s in Metadata but not support for SAML1 in SPSSODecsriptor. This NameIDFormat should be removed!\n", $nameIDFormat);
+        }
+        break;
+      case 'urn:oasis:names:tc:SAML:2.0:nameid-format:entity' :
+      case 'urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos' :
+      case 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent' :
+      case 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient' :
+        if (! $saml2) {
+          $this->error = sprintf("Signaling support for %s in Metadata but not support for SAML2 in SPSSODecsriptor. This NameIDFormat should be removed!\n", $nameIDFormat);
+        }
+        break;
+      default :
+        $this->result .= sprintf("Missing NameIDFormat : %s in validator\n", $nameIDFormat);
     }
   }
 

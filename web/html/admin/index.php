@@ -343,7 +343,7 @@ if (isset($_FILES['XMLfile'])) {
           if (isset($_GET['URL'])) {
             if (isset($_GET['recheck'])) {
               $metadata = new Metadata();
-              $metadata->revalidateURL($_GET['URL']);
+              $metadata->revalidateURL($_GET['URL'], isset($_GET['verbose']));
             }
             $display->showURLStatus($_GET['URL']);
           }
