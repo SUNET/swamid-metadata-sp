@@ -66,10 +66,16 @@ if (isset($_GET['action'])) {
       $html->addTableSort('pubPend-table');
       break;
     case 'users' :
-      $menuActive = 'Users';
+      $menuActive = 'users';
       showMenu();
       showUsers();
       $html->addTableSort('user-table');
+      break;
+    case 'validation' :
+      $menuActive = 'validation';
+      showMenu();
+      showValidationOutput();
+      $html->addTableSort('validation-table');
       break;
     default :
   }
@@ -179,6 +185,20 @@ function showUsers(){
   printf ('        </table>%s', "\n");
 }
 
+function showValidationOutput() {
+  global $db;
+
+  $entitiesHandler = $db->prepare('SELECT `id`, `entityID` , `validationOutput` FROM `Entities` WHERE `validationOutput` != ""');
+  $entitiesHandler->execute();
+  printf ('        <h5>Validation Output</h5>
+        <table id="validation-table" class="table table-striped table-bordered">
+          <thead><tr><th>entityID</th><th>Validation error</th></tr></thead>%s', "\n");
+  while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+    printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td></tr>%s', $entity['id'], $entity['entityID'], $entity['validationOutput'], "\n");
+  }
+  printf ('        </table>%s', "\n");
+}
+
 ####
 # Shows menu row
 ####
@@ -196,6 +216,6 @@ function showMenu() {
   printf('<a href="?action=pubPend"><button type="button" class="btn btn%s-primary">Published</button></a>', $menuActive == 'pubPend' ? '' : '-outline');
   printf('<a href="?action=shadow"><button type="button" class="btn btn%s-primary">Shadow</button></a>', $menuActive == 'shadow' ? '' : '-outline');
   printf('<a href="?action=users"><button type="button" class="btn btn%s-primary">Users</button></a>', $menuActive == 'users' ? '' : '-outline');
-  printf('<a href="?action=reminders"><button type="button" class="btn btn%s-primary">Reminders</button></a>', $menuActive == 'reminders' ? '' : '-outline');
+  printf('<a href="?action=validation"><button type="button" class="btn btn%s-primary">Validation</button></a>', $menuActive == 'validation' ? '' : '-outline');
   print "\n    <br>\n    <br>\n";
 }
