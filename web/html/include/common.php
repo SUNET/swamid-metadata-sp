@@ -52,6 +52,7 @@ $this->FriendlyNames = array(
   'urn:oid:0.9.2342.19200300.100.1.10' => array('desc' => 'manager', 'swamidStd' => false),
   'urn:oid:0.9.2342.19200300.100.1.3'  => array('desc' => 'mail', 'swamidStd' => true),
   'urn:oid:1.3.6.1.4.1.2428.90.1.6'    => array('desc' => 'norEduOrgAcronym', 'swamidStd' => true),
+  'urn:oid:1.3.6.1.4.1.2428.90.1.10'   => array('desc' => 'norEduPersonLegalName', 'swamidStd' => true),
   'urn:oid:1.3.6.1.4.1.2428.90.1.5'    => array('desc' => 'norEduPersonNIN', 'swamidStd' => true),
   'urn:oid:2.5.4.10'                   => array('desc' => 'o', 'swamidStd' => true),
   'urn:oid:1.2.752.29.4.13'            => array('desc' => 'personalIdentityNumber', 'swamidStd' => true),
