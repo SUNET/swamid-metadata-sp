@@ -642,17 +642,24 @@ function showEntity($entitiesId)  {
     print "\n" . '    <div class="row">';
     switch ($entity['status']) {
       case 1:
-        printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
+        $metadata = new Metadata($entitiesId);
+        $user_id = $metadata->getUserId($EPPN);
+        if ($metadata->isResponsible()) {
+          printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
         <button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>',
           "\n", $entitiesId, getErrors($entitiesId) == '' ? 'success' : 'secondary');
-        if ($entity['publishIn'] == 1) {
-          printf('%s          <button type="button" class="btn btn-outline-secondary">Create draft</button>', "\n");
-        } else {
-          printf('%s      <a href=".?action=createDraft&Entity=%d">
+          if ($entity['publishIn'] == 1) {
+            printf('%s          <button type="button" class="btn btn-outline-secondary">Create draft</button>', "\n");
+          } else {
+            printf('%s      <a href=".?action=createDraft&Entity=%d">
           <button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $entitiesId);
-        }
-        printf('%s      <a href=".?action=Request+removal&Entity=%d">
+          }
+          printf('%s      <a href=".?action=Request+removal&Entity=%d">
         <button type="button" class="btn btn-outline-danger">Request removal</button></a>', "\n", $entitiesId);
+        } else {
+          printf('%s      <a href=".?action=Request+Access&Entity=%d">
+        <button type="button" class="btn btn-outline-primary">Request admin access</button></a>', "\n", $entitiesId);
+        }
         break;
       case 2:
         if (checkAccess($entitiesId, false, $userLevel, 10, false)) {

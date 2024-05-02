@@ -2396,6 +2396,19 @@ class MetadataDisplay {
     print "    <p>The SWAMID Metadata Tool is the place where you can see,
       register, update and remove metadata for Identity Providers and
       Service Providers in the Academic Identity Federation SWAMID.</p>\n";
+      $this->showCollapse('Request admin access', 'RequestAdminAccess', false, 0, false);?>
+
+      To be able to update, remove or confirm an entity you must have administrative access to that entity. How to request access:
+      <ol>
+        <li>Go to the tab "Published".</li>
+        <li>Choose the entity you want to have administrative access to by clicking on its entityID.</li>
+        <li>Click on the button "Request admin access" to start updating the entity.</li>
+        <li>Follow the instructions on the next web page.</li>
+        <li>Continue to the next step by pressing on the button ”Request Access”.</li>
+        <li>An e-mail will be sent to the technical and administrative contacts for confirmation of the requrest.</li>
+        <li>Reach out to the administrative contact and ask them to accept your request by following the instructions in the mail.</li>
+      </ol><?php
+    $this->showCollapseEnd('RequestAdminAccess', 0);
     $this->showCollapse('Register a new entity in SWAMID', 'RegisterNewEntity', false, 0, false);?>
 
           <ol>
