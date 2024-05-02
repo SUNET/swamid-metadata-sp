@@ -112,8 +112,8 @@ class HTML {
   ###
   public function showFooter($collapseIcons = array(), $seamless = false) {
     $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-    ?>
-  </div><?php if ($seamless) { ?>
+    print "\n  </div>";
+    if ($seamless) { ?>
 
   <!-- Include the Seamless Access Sign in Button & Discovery Service -->
   <script src="<?=$this->DSService?>"></script>
@@ -126,16 +126,19 @@ class HTML {
       }).render('#SWAMID-SeamlessAccess');
     };
   </script><?php }
-    printf('  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    printf('%s  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
     integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-    crossorigin="anonymous"></script>
+    crossorigin="anonymous">
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
     integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
-    crossorigin="anonymous"></script>
+    crossorigin="anonymous">
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"
     integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+"
-    crossorigin="anonymous"></script>%s', "\n");
+    crossorigin="anonymous">
+  </script>%s', "\n", "\n");
     if (isset($this->tableToSort[0]) || isset($collapseIcons[0]) || $this->showDownload ) {
       if (isset($this->tableToSort[0])) {
         # Add JS script to be able to use later
@@ -177,7 +180,7 @@ class HTML {
       var fileName = $(this).val().split("\\\\").pop();
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
     });<?php
-      print "  </script>\n";
+      print "\n  </script>\n";
     } ?>
 </body>
 </html>

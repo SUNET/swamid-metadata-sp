@@ -293,7 +293,7 @@ class MetadataDisplay {
       $spacer, $spacer, $name, $icon, $spacer, $name, $expanded, $name, $title,
       $spacer, $extraButton, $spacer, $spacer, $show, $name, $spacer, "\n");
     if ($haveSub) {
-      printf('%s    <span class="border-right"><div class="col-md-auto"></div></span>',$spacer);
+      printf('%s        <span class="border-right"><div class="col-md-auto"></div></span>%s',$spacer, "\n");
     }
     printf('%s        <div class="col%s">', $spacer, $oldEntityId > 0 ? '-6' : '');
     $this->collapseIcons[] = $name;
