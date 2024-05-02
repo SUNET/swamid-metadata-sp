@@ -41,6 +41,7 @@ class MetadataDisplay {
   # Shows menu row
   ####
   public function showStatusbar($entityId, $admin = false){
+    $entityError = array('saml1Error' => false);
     $entityHandler = $this->metaDb->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
       FROM Entities WHERE `id` = :Id;');
@@ -72,6 +73,11 @@ class MetadataDisplay {
       $errors = '';
       $warnings = '';
       $notice = '';
+
+      $entityError['saml1Error'] = strpos(
+        $entity['errors'] . $entity['errorsNB'] . $entity['warnings'],
+        'claims support for SAML1.');
+      $entityError['saml1Error'] =  strpos($entity['errors'], 'asis-sstc-saml-bindings-1.1: SAML1 Binding in ') ? true : $entityError['saml1Error'];
 
       if ($entity['isIdP']) {
         $ecsTagged = array(self::SAML_EC_ESI => false,
@@ -236,6 +242,7 @@ class MetadataDisplay {
       <button type="button" class="btn btn-outline-primary">Validate</button>
     </a></div>', "\n", $entityId);
     }
+    return $entityError;
   }
 
   ####

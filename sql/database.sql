@@ -229,7 +229,7 @@ CREATE TABLE `URLs` (
   `cocov1Status` tinyint(3) unsigned DEFAULT NULL,
   `height` smallint(5) unsigned DEFAULT NULL,
   `width` smallint(5) unsigned DEFAULT NULL,
-  `nosize` tinyint(3) unsigned DEFAULT NULL
+  `nosize` tinyint(3) unsigned DEFAULT NULL,
   `lastSeen` datetime DEFAULT NULL,
   `lastValidated` datetime DEFAULT NULL,
   `validationOutput` text DEFAULT NULL,
@@ -241,6 +241,7 @@ CREATE TABLE `Users` (
   `userID` text DEFAULT NULL,
   `email` text DEFAULT NULL,
   `fullName` text DEFAULT NULL,
+  `lastSeen` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `userID` (`userID`) USING HASH
 );

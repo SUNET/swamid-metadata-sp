@@ -132,7 +132,7 @@ class Metadata {
   const SAML_MDUI_LOGO = 'mdui:Logo';
   const SAML_MDUI_PRIVACYSTATEMENTURL = 'mdui:PrivacyStatementURL';
   const SAML_MDUI_UIINFO = 'mdui:UIInfo';
-  CONST SAML_PSC_REQUESTEDPRINCIPALSELECTION = 'psc:RequestedPrincipalSelection';
+  const SAML_PSC_REQUESTEDPRINCIPALSELECTION = 'psc:RequestedPrincipalSelection';
   const SAML_SHIBMD_SCOPE = 'shibmd:Scope';
   const SAML_SAMLA_ATTRIBUTE = 'samla:Attribute';
   const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
@@ -756,7 +756,7 @@ class Metadata {
     if (! $saml2found) {
       $this->error .= "IDPSSODescriptor is missing support for SAML2.\n";
     } elseif ($saml1found) {
-      $this->errorNB .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+      $this->warning .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
     $child = $data->firstChild;
@@ -774,16 +774,16 @@ class Metadata {
         case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
         case self::SAML_MD_SINGLELOGOUTSERVICE :
         #case 'ManageNameIDService' :
-          $this->checkSAMLEndpointURL($child,'IDPSSO');
+          $this->checkSAMLEndpoint($child,'IDPSSO', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
-          # Skippar då SWAMID inte använder denna del
+          $this->checkNameIDFormat($child->textContent);
           break;
         # 2.4.3
         case self::SAML_MD_SINGLESIGNONSERVICE :
         case self::SAML_MD_NAMEIDMAPPINGSERVICE :
         case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
-          $this->checkSAMLEndpointURL($child,'IDPSSO');
+          $this->checkSAMLEndpoint($child,'IDPSSO', $saml2found, $saml1found);
           break;
         #case self::SAML_MD_ATTRIBUTEPROFILE :
         case self::SAML_SAMLA_ATTRIBUTE :
@@ -936,14 +936,14 @@ class Metadata {
         case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
         case self::SAML_MD_SINGLELOGOUTSERVICE :
         case self::SAML_MD_MANAGENAMEIDSERVICE :
-          $this->checkSAMLEndpointURL($child,'SPSSO');
+          $this->checkSAMLEndpoint($child,'SPSSO', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
-          $this->checkNameIDFormat($child->textContent, $saml2found, $saml1found);
+          $this->checkNameIDFormat($child->textContent);
           break;
         # 2.4.4
         case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
-          $this->checkSAMLEndpointURL($child,'SPSSO');
+          $this->checkSAMLEndpoint($child,'SPSSO', $saml2found, $saml1found);
           $this->checkAssertionConsumerService($child);
           break;
         case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
@@ -1101,6 +1101,32 @@ class Metadata {
   #############
   private function parseAttributeAuthorityDescriptor($data) {
     $keyOrder = 0;
+    $saml2found = false;
+    $saml1found = false;
+    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
+    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
+      switch ($protocol) {
+        case 'urn:oasis:names:tc:SAML:2.0:protocol' :
+          $saml2found = true;
+          break;
+        case 'urn:oasis:names:tc:SAML:1.0:protocol' :
+        case 'urn:oasis:names:tc:SAML:1.1:protocol' :
+          $saml1found = true;
+          break;
+        case 'urn:mace:shibboleth:1.0' :
+          break;
+        case '' :
+          $this->warning .= sprintf("Extra space found in protocolSupportEnumeration for AttributeAuthorityDescriptor. Please remove.\n");
+          break;
+        default :
+          $this->result .= sprintf("Protocol %s missing in validator for AttributeAuthorityDescriptor.\n", $protocol);
+      }
+    }
+    if (! $saml2found) {
+      $this->error .= "AttributeAuthorityDescriptor is missing support for SAML2.\n";
+    } elseif ($saml1found) {
+      $this->warning .= "AttributeAuthorityDescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.7
     $child = $data->firstChild;
     while ($child) {
@@ -1114,12 +1140,16 @@ class Metadata {
           $this->parseKeyDescriptor($child, 'AttributeAuthority', $keyOrder++);
           break;
         # 2.4.2
-        #case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
-        #case self::SAML_MD_SINGLELOGOUTSERVICE :
-        #case self::SAML_MD_MANAGENAMEIDSERVICE :
+        case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
+        case self::SAML_MD_SINGLELOGOUTSERVICE :
+        case self::SAML_MD_MANAGENAMEIDSERVICE :
+          $this->checkSAMLEndpoint($child,'AttributeAuthority', $saml2found, $saml1found);
+          break;
         # 2.4.7
         case self::SAML_MD_ATTRIBUTESERVICE :
         #case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
+          $this->checkSAMLEndpoint($child,'AttributeAuthority', $saml2found, $saml1found);
+          break;
         case self::SAML_MD_NAMEIDFORMAT :
           # Skippar då SWAMID inte använder denna del
           break;
@@ -1295,11 +1325,17 @@ class Metadata {
             $urlHandler->execute(array(self::BIND_URL => $value));
             if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
               if ($urlInfo['height'] != $height && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
-                $this->error .= sprintf(
-                  "Logo (%dx%d) lang=%s is marked with height %s in metadata but actual height is %d.\n",
-                  $height, $width, $lang, $height, $urlInfo['height']);
+                if ($urlInfo['height'] == 0) {
+                  $this->error .= sprintf(
+                    "Logo (%dx%d) lang=%s Image can not be loaded from URL.\n",
+                    $height, $width, $lang, $height);
+                } else {
+                  $this->error .= sprintf(
+                    "Logo (%dx%d) lang=%s is marked with height %s in metadata but actual height is %d.\n",
+                    $height, $width, $lang, $height, $urlInfo['height']);
+                }
               }
-              if ($urlInfo['width'] != $width && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
+              if ($urlInfo['width'] != $width && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0 && $urlInfo['width'] > 0) {
                 $this->error .= sprintf(
                   "Logo (%dx%d) lang=%s is marked with width %s in metadata but actual width is %d.\n",
                   $height, $width, $lang, $width, $urlInfo['width']);
@@ -1529,7 +1565,7 @@ class Metadata {
     }
 
     if ($this->feedValue == 1) {
-      $this->error .= 'SWAMID-Testing is deprecated and will be removed after 2024-06-30. It is no longer possible to update this entity.';
+      $this->error .= "SWAMID-Testing is deprecated and will be removed after 2024-06-30. It is no longer possible to update this entity.\n";
     }
 
     // 5.1.1 -> 5.1.5 / 6.1.1 -> 6.1.5
@@ -2188,40 +2224,74 @@ class Metadata {
   }
 
   // 5.1.21 / 6.1.15
-  private function checkSAMLEndpointURL($data,$type) {
+  private function checkSAMLEndpoint($data,$type, $saml2, $saml1) {
     $name = $data->nodeName;
     $binding = $data->getAttribute('Binding');
     $location =$data->getAttribute('Location');
     if (substr($location,0,8) <> 'https://') {
-      if ($type == "IDPSSO") {
-        $this->error .= sprintf(
-          "%s https://. Problem in IDPSSODescriptor->%s[Binding=%s].\n",
-          'SWAMID Tech 5.1.21: All SAML endpoints MUST start with', $name, $binding);
-      } else {
-        $this->error .= sprintf(
-          "%s https://. Problem in SPSSODescriptor->%s[Binding=%s].\n",
-          'SWAMID Tech 6.1.15: All SAML endpoints MUST start with', $name, $binding);
-      }
+      $this->error .= sprintf(
+        "SWAMID Tech %s: All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
+        $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, $binding);
+    }
+    switch ($binding) {
+      #https://groups.oasis-open.org/higherlogic/ws/public/download/3405/oasis-sstc-saml-bindings-1.1.pdf
+      # 3.1.1
+      case 'urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding' :
+      #4.1.1 Browser/Artifact Profile of SAML1
+      case 'urn:oasis:names:tc:SAML:1.0:profiles:artifact-01' :
+      #4.1.2 Browser/POST Profile of SAML1
+      case 'urn:oasis:names:tc:SAML:1.0:profiles:browser-post' :
+        if (! $saml1) {
+          $this->error .= sprintf(
+            "oasis-sstc-saml-bindings-1.1: SAML1 Binding in %s[Binding=%s], but SAML1 not supported in %sDescriptor.\n",
+            $name, $binding, $type);
+        }
+        break;
+
+      # https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
+      # 3.2.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP' :
+      # 3.3.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:PAOS' :
+      # 3.4.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' :
+      # 3.5.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' :
+      # 3.6.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact' :
+      # 3.7.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:URI' :
+      # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-binding-simplesign-cd-02.html
+      # 2.1
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign':
+        if (! $saml2) {
+          $this->error .= sprintf(
+            "saml-bindings-2.0-os: SAML2 Binding in %s[Binding=%s], but SAML2 not supported in %sDescriptor.\n",
+            $name, $binding, $type);
+        }
+        break;
+      case 'urn:mace:shibboleth:1.0:profiles:AuthnRequest' :
+        #Protocol = urn:mace:shibboleth:1.0
+        break;
+      default :
+        $this->result .= sprintf("Missing Binding : %s in validator\n", $binding);
     }
   }
 
-  private function checkNameIDFormat($nameIDFormat, $saml2, $saml1) {
+  private function checkNameIDFormat($nameIDFormat) {
     switch ($nameIDFormat) {
+      case 'urn:mace:shibboleth:1.0:nameIdentifier' :
+        # SAML1 only (transient in SAML2)
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress' :
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified' :
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName' :
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName' :
-        if (! $saml1) {
-          $this->error = sprintf("Signaling support for %s in Metadata but not support for SAML1 in SPSSODecsriptor. This NameIDFormat should be removed!\n", $nameIDFormat);
-        }
-        break;
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:entity' :
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos' :
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent' :
+        #Do nothing. This is OK nameIDFormat:s
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient' :
-        if (! $saml2) {
-          $this->error = sprintf("Signaling support for %s in Metadata but not support for SAML2 in SPSSODecsriptor. This NameIDFormat should be removed!\n", $nameIDFormat);
-        }
+        #SAML2 only (1.0:nameIdentifier in SAML1)
         break;
       default :
         $this->result .= sprintf("Missing NameIDFormat : %s in validator\n", $nameIDFormat);
@@ -2539,6 +2609,100 @@ class Metadata {
     if ($removed) {
       $this->error .= 'SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata';
       $this->error .= " MUST NOT include any Attribute elements. Have been removed.\n";
+    }
+  }
+
+  # Removed SAML1 support from an entity
+  public function removeSaml1Support() {
+    $entityDescriptor = $this->getEntityDescriptor($this->xml);
+    $child = $entityDescriptor->firstChild;
+    while ($child) {
+      $checkProtocol = 0;
+      switch ($child->nodeName) {
+        case self::SAML_MD_IDPSSODESCRIPTOR :
+          $checkProtocol = 1;
+          break;
+        case self::SAML_MD_SPSSODESCRIPTOR :
+          $checkProtocol = 2;
+          break;
+        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
+          $checkProtocol = 1;
+          break;
+        default :
+          #printf ('Not parsed : %s<br>', $child->nodeName);
+      }
+      if ($checkProtocol) {
+        $protocolSupportEnumerations = explode(' ',$child->getAttribute('protocolSupportEnumeration'));
+          foreach ($protocolSupportEnumerations as $key => $protocol) {
+            if (
+                ($protocol == 'urn:oasis:names:tc:SAML:1.0:protocol' ||
+                 $protocol == 'urn:oasis:names:tc:SAML:1.1:protocol' ||
+                 $protocol == '') ||
+                ($protocol == 'urn:mace:shibboleth:1.0' && $checkProtocol == 2)) {
+              unset($protocolSupportEnumerations[$key]);
+              $this->result .= sprintf("Removed %s from %s\n", $protocol, $child->nodeName);
+            }
+          }
+          if (count($protocolSupportEnumerations)){
+            $child->setAttribute('protocolSupportEnumeration', implode(' ',$protocolSupportEnumerations));
+            $subchild = $child->firstChild;
+            while ($subchild) {
+              switch ($subchild->nodeName) {
+                # 2.4.1
+                case self::SAML_MD_EXTENSIONS :
+                case self::SAML_MD_KEYDESCRIPTOR :
+                # 2.4.2
+                case self::SAML_MD_NAMEIDFORMAT :
+                # 2.4.3
+                case self::SAML_SAMLA_ATTRIBUTE :
+                # 2.4.4
+                case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
+                  $subchild = $subchild->nextSibling;
+                  break;
+
+                # 2.4.2
+                case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
+                case self::SAML_MD_SINGLELOGOUTSERVICE :
+                case self::SAML_MD_MANAGENAMEIDSERVICE :
+                # 2.4.3
+                case self::SAML_MD_SINGLESIGNONSERVICE :
+                case self::SAML_MD_NAMEIDMAPPINGSERVICE :
+                case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
+                # 2.4.4
+                case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
+                # 2.4.7
+                case self::SAML_MD_ATTRIBUTESERVICE :
+                  switch ($subchild->getAttribute('Binding')) {
+                    #https://groups.oasis-open.org/higherlogic/ws/public/download/3405/oasis-sstc-saml-bindings-1.1.pdf
+                    # 3.1.1
+                    case 'urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding' :
+                    #4.1.1 Browser/Artifact Profile of SAML1
+                    case 'urn:oasis:names:tc:SAML:1.0:profiles:artifact-01' :
+                    #4.1.2 Browser/POST Profile of SAML1
+                    case 'urn:oasis:names:tc:SAML:1.0:profiles:browser-post' :
+                      $this->result .= sprintf ('Removing %s[%s] in %s<br>', $subchild->nodeName, $subchild->getAttribute('Binding'), $child->nodeName);
+                      $remChild = $subchild;
+                      $subchild = $subchild->nextSibling;
+                      $child->removeChild($remChild);
+                      break;
+                    default :
+                      $subchild = $subchild->nextSibling;
+                  }
+                  break;
+                default :
+                  $subchild = $subchild->nextSibling;
+              }
+            }
+            $child = $child->nextSibling;
+          } else {
+            $this->result .= sprintf("Removed %s since protocolSupportEnumeration was empty\n", $child->nodeName);
+            $remChild = $child;
+            $child = $child->nextSibling;
+            $entityDescriptor->removeChild($remChild);
+          }
+      } else {
+        $child = $child->nextSibling;
+      }
     }
   }
 

@@ -293,6 +293,13 @@ if (isset($_FILES['XMLfile'])) {
         case 'Request Access' :
           requestAccess($entitiesId);
           break;
+        case 'removeSaml1' :
+          $metadata = new Metadata($entitiesId);
+          $metadata->removeSaml1Support();
+          $metadata->validateXML();
+          $metadata->validateSAML();
+          showEntity($entitiesId);
+          break;
         case 'forceAccess' :
           $metadata = new Metadata($entitiesId);
           $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
@@ -631,7 +638,7 @@ function showEntity($entitiesId)  {
         <h3>entityID = <?=$entity['entityID']?></h3>
       </div>
     </div><?php
-    $display->showStatusbar($entitiesId, $userLevel > 4 ? true : false);
+    $entityError = $display->showStatusbar($entitiesId, $userLevel > 4 ? true : false);
     print "\n" . '    <div class="row">';
     switch ($entity['status']) {
       case 1:
@@ -666,7 +673,11 @@ function showEntity($entitiesId)  {
           printf('%s      <a href=".?removeEntity=%d">
           <button type="button" class="btn btn-outline-danger">Discard Draft</button></a>',
             "\n", $entitiesId);
-          print "\n      <br>";
+          if ($entityError['saml1Error']) {
+            printf('%s      <a href=".?action=removeSaml1&Entity=%d">
+            <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
+              "\n", $entitiesId);
+          }
           if ($oldEntitiesId > 0) {
             printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d">
             <button type="button" class="btn btn-outline-primary">Merge from published</button></a>',
