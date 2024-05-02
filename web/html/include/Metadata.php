@@ -3214,6 +3214,10 @@ class Metadata {
       $userHandler->bindValue(self::BIND_ID, strtolower($userID));
       $userHandler->execute();
       if ($this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
+        $lastSeenUserHandler = $this->metaDb->prepare('UPDATE Users
+          SET `lastSeen` = NOW() WHERE `userID` = :Id');
+        $lastSeenUserHandler->bindValue(self::BIND_ID, strtolower($userID));
+        $lastSeenUserHandler->execute();
         if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
           $userHandler = $this->metaDb->prepare('UPDATE Users
             SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
@@ -3224,7 +3228,7 @@ class Metadata {
         }
       } elseif ($add) {
         $addNewUserHandler = $this->metaDb->prepare('INSERT INTO Users
-          (`userID`, `email`, `fullName`) VALUES(:Id, :Email, :FullName)');
+          (`userID`, `email`, `fullName`, `lastSeen`) VALUES(:Id, :Email, :FullName, NOW())');
         $addNewUserHandler->bindValue(self::BIND_ID, strtolower($userID));
         $addNewUserHandler->bindParam(self::BIND_EMAIL, $email);
         $addNewUserHandler->bindParam(self::BIND_FULLNAME, $fullName);

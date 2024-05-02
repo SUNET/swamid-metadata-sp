@@ -172,15 +172,15 @@ function showUsers(){
     }
   }
 
-  $usersHandler = $db->prepare('SELECT `id`, `userID`, `email`, `fullName`, COUNT(entity_id) AS count
+  $usersHandler = $db->prepare('SELECT `id`, `userID`, `email`, `fullName`, `lastSeen`, COUNT(entity_id) AS count
     FROM Users  LEFT JOIN EntityUser ON Users.id = user_id GROUP BY id;');
   $usersHandler->execute();
   printf ('        <h5>Users</h5>
         <table id="user-table" class="table table-striped table-bordered">
-          <thead><tr><th>UserID</th><th>Email</th><th>Name</th><th>Number of entities</th></tr></thead>%s', "\n");
+          <thead><tr><th>UserID</th><th>Email</th><th>Name</th><th>Last seen</th><th>Number of entities</th></tr></thead>%s', "\n");
   while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href="?action=users&user=%d">%s<a></td></td><td>%s</td><td>%s</td><td>%d</td></tr>%s',
-      $user['id'], $user['userID'], $user['email'], $user['fullName'], $user['count'], "\n");
+    printf('          <tr><td><a href="?action=users&user=%d">%s<a></td></td><td>%s</td><td>%s</td><td>%s</td><td>%d</td></tr>%s',
+      $user['id'], $user['userID'], $user['email'], $user['fullName'], $user['lastSeen'], $user['count'], "\n");
   }
   printf ('        </table>%s', "\n");
 }
