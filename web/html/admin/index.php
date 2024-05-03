@@ -578,7 +578,7 @@ function showEntity($entitiesId)  {
     if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if (($entity['publishIn'] & 1) == 1) { $publishArray[] = 'SWAMID-testing'; }
-    if ($entity['status'] > 1 && $entity['status'] < 6) {
+    if ($entity['status'] > 1 && $entity['status'] < 7) {
       if ($entity['publishedId'] > 0) {
         $entityHandlerOld = $db->prepare(
           'SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
@@ -588,7 +588,7 @@ function showEntity($entitiesId)  {
         $entityHandlerOld = $db->prepare(
           'SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
         $entityHandlerOld->bindParam(':Id', $entity['entityID']);
-        $headerCol2 = 'Old metadata - published now';
+        $headerCol2 = 'Published now';
       }
       $entityHandlerOld->execute();
       if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
@@ -615,9 +615,13 @@ function showEntity($entitiesId)  {
           break;
         case 5:
           # Pending that have been published
+          $headerCol1 = 'Already published metadata (might not be the latest!)';
+          $menuActive = 'publ';
+          $allowEdit = false;
+          break;
         case 6:
           # Copy of published used to compare Pending
-          $headerCol1 = 'Already published metadata (might not be the latest!)';
+          $headerCol1 = 'Shadow metadata (might not be the latest!)';
           $menuActive = 'publ';
           $allowEdit = false;
           break;
