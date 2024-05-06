@@ -24,46 +24,79 @@ $removeDate = '1971-01-01';
 $removeDateShadow = '1971-01-01';
 $flagDates = $db->query('SELECT
   NOW() - INTERVAL 3 MONTH AS `removeDate`,
-  NOW() - INTERVAL 4 MONTH AS `removeDateShadow`', PDO::FETCH_ASSOC);
+  NOW() - INTERVAL 4 MONTH AS `removeDateShadow`,
+  NOW() - INTERVAL 13 WEEK AS `removePending`,
+  NOW() - INTERVAL 9 WEEK AS `removeDraft`', PDO::FETCH_ASSOC);
 foreach ($flagDates as $dates) {
   # Need to use foreach to fetch row. $flagDates is a PDOStatement
   $removeDate = $dates['removeDate'];
   $removeDateShadow = $dates['removeDateShadow'];
+  $removePending = $dates['removePending'];
+  $removeDraft = $dates['removeDraft'];
 }
 $flagDates->closeCursor();
 
-printf ("Cleaning Entities before %s\n", $removeDate);
-$entitiesHandler = $db->prepare(
+$entitiesUpdatedHandler = $db->prepare(
   'SELECT id, `entityID`, `lastUpdated` FROM Entities WHERE `status` = :Status AND `lastUpdated` < :RemoveDate;');
-$entitiesHandler->bindValue(BIND_REMOVEDATE, $removeDate);
+$entitiesUpdatedHandler->bindValue(BIND_REMOVEDATE, $removeDate);
+
+$entitiesValidatedHandler = $db->prepare(
+  'SELECT id, `entityID`, `lastValidated` FROM Entities WHERE `status` = :Status AND `lastValidated` < :RemoveDate;');
 
 # Remove SoftDeleted entities
-$entitiesHandler->bindValue(BIND_STATUS, 4);
-$entitiesHandler->execute();
-while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+printf ("SoftDeleted Entities before %s\n", $removeDate);
+$entitiesUpdatedHandler->bindValue(BIND_STATUS, 4);
+$entitiesUpdatedHandler->execute();
+while ($entity = $entitiesUpdatedHandler->fetch(PDO::FETCH_ASSOC)) {
   $metadata = new Metadata($entity['id']);
   $metadata->removeEntity();
-  printf (" -> %s Deleted %s\n", $entity['entityID'], $entity['lastUpdated']);
+  printf (" -> %s %s\n", $entity['entityID'], $entity['lastUpdated']);
 }
-$entitiesHandler->closeCursor();
+$entitiesUpdatedHandler->closeCursor();
 
 # Remove PendingPublished entities
-$entitiesHandler->bindValue(BIND_STATUS, 5);
-$entitiesHandler->execute();
-while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+printf ("PendingPublished Entities before %s\n", $removeDate);
+$entitiesUpdatedHandler->bindValue(BIND_STATUS, 5);
+$entitiesUpdatedHandler->execute();
+while ($entity = $entitiesUpdatedHandler->fetch(PDO::FETCH_ASSOC)) {
   $metadata = new Metadata($entity['id']);
   $metadata->removeEntity();
-  printf (" -> %s Published %s\n", $entity['entityID'], $entity['lastUpdated']);
+  printf (" -> %s %s\n", $entity['entityID'], $entity['lastUpdated']);
 }
-$entitiesHandler->closeCursor();
+$entitiesUpdatedHandler->closeCursor();
 
 # Remove Shadow entities
-$entitiesHandler->bindValue(BIND_REMOVEDATE, $removeDateShadow);
-$entitiesHandler->bindValue(BIND_STATUS, 6);
-$entitiesHandler->execute();
-while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+printf ("Shadow Entities before %s\n", $removeDateShadow);
+$entitiesUpdatedHandler->bindValue(BIND_REMOVEDATE, $removeDateShadow);
+$entitiesUpdatedHandler->bindValue(BIND_STATUS, 6);
+$entitiesUpdatedHandler->execute();
+while ($entity = $entitiesUpdatedHandler->fetch(PDO::FETCH_ASSOC)) {
   $metadata = new Metadata($entity['id']);
   $metadata->removeEntity();
-  printf (" -> %s Shadow %s\n", $entity['entityID'], $entity['lastUpdated']);
+  printf (" -> Shadow %s %s\n", $entity['entityID'], $entity['lastUpdated']);
 }
-$entitiesHandler->closeCursor();
+$entitiesUpdatedHandler->closeCursor();
+
+# Remove Pending entities
+printf ("Pending Entities before %s\n", $removePending);
+$entitiesValidatedHandler->bindValue(BIND_REMOVEDATE, $removePending);
+$entitiesValidatedHandler->bindValue(BIND_STATUS, 2);
+$entitiesValidatedHandler->execute();
+while ($entity = $entitiesValidatedHandler->fetch(PDO::FETCH_ASSOC)) {
+  $metadata = new Metadata($entity['id']);
+  $metadata->removeEntity();
+  printf (" -> Pending %s %s\n", $entity['entityID'], $entity['lastValidated']);
+}
+
+# Remove Draft entities
+printf ("Draft Entities before %s\n", $removeDraft);
+$entitiesValidatedHandler->bindValue(BIND_REMOVEDATE, $removeDraft);
+$entitiesValidatedHandler->bindValue(BIND_STATUS, 3);
+$entitiesValidatedHandler->execute();
+while ($entity = $entitiesValidatedHandler->fetch(PDO::FETCH_ASSOC)) {
+  $metadata = new Metadata($entity['id']);
+  $metadata->removeEntity();
+  printf (" -> Pending %s %s\n", $entity['entityID'], $entity['lastValidated']);
+}
+
+$entitiesValidatedHandler->closeCursor();
