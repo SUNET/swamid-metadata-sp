@@ -349,23 +349,9 @@ function checkOldDraft() {
 }
 
 function sendEntityConfirmation($id, $entityID, $displayName, $months) {
-  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut, $baseURL;
+  global $SendOut, $baseURL, $mailContacts;
 
-  $mailContacts = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailContacts->Host = $SMTPHost;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->SMTPAutoTLS = true;
-  $mailContacts->Port = 587;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->Username = $SASLUser;
-  $mailContacts->Password = $SASLPassword;
-  $mailContacts->SMTPSecure = 'tls';
-
-  //Recipients
-  $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
-  $mailContacts->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+  setupMail();
 
   $addresses = getTechnicalAndAdministrativeContacts($id);
   if ($SendOut) {
@@ -412,23 +398,9 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
 }
 
 function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
-  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut, $baseURL;
+  global $SendOut, $baseURL, $mailContacts;
 
-  $mailContacts = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailContacts->Host = $SMTPHost;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->SMTPAutoTLS = true;
-  $mailContacts->Port = 587;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->Username = $SASLUser;
-  $mailContacts->Password = $SASLPassword;
-  $mailContacts->SMTPSecure = 'tls';
-
-  //Recipients
-  $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
-  $mailContacts->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+  setupMail();
 
   $addresses = getTechnicalAndAdministrativeContacts($id);
   if ($SendOut) {
@@ -478,23 +450,9 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
 }
 
 function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pending = true) {
-  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $SendOut, $baseURL;
+  global $SendOut, $baseURL, $mailContacts;
 
-  $mailContacts = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailContacts->Host = $SMTPHost;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->SMTPAutoTLS = true;
-  $mailContacts->Port = 587;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->Username = $SASLUser;
-  $mailContacts->Password = $SASLPassword;
-  $mailContacts->SMTPSecure = 'tls';
-
-  //Recipients
-  $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
-  $mailContacts->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+  setupMail();
 
   $address = getLastUpdater($id);
   if ($SendOut && $address ) {
@@ -576,4 +534,22 @@ function getLastUpdater($id) {
     return $address['email'];
   }
   return false;
+}
+
+function setupMail() {
+  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
+  $mailContacts = new PHPMailer(true);
+  $mailContacts->isSMTP();
+  $mailContacts->Host = $SMTPHost;
+  $mailContacts->SMTPAuth = true;
+  $mailContacts->SMTPAutoTLS = true;
+  $mailContacts->Port = 587;
+  $mailContacts->Username = $SASLUser;
+  $mailContacts->Password = $SASLPassword;
+  $mailContacts->SMTPSecure = 'tls';
+
+  //Recipients
+  $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
+  $mailContacts->addBCC('bjorn@sunet.se');
+  $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
 }
