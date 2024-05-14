@@ -734,6 +734,7 @@ class Metadata {
     $keyOrder = 0;
     $saml2found = false;
     $saml1found = false;
+    $shibboleth10found = false;
     $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
     foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
       switch ($protocol) {
@@ -745,6 +746,7 @@ class Metadata {
           $saml1found = true;
           break;
         case 'urn:mace:shibboleth:1.0' :
+          $shibboleth10found = true;
           break;
         case '' :
           $this->result .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
@@ -757,6 +759,10 @@ class Metadata {
       $this->error .= "IDPSSODescriptor is missing support for SAML2.\n";
     } elseif ($saml1found) {
       $this->warning .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
+    if ($shibboleth10found && ! $saml1found) {
+      # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
+      $this->error .= "IDPSSODescriptor claims support for urn:mace:shibboleth:1.0. This depends on SAML1, no support for SAML1 claimed.\n";
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
     $child = $data->firstChild;
@@ -1103,6 +1109,7 @@ class Metadata {
     $keyOrder = 0;
     $saml2found = false;
     $saml1found = false;
+    $shibboleth10found = false;
     $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
     foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
       switch ($protocol) {
@@ -1114,6 +1121,7 @@ class Metadata {
           $saml1found = true;
           break;
         case 'urn:mace:shibboleth:1.0' :
+          $shibboleth10found = true;
           break;
         case '' :
           $this->warning .= sprintf("Extra space found in protocolSupportEnumeration for AttributeAuthorityDescriptor. Please remove.\n");
@@ -1126,6 +1134,10 @@ class Metadata {
       $this->error .= "AttributeAuthorityDescriptor is missing support for SAML2.\n";
     } elseif ($saml1found) {
       $this->warning .= "AttributeAuthorityDescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
+    if ($shibboleth10found && ! $saml1found) {
+      # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
+      $this->error .= "AttributeAuthorityDescriptor claims support for urn:mace:shibboleth:1.0. This depends on SAML1, no support for SAML1 claimed.\n";
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.7
     $child = $data->firstChild;
@@ -2247,7 +2259,15 @@ class Metadata {
             $name, $binding, $type);
         }
         break;
-
+      # that's a SAML 1.1 identifier defined by the project in the old days
+      # https://shibboleth.net/pipermail/users/2021-January/048837.html
+      case 'urn:mace:shibboleth:1.0:profiles:AuthnRequest' :
+        if (! $saml1) {
+          $this->error .= sprintf(
+            "urn:mace:shibboleth:1.0 is depending on SAML1. Found binding in %s[Binding=%s], but SAML1 not supported in %sDescriptor.\n",
+            $name, $binding, $type);
+        }
+        break;
       # https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
       # 3.2.1
       case 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP' :
@@ -2269,9 +2289,6 @@ class Metadata {
             "saml-bindings-2.0-os: SAML2 Binding in %s[Binding=%s], but SAML2 not supported in %sDescriptor.\n",
             $name, $binding, $type);
         }
-        break;
-      case 'urn:mace:shibboleth:1.0:profiles:AuthnRequest' :
-        #Protocol = urn:mace:shibboleth:1.0
         break;
       default :
         $this->result .= sprintf("Missing Binding : %s in validator\n", $binding);
@@ -2680,6 +2697,9 @@ class Metadata {
                     case 'urn:oasis:names:tc:SAML:1.0:profiles:artifact-01' :
                     #4.1.2 Browser/POST Profile of SAML1
                     case 'urn:oasis:names:tc:SAML:1.0:profiles:browser-post' :
+                    # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
+                    # urn:mace:shibboleth:1.0 depends on SAML1
+                    case 'urn:mace:shibboleth:1.0:profiles:AuthnRequest' :
                       $this->result .= sprintf ('Removing %s[%s] in %s<br>', $subchild->nodeName, $subchild->getAttribute('Binding'), $child->nodeName);
                       $remChild = $subchild;
                       $subchild = $subchild->nextSibling;
