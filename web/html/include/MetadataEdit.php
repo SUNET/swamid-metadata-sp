@@ -145,7 +145,8 @@ class MetadataEdit {
       $entityHandler->bindValue(self::BIND_ID, $oldID);
       $entityHandler->execute();
       if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        $this->oldXml = DOMDocument::loadXML($entity['xml']);
+        $this->oldXml = new DOMDocument;
+        $this->oldXml->loadXML($entity['xml']);
         $this->oldentityID = $entity['entityID'];
         $this->oldExists = true;
       }
@@ -444,7 +445,7 @@ class MetadataEdit {
               </a>
             </div>
           </li>',
-        $type, $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, $value
+        $type, $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value)
       );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -482,7 +483,7 @@ class MetadataEdit {
               </a>
             </div>
           </li>',
-          $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, $value);
+          $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value));
         $existingAttributeValues[$type][$value] = true;
       }
       printf("\n%s\n", self::HTML_END_UL);
