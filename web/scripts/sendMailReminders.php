@@ -537,7 +537,7 @@ function getLastUpdater($id) {
 }
 
 function setupMail() {
-  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
+  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $mailContacts;
   $mailContacts = new PHPMailer(true);
   $mailContacts->isSMTP();
   $mailContacts->Host = $SMTPHost;
