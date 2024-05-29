@@ -252,3 +252,28 @@ CREATE TABLE `assuranceLog` (
   `logDate` date DEFAULT NULL,
   PRIMARY KEY (`entityID`,`assurance`)
 );
+
+CREATE TABLE `OrganizationInfo` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `OrganizationNameSv` text DEFAULT NULL,
+  `OrganizationDisplayNameSv` text DEFAULT NULL,
+  `OrganizationURLSv` text DEFAULT NULL,
+  `OrganizationNameEn` text DEFAULT NULL,
+  `OrganizationDisplayNameEn` text DEFAULT NULL,
+  `OrganizationURLEn` text DEFAULT NULL,
+  `memberSince` datetime DEFAULT NULL,
+  `notMemberAfter` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `IMPS` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `OrganizationInfo_id` int(10) unsigned,
+  `name` text DEFAULT NULL,
+  `maximumALlevel` int,
+  `firstRegistration` datetime DEFAULT NULL,
+  `lastUpdated` datetime DEFAULT NULL,
+  `lastValidated` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `IMPS_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
+);
