@@ -37,7 +37,6 @@ switch ($argc) {
     # No param list users. Case 1:
     listUsers();
     break;
-    
 }
 
 function listUsers() {
@@ -92,7 +91,6 @@ function addAccess(&$user, $entityID) {
     INTO EntityUser
     SET `entity_id` = :EntityId, `user_id` = :UsersId, `approvedBy` = 'Admin', `lastChanged` = NOW()");
 
-  
   $entitiesHandler->execute(array('EntityID' => $entityID));
   if ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $entitiesAccessHandler->execute(array('UsersId' => $user['id'], 'EntityId' => $entity['id']));

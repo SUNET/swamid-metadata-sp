@@ -21,6 +21,14 @@ class MetadataDisplay {
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SPACER = '      ';
 
+  private $metaDb;
+  private $Mode;
+  private $collapseIcons;
+  # From common.php
+  private $standardAttributes = array();
+  private $langCodes = array();
+  private $FriendlyNames = array();
+
   # Setup
   public function __construct() {
     require __DIR__  . '/../config.php'; #NOSONAR
@@ -1423,11 +1431,19 @@ class MetadataDisplay {
       $remindersActive='';
       $remindersSelected='false';
       $remindersShow='';
+      #
+      $remindersUrgentActive='';
+      $remindersUrgentSelected='false';
+      $remindersUrgentShow='';
 
       if (isset($_GET["tab"]) && $_GET["tab"] == 'reminders') {
         $remindersActive=' active';
         $remindersSelected='true';
         $remindersShow=' show';
+      } elseif (isset($_GET["tab"]) && $_GET["tab"] == 'reminders-urgent') {
+        $remindersUrgentActive=' active';
+        $remindersUrgentSelected='true';
+        $remindersUrgentShow=' show';
       } else {
         $errorsActive=' active';
         $errorsSelected='true';
@@ -1445,10 +1461,14 @@ class MetadataDisplay {
             <a class="nav-link%s" id="reminders-tab" data-toggle="tab" href="#reminders" role="tab"
               aria-controls="reminders" aria-selected="%s">Reminders</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="reminders-urgent-tab" data-toggle="tab" href="#reminders-urgent" role="tab"
+              aria-controls="reminders-urgent" aria-selected="%s">Reminders - Act on</a>
+          </li>
         </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="errors" role="tabpanel" aria-labelledby="errors-tab">%s',
-          $errorsActive, $errorsSelected, $remindersActive, $remindersSelected, "\n", "\n",
+          $errorsActive, $errorsSelected, $remindersActive, $remindersSelected, $remindersUrgentActive, $remindersUrgentSelected, "\n", "\n",
           $errorsShow, $errorsActive, "\n");
     }
     $this->showErrorEntitiesList($download);
@@ -1457,8 +1477,14 @@ class MetadataDisplay {
       <div class="tab-pane fade%s%s" id="reminders" role="tabpanel" aria-labelledby="reminders-tab">%s',
         $remindersShow, $remindersActive, "\n");
       $this->showErrorMailReminders();
-      printf('      </div><!-- End tab-pane reminders -->%s    </div><!-- End tab-content -->%s',
+      printf('      </div><!-- End tab-pane reminders -->%s',
+        "\n");
+      printf('      <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
+        $remindersUrgentShow, $remindersUrgentActive, "\n");
+      $this->showErrorMailReminders(false);
+      printf('      </div><!-- End tab-pane reminders-urgent -->%s    </div><!-- End tab-content -->%s',
         "\n", "\n");
+
     }
   }
   private function showErrorEntitiesList($download) {
@@ -1556,7 +1582,7 @@ class MetadataDisplay {
     }
     if (!$download) {print "        </table>\n"; }
   }
-  private function showErrorMailReminders() {
+  private function showErrorMailReminders($showAll=true) {
     $entityHandler = $this->metaDb->prepare(
       'SELECT MailReminders.*, `entityID`, `lastConfirmed`, `lastValidated`
       FROM `MailReminders`, `Entities`
@@ -1571,6 +1597,7 @@ class MetadataDisplay {
           <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed/Validated</th></tr></thead>%s',
       "\n");
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+      $showUrgent = false;
       switch ($entity['type']) {
         case 1 :
           // Confirmation/Validation reminder
@@ -1583,8 +1610,10 @@ class MetadataDisplay {
               break;
             case 3:
               $reason = 'Not validated/confirmed for 12 months';
+              $showUrgent = true;
               break;
             default :
+              $showUrgent = true;
               $reason = 'Not validated/confirmed';
           }
           $date = $entity['lastConfirmed'];
@@ -1596,9 +1625,11 @@ class MetadataDisplay {
               $reason = 'Certificate will expire within a month';
               break;
             case 2 :
+              $showUrgent = true;
               $reason = 'Certificate have expired';
               break;
             default :
+              $showUrgent = true;
               $reason = 'Certificate error';
           }
           $date = $entity['lastConfirmed'];
@@ -1634,15 +1665,17 @@ class MetadataDisplay {
           }
           $date = $entity['lastValidated'];
           break;
-        }
-      printf(
-        '          <tr>
+      }
+      if ($showAll || $showUrgent) {
+        printf(
+          '          <tr>
             <td><a href=./?showEntity=%d target="_blank">%s</a></td>
             <td>%s</td>
             <td>%s</td>
             <td>%s</td>
           </tr>%s',
-        $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $date,"\n");
+          $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $date,"\n");
+      }
     }
     printf ('        </table>%s', "\n");
   }

@@ -52,7 +52,7 @@ $collapseIcons = array();
 try {
   $fileName = __DIR__ . "/../MDS.db";
   $dsn = "sqlite:$fileName";
-  
+
   $db = new PDO($dsn);
 #  $db = new SQLite3($fileName);
   // set the PDO error mode to exception
