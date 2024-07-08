@@ -33,6 +33,8 @@ while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     printf ("%s\n" ,$metadata->getResult());
   }
   $metadata->clearResult();
+  $metadata->clearWarning();
+  $metadata->clearError();
   $metadata->validateXML();
   $metadata->validateSAML();
   if ($metadata->getResult() <> "") {

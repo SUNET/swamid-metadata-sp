@@ -296,6 +296,8 @@ if (isset($_FILES['XMLfile'])) {
         case 'removeSaml1' :
           $metadata = new Metadata($entitiesId);
           $metadata->removeSaml1Support();
+          $metadata->clearWarning();
+          $metadata->clearError();
           $metadata->validateXML();
           $metadata->validateSAML();
           showEntity($entitiesId);
@@ -323,7 +325,11 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'myEntities' :
           $menuActive = 'myEntities';
-          showMyEntities();
+          if (sizeof($_POST)) {
+            annualConfirmationList($_POST);
+          } else {
+            showMyEntities();
+          }
           break;
         case 'EntityStatistics' :
           $menuActive = 'EntityStatistics';
@@ -864,10 +870,11 @@ function showMyEntities() {
     WHERE `user_id`= `id` AND `entity_id` = :Id");
 
   printf ('
-    <table id="annual-table" class="table table-striped table-bordered">
-      <thead><tr>
-        <th>entityID</th><th>Metadata status</th><th>Last confirmed(UTC)</th><th>By</th>
-      </tr></thead>%s', "\n");
+    <form action="?action=myEntities" method="POST" enctype="multipart/form-data">
+      <table id="annual-table" class="table table-striped table-bordered">
+        <thead><tr>
+          <th>entityID</th><th></th><th>Metadata status</th><th>Last confirmed(UTC)</th><th>By</th>
+        </tr></thead>%s', "\n");
       $entitiesHandler->execute();
   while ($row = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     $entityConfirmationHandler->bindParam(':Id', $row['id']);
@@ -890,18 +897,23 @@ function showMyEntities() {
     switch ($row['status']) {
       case 1 :
         $pubStatus = 'Published';
+        $checkBox = $row['errors'] == '' && $row['errorsNB'] == '' && $row['warnings'] == ''
+          ? sprintf('<input type="checkbox" id="validate_%d" name="validate_%d">', $row['id'], $row['id'])
+          : '';
         break;
       case 2 :
         $pubStatus = 'Pending';
         $lastConfirmed = '';
         $confirmStatus = '';
         $updater = '';
+        $checkBox = '';
         break;
       case 3 :
         $pubStatus = 'Draft';
         $lastConfirmed = '';
         $confirmStatus = '';
         $updater = '';
+        $checkBox = '';
         break;
       default :
     }
@@ -912,10 +924,12 @@ function showMyEntities() {
     } else {
       $errorStatus = '<i class="fas fa-exclamation"></i>';
     }
-    printf('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s',
-      $row['id'], $row['entityID'], $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
+    printf('        <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s',
+      $row['id'], $row['entityID'], $checkBox, $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
   }
-  print "    </table>\n";
+  printf('      </table>
+      <button type="submit" class="btn btn-primary">Validate selected</button>
+    </form>%s', "\n");
   $html->addTableSort('annual-table');
 }
 
@@ -1047,6 +1061,8 @@ function showMenu() {
 
 function validateEntity($entitiesId) {
   $metadata = new Metadata($entitiesId);
+  $metadata->clearWarning();
+  $metadata->clearError();
   $metadata->validateXML();
   $metadata->validateSAML();
 }
@@ -1059,6 +1075,8 @@ function move2Pending($entitiesId) {
   $draftMetadata = new Metadata($entitiesId);
 
   if ($draftMetadata->entityExists()) {
+    $draftMetadata->clearWarning();
+    $draftMetadata->clearError();
     $draftMetadata->validateXML();
     $draftMetadata->validateSAML();
     if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
@@ -1445,6 +1463,120 @@ function annualConfirmation($entitiesId){
   }
 }
 
+function annualConfirmationList($list){
+  global $html, $menuActive;
+  global $EPPN, $mail, $fullName;
+  $isIdP = false;
+  $isSP = false;
+  $entityList = array();
+  $sections = '' ;
+  $infoText = '';
+  $errors = '';
+
+  foreach ($list as $postString => $on) {
+    $postArray = explode('_', $postString);
+    if ($postArray[0] == 'validate') {
+      $metadata = new Metadata($postArray[1]);
+      if ($metadata->status() == 1) {
+        # Entity is Published
+        $metadata->getUserId($EPPN);
+        print $metadata->getWarning();
+        print $metadata->getError();
+        if ($metadata->getWarning() == '' && $metadata->getError() == '' && $metadata->isResponsible()) {
+          # User have access to entity and no warnings or error
+          #check if IdP och SP and add save for later display
+          $isIdP = $metadata->isIdP() ? true : $isIdP;
+          $isSP = $metadata->isSP() ? true : $isSP;
+          $entityList[$postArray[1]] = $metadata->entityID();
+        } else {
+          $errors .= sprintf('Problems with %s, skipping<br>', $metadata->entityID());
+          print "Found error";
+        }
+      }
+    }
+  }
+  if (sizeof($entityList)) {
+    if ( $isIdP && $isSP) {
+      $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
+      $infoText = '<ul>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
+            <li>a service owned by a Member Organisation;</li>
+            <li>a service under contract with at least one Member Organisation;</li>
+            <li>a government agency service used by at least one Member Organisation;</li>
+            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
+            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
+          </ul></li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+        </ul>';
+    } elseif ($isIdP) {
+      $sections = '4.1.1 and 4.1.2' ;
+      $infoText = '<ul>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+        </ul>';
+    } elseif ($isSP) {
+      $sections = '4.2.1 and 4.2.2' ;
+      $infoText = '<ul>
+          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
+            <li>a service owned by a Member Organisation;</li>
+            <li>a service under contract with at least one Member Organisation;</li>
+            <li>a government agency service used by at least one Member Organisation;</li>
+            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
+            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
+          </ul></li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+        </ul>';
+    }
+    if (isset($_POST['entityIsOK'])) {
+      $metadata->updateUser($EPPN, $mail, $fullName, true);
+      $user_id = $metadata->getUserId($EPPN);
+      foreach ($entityList as $id => $entityID) {
+        $metadata = new Metadata($id);
+        $metadata->confirmEntity($user_id);
+      }
+      $menuActive = 'myEntities';
+      showMyEntities();
+    } else {
+      $errors .= isset($_POST['FormVisit'])
+        ? "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n"
+        : '';
+
+      $html->showHeaders(HTML_TITLE . 'Validate list');
+      $menuActive = '';
+      showMenu();
+      if ($errors != '') {
+        printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
+      }
+      printf(
+      '%s    <p>You are confirming that the list below is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>
+    <form action="?action=myEntities" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="FormVisit" value="true">
+      <ul>', "\n");
+      foreach ($entityList as $id => $entityID) {
+        printf('      <li><input type="hidden" name="validate_%d" value="on">%s</li>%s', $id , $entityID, "\n");
+      }
+      printf('
+      </ul>
+      <h5> Confirmation:</h5>
+      <p>Registration criteria from SWAMID SAML WebSSO Technology Profile:
+        %s
+      </p>
+      <input type="checkbox" id="entityIsOK" name="entityIsOK">
+      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
+      <br>
+      <input type="submit" name="action" value="Annual Confirmation">
+    </form>
+    <a href="/admin/?action=myEntities"><button>Return to My entities</button></a>%s',
+        $infoText, $sections, "\n");
+    }
+  } else {
+    $menuActive = 'myEntities';
+    showMyEntities();
+  }
+}
+
 function requestRemoval($entitiesId) {
   global $db, $html, $menuActive;
   global $EPPN, $mail, $fullName;
@@ -1638,6 +1770,8 @@ function move2Draft($entitiesId) {
     if (isset($_GET['action'])) {
       $draftMetadata = new Metadata($entity['entityID'], 'New');
       $draftMetadata->importXML($entity['xml']);
+      $draftMetadata->clearWarning();
+      $draftMetadata->clearError();
       $draftMetadata->validateXML();
       $draftMetadata->validateSAML(true);
       $menuActive = 'new';

@@ -15,6 +15,8 @@ if ($import->getStatus()) {
     printf ("Import -> %s\n" ,$metadata->getResult());
   }
   $metadata->clearResult();
+  $metadata->clearWarning();
+  $metadata->clearError();
   $metadata->validateXML();
   $metadata->validateSAML();
   if ($metadata->getResult() <> "") {

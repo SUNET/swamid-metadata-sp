@@ -158,7 +158,7 @@ class Metadata {
 
   private function construct1($id) { #NOSONAR is called from construct above
     $entityHandler = $this->metaDb->prepare('
-      SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`
+      SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `errors`, `errorsNB`, `warnings`
         FROM Entities WHERE `id` = :Id');
     $entityHandler->bindValue(self::BIND_ID, $id);
     $entityHandler->execute();
@@ -176,6 +176,9 @@ class Metadata {
       $this->isSP = $entity['isSP'];
       $this->isAA = $entity['isAA'];
       $this->feedValue = $entity['publishIn'];
+      $this->warning = $entity['warnings'];
+      $this->error = $entity['errors'];
+      $this->errorNB = $entity['errorsNB'];
     }
   }
 
