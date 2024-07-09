@@ -1,5 +1,13 @@
 <?php
 class MetadataDisplay {
+  # Setup
+  private $metaDb = false;
+  private $collapseIcons = false;
+  private $mode = '';
+  # From common.php
+  private $standardAttributes = array();
+  private $langCodes = array();
+  private $FriendlyNames = array();
 
   const BIND_APPROVEDBY = ':ApprovedBy';
   const BIND_ENTITYID = ':EntityID';
@@ -20,16 +28,11 @@ class MetadataDisplay {
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SPACER = '      ';
+  const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="blank">%s</a>';
+  const HTML_TABLE_END = "    </table>\n";
+  const HTML_ACTIVE = ' active';
+  const HTML_SHOW = ' show';
 
-  private $metaDb;
-  private $Mode;
-  private $collapseIcons;
-  # From common.php
-  private $standardAttributes = array();
-  private $langCodes = array();
-  private $FriendlyNames = array();
-
-  # Setup
   public function __construct() {
     require __DIR__  . '/../config.php'; #NOSONAR
     require __DIR__ . '/common.php'; #NOSONAR
@@ -42,7 +45,7 @@ class MetadataDisplay {
       echo "Error: " . $e->getMessage();
     }
     $this->collapseIcons = array();
-    $this->Mode = $Mode;
+    $this->mode = $Mode;
   }
 
   ####
@@ -178,7 +181,7 @@ class MetadataDisplay {
           if (! $ecsTested[$tag]) {
             $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
             $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
-              $tag, $this->Mode == 'QA' ? 'qa.' : '', "\n");
+              $tag, $this->mode == 'QA' ? 'qa.' : '', "\n");
           }
         }
         // Error URLs
@@ -555,10 +558,11 @@ class MetadataDisplay {
               <ul><li>
                 <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">',
       "\n", $edit, $state);
-    if ($thisURL != '')
-      printf ('<a href="%s" class="text-%s" target="blank">%s</a>', $thisURL, $state, $thisURL);
-    else
+    if ($thisURL != '') {
+      printf (self::HTML_TARGET_BLANK, $thisURL, $state, $thisURL);
+    } else {
       print 'Missing';
+    }
     print '</p></li></ul>';
   }
 
@@ -680,13 +684,13 @@ class MetadataDisplay {
           } else {
             $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
           }
-          $data = sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $data, $state, $data);
+          $data = sprintf (self::HTML_TARGET_BLANK, $data, $state, $data);
           printf ('%s                  <li>%s <span class="text-%s">%s (%s) = %s</span>%s</li>',
             "\n", $statusIcon, $state, $element, $size, $data, $statusText);
           break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
-          $data = sprintf ('<a href="%s" class="text-%s" target="blank">%s</a>', $data, $state, $data);
+          $data = sprintf (self::HTML_TARGET_BLANK, $data, $state, $data);
           printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
           "\n", $state, $element, $data);
           break;
@@ -736,8 +740,9 @@ class MetadataDisplay {
         if (isset ($otherMDUIElements[$element]) && isset ($otherMDUIElements[$element][$data])) {
           $state = 'dark';
         }
-      } else
+      } else {
         $state = 'dark';
+      }
       printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
     }
     if ($showEndUL) {
@@ -837,8 +842,9 @@ class MetadataDisplay {
         if (isset($otherKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']])) {
           $state = 'dark';
         }
-      } else
+      } else {
         $state = 'dark';
+      }
       printf('%s                <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
                 <ul%s>
                   <li>notValidAfter = %s</li>
@@ -978,8 +984,9 @@ class MetadataDisplay {
       $organizationHandler->bindParam(self::BIND_ID, $otherEntityId);
       $organizationHandler->execute();
       while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (! isset($otherOrganizationElements[$organization['element']]) )
+        if (! isset($otherOrganizationElements[$organization['element']]) ) {
           $otherOrganizationElements[$organization['element']] = array();
+        }
         $otherOrganizationElements[$organization['element']][$organization['lang']] = $organization['data'];
       }
     }
@@ -1101,8 +1108,9 @@ class MetadataDisplay {
           $state = (isset ($otherContactPersons[$contactPerson['contactType']])
             && $otherContactPersons[$contactPerson['contactType']]['surName'] == $contactPerson['surName'])
               ? 'dark' : $state;
-        } else
+        } else {
           $state = 'dark';
+        }
         printf ('          <li><span class="text-%s">SurName = %s</span></li>%s',
           $state, $contactPerson['surName'], "\n");
       }
@@ -1275,8 +1283,8 @@ class MetadataDisplay {
         }
         $urlType = $urlInfo['type'];
       }
-      printf ('    </table>%s    <table class="table table-striped table-bordered">
-      <tr><th>Entity</th><th>Part</th><th></tr>%s', "\n", "\n");
+      printf ('%s    <table class="table table-striped table-bordered">
+      <tr><th>Entity</th><th>Part</th><th></tr>%s', self::HTML_TABLE_END, "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s',
           $entity['entity_id'], $entity['entityID'], 'ErrorURL', "\n");
@@ -1315,7 +1323,7 @@ class MetadataDisplay {
           $missing = false;
         }
       }
-      print "    </table>\n";
+      print self::HTML_TABLE_END;
       if ($missing) {
         $urlHandler = $this->metaDb->prepare('DELETE FROM URLs WHERE `URL` = :URL');
         $urlHandler->bindValue(self::BIND_URL, $url);
@@ -1355,7 +1363,7 @@ class MetadataDisplay {
               $typeInfo = '?' . $url['type'];
           }
           if ($oldType > 0) {
-            print "    </table>\n";
+            print self::HTML_TABLE_END;
           }
           printf ('    <h3>%s</h3>%s    <table class="table table-striped table-bordered">%s      <tr>
         <th>URL</th><th>Last seen</th><th>Last validated</th><th>Result</th></tr>%s', $typeInfo, "\n", "\n", "\n");
@@ -1364,7 +1372,7 @@ class MetadataDisplay {
         printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><tr>%s',
           urlencode($url['URL']), $url['URL'], $url['lastSeen'], $url['lastValidated'], $url['validationOutput'], "\n");
       }
-      if ($oldType > 0) { print "    </table>\n"; }
+      if ($oldType > 0) { print self::HTML_TABLE_END; }
 
       $warnTime = date('Y-m-d H:i', time() - 25200 ); // (7 * 60 * 60 =  7 hours)
       $warnTimeweek = date('Y-m-d H:i', time() - 608400 ); // (7 * 24 * 60 * 60 + 3600 =  7 days 1 hour)
@@ -1390,7 +1398,7 @@ class MetadataDisplay {
           urlencode($url['URL']), $warn, $url['URL'], $url['lastSeen'],
           $url['lastValidated'], $url['validationOutput'], "\n");
       }
-      print "    </table>\n";
+      print self::HTML_TABLE_END;
 
     }
   }
@@ -1437,17 +1445,17 @@ class MetadataDisplay {
       $remindersUrgentShow='';
 
       if (isset($_GET["tab"]) && $_GET["tab"] == 'reminders') {
-        $remindersActive=' active';
+        $remindersActive=self::HTML_ACTIVE;
         $remindersSelected='true';
-        $remindersShow=' show';
+        $remindersShow=self::HTML_SHOW;
       } elseif (isset($_GET["tab"]) && $_GET["tab"] == 'reminders-urgent') {
-        $remindersUrgentActive=' active';
+        $remindersUrgentActive=self::HTML_ACTIVE;
         $remindersUrgentSelected='true';
-        $remindersUrgentShow=' show';
+        $remindersUrgentShow=self::HTML_SHOW;
       } else {
-        $errorsActive=' active';
+        $errorsActive=self::HTML_ACTIVE;
         $errorsSelected='true';
-        $errorsShow=' show';
+        $errorsShow=self::HTML_SHOW;
       }
 
       printf('    <div class="row">
@@ -1580,7 +1588,7 @@ class MetadataDisplay {
           str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
       }
     }
-    if (!$download) {print "        </table>\n"; }
+    if (!$download) {print "    " . HTML_TABLE_END; }
   }
   private function showErrorMailReminders($showAll=true) {
     $entityHandler = $this->metaDb->prepare(
@@ -1665,6 +1673,7 @@ class MetadataDisplay {
           }
           $date = $entity['lastValidated'];
           break;
+        default:
       }
       if ($showAll || $showUrgent) {
         printf(
@@ -1677,7 +1686,7 @@ class MetadataDisplay {
           $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $date,"\n");
       }
     }
-    printf ('        </table>%s', "\n");
+    printf ('    %s', self::HTML_TABLE_END);
   }
 
   public function showXMLDiff($entityId1, $entityId2) {
@@ -1764,7 +1773,7 @@ class MetadataDisplay {
           $entityID, 'Problem with XML', "\n");
       }
     }
-    print "    </table>\n";
+    print self::HTML_TABLE_END;
   }
 
   public function showEcsStatistics() {
@@ -1895,7 +1904,7 @@ class MetadataDisplay {
         $descr, $markedECS, ($markedECS/$nrOfIdPs*100), $ok, ($ok/$nrOfIdPs*100),
         $fail, ($fail/$nrOfIdPs*100), $notTested, ($notTested/$nrOfIdPs*100), "\n");
     }
-    printf('    </table>%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', "\n", "\n", "\n");
+    printf('%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', self::HTML_TABLE_END, "\n", "\n");
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
       $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
@@ -2072,7 +2081,7 @@ class MetadataDisplay {
     if ($oldIdp) {
       $this->printAssuranceRow($oldIdp, $assurance);
     }
-    print "    </table>\n    <br>\n";
+    print self::HTML_TABLE_END . "    <br>\n";
 
     printf('      <script src="/include/chart/chart.min.js"></script>
       <script>
@@ -2210,7 +2219,7 @@ class MetadataDisplay {
     $idps = implode(',', $idpArray);
     $sps = implode(',', $spArray);
 
-    printf ('    </table>%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', "\n", "\n", "\n");
+    printf ('%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', self::HTML_TABLE_END, "\n", "\n");
     printf ("      const ctxTotal = document.getElementById('total').getContext('2d');
       const myTotal = new Chart(ctxTotal, {
         type: 'line',
@@ -2254,19 +2263,19 @@ class MetadataDisplay {
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
         case 'organizations' :
-          $organizationsActive=' active';
+          $organizationsActive=self::HTML_ACTIVE;
           $organizationsSelected='true';
-          $organizationsShow=' show';
+          $organizationsShow=self::HTML_SHOW;
           break;
         default :
-          $scopesActive=' active';
+          $scopesActive=self::HTML_ACTIVE;
           $scopesSelected='true';
-          $scopesShow=' show';
+          $scopesShow=self::HTML_SHOW;
       }
     } else {
-      $scopesActive=' active';
+      $scopesActive=self::HTML_ACTIVE;
       $scopesSelected='true';
-      $scopesShow=' show';
+      $scopesShow=self::HTML_SHOW;
     }
 
     printf('    <div class="row">
@@ -2313,7 +2322,7 @@ class MetadataDisplay {
           </tr>%s',
         $scope['scope'], $scope['id'], $scope['entityID'], $scope['data'], "\n");
     }
-    printf ('        </table>%s', "\n");
+    printf ('    %s', self::HTML_TABLE_END);
   }
 
   private function showOrganizationLists() {
@@ -2378,7 +2387,7 @@ class MetadataDisplay {
             $entity['OrganizationName'], $entity['OrganizationDisplayName'],
             $entity['OrganizationURL'], "\n");
         }
-        printf ('        </table>%s', "\n");
+        printf ('    %s', self::HTML_TABLE_END);
       }
     } else {
       $showSv = false;
@@ -2422,7 +2431,7 @@ class MetadataDisplay {
           $organization['count'], "\n");
       }
     }
-    printf ('                </table>');
+    printf ('            %s', self::HTML_TABLE_END);
   }
 
   public function showHelp() {

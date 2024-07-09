@@ -10,6 +10,42 @@ const HTML_TITLE_PROBLEM = 'Metadata SWAMID - Problem';
 const HTML_CLASS_FA_UP = '<i class="fa fa-arrow-up"></i>';
 const HTML_CLASS_FA_DOWN = '<i class="fa fa-arrow-down"></i>';
 const HTML_OUTLINE = '-outline';
+const HTML_CHECKED = ' checked';
+const HTML_TEXT_CFE = "Can't find Entity";
+const HTML_TEXT_MCNBS = 'Message could not be sent to contacts.<br>';
+const HTML_TEXT_ME = 'Mailer Error: ';
+
+const HTML_TEXT_STP_BOTH = '4.1.1, 4.1.2, 4.2.1 and 4.2.2';
+const HTML_TEXT_STP_IDP = '4.1.1 and 4.1.2';
+const HTML_TEXT_STP_SP = '4.2.1 and 4.2.2';
+const HTML_TEXT_STPINFO_BOTH = '<ul>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
+            <li>a service owned by a Member Organisation;</li>
+            <li>a service under contract with at least one Member Organisation;</li>
+            <li>a government agency service used by at least one Member Organisation;</li>
+            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
+            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
+          </ul></li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+        </ul>';
+const HTML_TEXT_STPINFO_IDP = '<ul>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+        </ul>';
+const HTML_TEXT_STPINFO_SP = '<ul>
+          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
+            <li>a service owned by a Member Organisation;</li>
+            <li>a service under contract with at least one Member Organisation;</li>
+            <li>a government agency service used by at least one Member Organisation;</li>
+            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
+            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
+          </ul></li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+        </ul>';
+const OPERATIONS_NAME = 'SWAMID Operations';
+const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
@@ -518,7 +554,7 @@ function showEntityList($status = 1) {
       $minLevel = 5;
       break;
     default:
-      $html->showHeaders('Metadata SWAMID');
+      $html->showHeaders(HTML_TITLE);
   }
   showMenu();
   if ($status == 1) {
@@ -763,7 +799,7 @@ function showEntity($entitiesId)  {
     $display->showEditors($entitiesId);
   } else {
     $html->showHeaders(HTML_TITLE . 'NotFound');
-    print "Can't find Entity";
+    print HTML_TEXT_CFE;
   }
 }
 
@@ -1080,37 +1116,14 @@ function move2Pending($entitiesId) {
     $draftMetadata->validateXML();
     $draftMetadata->validateSAML();
     if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
-      $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
-      $infoText = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
+      $sections = HTML_TEXT_STP_BOTH ;
+      $infoText = HTML_TEXT_STPINFO_BOTH;
     } elseif ($draftMetadata->isIdP()) {
-      $sections = '4.1.1 and 4.1.2' ;
-      $infoText = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-        </ul>';
+      $sections = HTML_TEXT_STP_IDP ;
+      $infoText = HTML_TEXT_STPINFO_IDP;
     } elseif ($draftMetadata->isSP()) {
-      $sections = '4.2.1 and 4.2.2' ;
-      $infoText = '<ul>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
+      $sections = HTML_TEXT_STP_SP ;
+      $infoText = HTML_TEXT_STPINFO_SP;
     }
     $html->showHeaders(HTML_TITLE . $draftMetadata->entityID());
     $errors = getBlockingErrors($entitiesId);
@@ -1135,7 +1148,7 @@ function move2Pending($entitiesId) {
 
         setupMail();
 
-        $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $draftMetadata->entityID());
+        $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $draftMetadata->entityID());
         $publishedMetadata = new Metadata($draftMetadata->entityID(), 'prod');
 
         if ($publishedMetadata->entityExists()) {
@@ -1240,15 +1253,15 @@ function move2Pending($entitiesId) {
           try {
             $mailContacts->send();
           } catch (Exception $e) {
-            echo 'Message could not be sent to contacts.<br>';
-            echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+            echo HTML_TEXT_MCNBS;
+            echo HTML_TEXT_ME . $mailContacts->ErrorInfo . '<br>';
           }
 
           try {
             $mailRequester->send();
           } catch (Exception $e) {
             echo 'Message could not be sent to requester.<br>';
-            echo 'Mailer Error: ' . $mailRequester->ErrorInfo . '<br>';
+            echo HTML_TEXT_ME . $mailRequester->ErrorInfo . '<br>';
           }
 
           printf ("    <p>You should have got an email with information on how to proceed</p>
@@ -1277,9 +1290,9 @@ function move2Pending($entitiesId) {
         $publishArrayOld = array();
         if ($publishedMetadata->entityExists()) {
           $oldPublishedValue = $publishedMetadata->feedValue();
-          if (($oldPublishedValue & 2) == 2) $publishArrayOld[] = 'SWAMID';
-          if (($oldPublishedValue & 4) == 4) $publishArrayOld[] = 'eduGAIN';
-          if ($oldPublishedValue == 1) $publishArrayOld[] = 'SWAMID-testing';
+          if (($oldPublishedValue & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+          if (($oldPublishedValue & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
+          if ($oldPublishedValue == 1) { $publishArrayOld[] = 'SWAMID-testing'; }
           printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArrayOld));
         } else {
           $oldPublishedValue = $draftMetadata->isIdP() ? 7 : 3;
@@ -1298,9 +1311,9 @@ function move2Pending($entitiesId) {
       <label for="SWAMID_Testing">SWAMID</label><br>
       <input type="radio" id="Testing" name="publishedIn" value="1"%s>
       <label for="Testing">Testing only</label>%s',
-          $oldPublishedValue == 7 ? ' checked' : '',
-          $oldPublishedValue == 3 ? ' checked' : '',
-          $oldPublishedValue == 1 ? ' checked' : '', "\n");
+          $oldPublishedValue == 7 ? HTML_CHECKED : '',
+          $oldPublishedValue == 3 ? HTML_CHECKED : '',
+          $oldPublishedValue == 1 ? HTML_CHECKED : '', "\n");
         }
         printf('      <br>
       <h5> Confirmation:</h5>
@@ -1336,7 +1349,7 @@ function move2Pending($entitiesId) {
     $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
     showMenu();
-    print "Can't find Entity";
+    print HTML_TEXT_CFE;
   }
   print "\n";
 }
@@ -1358,37 +1371,14 @@ function annualConfirmation($entitiesId){
       if ($metadata->isResponsible()) {
         # User have access to entity
         if ( $metadata->isIdP() && $metadata->isSP()) {
-          $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
-          $infoText = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
+          $sections = HTML_TEXT_STP_BOTH ;
+          $infoText = HTML_TEXT_STPINFO_BOTH;
         } elseif ($metadata->isIdP()) {
-          $sections = '4.1.1 and 4.1.2' ;
-          $infoText = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-        </ul>';
+          $sections = HTML_TEXT_STP_IDP ;
+          $infoText = HTML_TEXT_STPINFO_IDP;
         } elseif ($metadata->isSP()) {
-          $sections = '4.2.1 and 4.2.2' ;
-          $infoText = '<ul>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
+          $sections = HTML_TEXT_STP_SP ;
+          $infoText = HTML_TEXT_STPINFO_SP;
         }
 
         if (isset($_GET['entityIsOK'])) {
@@ -1459,7 +1449,7 @@ function annualConfirmation($entitiesId){
     $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
     showMenu();
-    print "Can't find Entity";
+    print HTML_TEXT_CFE;
   }
 }
 
@@ -1497,37 +1487,14 @@ function annualConfirmationList($list){
   }
   if (sizeof($entityList)) {
     if ( $isIdP && $isSP) {
-      $sections = '4.1.1, 4.1.2, 4.2.1 and 4.2.2' ;
-      $infoText = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
+      $sections = HTML_TEXT_STP_BOTH ;
+      $infoText = HTML_TEXT_STPINFO_BOTH;
     } elseif ($isIdP) {
-      $sections = '4.1.1 and 4.1.2' ;
-      $infoText = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-        </ul>';
+      $sections = HTML_TEXT_STP_IDP ;
+      $infoText = HTML_TEXT_STPINFO_IDP;
     } elseif ($isSP) {
-      $sections = '4.2.1 and 4.2.2' ;
-      $infoText = '<ul>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that isoperated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service grantedspecial approval by SWAMID Board of Trusteesafter recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
+      $sections = HTML_TEXT_STP_SP ;
+      $infoText = HTML_TEXT_STPINFO_SP;
     }
     if (isset($_POST['entityIsOK'])) {
       $metadata->updateUser($EPPN, $mail, $fullName, true);
@@ -1606,8 +1573,9 @@ function requestRemoval($entitiesId) {
         $contactHandler->bindParam(':Entity_ID',$entitiesId);
         $contactHandler->execute();
         while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
-          if ($SendOut)
+          if ($SendOut) {
             $mailContacts->addAddress(substr($address['emailAddress'],7));
+          }
           $addresses[] = substr($address['emailAddress'],7);
         }
 
@@ -1679,22 +1647,22 @@ function requestRemoval($entitiesId) {
           On behalf of SWAMID Operations",
           $displayName, $metadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
 
-        $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->entityID());
+        $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
         $mailContacts->Subject  = 'Info : Request to remove SWAMID metadata for ' . $shortEntityid;
         $mailRequester->Subject = 'Request to remove SWAMID metadata for ' . $shortEntityid;
 
         try {
           $mailContacts->send();
         } catch (Exception $e) {
-          echo 'Message could not be sent to contacts.<br>';
-          echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+          echo HTML_TEXT_MCNBS;
+          echo HTML_TEXT_ME . $mailContacts->ErrorInfo . '<br>';
         }
 
         try {
           $mailRequester->send();
         } catch (Exception $e) {
           echo 'Message could not be sent to requester.<br>';
-          echo 'Mailer Error: ' . $mailRequester->ErrorInfo . '<br>';
+          echo HTML_TEXT_ME . $mailRequester->ErrorInfo . '<br>';
         }
 
         printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
@@ -1703,9 +1671,9 @@ function requestRemoval($entitiesId) {
         $menuActive = 'publ';
         showMenu();
         printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $metadata->entityID());
-        if (($metadata->feedValue() & 2) == 2) $publishArray[] = 'SWAMID';
-        if (($metadata->feedValue() & 4) == 4) $publishArray[] = 'eduGAIN';
-        if ($metadata->feedValue() == 1) $publishArray[] = 'SWAMID-testing';
+        if (($metadata->feedValue() & 2) == 2) { $publishArray[] = 'SWAMID'; }
+        if (($metadata->feedValue() & 4) == 4) { $publishArray[] = 'eduGAIN'; }
+        if ($metadata->feedValue() == 1) { $publishArray[] = 'SWAMID-testing'; }
         printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
         printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $entitiesId, "\n", "\n", "\n", "\n", "\n", "\n" ,$entitiesId);
       }
@@ -1717,7 +1685,7 @@ function requestRemoval($entitiesId) {
     $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'publ';
     showMenu();
-    print "Can't find Entity";
+    print HTML_TEXT_CFE;
   }
   print "\n";
 }
@@ -1756,8 +1724,8 @@ function setupMail() {
   $mailRequester->setFrom($MailFrom, 'Metadata - Admin');
   $mailContacts->addBCC('bjorn@sunet.se');
   $mailRequester->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
-  $mailRequester->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+  $mailContacts->addReplyTo('operations@swamid.se', OPERATIONS_NAME);
+  $mailRequester->addReplyTo('operations@swamid.se', OPERATIONS_NAME);
 }
 
 function move2Draft($entitiesId) {
@@ -1794,7 +1762,7 @@ function move2Draft($entitiesId) {
     $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'wait';
     showMenu();
-    print "Can't find Entity";
+    print HTML_TEXT_CFE;
   }
   print "\n";
 }
@@ -1851,7 +1819,7 @@ function removeEntity($entitiesId) {
     $html->showHeaders(HTML_TITLE . 'NotFound');
     $menuActive = 'new';
     showMenu();
-    print "Can't find Entity";
+    print HTML_TEXT_CFE;
   }
   print "\n";
 }
@@ -1867,7 +1835,7 @@ function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=fal
     return true;
   } else {
     if ($showError) {
-      $html->showHeaders('Metadata SWAMID');
+      $html->showHeaders(HTML_TITLE);
       print "You doesn't have access to this entityID";
       printf('%s      <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-danger">Back to entity</button></a>', "\n", $entitiesId);
     }
@@ -1939,15 +1907,15 @@ function requestAccess($entitiesId) {
           "<p>The request has been sent to: %s</p>\n<p>Contact them and ask them to accept your request.</p>\n",
           implode (", ",$addresses));
 
-        $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->entityID());
+        $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
 
         $mailContacts->Subject = 'Access request for ' . $shortEntityid;
 
         try {
           $mailContacts->send();
         } catch (Exception $e) {
-          echo 'Message could not be sent to contacts.<br>';
-          echo 'Mailer Error: ' . $mailContacts->ErrorInfo . '<br>';
+          echo HTML_TEXT_MCNBS;
+          echo HTML_TEXT_ME . $mailContacts->ErrorInfo . '<br>';
         }
         $menuActive = '';
         showText($info, true, false);
@@ -2016,7 +1984,7 @@ function getErrors($entitiesId) {
 
 function showHelp() {
   global $html, $display, $menuActive;
-  $html->showHeaders('Metadata SWAMID');
+  $html->showHeaders(HTML_TITLE);
   $menuActive = '';
   showMenu();
   $display->showHelp();
@@ -2048,7 +2016,7 @@ function approveAccessRequest($code) {
 
           //Recipients
           $mail->setFrom($MailFrom, 'Metadata');
-          $mail->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+          $mail->addReplyTo('operations@swamid.se', OPERATIONS_NAME);
           $mail->addAddress($result['email']);
           $mail->Body = sprintf("<!DOCTYPE html>
             <html lang=\"en\">
@@ -2069,7 +2037,7 @@ function approveAccessRequest($code) {
             This mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations.
             If you've any questions please contact operations@swamid.se.",
             $metadata->entityID());
-          $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $metadata->entityID());
+          $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
           $mail->Subject = 'Access granted for ' . $shortEntityid;
 
           $info = sprintf('<h3>Access granted</h3>Access to <b>%s</b> added for %s (%s).',
@@ -2078,8 +2046,8 @@ function approveAccessRequest($code) {
           try {
             $mail->send();
           } catch (Exception $e) {
-            echo 'Message could not be sent to contacts.<br>';
-            echo 'Mailer Error: ' . $mail->ErrorInfo . '<br>';
+            echo HTML_TEXT_MCNBS;
+            echo HTML_TEXT_ME . $mail->ErrorInfo . '<br>';
           }
         }
         showText($info);

@@ -1,6 +1,7 @@
 <?php
 class Metadata {
   # Setup
+  private $metaDb = false;
   private $result = '';
   private $warning = '';
   private $error = '';
@@ -18,8 +19,17 @@ class Metadata {
   private $dbIdNr = 0;
   private $status = 0;
   private $xml;
+  private $isSPandRandS = false;
+  private $isSPandCoCov1 = false;
+  private $isSPandCoCov2 = false;
+  private $isSIRTFI = false;
 
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
+
+  private $swamid6116error;
+# From common.php
+  private $standardAttributes = array();
+  private $FriendlyNames = array();
 
   const BIND_APPROVEDBY = ':ApprovedBy';
   const BIND_BITS = ':Bits';
@@ -82,6 +92,8 @@ class Metadata {
   const SAML_ALG_DIGESTMETHOD = 'alg:DigestMethod';
   const SAML_ALG_SIGNATUREMETHOD = 'alg:SignatureMethod';
   const SAML_ALG_SIGNINGMETHOD = 'alg:SigningMethod';
+  const SAML_ATTRIBUTE_REMD = 'remd:contactType';
+  const SAML_BINDING_HTTP_REDIRECT = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect';
   const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
@@ -132,12 +144,22 @@ class Metadata {
   const SAML_MDUI_LOGO = 'mdui:Logo';
   const SAML_MDUI_PRIVACYSTATEMENTURL = 'mdui:PrivacyStatementURL';
   const SAML_MDUI_UIINFO = 'mdui:UIInfo';
+  const SAML_PROTOCOL_SAML1 = 'urn:oasis:names:tc:SAML:1.0:protocol';
+  const SAML_PROTOCOL_SAML11 = 'urn:oasis:names:tc:SAML:1.1:protocol';
+  const SAML_PROTOCOL_SAML2 = 'urn:oasis:names:tc:SAML:2.0:protocol';
+  const SAML_PROTOCOL_SHIB = 'urn:mace:shibboleth:1.0';
   const SAML_PSC_REQUESTEDPRINCIPALSELECTION = 'psc:RequestedPrincipalSelection';
   const SAML_SHIBMD_SCOPE = 'shibmd:Scope';
   const SAML_SAMLA_ATTRIBUTE = 'samla:Attribute';
   const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
 
   const SAMLNF_URI = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
+
+  const TEXT_HTTP = 'http://';
+  const TEXT_HTTPS = 'https://';
+  const TEXT_521 = '5.2.1';
+  const TEXT_621 = '6.2.1';
+  const TEXT_COCOV2_REQ = 'GÉANT Data Protection Code of Conduct (v2) Require';
 
   public function __construct() {
     $a = func_get_args();
@@ -534,7 +556,7 @@ class Metadata {
       return 1;
     }
 
-    # Remove old ContactPersons / Organization from previus runs
+    # Remove old ContactPersons / Organization from previous runs
     $this->metaDb->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(
@@ -741,14 +763,14 @@ class Metadata {
     $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
     foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
       switch ($protocol) {
-        case 'urn:oasis:names:tc:SAML:2.0:protocol' :
+        case self::SAML_PROTOCOL_SAML2 :
           $saml2found = true;
           break;
-        case 'urn:oasis:names:tc:SAML:1.0:protocol' :
-        case 'urn:oasis:names:tc:SAML:1.1:protocol' :
+        case self::SAML_PROTOCOL_SAML1 :
+        case self::SAML_PROTOCOL_SAML11 :
           $saml1found = true;
           break;
-        case 'urn:mace:shibboleth:1.0' :
+        case self::SAML_PROTOCOL_SHIB :
           $shibboleth10found = true;
           break;
         case '' :
@@ -908,14 +930,14 @@ class Metadata {
     $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
     foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
       switch ($protocol) {
-        case 'urn:oasis:names:tc:SAML:2.0:protocol' :
+        case self::SAML_PROTOCOL_SAML2 :
           $saml2found = true;
           break;
-        case 'urn:oasis:names:tc:SAML:1.0:protocol' :
-        case 'urn:oasis:names:tc:SAML:1.1:protocol' :
+        case self::SAML_PROTOCOL_SAML1 :
+        case self::SAML_PROTOCOL_SAML11 :
           $saml1found = true;
           break;
-        case 'urn:mace:shibboleth:1.0' :
+        case self::SAML_PROTOCOL_SHIB :
           $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n", $protocol);
           break;
         case '' :
@@ -1116,14 +1138,14 @@ class Metadata {
     $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
     foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
       switch ($protocol) {
-        case 'urn:oasis:names:tc:SAML:2.0:protocol' :
+        case self::SAML_PROTOCOL_SAML2 :
           $saml2found = true;
           break;
-        case 'urn:oasis:names:tc:SAML:1.0:protocol' :
-        case 'urn:oasis:names:tc:SAML:1.1:protocol' :
+        case self::SAML_PROTOCOL_SAML1 :
+        case self::SAML_PROTOCOL_SAML11 :
           $saml1found = true;
           break;
-        case 'urn:mace:shibboleth:1.0' :
+        case self::SAML_PROTOCOL_SHIB :
           $shibboleth10found = true;
           break;
         case '' :
@@ -1243,13 +1265,13 @@ class Metadata {
       case 'technical' :
         break;
       case 'other' :
-        if ($data->getAttribute('remd:contactType')) {
-          if ($data->getAttribute('remd:contactType') == 'http://refeds.org/metadata/contactType/security') { # NOSONAR Should be http://
+        if ($data->getAttribute(self::SAML_ATTRIBUTE_REMD)) {
+          if ($data->getAttribute(self::SAML_ATTRIBUTE_REMD) == 'http://refeds.org/metadata/contactType/security') { # NOSONAR Should be http://
             $subcontactType =  'security';
           } else {
             $subcontactType =  'unknown';
             $this->result .= sprintf("ContactPerson->Unknown subcontactType->%s.\n",
-              $data->getAttribute('remd:contactType'));
+              $data->getAttribute(self::SAML_ATTRIBUTE_REMD));
           }
         } else {
           $this->result .= sprintf("ContactPerson->%s->Unknown subcontactType.\n", $data->getAttribute('contactType'));
@@ -1546,9 +1568,9 @@ class Metadata {
       return 1;
     }
 
-    $this->isSP_RandS = false;
-    $this->isSP_CoCov1 = false;
-    $this->isSP_CoCov2 = false;
+    $this->isSPandRandS = false;
+    $this->isSPandCoCov1 = false;
+    $this->isSPandCoCov2 = false;
     $this->isSIRTFI = false;
 
     $entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute`
@@ -1559,21 +1581,23 @@ class Metadata {
       switch ($entityAttribute['attribute']) {
         case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
           if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
-            $this->isSP_RandS = true;
+            $this->isSPandRandS = true;
           }
           break;
         case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
           if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
-            $this->isSP_CoCov1 = true;
+            $this->isSPandCoCov1 = true;
           }
           break;
         case 'https://refeds.org/category/code-of-conduct/v2' :
-          if ($entityAttribute['type'] == 'entity-category' && $this->isSP)
-            $this->isSP_CoCov2 = true;
+          if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
+            $this->isSPandCoCov2 = true;
+          }
           break;
         case 'https://refeds.org/sirtfi' :
-          if ($entityAttribute['type'] == 'assurance-certification' )
+          if ($entityAttribute['type'] == 'assurance-certification' ) {
             $this->isSIRTFI = true;
+          }
           break;
         default:
       }
@@ -1588,8 +1612,8 @@ class Metadata {
 
     // 5.1.7 /6.1.7
     if (! (substr($this->entityID, 0, 4) == 'urn:' ||
-      substr($this->entityID, 0, 8) == 'https://' ||
-      substr($this->entityID, 0, 7) == 'http://' )) {
+      substr($this->entityID, 0, 8) == self::TEXT_HTTPS ||
+      substr($this->entityID, 0, 7) == self::TEXT_HTTP )) {
         $this->error .= $this->selectError('5.1.7', '6.1.7',
           'entityID MUST start with either urn:, https:// or http://.');
     }
@@ -1646,10 +1670,10 @@ class Metadata {
       $this->checkRequiredContactPersonElements('SPSSO');
     }
 
-    if ($this->isSP_RandS) { $this->validateSPRandS(); }
+    if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
-    if ($this->isSP_CoCov1) { $this->validateSPCoCov1(); }
-    if ($this->isSP_CoCov2) { $this->validateSPCoCov2(); }
+    if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
+    if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
 
     $resultHandler = $this->metaDb->prepare("UPDATE Entities
       SET `validationOutput` = :validationOutput,
@@ -1946,13 +1970,13 @@ class Metadata {
           }
           break;
         case 'Logo' :
-          if (substr($mdui['data'],0,8) != 'https://') {
+          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS) {
             $this->error .= "SWAMID Tech 5.1.17: Logo must start with <b>https://</b> .\n";
           }
           break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
-          if (substr($mdui['data'],0,8) != 'https://' && substr($mdui['data'],0,7) != 'http://') {
+          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
             $this->error .= sprintf('SWAMID Tech 5.1.17: %s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
@@ -1981,13 +2005,13 @@ class Metadata {
       $elementArray[$mdui['element']] = true;
       switch($mdui['element']) {
         case 'Logo' :
-          if (substr($mdui['data'],0,8) != 'https://') {
+          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS) {
             $this->error .= "SWAMID Tech 6.1.13: Logo must start with <b>https://</b> .\n";
           }
           break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
-          if (substr($mdui['data'],0,8) != 'https://' && substr($mdui['data'],0,7) != 'http://') {
+          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
             $this->error .= sprintf('SWAMID Tech 6.1.12: %s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
@@ -2151,6 +2175,7 @@ class Metadata {
           case 1:
             // To small key
             $swamid521error = 2;
+            break;
           default:
             break;
         }
@@ -2193,28 +2218,28 @@ class Metadata {
       if ($swamid521error == 1) {
         if ($smalKeyFound) {
           $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-            ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
+            ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
           $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
         } else {
-          $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
+          $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
           $this->warning .= " Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n";
         }
       } elseif ($swamid521error == 2) {
         $this->error .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable',
-          ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
+          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
         $this->error .= ' key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate';
         $this->error .= " should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
       }
     } else {
       if ($smalKeyFound) {
         $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-          ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
+          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
         $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
       }
     }
     if ($swamid5212030error) {
       $this->warning .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength',
-        ($type == 'SPSSO') ? '6.2.1' : '5.2.1');
+        ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
       $this->warning .= " (in the sense of NIST SP 800-57) than a 3072-bit RSA key if valid after 2030-12-31.\n";
     }
 
@@ -2243,7 +2268,7 @@ class Metadata {
     $name = $data->nodeName;
     $binding = $data->getAttribute('Binding');
     $location =$data->getAttribute('Location');
-    if (substr($location,0,8) <> 'https://') {
+    if (substr($location,0,8) <> self::TEXT_HTTPS) {
       $this->error .= sprintf(
         "SWAMID Tech %s: All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
         $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, $binding);
@@ -2277,7 +2302,7 @@ class Metadata {
       # 3.3.1
       case 'urn:oasis:names:tc:SAML:2.0:bindings:PAOS' :
       # 3.4.1
-      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' :
+      case self::SAML_BINDING_HTTP_REDIRECT :
       # 3.5.1
       case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' :
       # 3.6.1
@@ -2321,7 +2346,7 @@ class Metadata {
   // 6.1.16
   private function checkAssertionConsumerService($data) {
     $binding = $data->getAttribute('Binding');
-    if ($binding == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect') {
+    if ($binding == self::SAML_BINDING_HTTP_REDIRECT) {
       $this->swamid6116error = true;
     }
   }
@@ -2535,20 +2560,20 @@ class Metadata {
 
     if (isset($mduiArray['en'])) {
       if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
-        $this->error .= 'GÉANT Data Protection Code of Conduct (v2) Require';
+        $this->error .= self::TEXT_COCOV2_REQ;
         $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
       }
       if (! isset($mduiArray['en']['DisplayName'])) {
-        $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recomend';
+        $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
         $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
       }
       if (! isset($mduiArray['en']['Description'])) {
-        $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recomend';
+        $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
         $this->warning .= " a MDUI - Description with at least lang=en.\n";
       }
       foreach ($mduiElementArray as $element => $value) {
         if (! isset($mduiArray['en'][$element])) {
-          $this->error .= 'GÉANT Data Protection Code of Conduct (v2) Require';
+          $this->error .= self::TEXT_COCOV2_REQ;
           $this->error .= sprintf(" a MDUI - %s with lang=en for all present elements.\n", $element);
         }
       }
@@ -2561,7 +2586,7 @@ class Metadata {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'subject-id:req');
       $entityAttributesHandler->execute();
       if (! $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        $this->error .= 'GÉANT Data Protection Code of Conduct (v2) Require';
+        $this->error .= self::TEXT_COCOV2_REQ;
         $this->error .= " at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
       }
     }
@@ -2580,7 +2605,7 @@ class Metadata {
         $subchild = $child->firstChild;
         while ($subchild) {
           if ($subchild->nodeName == self::SAML_MD_ASSERTIONCONSUMERSERVICE
-            && $subchild->getAttribute('Binding') == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect') {
+            && $subchild->getAttribute('Binding') == self::SAML_BINDING_HTTP_REDIRECT) {
             $index = $subchild->getAttribute('index');
             $remChild = $subchild;
             $child->removeChild($remChild);
@@ -2655,10 +2680,10 @@ class Metadata {
         $protocolSupportEnumerations = explode(' ',$child->getAttribute('protocolSupportEnumeration'));
           foreach ($protocolSupportEnumerations as $key => $protocol) {
             if (
-                ($protocol == 'urn:oasis:names:tc:SAML:1.0:protocol' ||
-                 $protocol == 'urn:oasis:names:tc:SAML:1.1:protocol' ||
+                ($protocol == self::SAML_PROTOCOL_SAML1 ||
+                 $protocol == self::SAML_PROTOCOL_SAML11 ||
                  $protocol == '') ||
-                ($protocol == 'urn:mace:shibboleth:1.0' && $checkProtocol == 2)) {
+                ($protocol == self::SAML_PROTOCOL_SHIB && $checkProtocol == 2)) {
               unset($protocolSupportEnumerations[$key]);
               $this->result .= sprintf("Removed %s from %s\n", $protocol, $child->nodeName);
             }
@@ -3118,8 +3143,9 @@ class Metadata {
     while ($child && ! $RegistrationInfo) {
       if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONINFO) {
         $RegistrationInfo = $child;
-      } else
+      } else {
         $child = $child->nextSibling;
+      }
     }
     if (! $RegistrationInfo) {
       # Add if missing
@@ -3394,7 +3420,7 @@ class Metadata {
     $errorsTotal = 0;
     $errorsSPs = 0;
     $errorsIdPs = 0;
-    $nrOfEntites = 0;
+    $nrOfEntities = 0;
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
     $changed = 0;
@@ -3407,7 +3433,7 @@ class Metadata {
           break;
         case 3 :
         case 7 :
-          $nrOfEntites ++;
+          $nrOfEntities ++;
           if ($row['isIdP']) { $nrOfIdPs ++; }
           if ($row['isSP']) { $nrOfSPs ++; }
           if ( $row['errors'] <> '' ) {
@@ -3423,7 +3449,7 @@ class Metadata {
     }
     $statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatus
       (`date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed`)
-      VALUES ('$date', $errorsTotal, $errorsSPs, $errorsIdPs, $nrOfEntites, $nrOfSPs, $nrOfIdPs, '$changed')");
+      VALUES ('$date', $errorsTotal, $errorsSPs, $errorsIdPs, $nrOfEntities, $nrOfSPs, $nrOfIdPs, '$changed')");
     $statsUpdate->execute();
   }
 
@@ -3431,7 +3457,7 @@ class Metadata {
     if ($date == '') {
       $date = gmdate('Y-m-d');
     }
-    $nrOfEntites = 0;
+    $nrOfEntities = 0;
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
 
@@ -3444,7 +3470,7 @@ class Metadata {
           break;
         case 3 :
         case 7 :
-          $nrOfEntites ++;
+          $nrOfEntities ++;
           if ($row['isIdP']) { $nrOfIdPs ++; }
           if ($row['isSP']) { $nrOfSPs ++; }
           break;
@@ -3454,7 +3480,7 @@ class Metadata {
     }
     $statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatistics
       (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`)
-      VALUES ('$date', $nrOfEntites, $nrOfSPs, $nrOfIdPs)");
+      VALUES ('$date', $nrOfEntities, $nrOfSPs, $nrOfIdPs)");
     $statsUpdate->execute();
   }
 }

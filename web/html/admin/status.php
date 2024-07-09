@@ -1,5 +1,9 @@
 <?php
-include '../config.php';
+
+const HTML_OUTLINE = '-outline';
+const HTML_TABLE_END = "        </table>\n";
+
+include_once '../config.php';
 
 require_once '../include/Html.php';
 $html = new HTML('', $Mode);
@@ -94,7 +98,7 @@ function showShadowEntities() {
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     printf('          <tr><td><a href=./?removeEntity=%d target="_blank"><i class="fas fa-trash"></i></a>%d</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], $entity['entityID'], $entity['lastValidated'], "\n");
   }
-  printf ('        </table>%s', "\n");
+  print HTML_TABLE_END;
 }
 
 function showSoftDeletedEntities() {
@@ -105,7 +109,7 @@ function showSoftDeletedEntities() {
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     printf('          <tr><td><a href=./?showEntity=%d target="_blank">View</a> | <a href=./?action=createDraft&Entity=%d target="_blank">Create Draft</a></td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], $entity['entityID'], $entity['lastUpdated'], "\n");
   }
-  printf ('        </table>%s', "\n");
+  print HTML_TABLE_END;
 }
 
 function showPublishedPendingEntities() {
@@ -122,7 +126,7 @@ function showPublishedPendingEntities() {
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     printf('          <tr><td><a href=./?showEntity=%d target="_blank">%d</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], $entity['entityID'], $entity['lastUpdated'], $entity['email'], "\n");
   }
-  printf ('        </table>%s', "\n");
+  print HTML_TABLE_END;
 }
 
 function showUsers(){
@@ -168,7 +172,7 @@ function showUsers(){
         printf('          <tr><td>%s</td><td><a href=./?showEntity=%d target="_blank">%s<a></td></tr>%s',
           $statusName, $entity['id'], $entity['entityID'], "\n");
       }
-      printf ('        </table>%s', "\n");
+      print HTML_TABLE_END;
     }
   }
 
@@ -182,7 +186,7 @@ function showUsers(){
     printf('          <tr><td><a href="?action=users&user=%d">%s<a></td></td><td>%s</td><td>%s</td><td>%s</td><td>%d</td></tr>%s',
       $user['id'], $user['userID'], $user['email'], $user['fullName'], $user['lastSeen'], $user['count'], "\n");
   }
-  printf ('        </table>%s', "\n");
+  print HTML_TABLE_END;
 }
 
 function showValidationOutput() {
@@ -196,7 +200,7 @@ function showValidationOutput() {
   while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
     printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td></tr>%s', $entity['id'], $entity['entityID'], $entity['validationOutput'], "\n");
   }
-  printf ('        </table>%s', "\n");
+  print HTML_TABLE_END;
 }
 
 ####
@@ -212,10 +216,10 @@ function showMenu() {
   }
 
   print "\n    ";
-  printf('<a href="?action=softDel"><button type="button" class="btn btn%s-primary">SoftDeleted</button></a>', $menuActive == 'softDel' ? '' : '-outline');
-  printf('<a href="?action=pubPend"><button type="button" class="btn btn%s-primary">Published</button></a>', $menuActive == 'pubPend' ? '' : '-outline');
-  printf('<a href="?action=shadow"><button type="button" class="btn btn%s-primary">Shadow</button></a>', $menuActive == 'shadow' ? '' : '-outline');
-  printf('<a href="?action=users"><button type="button" class="btn btn%s-primary">Users</button></a>', $menuActive == 'users' ? '' : '-outline');
-  printf('<a href="?action=validation"><button type="button" class="btn btn%s-primary">Validation</button></a>', $menuActive == 'validation' ? '' : '-outline');
+  printf('<a href="?action=softDel"><button type="button" class="btn btn%s-primary">SoftDeleted</button></a>', $menuActive == 'softDel' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=pubPend"><button type="button" class="btn btn%s-primary">Published</button></a>', $menuActive == 'pubPend' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=shadow"><button type="button" class="btn btn%s-primary">Shadow</button></a>', $menuActive == 'shadow' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=users"><button type="button" class="btn btn%s-primary">Users</button></a>', $menuActive == 'users' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=validation"><button type="button" class="btn btn%s-primary">Validation</button></a>', $menuActive == 'validation' ? '' : HTML_OUTLINE);
   print "\n    <br>\n    <br>\n";
 }

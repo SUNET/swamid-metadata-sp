@@ -542,8 +542,8 @@ function showList($entities, $show) {
       <tr><th id="r and s">R&S</th><td><?=$countECSrs?></td></tr>
       <tr><th id="esi">ESI</th><td><?=$countECSesi?></td></tr>
       <tr>
-        <th id="al1" rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th>
-        <th>AL1</th><td><?=$countAL1?></td>
+        <th id="al" rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th>
+        <th id="al1">AL1</th><td><?=$countAL1?></td>
       </tr>
       <tr><th id="al2">AL2 </th><td><?=$countAL2?></td></tr>
       <tr><th id="al3">AL3 </th><td><?=$countAL3?></td></tr>

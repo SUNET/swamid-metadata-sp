@@ -1,5 +1,8 @@
 <?php
-include '../config.php';
+
+const HTML_OUTLINE = '-outline';
+
+include_once '../config.php';
 
 require_once '../include/Html.php';
 $html = new HTML('', $Mode);
@@ -259,8 +262,8 @@ function showMenu() {
   }
 
   print "\n    ";
-  printf('<a href="?action=hosts"><button type="button" class="btn btn%s-primary">Hosts</button></a>', $menuActive == 'hosts' ? '' : '-outline');
-  printf('<a href="?action=software"><button type="button" class="btn btn%s-primary">Software</button></a>', $menuActive == 'software' ? '' : '-outline');
-  printf('<a href="?action=feeds"><button type="button" class="btn btn%s-primary">Feeds</button></a>', $menuActive == 'feeds' ? '' : '-outline');
+  printf('<a href="?action=hosts"><button type="button" class="btn btn%s-primary">Hosts</button></a>', $menuActive == 'hosts' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=software"><button type="button" class="btn btn%s-primary">Software</button></a>', $menuActive == 'software' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=feeds"><button type="button" class="btn btn%s-primary">Feeds</button></a>', $menuActive == 'feeds' ? '' : HTML_OUTLINE);
   print "\n    <br>\n    <br>\n";
 }
