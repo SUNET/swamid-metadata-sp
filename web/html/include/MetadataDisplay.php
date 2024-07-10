@@ -28,7 +28,7 @@ class MetadataDisplay {
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SPACER = '      ';
-  const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="blank">%s</a>';
+  const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_TABLE_END = "    </table>\n";
   const HTML_ACTIVE = ' active';
   const HTML_SHOW = ' show';
@@ -1588,7 +1588,7 @@ class MetadataDisplay {
           str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
       }
     }
-    if (!$download) {print "    " . HTML_TABLE_END; }
+    if (!$download) {print "    " . self::HTML_TABLE_END; }
   }
   private function showErrorMailReminders($showAll=true) {
     $entityHandler = $this->metaDb->prepare(
@@ -2260,18 +2260,10 @@ class MetadataDisplay {
     $organizationsSelected='false';
     $organizationsShow='';
 
-    if (isset($_GET["tab"])) {
-      switch ($_GET["tab"]) {
-        case 'organizations' :
-          $organizationsActive=self::HTML_ACTIVE;
-          $organizationsSelected='true';
-          $organizationsShow=self::HTML_SHOW;
-          break;
-        default :
-          $scopesActive=self::HTML_ACTIVE;
-          $scopesSelected='true';
-          $scopesShow=self::HTML_SHOW;
-      }
+    if (isset($_GET["tab"]) && $_GET["tab"] == 'organizations') {
+      $organizationsActive=self::HTML_ACTIVE;
+      $organizationsSelected='true';
+      $organizationsShow=self::HTML_SHOW;
     } else {
       $scopesActive=self::HTML_ACTIVE;
       $scopesSelected='true';
@@ -2468,7 +2460,7 @@ class MetadataDisplay {
                   in the Identity Providers. For more information on entity categories see the wiki page
                   "Entity Categories for Service Providers".</li>
                 <li>It is highly recommended that the service adheres to the security profile
-                  <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+                  <a href="https://refeds.org/sirtfi" rel="noopener">Sirtfi</a>.</li>
                 <li>You have up to two weeks to work on your draft. Every change is automatically saved.
                   To find out how to pick up where you left off, see the help topic "Continue working on a draft".</li>
               </ul>
@@ -2497,7 +2489,7 @@ class MetadataDisplay {
                   in the Identity Providers. For more information on entity categories see the wiki page
                   "Entity Categories for Service Providers".</li>
                 <li>It is highly recommended that the service adheres to the security profile
-                  <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+                  <a href="https://refeds.org/sirtfi" target="_blank" rel="noopener">Sirtfi</a>.</li>
                 <li>You have up to two weeks to work on your draft. Every change is automatically saved.
                   To find out how to pick up where you left off, see the help topic "Continue working on a draft".</li>
               </ul>
@@ -2526,7 +2518,7 @@ class MetadataDisplay {
                   in the Identity Providers. For more information on entity categories see the wiki page
                   "Entity Categories for Service Providers".</li>
                 <li>It is highly recommended that the service adheres to the security profile
-                  <a href="https://refeds.org/sirtfi" target="_blank">Sirtfi</a>.</li>
+                  <a href="https://refeds.org/sirtfi" target="_blank" rel="noopener">Sirtfi</a>.</li>
               </ul>
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>

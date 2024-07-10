@@ -57,7 +57,6 @@ try {
   $dsn = "sqlite:$fileName";
 
   $db = new PDO($dsn);
-#  $db = new SQLite3($fileName);
   // set the PDO error mode to exception
   $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
@@ -116,7 +115,6 @@ function showSoftwares(){
   }
   $softwaresHandler->execute();
   while ($software = $softwaresHandler->fetch(PDO::FETCH_ASSOC)) {
-    $name = str_replace(array(' ', '$', ':', '{', '}', '/', '(', ')', ';', ','), '_', $software['name']);
     $name = 'id' . $software['id'];
     $show = '';
     printf('
@@ -253,13 +251,7 @@ function showFeeds() {
 # Shows menu row
 ####
 function showMenu() {
-  global $userLevel, $menuActive, $EPPN, $filterFirst;
-  $filter='';
-  if (isset($_GET['query'])) {
-    $filter='&query='.$_GET['query'];
-  } elseif (isset($_GET['first']) && $filterFirst) {
-    $filter='&query=.'. explode('@',$EPPN)[1];
-  }
+  global $menuActive;
 
   print "\n    ";
   printf('<a href="?action=hosts"><button type="button" class="btn btn%s-primary">Hosts</button></a>', $menuActive == 'hosts' ? '' : HTML_OUTLINE);

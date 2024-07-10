@@ -1,6 +1,22 @@
 <?php
 class MetadataEdit {
   # Setup
+  private $metaDb = false;
+  private $dbIdNr = 0;
+  private $dbOldIdNr = 0;
+  private $entityExists = false;
+  private $oldExists = false;
+  private $entityID = false;
+  private $oldentityID = false;
+  private $isIdP = false;
+  private $isSP = false;
+  private $newXml = false;
+  private $oldXml = false;
+  private $orderAttributeRequestingService = array();
+  private $orderOrganization = array();
+  private $orderContactPerson = array();
+  private $standardAttributes = array();
+
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
   const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
@@ -31,6 +47,7 @@ class MetadataEdit {
   const SAML_MD_TELEPHONENUMBER = 'md:TelephoneNumber';
   const SAML_MDATTR_ENTITYATTRIBUTES = 'mdattr:EntityAttributes';
   const SAML_MDRPI_REGISTRATIONINFO = 'mdrpi:RegistrationInfo';
+  const SAML_MDUI = 'mdui:';
   const SAML_MDUI_DISCOHINTS = 'mdui:DiscoHints';
   const SAML_MDUI_DOMAINHINT = 'mdui:DomainHint';
   const SAML_MDUI_INFORMATIONURL = 'mdui:InformationURL';
@@ -42,6 +59,7 @@ class MetadataEdit {
   const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
 
   const SAMLNF_URI = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
+  const SAMLXML_LANG = 'xml:lang';
   const SAMLXMLNS_URI = 'http://www.w3.org/2000/xmlns/';
   const SAMLXMLNS_DS = 'xmlns:ds';
   const SAMLXMLNS_DS_URL = 'http://www.w3.org/2000/09/xmldsig#';
@@ -81,12 +99,16 @@ class MetadataEdit {
   const BIND_WIDTH = ':Width';
   const BIND_XML = ':Xml';
 
+  const HTML_NES = '<br>No Element selected';
+  const HTML_LIE = '<br>Lang is empty';
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
 
   const HTML_END_UL = '        </ul>';
 
   const HTML_DIV_CLASS_ALERT_DANGER = '<div class="row alert alert-danger" role="alert">Error:%s</div>';
+  const HTML_START_DIV_ROW_COL = '%s    <div class="row">%s      <div class="col">';
+  const HTML_END_DIV_COL_ROW = "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
 
   const HTML_COPY = 'Copy"><i class="fas fa-pencil-alt"></i></a> ';
   const HTML_DELETE = 'Delete"><i class="fas fa-trash"></i></a> ';
@@ -569,7 +591,7 @@ class MetadataEdit {
 
         </ul><?php
     }
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function editIdPErrorURL() {
     if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
@@ -580,8 +602,9 @@ class MetadataEdit {
       $child = $entityDescriptor->firstChild;
       $idpSSODescriptor = false;
       while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
+        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
           $idpSSODescriptor = $child;
+        }
         $child = $child->nextSibling;
       }
 
@@ -650,7 +673,7 @@ class MetadataEdit {
       $links = '';
     }
 
-    printf('%s    <div class="row">%s      <div class="col">', "\n", "\n");
+    printf(self::HTML_START_DIV_ROW_COL, "\n", "\n");
     printf('%s        <b>errorURL</b>
         <ul>
           <li>%s
@@ -672,7 +695,7 @@ class MetadataEdit {
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
       <div class="col">%s', $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($errorURLValue), $this->dbIdNr, "\n");
-    if ($this->oldExists)
+    if ($this->oldExists) {
       printf('%s        <b>errorURL</b>
         <ul>
           <li>%s
@@ -682,7 +705,8 @@ class MetadataEdit {
           </li>
         </ul>',
         "\n", $copy, $oldstate, $oldURL);
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    }
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function editIdPScopes() {
     if (isset($_GET['action']) && isset($_GET['value']) && trim($_GET['value']) != '') {
@@ -694,8 +718,9 @@ class MetadataEdit {
       $child = $entityDescriptor->firstChild;
       $idpSSODescriptor = false;
       while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
+        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
           $idpSSODescriptor = $child;
+        }
         $child = $child->nextSibling;
       }
 
@@ -705,13 +730,11 @@ class MetadataEdit {
             $child = $idpSSODescriptor->firstChild;
             $extensions = false;
             while ($child && ! $extensions) {
-              switch ($child->nodeName) {
-                case self::SAML_MD_EXTENSIONS :
-                  $extensions = $child;
-                  break;
-                default :
-                  $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-                  $idpSSODescriptor->insertBefore($extensions, $child);
+              if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+                $extensions = $child;
+              } else {
+                $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                $idpSSODescriptor->insertBefore($extensions, $child);
               }
               $child = $child->nextSibling;
             }
@@ -722,29 +745,32 @@ class MetadataEdit {
 
             $child = $extensions->firstChild;
             $beforeChild = false;
-            $Scope = false;
+            $scope = false;
             $shibmdFound = false;
-            while ($child && ! $Scope) {
+            while ($child && ! $scope) {
               switch ($child->nodeName) {
                 case self::SAML_SHIBMD_SCOPE :
                   $shibmdFound = true;
-                  if ($child->textContent == $scopeValue)
-                    $Scope = $child;
+                  if ($child->textContent == $scopeValue) {
+                    $scope = $child;
+                  }
                   break;
                 case self::SAML_MDUI_UIINFO :
                 case self::SAML_MDUI_DISCOHINTS :
                   $beforeChild = $beforeChild ? $beforeChild : $child;
                   break;
+                default:
               }
               $child = $child->nextSibling;
             }
-            if (! $Scope ) {
-              $Scope = $this->newXml->createElement(self::SAML_SHIBMD_SCOPE, $scopeValue);
-              $Scope->setAttribute('regexp', 'false');
-              if ($beforeChild)
-                $extensions->insertBefore($Scope, $beforeChild);
-              else
-                $extensions->appendChild($Scope);
+            if (! $scope ) {
+              $scope = $this->newXml->createElement(self::SAML_SHIBMD_SCOPE, $scopeValue);
+              $scope->setAttribute('regexp', 'false');
+              if ($beforeChild) {
+                $extensions->insertBefore($scope, $beforeChild);
+              } else {
+                $extensions->appendChild($scope);
+              }
               $changed = true;
             }
 
@@ -767,16 +793,17 @@ class MetadataEdit {
             $child = $idpSSODescriptor->firstChild;
             $extensions = false;
             while ($child && ! $extensions) {
-              if ($child->nodeName == self::SAML_MD_EXTENSIONS )
+              if ($child->nodeName == self::SAML_MD_EXTENSIONS ) {
                 $extensions = $child;
+              }
               $child = $child->nextSibling;
             }
 
             if ($extensions) {
               $moreElements = false;
               $child = $extensions->firstChild;
-              $Scope = false;
-              while ($child && ! $Scope) {
+              $scope = false;
+              while ($child && ! $scope) {
                 if ($child->nodeName == self::SAML_SHIBMD_SCOPE && $child->textContent == $scopeValue) {
                   $extensions->removeChild($child);
                   $changed = true;
@@ -799,7 +826,8 @@ class MetadataEdit {
           }
           $scopeValue = '';
           break;
-        }
+        default:
+      }
       if ($changed) {
         $this->saveXML();
       }
@@ -861,7 +889,7 @@ class MetadataEdit {
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
           $copy, $state, $scope, $data['regexp'] ? 'true' : 'false', "\n");
       }
-      print (self::HTML_END_UL);
+      print self::HTML_END_UL;
     }
     printf ('%s      </div><!-- end col -->%s    </div><!-- end row -->%s', "\n", "\n", "\n");
   }
@@ -872,15 +900,15 @@ class MetadataEdit {
       $error = '';
       if (isset($_GET['element']) && trim($_GET['element']) != '') {
         $elementValue = trim($_GET['element']);
-        $elementmd = 'mdui:'.$elementValue;
+        $elementmd = self::SAML_MDUI.$elementValue;
       } else {
-        $error .= '<br>No Element selected';
+        $error .= self::HTML_NES;
         $elementValue = '';
       }
       if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
         $langvalue = strtolower(trim($_GET['lang']));
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
+        $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
         $langvalue = '';
       }
       if (isset($_GET['value']) && trim($_GET['value']) != '') {
@@ -922,16 +950,13 @@ class MetadataEdit {
               $changed = true;
               $child = $ssoDescriptor->firstChild;
               $extensions = false;
-              while ($child && ! $extensions) {
-                switch ($child->nodeName) {
-                  case self::SAML_MD_EXTENSIONS :
-                    $extensions = $child;
-                    break;
-                  default :
-                    $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-                    $ssoDescriptor->insertBefore($extensions, $child);
+              if ($child) {
+                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+                  $extensions = $child;
+                } else {
+                  $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                  $ssoDescriptor->insertBefore($extensions, $child);
                 }
-                $child = $child->nextSibling;
               }
               if (! $extensions) {
                 $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
@@ -969,14 +994,15 @@ class MetadataEdit {
               }
               # Find mdui:* in XML
               $child = $uuInfo->firstChild;
-              $MduiElement = false;
-              while ($child && ! $MduiElement) {
-                if ($child->nodeName == $elementmd && strtolower($child->getAttribute('xml:lang')) == $langvalue) {
+              $mduiElement = false;
+              while ($child && ! $mduiElement) {
+                if ($child->nodeName == $elementmd && strtolower($child->getAttribute(self::SAMLXML_LANG)) == $langvalue) {
                   if ($elementmd == self::SAML_MDUI_LOGO) {
-                    if ( $child->getAttribute('height') == $heightValue && $child->getAttribute('width') == $widthValue)
-                      $MduiElement = $child;
+                    if ( $child->getAttribute('height') == $heightValue && $child->getAttribute('width') == $widthValue) {
+                      $mduiElement = $child;
+                    }
                   } else {
-                    $MduiElement = $child;
+                    $mduiElement = $child;
                   }
                 }
                 $child = $child->nextSibling;
@@ -986,9 +1012,9 @@ class MetadataEdit {
                 || $elementmd == self::SAML_MDUI_PRIVACYSTATEMENTURL) {
                 $value = str_replace(' ', '+', $value);
               }
-              if ($MduiElement) {
+              if ($mduiElement) {
                 # Update value
-                $MduiElement->nodeValue = htmlspecialchars($value);
+                $mduiElement->nodeValue = htmlspecialchars($value);
                 if ($elementmd == self::SAML_MDUI_LOGO) {
                   $mduiUpdateHandler = $this->metaDb->prepare(
                     'UPDATE Mdui
@@ -1015,11 +1041,11 @@ class MetadataEdit {
                 $mduiUpdateHandler->execute();
               } else {
                 # Add if missing
-                $MduiElement = $this->newXml->createElement($elementmd, htmlspecialchars($value));
-                $MduiElement->setAttribute('xml:lang', $langvalue);
+                $mduiElement = $this->newXml->createElement($elementmd, htmlspecialchars($value));
+                $mduiElement->setAttribute(self::SAMLXML_LANG, $langvalue);
                 if ($elementmd == self::SAML_MDUI_LOGO) {
-                  $MduiElement->setAttribute('height', $heightValue);
-                  $MduiElement->setAttribute('width', $widthValue);
+                  $mduiElement->setAttribute('height', $heightValue);
+                  $mduiElement->setAttribute('width', $widthValue);
                   $mduiAddHandler = $this->metaDb->prepare(
                     'INSERT INTO Mdui (entity_id, type, lang, height, width, element, data)
                     VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
@@ -1030,7 +1056,7 @@ class MetadataEdit {
                     'INSERT INTO Mdui (entity_id, type, lang, height, width, element, data)
                     VALUES (:Id, :Type, :Lang, 0, 0, :Element, :Data);');
                 }
-                $uuInfo->appendChild($MduiElement);
+                $uuInfo->appendChild($mduiElement);
                 $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
                 $mduiAddHandler->bindParam(self::BIND_LANG, $langvalue);
@@ -1045,8 +1071,9 @@ class MetadataEdit {
               $child = $ssoDescriptor->firstChild;
               $extensions = false;
               while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS)
+                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
                   $extensions = $child;
+                }
                 $child = $child->nextSibling;
               }
               if ($extensions) {
@@ -1066,26 +1093,27 @@ class MetadataEdit {
                 if ($uuInfo) {
                   # Find mdui:* in XML
                   $child = $uuInfo->firstChild;
-                  $MduiElement = false;
+                  $mduiElement = false;
                   $moreMduiElement = false;
-                  while ($child && ! $MduiElement) {
-                    if ($child->nodeName == $elementmd && strtolower($child->getAttribute('xml:lang')) == $langvalue) {
+                  while ($child && ! $mduiElement) {
+                    if ($child->nodeName == $elementmd && strtolower($child->getAttribute(self::SAMLXML_LANG)) == $langvalue) {
                       if ($elementmd == self::SAML_MDUI_LOGO) {
                         if ($child->getAttribute('height') == $heightValue
                           && $child->getAttribute('width') == $widthValue) {
-                          $MduiElement = $child;
+                          $mduiElement = $child;
                         } else {
                           $moreMduiElement = true;
                         }
                       } else {
-                        $MduiElement = $child;
+                        $mduiElement = $child;
                       }
-                    } else
+                    } else {
                       $moreMduiElement = true;
+                    }
                     $child = $child->nextSibling;
                   }
                   $moreMduiElement = $moreMduiElement ? true : $child;
-                  if ($MduiElement) {
+                  if ($mduiElement) {
                     # Remove Node
                     if ($elementmd == self::SAML_MDUI_LOGO) {
                       $mduiRemoveHandler = $this->metaDb->prepare(
@@ -1109,11 +1137,12 @@ class MetadataEdit {
                     $mduiRemoveHandler->bindParam(self::BIND_ELEMENT, $elementValue);
                     $mduiRemoveHandler->execute();
                     $changed = true;
-                    $uuInfo->removeChild($MduiElement);
+                    $uuInfo->removeChild($mduiElement);
                     if (! $moreMduiElement) {
                       $extensions->removeChild($uuInfo);
-                      if (! $moreExtentions)
+                      if (! $moreExtentions) {
                         $ssoDescriptor->removeChild($extensions);
+                      }
                     }
                   }
                 }
@@ -1125,6 +1154,7 @@ class MetadataEdit {
             $heightValue = 0;
             $widthValue = 0;
             break;
+          default :
         }
         if ($changed) {
           $this->saveXML();
@@ -1307,17 +1337,17 @@ class MetadataEdit {
       }
       print "\n" . self::HTML_END_UL;
     }
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function editDiscoHints() {
-    printf ('%s    <div class="row">%s      <div class="col">', "\n", "\n");
+    printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
     if (isset($_GET['action'])) {
       $error = '';
       if (isset($_GET['element']) && trim($_GET['element']) != '') {
         $elementValue = trim($_GET['element']);
-        $elementmd = 'mdui:'.$elementValue;
+        $elementmd = self::SAML_MDUI.$elementValue;
       } else {
-        $error .= '<br>No Element selected';
+        $error .= self::HTML_NES;
         $elementValue = '';
       }
       if (isset($_GET['value']) && trim($_GET['value']) != '') {
@@ -1386,17 +1416,17 @@ class MetadataEdit {
               }
               # Find mdui:* in XML
               $child = $DiscoHints->firstChild;
-              $MduiElement = false;
-              while ($child && ! $MduiElement) {
+              $mduiElement = false;
+              while ($child && ! $mduiElement) {
                 if ($child->nodeName == $elementmd && $child->nodeValue == $value ) {
-                  $MduiElement = $child;
+                  $mduiElement = $child;
                 }
                 $child = $child->nextSibling;
               }
-              if (! $MduiElement) {
+              if (! $mduiElement) {
                 # Add if missing
-                $MduiElement = $this->newXml->createElement($elementmd, $value);
-                $DiscoHints->appendChild($MduiElement);
+                $mduiElement = $this->newXml->createElement($elementmd, $value);
+                $DiscoHints->appendChild($mduiElement);
                 $mduiAddHandler = $this->metaDb->prepare("INSERT INTO Mdui (entity_id, type, element, data)
                   VALUES (:Id, 'IDPDisco', :Element, :Data);");
                 $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -1436,17 +1466,17 @@ class MetadataEdit {
                 if ($DiscoHints) {
                   # Find mdui:* in XML
                   $child = $DiscoHints->firstChild;
-                  $MduiElement = false;
+                  $mduiElement = false;
                   $moreMduiElement = false;
-                  while ($child && ! $MduiElement) {
+                  while ($child && ! $mduiElement) {
                     if ($child->nodeName == $elementmd && $child->nodeValue == $value) {
-                      $MduiElement = $child;
+                      $mduiElement = $child;
                     } else
                       $moreMduiElement = true;
                     $child = $child->nextSibling;
                   }
                   $moreMduiElement = $moreMduiElement ? true : $child;
-                  if ($MduiElement) {
+                  if ($mduiElement) {
                     # Remove Node
                     $mduiRemoveHandler = $this->metaDb->prepare(
                       "DELETE FROM Mdui
@@ -1456,7 +1486,7 @@ class MetadataEdit {
                     $mduiRemoveHandler->bindParam(self::BIND_DATA, $value);
                     $mduiRemoveHandler->execute();
                     $changed = true;
-                    $DiscoHints->removeChild($MduiElement);
+                    $DiscoHints->removeChild($mduiElement);
                     if (! $moreMduiElement) {
                       $extensions->removeChild($DiscoHints);
                       if (! $moreExtentions)
@@ -1563,7 +1593,7 @@ class MetadataEdit {
       }
       print "\n" . self::HTML_END_UL;
     }
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function addKeyInfo($type) {
     $edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
@@ -1747,7 +1777,7 @@ class MetadataEdit {
     $timeNow = date('Y-m-d H:i:00');
     $timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
 
-    printf ('%s    <div class="row">%s      <div class="col">', "\n", "\n");
+    printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
     $edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
     $edit = $type == 'AttributeAuthority' ? 'AAKeyInfo' : $edit;
     $addLink = sprintf('<a href="?edit=Add%s&Entity=%d&oldEntity=%d"><button>Add new certificate</button></a><br>',
@@ -2280,7 +2310,7 @@ class MetadataEdit {
           $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
       }
     }
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function editAttributeConsumingService() {
     if (isset($_GET['action'])) {
@@ -2322,7 +2352,7 @@ class MetadataEdit {
           $elementValue = trim($_GET['element']);
           $elementmd = 'md:'.$elementValue;
         } else {
-          $error .= '<br>No Element selected';
+          $error .= self::HTML_NES;
         }
         if (isset($this->orderAttributeRequestingService[$elementmd])) {
           $placement = $this->orderAttributeRequestingService[$elementmd];
@@ -2333,7 +2363,7 @@ class MetadataEdit {
           if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
             $langvalue = strtolower(trim($_GET['lang']));
           } else {
-            $error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
+            $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
           }
           if (isset($_GET['value']) && trim($_GET['value']) != '') {
             $value = trim($_GET['value']);
@@ -2433,7 +2463,7 @@ class MetadataEdit {
                 while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
                   $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME,
                     $mdui['data']);
-                  $attributeConsumingServiceElement->setAttribute('xml:lang', $mdui['lang']);
+                  $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $mdui['lang']);
                   $attributeConsumingService->appendChild($attributeConsumingServiceElement);
 
                   $serviceElementAddHandler->bindParam(self::BIND_LANG, $mdui['lang']);
@@ -2517,7 +2547,7 @@ class MetadataEdit {
                 if (
                   ($placement == 3 && $child->nodeName == $elementmd && $child->getAttribute('Name') == $name)
                   || ($placement != 3 && $child->nodeName == $elementmd
-                    && strtolower($child->getAttribute('xml:lang')) == $langvalue )
+                    && strtolower($child->getAttribute(self::SAMLXML_LANG)) == $langvalue )
                   ) {
                   $attributeConsumingServiceElement = $child;
                   $update = true;
@@ -2543,7 +2573,7 @@ class MetadataEdit {
               }
               if ($update) {
                 if ($placement < 3 ) {
-                  $attributeConsumingServiceElement->setAttribute('xml:lang', $langvalue);
+                  $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $langvalue);
                   $attributeConsumingServiceElement->nodeValue = $value;
                   $serviceElementUpdateHandler = $this->metaDb->prepare(
                     'UPDATE AttributeConsumingService_Service
@@ -2578,7 +2608,7 @@ class MetadataEdit {
               } else {
                 # Added NEW, Insert into DB
                 if ($placement < 3 ) {
-                  $attributeConsumingServiceElement->setAttribute('xml:lang', $langvalue);
+                  $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $langvalue);
                   $serviceElementAddHandler = $this->metaDb->prepare(
                     'INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data)
                     VALUES ( :Id, :Index, :Element, :Lang, :Data );');
@@ -2628,7 +2658,7 @@ class MetadataEdit {
                   if (
                     ($placement == 3 && $child->nodeName == $elementmd && $child->getAttribute('Name') == $name)
                     || ($placement != 3 && $child->nodeName == $elementmd
-                      && strtolower($child->getAttribute('xml:lang')) == $langvalue )) {
+                      && strtolower($child->getAttribute(self::SAMLXML_LANG)) == $langvalue )) {
                     $attributeConsumingServiceElement = $child;
                   } else {
                     $moreElements = true;
@@ -2729,7 +2759,7 @@ class MetadataEdit {
           'state' => 'removed');
       }
     }
-    printf ('%s    <div class="row">%s      <div class="col">', "\n", "\n");
+    printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
     $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $serviceElementHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2960,7 +2990,7 @@ class MetadataEdit {
         printf("\n  %s</li>\n%s", self::HTML_END_UL, self::HTML_END_UL);
       }
     }
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function editOrganization() {
     $organizationHandler = $this->metaDb->prepare(
@@ -2977,12 +3007,12 @@ class MetadataEdit {
           $error .= '<br>Unknown Element selected';
         }
       } else {
-        $error .= '<br>No Element selected';
+        $error .= self::HTML_NES;
       }
       if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
         $lang = strtolower(trim($_GET['lang']));
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Lang is empty' : '';
+        $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
         $lang = '';
       }
       if (isset($_GET['value']) && $_GET['value'] != '') {
@@ -3031,7 +3061,7 @@ class MetadataEdit {
               $value = str_replace(' ', '+', $value);
             }
             while ($child && ! $organizationElement) {
-              if (strtolower($child->getAttribute('xml:lang')) == $lang && $child->nodeName == $elementmd) {
+              if (strtolower($child->getAttribute(self::SAMLXML_LANG)) == $lang && $child->nodeName == $elementmd) {
                 $organizationElement = $child;
                 $newOrg = false;
               } elseif (isset ($this->orderOrganization[$child->nodeName])
@@ -3039,14 +3069,14 @@ class MetadataEdit {
                 $child = $child->nextSibling;
               } else {
                 $organizationElement = $this->newXml->createElement($elementmd, $value);
-                $organizationElement->setAttribute('xml:lang', $lang);
+                $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
                 $organization->insertBefore($organizationElement, $child);
               }
             }
             if (! $organizationElement) {
               # Add if missing
               $organizationElement = $this->newXml->createElement($elementmd, $value);
-              $organizationElement->setAttribute('xml:lang', $lang);
+              $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
               $organization->appendChild($organizationElement);
             }
             if ($newOrg) {
@@ -3077,7 +3107,7 @@ class MetadataEdit {
               $organizationElement = false;
               $moreOrganizationElements = false;
               while ($child && ! $organizationElement) {
-                if (strtolower($child->getAttribute('xml:lang')) == $lang && $child->nodeName == $elementmd) {
+                if (strtolower($child->getAttribute(self::SAMLXML_LANG)) == $lang && $child->nodeName == $elementmd) {
                   $organizationElement = $child;
                 }
                 $child = $child->nextSibling;
@@ -3199,7 +3229,7 @@ class MetadataEdit {
         "\n", $addLink, $state, $organization['element'], $organization['lang'], $organization['data']);
     }
     print ("\n        <ul>");
-    print "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+    print self::HTML_END_DIV_COL_ROW;
   }
   private function editContactPersons(){
     $contactPersonHandler = $this->metaDb->prepare(
@@ -3609,7 +3639,7 @@ class MetadataEdit {
       $child = $registrationInfo->firstChild;
       $registrationPolicy = false;
       while ($child && ! $registrationPolicy) {
-        if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute('xml:lang') == 'en') {
+        if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
           $registrationPolicy = $child;
         } else {
           $child = $child->nextSibling;
@@ -3617,7 +3647,7 @@ class MetadataEdit {
       }
       if (!$registrationPolicy) {
         $registrationPolicy = $this->newXml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
-        $registrationPolicy->setAttribute('xml:lang', 'en');
+        $registrationPolicy->setAttribute(self::SAMLXML_LANG, 'en');
         $registrationInfo->appendChild($registrationPolicy);
       }
     }
@@ -3851,7 +3881,7 @@ class MetadataEdit {
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $mdelement = 'mdui:'.$mdui['element'];
+      $mdelement = self::SAML_MDUI.$mdui['element'];
       $size = $mdui['height'].'x'.$mdui['width'];
       $lang = $mdui['lang'];
       if (! isset($oldMDUIElements[$mdelement]) )
@@ -3921,7 +3951,7 @@ class MetadataEdit {
         $child = $uuInfo->firstChild;
         while ($child) {
           if ($child->nodeType != 8) {
-            $lang = $child->getAttribute('xml:lang');
+            $lang = $child->getAttribute(self::SAMLXML_LANG);
             $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
             $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
             $element = $child->nodeName;
@@ -3941,14 +3971,15 @@ class MetadataEdit {
           foreach ($data as $lang => $sizeValue) {
             foreach ($sizeValue as $size => $value) {
               # Add if missing
-              $MduiElement = $this->newXml->createElement($element, htmlspecialchars($value['value']));
-              if ($lang != '')
-                $MduiElement->setAttribute('xml:lang', $lang);
-              if ($size != '0x0') {
-                $MduiElement->setAttribute('height', $value['height']);
-                $MduiElement->setAttribute('width', $value['width']);
+              $mduiElement = $this->newXml->createElement($element, htmlspecialchars($value['value']));
+              if ($lang != '') {
+                $mduiElement->setAttribute(self::SAMLXML_LANG, $lang);
               }
-              $uuInfo->appendChild($MduiElement);
+              if ($size != '0x0') {
+                $mduiElement->setAttribute('height', $value['height']);
+                $mduiElement->setAttribute('width', $value['width']);
+              }
+              $uuInfo->appendChild($mduiElement);
               $mduiAddHandler->bindParam(self::BIND_LANG, $lang);
               $mduiAddHandler->bindParam(self::BIND_HEIGHT, $value['height']);
               $mduiAddHandler->bindParam(self::BIND_WIDTH, $value['width']);
@@ -3968,7 +3999,7 @@ class MetadataEdit {
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $mdelement = 'mdui:'.$mdui['element'];
+      $mdelement = self::SAML_MDUI.$mdui['element'];
       $value = $mdui['data'];
       if (! isset($oldMDUIElements[$mdelement]) )
         $oldMDUIElements[$mdelement] = array();
@@ -4042,8 +4073,8 @@ class MetadataEdit {
         foreach ($oldMDUIElements as $element => $valueArray) {
           foreach ($valueArray as $value => $true) {
             # Add if missing
-            $MduiElement = $this->newXml->createElement($element, $value);
-            $DiscoHints->appendChild($MduiElement);
+            $mduiElement = $this->newXml->createElement($element, $value);
+            $DiscoHints->appendChild($mduiElement);
             $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
             $mduiAddHandler->bindParam(self::BIND_DATA, $value);
             $mduiAddHandler->execute();
@@ -4124,7 +4155,7 @@ class MetadataEdit {
           while ($servicechild) {
             switch ($servicechild->nodeName) {
               case self::SAML_MD_SERVICENAME :
-                $lang = $servicechild->getAttribute('xml:lang');
+                $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
                 if (isset($oldServiceElements[$index]['ServiceName'][$lang]))
                   unset ($oldServiceElements[$index]['ServiceName'][$lang]);
                 break;
@@ -4133,7 +4164,7 @@ class MetadataEdit {
                   $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, self::SAML_MD_SERVICENAME);
                   foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
                     $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-                    $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+                    $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                     $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                     $serviceElementAddHandler->execute();
                     unset ($oldServiceElements[$index]['ServiceName'][$lang]);
@@ -4141,7 +4172,7 @@ class MetadataEdit {
                   unset($oldServiceElements[$index]['ServiceName']);
                   $nextOrder = 2;
                 }
-                $lang = $servicechild->getAttribute('xml:lang');
+                $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
                 if (isset($oldServiceElements[$index]['ServiceDescription'][$lang]))
                   unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
                 break;
@@ -4151,7 +4182,7 @@ class MetadataEdit {
                     $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
                     foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
                       $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-                      $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+                      $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                       $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                       $serviceElementAddHandler->execute();
                       unset ($oldServiceElements[$index]['ServiceName'][$lang]);
@@ -4162,7 +4193,7 @@ class MetadataEdit {
                     $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
                     foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
                       $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
-                      $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+                      $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                       $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                       $serviceElementAddHandler->execute();
                       unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
@@ -4185,7 +4216,7 @@ class MetadataEdit {
             $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
             foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
               $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-              $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+              $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
               $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               $serviceElementAddHandler->execute();
             }
@@ -4194,7 +4225,7 @@ class MetadataEdit {
             $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
             foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
               $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
-              $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+              $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
               $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               $serviceElementAddHandler->execute();
             }
@@ -4231,7 +4262,7 @@ class MetadataEdit {
           $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
           foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
             $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-            $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+            $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $serviceElementAddHandler->execute();
           }
@@ -4240,7 +4271,7 @@ class MetadataEdit {
           $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
           foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
             $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
-            $attributeConsumingServiceElement->setAttribute('xml:lang', $lang);
+            $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $serviceElementAddHandler->execute();
           }
@@ -4319,7 +4350,7 @@ class MetadataEdit {
                 $elementmd = 'md:'.$element['element'];
                 $value = $element['data'];
                 $organizationElement = $this->newXml->createElement($elementmd);
-                $organizationElement->setAttribute('xml:lang', $lang);
+                $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
                 $organizationElement->nodeValue = $value;
                 $organization->insertBefore($organizationElement, $child);
                 unset($oldElements[$nextOrder][$index]);
@@ -4327,7 +4358,7 @@ class MetadataEdit {
             }
             $nextOrder++;
           }
-          $lang = $child->getAttribute('xml:lang');
+          $lang = $child->getAttribute(self::SAMLXML_LANG);
           $elementmd = $child->nodeName;
           if (isset($oldElements[$order])) {
             foreach ($oldElements[$order] as $index => $element) {
@@ -4346,7 +4377,7 @@ class MetadataEdit {
             $elementmd = 'md:'.$element['element'];
             $value = $element['data'];
             $organizationElement = $this->newXml->createElement($elementmd);
-            $organizationElement->setAttribute('xml:lang', $lang);
+            $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
             $organizationElement->nodeValue = $value;
             $organization->appendChild($organizationElement);
           }

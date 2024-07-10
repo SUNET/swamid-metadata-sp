@@ -45,6 +45,7 @@ const HTML_TEXT_STPINFO_SP = '<ul>
           <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
         </ul>';
 const OPERATIONS_NAME = 'SWAMID Operations';
+const OPERATIONS_MAIL = 'operations@swamid.se';
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
 //Load composer's autoloader
@@ -307,7 +308,7 @@ if (isset($_FILES['XMLfile'])) {
         case 'createDraft' :
           $menuActive = 'new';
           $metadata = new Metadata($entitiesId);
-          $user_id = $metadata->getUserId($EPPN);
+          $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
               $metadata->validateXML();
@@ -689,7 +690,7 @@ function showEntity($entitiesId)  {
     switch ($entity['status']) {
       case 1:
         $metadata = new Metadata($entitiesId);
-        $user_id = $metadata->getUserId($EPPN);
+        $metadata->getUserId($EPPN);
         if ($metadata->isResponsible()) {
           printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
         <button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>',
@@ -1550,7 +1551,7 @@ function requestRemoval($entitiesId) {
   global $mailContacts, $mailRequester, $SendOut;
   $metadata = new Metadata($entitiesId);
   if ($metadata->status() == 1) {
-    $user_id = $metadata->getUserId($EPPN);
+    $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
       # User have access to entity
       $html->showHeaders(HTML_TITLE . $metadata->entityID());
@@ -1696,8 +1697,6 @@ function setupMail() {
 
   $mailContacts = new PHPMailer(true);
   $mailRequester = new PHPMailer(true);
-  /*$mailContacts->SMTPDebug = 2;
-  $mailRequester->SMTPDebug = 2;*/
   $mailContacts->isSMTP();
   $mailRequester->isSMTP();
   $mailContacts->CharSet = "UTF-8";
@@ -1724,8 +1723,8 @@ function setupMail() {
   $mailRequester->setFrom($MailFrom, 'Metadata - Admin');
   $mailContacts->addBCC('bjorn@sunet.se');
   $mailRequester->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo('operations@swamid.se', OPERATIONS_NAME);
-  $mailRequester->addReplyTo('operations@swamid.se', OPERATIONS_NAME);
+  $mailContacts->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
+  $mailRequester->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
 }
 
 function move2Draft($entitiesId) {
@@ -1780,7 +1779,7 @@ function removeEntity($entitiesId) {
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     $html->showHeaders(HTML_TITLE . $entity['entityID']);
-    $OK2Remove = true;
+    $ok2Remove = true;
     switch($entity['status']) {
       case 2 :
         $menuActive = 'wait';
@@ -1801,10 +1800,10 @@ function removeEntity($entitiesId) {
         $action = 'delete the shadow entity';
         break;
       default :
-        $OK2Remove = false;
+        $ok2Remove = false;
     }
     showMenu();
-    if ($OK2Remove) {
+    if ($ok2Remove) {
       if (isset($_GET['action']) && $_GET['action'] == $button ) {
         $metadata = new Metadata($entitiesId);
         $metadata->removeEntity();
@@ -2003,7 +2002,6 @@ function approveAccessRequest($code) {
           global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
 
           $mail = new PHPMailer(true);
-          /*$mail->SMTPDebug = 2;*/
           $mail->isSMTP();
           $mail->Host = $SMTPHost;
           $mail->SMTPAuth = true;
@@ -2016,7 +2014,7 @@ function approveAccessRequest($code) {
 
           //Recipients
           $mail->setFrom($MailFrom, 'Metadata');
-          $mail->addReplyTo('operations@swamid.se', OPERATIONS_NAME);
+          $mail->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
           $mail->addAddress($result['email']);
           $mail->Body = sprintf("<!DOCTYPE html>
             <html lang=\"en\">

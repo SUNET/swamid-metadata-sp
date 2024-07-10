@@ -1948,9 +1948,6 @@ class Metadata {
         AND `lang` = :Lang
         AND `status` = 1
         AND `entityID` <> :EntityID;");
-    $mduiDNUniqHandler->bindParam(self::BIND_DATA, $data);
-    $mduiDNUniqHandler->bindParam(self::BIND_LANG, $lang);
-    $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $mduiHandler = $this->metaDb->prepare('SELECT `entityID`, `element`, `data`, `lang`
       FROM `Entities`, `Mdui` WHERE `Entities`.`id` = `entity_id` AND `entity_id` = :Id AND `type`  = :Type');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -1963,6 +1960,9 @@ class Metadata {
           $data = $mdui['data'];
           $lang = $mdui['lang'];
           $entityID = $mdui['entityID'];
+          $mduiDNUniqHandler->bindParam(self::BIND_DATA, $data);
+          $mduiDNUniqHandler->bindParam(self::BIND_LANG, $lang);
+          $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
           $mduiDNUniqHandler->execute();
           while ($duplicate = $mduiDNUniqHandler->fetch(PDO::FETCH_ASSOC)) {
             $this->error .= sprintf("SWAMID Tech 5.1.17: DisplayName for lang %s is also set on %s.\n",
@@ -2674,7 +2674,6 @@ class Metadata {
           $checkProtocol = 1;
           break;
         default :
-          #printf ('Not parsed : %s<br>', $child->nodeName);
       }
       if ($checkProtocol) {
         $protocolSupportEnumerations = explode(' ',$child->getAttribute('protocolSupportEnumeration'));
@@ -3139,39 +3138,39 @@ class Metadata {
     }
     # Find mdattr:EntityAttributes in XML
     $child = $extensions->firstChild;
-    $RegistrationInfo = false;
-    while ($child && ! $RegistrationInfo) {
+    $registrationInfo = false;
+    while ($child && ! $registrationInfo) {
       if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONINFO) {
-        $RegistrationInfo = $child;
+        $registrationInfo = $child;
       } else {
         $child = $child->nextSibling;
       }
     }
-    if (! $RegistrationInfo) {
+    if (! $registrationInfo) {
       # Add if missing
       $ts=date("Y-m-d\TH:i:s\Z");
       $entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
         'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
-      $RegistrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
-      $RegistrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
-      $RegistrationInfo->setAttribute('registrationInstant', $ts);
-      $extensions->appendChild($RegistrationInfo);
+      $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
+      $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
+      $registrationInfo->setAttribute('registrationInstant', $ts);
+      $extensions->appendChild($registrationInfo);
     }
 
     # Find samla:Attribute in XML
-    $child = $RegistrationInfo->firstChild;
-    $RegistrationPolicy = false;
-    while ($child && ! $RegistrationPolicy) {
+    $child = $registrationInfo->firstChild;
+    $registrationPolicy = false;
+    while ($child && ! $registrationPolicy) {
       if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute('xml:lang') == 'en') {
-        $RegistrationPolicy = $child;
+        $registrationPolicy = $child;
       } else {
         $child = $child->nextSibling;
       }
     }
-    if (!$RegistrationPolicy) {
-      $RegistrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
-      $RegistrationPolicy->setAttribute('xml:lang', 'en');
-      $RegistrationInfo->appendChild($RegistrationPolicy);
+    if (!$registrationPolicy) {
+      $registrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
+      $registrationPolicy->setAttribute('xml:lang', 'en');
+      $registrationInfo->appendChild($registrationPolicy);
     }
   }
 

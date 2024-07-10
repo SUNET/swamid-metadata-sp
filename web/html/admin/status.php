@@ -207,13 +207,7 @@ function showValidationOutput() {
 # Shows menu row
 ####
 function showMenu() {
-  global $userLevel, $menuActive, $EPPN, $filterFirst;
-  $filter='';
-  if (isset($_GET['query'])) {
-    $filter='&query='.$_GET['query'];
-  } elseif (isset($_GET['first']) && $filterFirst) {
-    $filter='&query=.'. explode('@',$EPPN)[1];
-  }
+  global $menuActive;
 
   print "\n    ";
   printf('<a href="?action=softDel"><button type="button" class="btn btn%s-primary">SoftDeleted</button></a>', $menuActive == 'softDel' ? '' : HTML_OUTLINE);
