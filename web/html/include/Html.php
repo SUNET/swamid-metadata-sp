@@ -1,23 +1,22 @@
 <?php
 class HTML {
   # Setup
-  public function __construct($ds='seamless', $mode='Prod') {
-    $this->displayName = "<div id='SWAMID-SeamlessAccess'></div>";
-    $this->destination = '?first';
-    $this->startTimer = time();
-    $this->loggedIn = false;
-    $this->tableToSort = array();
-    $this->showDownload = true;
-    switch ($ds) {
-      case 'thiss' :
-        $this->DS = '/DS/thiss.io';
-        $this->DSService= '//use.thiss.io/thiss.js';
-        break;
-      case 'seamless' :
-      default :
-        $this->DS = '/DS/seamless-access';
-        $this->DSService= '//service.seamlessaccess.org/thiss.js';
-    }
+  private $displayName = '';
+  private $destination = '?first';
+  private $loggedIn = false;
+  private $tableToSort = array();
+  private $showDownload = true;
+  private $mode = '';
+
+  public function __construct($mode='Prod') {
+    $this->displayName = '<a href="admin"><div class="d-flex sa-button" role="button">
+        <div class="sa-button-logo-wrap">
+          <img src="https://service.seamlessaccess.org/sa-white.svg" class="sa-button-logo" alt="Seamless Access Logo"/>
+        </div>
+        <div class="d-flex justify-content-center align-items-center sa-button-text text-truncate">
+          <div class="sa-button-text-primary text-truncate">Access through your institution</div>
+        </div>
+      </div></a>';
     $this->mode = $mode;
   }
 
@@ -88,6 +87,38 @@ class HTML {
     .container-narrow > hr {
       margin: 30px 0;
     }
+    /* SA Button */
+    .sa-button, .sa-access-text {
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+    }
+    .sa-button {
+      cursor: pointer;
+      background-color: #F05523;
+      border-radius: 5px;
+      padding: 9px;
+    }
+    .sa-button-logo-wrap {
+      text-align: center;
+      width: 50px;
+      height: 100%;
+      border-right: 1px solid var(--white);
+      padding: 5px 5px 5px 0;
+    }
+    .sa-button-logo {
+      width: 30px;
+      vertical-align: middle;
+    }
+    .sa-button-text {
+      padding-left: 10px;
+      text-align: center;
+      width: 85%;
+      color: var(--white);
+    }
+    .sa-button-text-primary {
+      font-size: 14px;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -104,28 +135,14 @@ class HTML {
         <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
       </nav>
       <?=$this->displayName?>
-
     </div>
 <?php }
   ###
   # Print footer on webpage
   ###
-  public function showFooter($collapseIcons = array(), $seamless = false) {
+  public function showFooter($collapseIcons = array()) {
     $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
     print "\n  </div>";
-    if ($seamless) { ?>
-
-  <!-- Include the Seamless Access Sign in Button & Discovery Service -->
-  <script src="<?=$this->DSService?>"></script>
-  <script>
-    window.onload = function() {
-      // Render the Seamless Access button
-      thiss.DiscoveryComponent({
-        loginInitiatorURL: '<?=$hostURL?>/Shibboleth.sso<?=$this->DS?>?target=<?=$hostURL?>/admin/<?=$this->destination?>',
-        color: '#F05523'
-      }).render('#SWAMID-SeamlessAccess');
-    };
-  </script><?php }
     printf('%s  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
     integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"

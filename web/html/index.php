@@ -10,7 +10,7 @@ require_once 'vendor/autoload.php';
 require_once 'config.php'; #NOSONAR
 
 require_once 'include/Html.php'; #NOSONAR
-$html = new HTML($DiscoveryService, $Mode);
+$html = new HTML($Mode);
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
@@ -57,7 +57,7 @@ if (isset($_GET['showEntity'])) {
   showInfo();
 }
 
-$html->showFooter($display->getCollapseIcons(),true);
+$html->showFooter($display->getCollapseIcons());
 # End of page
 
 ####

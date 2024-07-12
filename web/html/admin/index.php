@@ -54,7 +54,7 @@ require_once '../vendor/autoload.php';
 require_once '../config.php'; #NOSONAR
 
 require_once '../include/Html.php'; #NOSONAR
-$html = new HTML('', $Mode);
+$html = new HTML($Mode);
 
 try {
   $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);

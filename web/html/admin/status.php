@@ -6,7 +6,7 @@ const HTML_TABLE_END = "        </table>\n";
 include_once '../config.php';
 
 require_once '../include/Html.php';
-$html = new HTML('', $Mode);
+$html = new HTML($Mode);
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];
