@@ -24,13 +24,13 @@ class MetadataDisplay {
   const SAML_EC_PSEUDONYMOUS = 'https://refeds.org/category/pseudonymous';
   const SAML_EC_RANDS = 'http://refeds.org/category/research-and-scholarship'; # NOSONAR Should be http://
 
+  const HTML_ACTIVE = ' active';
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SPACER = '      ';
   const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_TABLE_END = "    </table>\n";
-  const HTML_ACTIVE = ' active';
   const HTML_SHOW = ' show';
 
   public function __construct() {

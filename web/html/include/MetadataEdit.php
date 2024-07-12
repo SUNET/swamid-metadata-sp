@@ -15,8 +15,14 @@ class MetadataEdit {
   private $orderAttributeRequestingService = array();
   private $orderOrganization = array();
   private $orderContactPerson = array();
+  # From common.php
   private $standardAttributes = array();
+  private $langCodes = array();
+  private $FriendlyNames = array();
 
+  const SAML_DS_KEYINFO = 'ds:KeyInfo';
+  const SAML_DS_X509DATA = 'ds:X509Data';
+  const SAML_DS_X509CERTIFICATE = 'ds:X509Certificate';
   const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
   const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
   const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
@@ -99,20 +105,23 @@ class MetadataEdit {
   const BIND_WIDTH = ':Width';
   const BIND_XML = ':Xml';
 
-  const HTML_NES = '<br>No Element selected';
-  const HTML_LIE = '<br>Lang is empty';
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
-
-  const HTML_END_UL = '        </ul>';
-
-  const HTML_DIV_CLASS_ALERT_DANGER = '<div class="row alert alert-danger" role="alert">Error:%s</div>';
-  const HTML_START_DIV_ROW_COL = '%s    <div class="row">%s      <div class="col">';
-  const HTML_END_DIV_COL_ROW = "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
-
   const HTML_COPY = 'Copy"><i class="fas fa-pencil-alt"></i></a> ';
   const HTML_DELETE = 'Delete"><i class="fas fa-trash"></i></a> ';
+  const HTML_DIV_CLASS_ALERT_DANGER = '<div class="row alert alert-danger" role="alert">Error:%s</div>';
+  const HTML_END_DIV_COL_ROW = "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
+  const HTML_END_UL = '        </ul>';
   const HTML_HREF_BLANK = '<a href="%s" class="text-%s" target="blank">%s</a>';
+  const HTML_LI_SPAN = '%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>';
+  const HTML_LIE = '<br>Lang is empty';
+  const HTML_NES = '<br>No Element selected';
+  const HTML_SELECTED = ' selected';
+  const HTML_START_DIV_ROW_COL = '%s    <div class="row">%s      <div class="col">';
+
+  const TEXT_BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
+  const TEXT_END_CERT = "-----END CERTIFICATE-----\n";
+  const TEXT_ENC_SIGN = 'encryption & signing';
 
   public function __construct($newID, $oldID = 0) {
     require __DIR__ . '/../config.php'; #NOSONAR
@@ -1079,17 +1088,17 @@ class MetadataEdit {
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $uuInfo = false;
-                $moreExtentions = false;
+                $moreExtensions = false;
                 while ($child && ! $uuInfo) {
                   if ($child->nodeName == self::SAML_MDUI_UIINFO) {
                     $mduiFound = true;
                     $uuInfo = $child;
                   } else {
-                    $moreExtentions = true;
+                    $moreExtensions = true;
                   }
                   $child = $child->nextSibling;
                 }
-                $moreExtentions = $moreExtentions ? true : $child;
+                $moreExtensions = $moreExtensions ? true : $child;
                 if ($uuInfo) {
                   # Find mdui:* in XML
                   $child = $uuInfo->firstChild;
@@ -1140,7 +1149,7 @@ class MetadataEdit {
                     $uuInfo->removeChild($mduiElement);
                     if (! $moreMduiElement) {
                       $extensions->removeChild($uuInfo);
-                      if (! $moreExtentions) {
+                      if (! $moreExtensions) {
                         $ssoDescriptor->removeChild($extensions);
                       }
                     }
@@ -1271,10 +1280,10 @@ class MetadataEdit {
           <div class="row">
             <div class="col-1">Lang: </div>
             <div class="col">',
-        $edit, $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DisplayName' ? ' selected' : '',
-        $elementValue == 'Description' ? ' selected' : '', $elementValue == 'Keywords' ? ' selected' : '',
-        $elementValue == 'Logo' ? ' selected' : '', $elementValue == 'InformationURL' ? ' selected' : '',
-        $elementValue == 'PrivacyStatementURL' ? ' selected' : '');
+        $edit, $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DisplayName' ? self::HTML_SELECTED : '',
+        $elementValue == 'Description' ? self::HTML_SELECTED : '', $elementValue == 'Keywords' ? self::HTML_SELECTED : '',
+        $elementValue == 'Logo' ? self::HTML_SELECTED : '', $elementValue == 'InformationURL' ? self::HTML_SELECTED : '',
+        $elementValue == 'PrivacyStatementURL' ? self::HTML_SELECTED : '');
       $this->showLangSelector($langvalue);
       printf('            </div>
           </div>
@@ -1366,8 +1375,9 @@ class MetadataEdit {
         $child = $entityDescriptor->firstChild;
         $ssoDescriptor = false;
         while ($child && ! $ssoDescriptor) {
-          if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
+          if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
             $ssoDescriptor = $child;
+          }
           $child = $child->nextSibling;
         }
         switch ($_GET['action']) {
@@ -1376,46 +1386,43 @@ class MetadataEdit {
               $changed = true;
               $child = $ssoDescriptor->firstChild;
               $extensions = false;
-              while ($child && ! $extensions) {
-                switch ($child->nodeName) {
-                  case self::SAML_MD_EXTENSIONS :
-                    $extensions = $child;
-                    break;
-                  default :
-                    $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-                    $ssoDescriptor->insertBefore($extensions, $child);
+              if ($child) {
+                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+                  $extensions = $child;
+                } else {
+                  $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                  $ssoDescriptor->insertBefore($extensions, $child);
                 }
-                $child = $child->nextSibling;
               }
               if (! $extensions) {
                 $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
                 $ssoDescriptor->appendChild($extensions);
               }
               $child = $extensions->firstChild;
-              $beforeChild = false;
-              $DiscoHints = false;
+              $discoHints = false;
               $mduiFound = false;
-              while ($child && ! $DiscoHints) {
+              while ($child && ! $discoHints) {
                 switch ($child->nodeName) {
                   case self::SAML_MDUI_UIINFO :
                     $mduiFound = true;
                     break;
                   case self::SAML_MDUI_DISCOHINTS :
-                    $DiscoHints = $child;
+                    $discoHints = $child;
                     $mduiFound = true;
                     break;
+                  default :
                 }
                 $child = $child->nextSibling;
               }
-              if (! $DiscoHints ) {
-                $DiscoHints = $this->newXml->createElement(self::SAML_MDUI_DISCOHINTS);
-                $extensions->appendChild($DiscoHints);
+              if (! $discoHints ) {
+                $discoHints = $this->newXml->createElement(self::SAML_MDUI_DISCOHINTS);
+                $extensions->appendChild($discoHints);
               }
               if (! $mduiFound) {
                 $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
               }
               # Find mdui:* in XML
-              $child = $DiscoHints->firstChild;
+              $child = $discoHints->firstChild;
               $mduiElement = false;
               while ($child && ! $mduiElement) {
                 if ($child->nodeName == $elementmd && $child->nodeValue == $value ) {
@@ -1426,7 +1433,7 @@ class MetadataEdit {
               if (! $mduiElement) {
                 # Add if missing
                 $mduiElement = $this->newXml->createElement($elementmd, $value);
-                $DiscoHints->appendChild($mduiElement);
+                $discoHints->appendChild($mduiElement);
                 $mduiAddHandler = $this->metaDb->prepare("INSERT INTO Mdui (entity_id, type, element, data)
                   VALUES (:Id, 'IDPDisco', :Element, :Data);");
                 $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -1448,31 +1455,29 @@ class MetadataEdit {
               }
               if ($extensions) {
                 $child = $extensions->firstChild;
-                $DiscoHints = false;
-                $moreExtentions = false;
-                while ($child && ! $DiscoHints) {
-                  switch ($child->nodeName) {
-                    case self::SAML_MDUI_DISCOHINTS :
-                      $mduiFound = true;
-                      $DiscoHints = $child;
-                      break;
-                    default :
-                      $moreExtentions = true;
-                      break;
+                $discoHints = false;
+                $moreExtensions = false;
+                while ($child && ! $discoHints) {
+                  if ($child->nodeName == self::SAML_MDUI_DISCOHINTS) {
+                    $mduiFound = true;
+                    $discoHints = $child;
+                  } else {
+                    $moreExtensions = true;
                   }
                   $child = $child->nextSibling;
                 }
-                $moreExtentions = $moreExtentions ? true : $child;
-                if ($DiscoHints) {
+                $moreExtensions = $moreExtensions ? true : $child;
+                if ($discoHints) {
                   # Find mdui:* in XML
-                  $child = $DiscoHints->firstChild;
+                  $child = $discoHints->firstChild;
                   $mduiElement = false;
                   $moreMduiElement = false;
                   while ($child && ! $mduiElement) {
                     if ($child->nodeName == $elementmd && $child->nodeValue == $value) {
                       $mduiElement = $child;
-                    } else
+                    } else {
                       $moreMduiElement = true;
+                    }
                     $child = $child->nextSibling;
                   }
                   $moreMduiElement = $moreMduiElement ? true : $child;
@@ -1486,11 +1491,12 @@ class MetadataEdit {
                     $mduiRemoveHandler->bindParam(self::BIND_DATA, $value);
                     $mduiRemoveHandler->execute();
                     $changed = true;
-                    $DiscoHints->removeChild($mduiElement);
+                    $discoHints->removeChild($mduiElement);
                     if (! $moreMduiElement) {
-                      $extensions->removeChild($DiscoHints);
-                      if (! $moreExtentions)
+                      $extensions->removeChild($discoHints);
+                      if (! $moreExtensions) {
                         $ssoDescriptor->removeChild($extensions);
+                      }
                     }
                   }
                 }
@@ -1499,6 +1505,7 @@ class MetadataEdit {
             $elementValue = '';
             $value = '';
             break;
+          default :
         }
         if ($changed) {
           $this->saveXML();
@@ -1534,8 +1541,9 @@ class MetadataEdit {
       if (isset ($oldMDUIElements[$element]) && isset($oldMDUIElements[$element][$data])) {
         $oldMDUIElements[$element][$data] = 'same';
         $state = 'dark';
-      } else
+      } else {
         $state = 'success';
+      }
       $baseLink = sprintf('<a href="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=',
         $this->dbIdNr, $this->dbOldIdNr, $element, $data);
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
@@ -1568,8 +1576,8 @@ class MetadataEdit {
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
       <div class="col">',
-      $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DomainHint' ? ' selected' : '',
-      $elementValue == 'GeolocationHint' ? ' selected' : '', $elementValue == 'IPHint' ? ' selected' : '',
+      $this->dbIdNr, $this->dbOldIdNr, $elementValue == 'DomainHint' ? self::HTML_SELECTED : '',
+      $elementValue == 'GeolocationHint' ? self::HTML_SELECTED : '', $elementValue == 'IPHint' ? self::HTML_SELECTED : '',
       htmlspecialchars($value), $this->dbIdNr);
 
     foreach ($oldMDUIElements as $element => $elementValues) {
@@ -1602,9 +1610,9 @@ class MetadataEdit {
     if (isset($_POST['certificate']) && isset($_POST['use'])) {
       $certificate = str_replace(array("\r") ,array(''), $_POST['certificate']);
       $use = $_POST['use'];
-      $cert = "-----BEGIN CERTIFICATE-----\n" .
+      $cert = self::TEXT_BEGIN_CERT .
         chunk_split(str_replace(array(' ',"\n",'&#13;') ,array('','',''),$certificate),64) .
-        "-----END CERTIFICATE-----\n";
+        self::TEXT_END_CERT;
       if ($certInfo = openssl_x509_parse( $cert)) {
         $key_info = openssl_pkey_get_details(openssl_pkey_get_public($cert));
         switch ($key_info['type']) {
@@ -1687,20 +1695,23 @@ class MetadataEdit {
           }
 
           $keyDescriptor = $this->newXml->createElement(self::SAML_MD_KEYDESCRIPTOR);
-          if ($use <> "both") $keyDescriptor->setAttribute('use', $use);
+          if ($use <> "both") {
+            $keyDescriptor->setAttribute('use', $use);
+          }
 
-          if ($beforeChild)
+          if ($beforeChild) {
             $ssoDescriptor->insertBefore($keyDescriptor, $beforeChild);
-          else
+          } else {
             $ssoDescriptor->appendChild($keyDescriptor);
+          }
 
           $KeyInfo = $this->newXml->createElement('ds:KeyInfo');
           $keyDescriptor->appendChild($KeyInfo);
 
-          $X509Data = $this->newXml->createElement('ds:X509Data');
+          $X509Data = $this->newXml->createElement(self::SAML_DS_X509DATA);
           $KeyInfo->appendChild($X509Data);
 
-          $X509Certificate = $this->newXml->createElement('ds:X509Certificate');
+          $X509Certificate = $this->newXml->createElement(self::SAML_DS_X509CERTIFICATE);
           $X509Certificate->nodeValue = $certificate;
           $X509Data->appendChild($X509Certificate);
 
@@ -1762,13 +1773,13 @@ class MetadataEdit {
         ......">%s</textarea>
       <p><label for="use">Type of certificate</label></p>
       <select id="use" name="use">
-        <option %svalue="encryption">Encryption</option>
-        <option %svalue="signing">Signing</option>
-        <option %svalue="both">Encryption & Signing</option>
+        <option% svalue="encryption">Encryption</option>
+        <option% svalue="signing">Signing</option>
+        <option% svalue="both">Encryption & Signing</option>
       </select><br>
       <button type="submit" class="btn btn-primary">Submit</button>%s    </form>',
-        $edit, $this->dbIdNr, $this->dbOldIdNr, $certificate, $use == "encryption" ? 'selected ' : '',
-        $use == "signing" ? 'selected ' : '', $use == "both" ? 'selected ' : '', "\n");
+        $edit, $this->dbIdNr, $this->dbOldIdNr, $certificate, $use == "encryption" ? self::HTML_SELECTED : '',
+        $use == "signing" ? self::HTML_SELECTED : '', $use == "both" ? self::HTML_SELECTED : '', "\n");
       printf('    <a href="?edit=%s&Entity=%d&oldEntity=%d"><button>Back</button></a>%s',
         $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
     }
@@ -1835,29 +1846,30 @@ class MetadataEdit {
               $moveKeyDescriptor = false;
               $xmlOrder = 0;
               $changed = false;
-              $previusKeyDescriptor = false;
+              $previousKeyDescriptor = false;
               while ($child) {
-                // Loop thrue all KeyDescriptor:s not just the first one!
+                // Loop thru all KeyDescriptor:s not just the first one!
                 if ($child->nodeName == self::SAML_MD_KEYDESCRIPTOR) {
                   $usage = $child->getAttribute('use') ? $child->getAttribute('use') : 'both';
                   if ( $usage == $use && $order == $xmlOrder) {
                     $keyDescriptor = $child; // Save to be able to move this KeyDescriptor
                     $descriptorChild = $keyDescriptor->firstChild;
                     while ($descriptorChild && !$moveKeyDescriptor) {
-                      if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+                      if ($descriptorChild->nodeName == self::SAML_DS_KEYINFO) {
                         $infoChild = $descriptorChild->firstChild;
                         while ($infoChild && !$moveKeyDescriptor) {
-                          if ($infoChild->nodeName == 'ds:X509Data') {
+                          if ($infoChild->nodeName == self::SAML_DS_X509DATA) {
                             $x509Child = $infoChild->firstChild;
                             while ($x509Child&& !$moveKeyDescriptor) {
-                              if ($x509Child->nodeName == 'ds:X509Certificate') {
-                                $cert = "-----BEGIN CERTIFICATE-----\n" .
+                              if ($x509Child->nodeName == self::SAML_DS_X509CERTIFICATE) {
+                                $cert = self::TEXT_BEGIN_CERT .
                                   chunk_split(str_replace(array(' ',"\n") ,array('',''),
                                     trim($x509Child->textContent)),64) .
-                                  "-----END CERTIFICATE-----\n";
-                                if ($certInfo = openssl_x509_parse( $cert)) {
-                                  if ($certInfo['serialNumber'] == $serialNumber)
+                                    self::TEXT_END_CERT;
+                                if ($certInfo = openssl_x509_parse($cert)) {
+                                  if ($certInfo['serialNumber'] == $serialNumber) {
                                     $moveKeyDescriptor = true;
+                                  }
                                 }
                               }
                               $x509Child = $x509Child->nextSibling;
@@ -1872,8 +1884,8 @@ class MetadataEdit {
                   $xmlOrder ++;
                 }
                 // Move
-                if ($moveKeyDescriptor && $previusKeyDescriptor) {
-                  $ssoDescriptor->insertBefore($keyDescriptor, $previusKeyDescriptor);
+                if ($moveKeyDescriptor && $previousKeyDescriptor) {
+                  $ssoDescriptor->insertBefore($keyDescriptor, $previousKeyDescriptor);
 
                   $reorderKeyOrderHandler = $this->metaDb->prepare(
                     'UPDATE KeyInfo SET `order` = :NewOrder WHERE entity_id = :Id AND `order` = :OldOrder;');
@@ -1895,7 +1907,7 @@ class MetadataEdit {
                   $child = false;
                   $changed = true;
                 } else {
-                  $previusKeyDescriptor = $child;
+                  $previousKeyDescriptor = $child;
                   $child = $child->nextSibling;
                 }
               }
@@ -1905,12 +1917,13 @@ class MetadataEdit {
             if ($ssoDescriptor) {
               $child = $ssoDescriptor->firstChild;
               $moveKeyDescriptor = false;
+              $keyDescriptor = false;
               $xmlOrder = 0;
               $changed = false;
               while ($child && !$changed) {
-                // Loop thrue all KeyDescriptor:s not just the first one!
+                // Loop thru all KeyDescriptor:s not just the first one!
                 if ($child->nodeName == self::SAML_MD_KEYDESCRIPTOR) {
-                  // Move if found in previus round
+                  // Move if found in previous round
                   if ($moveKeyDescriptor) {
                     $ssoDescriptor->insertBefore($child, $keyDescriptor);
 
@@ -1938,19 +1951,19 @@ class MetadataEdit {
                       $keyDescriptor = $child; // Save to be able to move this KeyDescriptor
                       $descriptorChild = $keyDescriptor->firstChild;
                       while ($descriptorChild && !$moveKeyDescriptor) {
-                        if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+                        if ($descriptorChild->nodeName == self::SAML_DS_KEYINFO) {
                           $infoChild = $descriptorChild->firstChild;
                           while ($infoChild && !$moveKeyDescriptor) {
-                            if ($infoChild->nodeName == 'ds:X509Data') {
+                            if ($infoChild->nodeName == self::SAML_DS_X509DATA) {
                               $x509Child = $infoChild->firstChild;
                               while ($x509Child&& !$moveKeyDescriptor) {
-                                if ($x509Child->nodeName == 'ds:X509Certificate') {
-                                  $cert = "-----BEGIN CERTIFICATE-----\n" .
+                                if ($x509Child->nodeName == self::SAML_DS_X509CERTIFICATE) {
+                                  $cert = self::TEXT_BEGIN_CERT .
                                     chunk_split(str_replace(array(' ',"\n") ,array('',''),
                                       trim($x509Child->textContent)),64) .
-                                    "-----END CERTIFICATE-----\n";
+                                      self::TEXT_END_CERT;
                                   if ($certInfo = openssl_x509_parse( $cert)) {
-                                    if ($certInfo['serialNumber'] == $serialNumber) {
+                                    if ( $certInfo['serialNumber'] == $serialNumber) {
                                       $moveKeyDescriptor = true;
                                     }
                                   }
@@ -1985,17 +1998,17 @@ class MetadataEdit {
                     $keyDescriptor = $child; // Save to be able to remove this KeyDescriptor
                     $descriptorChild = $keyDescriptor->firstChild;
                     while ($descriptorChild && !$removeKeyDescriptor) {
-                      if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+                      if ($descriptorChild->nodeName == self::SAML_DS_KEYINFO) {
                         $infoChild = $descriptorChild->firstChild;
                         while ($infoChild && !$removeKeyDescriptor) {
-                          if ($infoChild->nodeName == 'ds:X509Data') {
+                          if ($infoChild->nodeName == self::SAML_DS_X509DATA) {
                             $x509Child = $infoChild->firstChild;
                             while ($x509Child&& !$removeKeyDescriptor) {
-                              if ($x509Child->nodeName == 'ds:X509Certificate') {
-                                $cert = "-----BEGIN CERTIFICATE-----\n" .
+                              if ($x509Child->nodeName == self::SAML_DS_X509CERTIFICATE) {
+                                $cert = self::TEXT_BEGIN_CERT .
                                   chunk_split(str_replace(array(' ',"\n") ,array('',''),
                                     trim($x509Child->textContent)),64) .
-                                  "-----END CERTIFICATE-----\n";
+                                    self::TEXT_END_CERT;
                                 if ($certInfo = openssl_x509_parse( $cert)) {
                                   if ($certInfo['serialNumber'] == $serialNumber) {
                                     $removeKeyDescriptor = true;
@@ -2055,20 +2068,21 @@ class MetadataEdit {
                     $keyDescriptor = $child; // Save to be able to update this KeyDescriptor
                     $descriptorChild = $keyDescriptor->firstChild;
                     while ($descriptorChild && !$changeKeyDescriptor) {
-                      if ($descriptorChild->nodeName == 'ds:KeyInfo') {
+                      if ($descriptorChild->nodeName == self::SAML_DS_KEYINFO) {
                         $infoChild = $descriptorChild->firstChild;
                         while ($infoChild && !$changeKeyDescriptor) {
-                          if ($infoChild->nodeName == 'ds:X509Data') {
+                          if ($infoChild->nodeName == self::SAML_DS_X509DATA) {
                             $x509Child = $infoChild->firstChild;
                             while ($x509Child&& !$changeKeyDescriptor) {
-                              if ($x509Child->nodeName == 'ds:X509Certificate') {
-                                $cert = "-----BEGIN CERTIFICATE-----\n" .
+                              if ($x509Child->nodeName == self::SAML_DS_X509CERTIFICATE) {
+                                $cert = self::TEXT_BEGIN_CERT .
                                   chunk_split(str_replace(array(' ',"\n"), array('',''),
                                     trim($x509Child->textContent)),64) .
-                                  "-----END CERTIFICATE-----\n";
+                                    self::TEXT_END_CERT;
                                 if ($certInfo = openssl_x509_parse( $cert)) {
-                                  if ($certInfo['serialNumber'] == $serialNumber)
+                                  if ($certInfo['serialNumber'] == $serialNumber) {
                                     $changeKeyDescriptor = true;
+                                  }
                                 }
                               }
                               $x509Child = $x509Child->nextSibling;
@@ -2085,7 +2099,7 @@ class MetadataEdit {
                 $child = $child->nextSibling;
                 // Change ?
                 if ($changeKeyDescriptor) {
-                  if ($newUse == "encryption & signing") {
+                  if ($newUse == self::TEXT_ENC_SIGN) {
                     $keyDescriptor->removeAttribute('use');
                     $newUse = 'both';
                   } else {
@@ -2121,11 +2135,11 @@ class MetadataEdit {
       }
     }
 
-    $KeyInfoStatusHandler = $this->metaDb->prepare(
+    $keyInfoStatusHandler = $this->metaDb->prepare(
       'SELECT `use`, `order`, `notValidAfter` FROM KeyInfo WHERE entity_id = :Id AND type = :Type ORDER BY `order`');
-    $KeyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
-    $KeyInfoStatusHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-    $KeyInfoStatusHandler->execute();
+    $keyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
+    $keyInfoStatusHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+    $keyInfoStatusHandler->execute();
     $encryptionFound = false;
     $signingFound = false;
     $extraEncryptionFound = false;
@@ -2133,7 +2147,7 @@ class MetadataEdit {
     $validEncryptionFound = false;
     $validSigningFound = false;
     $maxOrder = 0;
-    while ($keyInfoStatus = $KeyInfoStatusHandler->fetch(PDO::FETCH_ASSOC)) {
+    while ($keyInfoStatus = $keyInfoStatusHandler->fetch(PDO::FETCH_ASSOC)) {
       switch ($keyInfoStatus['use']) {
         case 'encryption' :
           $extraEncryptionFound = $encryptionFound;
@@ -2200,7 +2214,7 @@ class MetadataEdit {
           }
           break;
         case 'both' :
-          $use = 'encryption & signing';
+          $use = self::TEXT_ENC_SIGN;
           $okRemove = ($extraEncryptionFound && $extraSigningFound);
           if ($keyInfo['notValidAfter'] <= $timeNow && $validEncryptionFound &&  $validSigningFound) {
             $validCertExists = true;
@@ -2255,8 +2269,8 @@ class MetadataEdit {
             <input type="submit" name="action" value="Change">
           </form>%s       ',
           $edit, $this->dbIdNr, $this->dbOldIdNr, $type, $keyInfo['use'], $keyInfo['serialNumber'], $keyInfo['order'],
-          $use == 'encryption' ? ' selected' : '', $use == 'signing' ? ' selected' : '',
-          $use == 'encryption & signing' ? ' selected' : '', "\n");
+          $use == 'encryption' ? self::HTML_SELECTED : '', $use == 'signing' ? self::HTML_SELECTED : '',
+          $use == self::TEXT_ENC_SIGN ? self::HTML_SELECTED : '', "\n");
       } else {
         $useLink = sprintf ('<b>KeyUse = "%s"</b>', htmlspecialchars($use));
       }
@@ -2292,7 +2306,7 @@ class MetadataEdit {
             $use = 'signing';
             break;
           case 'both' :
-            $use = 'encryption & signing';
+            $use = self::TEXT_ENC_SIGN;
             break;
           default :
         }
@@ -2523,8 +2537,9 @@ class MetadataEdit {
                   case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
                     break;
                   case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
-                    if ($child->getAttribute('index') == $indexValue)
+                    if ($child->getAttribute('index') == $indexValue) {
                       $attributeConsumingService = $child;
+                    }
                     break;
                   default :
                 }
@@ -2590,8 +2605,9 @@ class MetadataEdit {
                     $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
                   }
                   $attributeConsumingServiceElement->setAttribute('Name', $name);
-                  if ($nameFormat != '' )
+                  if ($nameFormat != '' ) {
                     $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+                  }
                   $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
                   $requestedAttributeUpdateHandler = $this->metaDb->prepare(
                     'UPDATE AttributeConsumingService_RequestedAttribute
@@ -2619,11 +2635,13 @@ class MetadataEdit {
                   $serviceElementAddHandler->bindParam(self::BIND_DATA, $value);
                   $serviceElementAddHandler->execute();
                 } else {
-                  if ($friendlyName != '' )
+                  if ($friendlyName != '' ) {
                     $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
+                  }
                   $attributeConsumingServiceElement->setAttribute('Name', $name);
-                  if ($nameFormat != '' )
+                  if ($nameFormat != '' ) {
                     $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+                  }
                   $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
                   $requestedAttributeAddHandler = $this->metaDb->prepare(
                     'INSERT INTO AttributeConsumingService_RequestedAttribute
@@ -2646,8 +2664,9 @@ class MetadataEdit {
               $attributeConsumingService = false;
               while ($child && ! $attributeConsumingService) {
                 if ($child->nodeName == self::SAML_MD_ATTRIBUTECONSUMINGSERVICE
-                  && $child->getAttribute('index') == $indexValue)
+                  && $child->getAttribute('index') == $indexValue) {
                   $attributeConsumingService = $child;
+                }
                 $child = $child->nextSibling;
               }
               if ($attributeConsumingService) {
@@ -2795,7 +2814,7 @@ class MetadataEdit {
           $this->dbIdNr, $this->dbOldIdNr, $index, $serviceElement['element'],
           $serviceElement['lang'], urlencode($serviceElement['data']));
         $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-        printf('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>',
+        printf(self::HTML_LI_SPAN,
           "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], $serviceElement['data']);
       }
       print "\n" . self::HTML_END_UL;
@@ -2819,8 +2838,8 @@ class MetadataEdit {
                 <div class="col-2">Lang: </div>
                 <div class="col">',
           $this->dbIdNr, $this->dbOldIdNr, $index,
-          $elementValue == 'ServiceName' ? ' selected' : '',
-          $elementValue == 'ServiceDescription' ? ' selected' : '');
+          $elementValue == 'ServiceName' ? self::HTML_SELECTED : '',
+          $elementValue == 'ServiceDescription' ? self::HTML_SELECTED : '');
         $this->showLangSelector($langvalue);
         printf('            </div>
               </div>
@@ -2838,8 +2857,9 @@ class MetadataEdit {
         if ($requestedAttribute['FriendlyName'] == '') {
           if (isset($this->FriendlyNames[$requestedAttribute['Name']])) {
             $friendlyNameDisplay = sprintf('(%s)', $this->FriendlyNames[$requestedAttribute['Name']]['desc']);
-            if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd'])
+            if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
+            }
           } else {
             $friendlyNameDisplay = '(Unknown)';
             $error = self::HTML_CLASS_ALERT_WARNING;
@@ -2934,7 +2954,7 @@ class MetadataEdit {
             </div>
           </div>
           <button type="submit" name="action" value="Add">Add/Update</button>
-        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($name), $isRequired ? " checked" : '', htmlspecialchars($friendlyName), $nameFormat == self::SAMLNF_URI ? ' selected' : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? ' selected' : '');
+        </form>', $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($name), $isRequired ? " checked" : '', htmlspecialchars($friendlyName), $nameFormat == self::SAMLNF_URI ? self::HTML_SELECTED : '', $nameFormat == 'urn:mace:shibboleth:1.0:attributeNamespace:uri' ? self::HTML_SELECTED : '');
       }
     }
     printf('        <a href="./?validateEntity=%d"><button>Back</button></a>
@@ -2962,7 +2982,7 @@ class MetadataEdit {
                 $copy = '';
                 $state = 'danger';
             }
-            printf('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>', "\n",
+            printf(self::HTML_LI_SPAN, "\n",
               $copy, $state, $element, $lang, $data['value']);
           }
         }
@@ -3116,7 +3136,9 @@ class MetadataEdit {
 
               if ($organizationElement) {
                 $organization->removeChild($organizationElement);
-                if (! $moreOrganizationElements) $entityDescriptor->removeChild($organization);
+                if (! $moreOrganizationElements) {
+                  $entityDescriptor->removeChild($organization);
+                }
 
                 $organizationRemoveHandler = $this->metaDb->prepare(
                   'DELETE FROM Organization
@@ -3153,8 +3175,9 @@ class MetadataEdit {
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      if (! isset($oldOrganizationElements[$organization['element']]) )
+      if (! isset($oldOrganizationElements[$organization['element']]) ) {
         $oldOrganizationElements[$organization['element']] = array();
+      }
       $oldOrganizationElements[$organization['element']][$organization['lang']] = array(
         'value' => $organization['data'], 'state' => 'removed');
     }
@@ -3163,8 +3186,9 @@ class MetadataEdit {
     $organizationHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      if (! isset($existingOrganizationElements[$organization['element']]) )
+      if (! isset($existingOrganizationElements[$organization['element']]) ) {
         $existingOrganizationElements[$organization['element']] = array();
+      }
       if (isset($oldOrganizationElements[$organization['element']][$organization['lang']])
         && $oldOrganizationElements[$organization['element']][$organization['lang']]['value']
           == $organization['data']) {
@@ -3174,7 +3198,7 @@ class MetadataEdit {
       $baseLink = sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=',
         $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'], $organization['data']);
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-      printf ('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>',
+      printf (self::HTML_LI_SPAN,
         "\n", $links, $state, $organization['element'], $organization['lang'], $organization['data']);
       $existingOrganizationElements[$organization['element']][$organization['lang']] = true;
     }
@@ -3198,9 +3222,9 @@ class MetadataEdit {
           <div class="row">
             <div class="col-1">Lang: </div>
             <div class="col">',
-      $this->dbIdNr, $this->dbOldIdNr, $element == 'OrganizationName' ? ' selected' : '',
-      $element == 'OrganizationDisplayName' ? ' selected' : '', $element == 'OrganizationURL' ? ' selected' : '',
-      $element == 'Extensions' ? ' selected' : '');
+      $this->dbIdNr, $this->dbOldIdNr, $element == 'OrganizationName' ? self::HTML_SELECTED : '',
+      $element == 'OrganizationDisplayName' ? self::HTML_SELECTED : '', $element == 'OrganizationURL' ? self::HTML_SELECTED : '',
+      $element == 'Extensions' ? self::HTML_SELECTED : '');
       $this->showLangSelector($lang);
       printf('            </div>
           </div>
@@ -3225,7 +3249,7 @@ class MetadataEdit {
         ? ''
         : sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
           $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'],$organization['data']);
-      printf ('%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>',
+      printf (self::HTML_LI_SPAN,
         "\n", $addLink, $state, $organization['element'], $organization['lang'], $organization['data']);
     }
     print ("\n        <ul>");
@@ -3522,12 +3546,12 @@ class MetadataEdit {
         <a href="./?validateEntity=%d"><button>Back</button></a>
       </div><!-- end col -->
       <div class="col">',
-      $this->dbIdNr, $this->dbOldIdNr, $type == 'administrative' ? ' selected' : '',
-      $type == 'technical' ? ' selected' : '', $type == 'support' ? ' selected' : '',
-      $type == 'other' ? ' selected' : '', $part == 'Company' ? ' selected' : '',
-      $part == 'GivenName' ? ' selected' : '', $part == 'SurName' ? ' selected' : '',
-      $part == 'EmailAddress' ? ' selected' : '', $part == 'TelephoneNumber' ? ' selected' : '',
-      $part == 'Extensions' ? ' selected' : '', htmlspecialchars($value), $this->dbIdNr);
+      $this->dbIdNr, $this->dbOldIdNr, $type == 'administrative' ? self::HTML_SELECTED : '',
+      $type == 'technical' ? self::HTML_SELECTED : '', $type == 'support' ? self::HTML_SELECTED : '',
+      $type == 'other' ? self::HTML_SELECTED : '', $part == 'Company' ? self::HTML_SELECTED : '',
+      $part == 'GivenName' ? self::HTML_SELECTED : '', $part == 'SurName' ? self::HTML_SELECTED : '',
+      $part == 'EmailAddress' ? self::HTML_SELECTED : '', $part == 'TelephoneNumber' ? self::HTML_SELECTED : '',
+      $part == 'Extensions' ? self::HTML_SELECTED : '', htmlspecialchars($value), $this->dbIdNr);
 
     # Print Old contacts
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -4017,7 +4041,6 @@ class MetadataEdit {
         $child = $child->nextSibling;
       }
       if ($ssoDescriptor) {
-        $changed = false;
         $child = $ssoDescriptor->firstChild;
         $extensions = false;
         while ($child && ! $extensions) {
@@ -4036,10 +4059,9 @@ class MetadataEdit {
           $ssoDescriptor->appendChild($extensions);
         }
         $child = $extensions->firstChild;
-        $beforeChild = false;
-        $DiscoHints = false;
+        $discoHints = false;
         $mduiFound = false;
-        while ($child && ! $DiscoHints) {
+        while ($child && ! $discoHints) {
           switch ($child->nodeName) {
             case self::SAML_MDUI_UIINFO :
               $mduiFound = true;
@@ -4051,18 +4073,18 @@ class MetadataEdit {
           }
           $child = $child->nextSibling;
         }
-        if (! $DiscoHints ) {
-          $DiscoHints = $this->newXml->createElement(self::SAML_MDUI_DISCOHINTS);
-          $extensions->appendChild($DiscoHints);
+        if (! $discoHints ) {
+          $discoHints = $this->newXml->createElement(self::SAML_MDUI_DISCOHINTS);
+          $extensions->appendChild($discoHints);
         }
         if (! $mduiFound) {
           $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
         }
         # Find mdui:* in XML
-        $child = $DiscoHints->firstChild;
+        $child = $discoHints->firstChild;
         while ($child) {
           $element = $child->nodeName;
-          $value = $child->NodeValue;
+          $value = $child->nodeValue;
           if (isset($oldMDUIElements[$element][$value])) {
             unset($oldMDUIElements[$element][$value]);
           }
@@ -4074,7 +4096,7 @@ class MetadataEdit {
           foreach ($valueArray as $value => $true) {
             # Add if missing
             $mduiElement = $this->newXml->createElement($element, $value);
-            $DiscoHints->appendChild($mduiElement);
+            $discoHints->appendChild($mduiElement);
             $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
             $mduiAddHandler->bindParam(self::BIND_DATA, $value);
             $mduiAddHandler->execute();
