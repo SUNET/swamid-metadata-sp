@@ -95,7 +95,6 @@ $errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
   $errorURL);
 
 $errors = '';
-$filterFirst = true;
 
 if (isset($_SERVER['Meta-Assurance-Certification'])) {
   $AssuranceCertificationFound = false;
@@ -140,7 +139,7 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
       case 'affiliate' :
         $foundAffiliate = true;
         break;
-      default:
+      default :
     }
   }
 } elseif (isset($_SERVER['eduPersonAffiliation'])) {
@@ -156,14 +155,13 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
       case 'member' :
         $foundMember = true;
         break;
-      default:
+      default :
     }
   }
 } else {
   if (isset($_SERVER['Shib-Identity-Provider'])
     && $_SERVER['Shib-Identity-Provider'] == 'https://login.idp.eduid.se/idp.xml') {
     #OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
-    $filterFirst = false;
     $foundMember = true;
   } else {
     $errors .=
@@ -471,7 +469,7 @@ $html->showFooter($display->getCollapseIcons());
 # Shows EntityList
 ####
 function showEntityList($status = 1) {
-  global $db, $html, $EPPN, $filterFirst;
+  global $db, $html;
 
   $feedOrder = 'feedDesc';
   $orgOrder = 'orgAsc';
@@ -513,48 +511,46 @@ function showEntityList($status = 1) {
 
   if (isset($_GET['query'])) {
     $query = $_GET['query'];
-  } elseif (isset($_GET['first']) && $filterFirst) {
-    $query = '.'.explode('@',$EPPN)[1];
   } else {
      $query = '';
   }
   $filter = 'query='.urlencode($query);
 
   switch ($status) {
-    case 1:
+    case 1 :
       $html->showHeaders(HTML_TITLE . 'Published');
       $action = 'pub';
       $minLevel = 0;
       $filter .= '&action=pub';
       break;
-    case 2:
+    case 2 :
       $html->showHeaders(HTML_TITLE . 'Pending');
       $action = 'wait';
       $minLevel = 5;
       $filter .= '&action=wait';
       break;
-    case 3:
+    case 3 :
       $html->showHeaders(HTML_TITLE . 'Drafts');
       $action = 'new';
       $minLevel = 5;
       $filter .= '&action=new';
       break;
-    case 4:
+    case 4 :
       $html->showHeaders(HTML_TITLE . 'Deleted');
       $action = 'pub';
       $minLevel = 5;
       break;
-    case 5:
+    case 5 :
       $html->showHeaders(HTML_TITLE . 'Pending already Published');
       $action = 'pub';
       $minLevel = 5;
       break;
-    case 6:
+    case 6 :
       $html->showHeaders(HTML_TITLE . 'Published when added to Pending');
       $action = 'pub';
       $minLevel = 5;
       break;
-    default:
+    default :
       $html->showHeaders(HTML_TITLE);
   }
   showMenu();
@@ -643,32 +639,32 @@ function showEntity($entitiesId)  {
         $oldEntitiesId = 0;
       }
       switch ($entity['status']) {
-        case 3:
+        case 3 :
           # Draft
           $headerCol1 = 'New metadata';
           $menuActive = 'new';
           $allowEdit = checkAccess($entitiesId, $EPPN, $userLevel, 10, false);
           break;
-        case 4:
+        case 4 :
           # Soft Delete
           $headerCol1 = 'Deleted metadata';
           $menuActive = 'publ';
           $allowEdit = false;
           $oldEntitiesId = 0;
           break;
-        case 5:
+        case 5 :
           # Pending that have been published
           $headerCol1 = 'Already published metadata (might not be the latest!)';
           $menuActive = 'publ';
           $allowEdit = false;
           break;
-        case 6:
+        case 6 :
           # Copy of published used to compare Pending
           $headerCol1 = 'Shadow metadata (might not be the latest!)';
           $menuActive = 'publ';
           $allowEdit = false;
           break;
-        default:
+        default :
           $headerCol1 = 'Waiting for publishing';
           $menuActive = 'wait';
           $allowEdit = checkAccess($entitiesId, false, $userLevel, 10, false);
@@ -1054,12 +1050,10 @@ function removeSSO($entitiesId, $type) {
 # Shows menu row
 ####
 function showMenu() {
-  global $userLevel, $menuActive, $EPPN, $filterFirst;
+  global $userLevel, $menuActive;
   $filter='';
   if (isset($_GET['query'])) {
     $filter='&query='.urlencode($_GET['query']);
-  } elseif (isset($_GET['first']) && $filterFirst) {
-    $filter='&query=.'. explode('@',$EPPN)[1];
   }
 
   print "\n    ";
@@ -1105,7 +1099,7 @@ function validateEntity($entitiesId) {
 }
 
 function move2Pending($entitiesId) {
-  global $db, $html, $display, $userLevel, $menuActive;
+  global $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester, $SendOut, $Mode;
 

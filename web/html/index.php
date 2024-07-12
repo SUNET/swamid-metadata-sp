@@ -162,7 +162,6 @@ function showEntity($entity_id, $urn = false)  {
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     $entities_id = $entity['id'];
-    $html->setDestination('?showEntity='.$entities_id);
     if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if (($entity['publishIn'] & 1) == 1) { $publishArray[] = 'SWAMID-testing'; }
@@ -208,7 +207,7 @@ function showEntity($entity_id, $urn = false)  {
           # Copy of published used to compare Pending
           $headerCol1 = 'Already published metadata (might not be the latest!)';
           break;
-        default:
+        default :
           $headerCol1 = '';
       }
     } else {
@@ -379,7 +378,7 @@ function showList($entities, $show) {
                 $hasHide = '(X)';
               }
               break;
-            default:
+            default :
           }
           break;
         case 'entity-category-support' :
@@ -405,7 +404,7 @@ function showList($entities, $show) {
             case 'https://myacademicid.org/entity-categories/esi' :
               if ($prodFeed) { $countECSesi ++; }
               break;
-            default:
+            default :
           }
           break;
         case 'assurance-certification' :
@@ -442,9 +441,9 @@ function showList($entities, $show) {
                 $isSIRTFI = '(X)';
               }
               break;
-            default:
+            default :
           }
-        default:
+        default :
       }
     }
     switch ($row['publishIn']) {
@@ -496,7 +495,7 @@ function showList($entities, $show) {
         printf("\n        %s", $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>');
         printf("\n        %s", $row['isSP'] ? '<td class="text-center">X</td>' : '<td></td>');
         break;
-      default:
+      default :
     }
     print "\n      </tr>\n";
   } ?>

@@ -39,7 +39,7 @@ class ValidateXML {
       case LIBXML_ERR_FATAL:
         $return .= '<b>Fatal Error </b>: ';
         break;
-      default:
+      default :
         $return .= '<b> Unkown Error </b>: ';
     }
     $return .= trim($error->message);

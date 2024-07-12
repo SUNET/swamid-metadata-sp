@@ -27,7 +27,7 @@ class Metadata {
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
   private $swamid6116error;
-# From common.php
+  # From common.php
   private $standardAttributes = array();
   private $FriendlyNames = array();
 
@@ -699,7 +699,7 @@ class Metadata {
             "Added NameFormat %s to Extensions/EntityAttributes/Attribute/%s.\n",
             self::SAMLNF_URI, $data->getAttribute('Name'));
           break;
-        default:
+        default :
         $this->result .= sprintf("Unknown Name (%s) in Extensions/EntityAttributes/Attribute.\n",
           $data->getAttribute('Name'));
         break;
@@ -1599,7 +1599,7 @@ class Metadata {
             $this->isSIRTFI = true;
           }
           break;
-        default:
+        default :
       }
     }
 
@@ -1980,7 +1980,7 @@ class Metadata {
             $this->error .= sprintf('SWAMID Tech 5.1.17: %s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
-        default:
+        default :
       }
     }
 
@@ -2015,7 +2015,7 @@ class Metadata {
             $this->error .= sprintf('SWAMID Tech 6.1.12: %s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
-        default:
+        default :
       }
     }
 
@@ -2091,7 +2091,7 @@ class Metadata {
             $oldCertFound = true;
           }
           break;
-        default:
+        default :
           break;
       }
       switch ($keyInfo['key_type']) {
@@ -2119,7 +2119,7 @@ class Metadata {
             }
           if ($keyInfo['bits'] < 256) { $smalKeyFound = true; }
           break;
-        default:
+        default :
             break;
       }
       if ($keyInfo['notValidAfter'] <= $timeNow ) {
@@ -2172,11 +2172,11 @@ class Metadata {
             $swamid521error = $swamid521error == 0 ? 1 : $swamid521error;
             $swamid5212030error = $swamid5212030error ? true : $swamid521Level2030[$use];
             break;
-          case 1:
+          case 1 :
             // To small key
             $swamid521error = 2;
             break;
-          default:
+          default :
             break;
         }
         $keyFound = true;

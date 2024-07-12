@@ -768,7 +768,7 @@ class MetadataEdit {
                 case self::SAML_MDUI_DISCOHINTS :
                   $beforeChild = $beforeChild ? $beforeChild : $child;
                   break;
-                default:
+                default :
               }
               $child = $child->nextSibling;
             }
@@ -835,7 +835,7 @@ class MetadataEdit {
           }
           $scopeValue = '';
           break;
-        default:
+        default :
       }
       if ($changed) {
         $this->saveXML();
@@ -3240,7 +3240,7 @@ class MetadataEdit {
 
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
-    print ('        <ul>');
+    print '        <ul>';
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $state = ($oldOrganizationElements[$organization['element']][$organization['lang']]['state'] == 'same')
         ? 'dark'
@@ -3252,7 +3252,7 @@ class MetadataEdit {
       printf (self::HTML_LI_SPAN,
         "\n", $addLink, $state, $organization['element'], $organization['lang'], $organization['data']);
     }
-    print ("\n        <ul>");
+    print "\n        <ul>";
     print self::HTML_END_DIV_COL_ROW;
   }
   private function editContactPersons(){
@@ -3345,11 +3345,9 @@ class MetadataEdit {
 
           $child = $contactPerson->firstChild;
           $contactPersonElement = false;
-          $newContactPerson = true;
           while ($child && ! $contactPersonElement) {
             if ($child->nodeName == $partmd) {
               $contactPersonElement = $child;
-              $newContactPerson = false;
             } elseif (isset ($this->orderContactPerson[$child->nodeName]) && $this->orderContactPerson[$child->nodeName] < $placement) {
               $child = $child->nextSibling;
             } else {
@@ -3433,6 +3431,7 @@ class MetadataEdit {
           $part = '';
           $value = '';
           break;
+        default :
       }
     } else {
       $type = '';
@@ -3926,7 +3925,6 @@ class MetadataEdit {
         $child = $child->nextSibling;
       }
       if ($ssoDescriptor) {
-        $changed = false;
         $child = $ssoDescriptor->firstChild;
         $extensions = false;
         while ($child && ! $extensions) {

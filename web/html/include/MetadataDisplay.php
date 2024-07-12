@@ -139,7 +139,7 @@ class MetadataDisplay {
             case 'esi':
               $tag = self::SAML_EC_ESI;
               break;
-            default:
+            default :
               printf('Unknown test : %s', $testResult['test']);
           }
           switch ($testResult['result']) {
@@ -173,7 +173,7 @@ class MetadataDisplay {
               $errors .= ($ecsTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n",
                 $testResult['time'], $testResult['result']) : '';
               break;
-            default:
+            default :
               printf('Unknown result : %s', $testResult['result']);
           }
         }
@@ -1278,7 +1278,7 @@ class MetadataDisplay {
               This should output this URL.</td></tr>%s',
               htmlspecialchars($url), "\n");
             break;
-          default:
+          default :
               break;
         }
         $urlType = $urlInfo['type'];
@@ -1673,7 +1673,7 @@ class MetadataDisplay {
           }
           $date = $entity['lastValidated'];
           break;
-        default:
+        default :
       }
       if ($showAll || $showUrgent) {
         printf(
@@ -1855,7 +1855,7 @@ class MetadataDisplay {
         case 'Missing schacPersonalUniqueCode' :
           $ecsTested[$testResult['test']]['Fail'] += $testResult['count'];
           break;
-        default:
+        default :
           printf('Unknown result : %s', $testResult['result']);
       }
     }

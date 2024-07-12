@@ -148,25 +148,25 @@ function showUsers(){
         $user['fullName'], $user['userID'], "\n");
       while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
         switch ($entity['status']) {
-          case 1:
+          case 1 :
              $statusName = 'Published';
             break;
-          case 2:
+          case 2 :
             $statusName = 'Pending';
             break;
-          case 3:
+          case 3 :
             $statusName = 'Draft';
             break;
-          case 4:
+          case 4 :
             $statusName = 'Deleted';
             break;
-          case 5:
+          case 5 :
             $statusName = 'PublishedPending';
             break;
-          case 6:
+          case 6 :
             $statusName = 'Shadow';
             break;
-          default:
+          default :
             $statusName = 'Unknown';
         }
         printf('          <tr><td>%s</td><td><a href=./?showEntity=%d target="_blank">%s<a></td></tr>%s',

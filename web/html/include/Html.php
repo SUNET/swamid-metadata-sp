@@ -2,7 +2,6 @@
 class HTML {
   # Setup
   private $displayName = '';
-  private $destination = '?first';
   private $loggedIn = false;
   private $tableToSort = array();
   private $showDownload = true;
@@ -141,7 +140,6 @@ class HTML {
   # Print footer on webpage
   ###
   public function showFooter($collapseIcons = array()) {
-    $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
     print "\n  </div>";
     printf('%s  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
@@ -207,10 +205,6 @@ class HTML {
   public function setDisplayName($name) {
     $this->displayName = $name;
     $this->loggedIn = true;
-  }
-
-  public function setDestination($destination) {
-    $this->destination = $destination;
   }
 
   public function addTableSort($tableId) {
