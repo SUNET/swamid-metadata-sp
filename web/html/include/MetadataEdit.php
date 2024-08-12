@@ -1773,9 +1773,9 @@ class MetadataEdit {
         ......">%s</textarea>
       <p><label for="use">Type of certificate</label></p>
       <select id="use" name="use">
-        <option% svalue="encryption">Encryption</option>
-        <option% svalue="signing">Signing</option>
-        <option% svalue="both">Encryption & Signing</option>
+        <option%s value="encryption">Encryption</option>
+        <option%s value="signing">Signing</option>
+        <option%s value="both">Encryption & Signing</option>
       </select><br>
       <button type="submit" class="btn btn-primary">Submit</button>%s    </form>',
         $edit, $this->dbIdNr, $this->dbOldIdNr, $certificate, $use == "encryption" ? self::HTML_SELECTED : '',
