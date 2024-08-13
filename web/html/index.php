@@ -162,6 +162,7 @@ function showEntity($entity_id, $urn = false)  {
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     $entities_id = $entity['id'];
+    $html->setDestination('?showEntity='.$entities_id);
     if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if (($entity['publishIn'] & 1) == 1) { $publishArray[] = 'SWAMID-testing'; }

@@ -2,20 +2,21 @@
 class HTML {
   # Setup
   private $displayName = '';
+  private $destination = '';
   private $loggedIn = false;
   private $tableToSort = array();
   private $showDownload = true;
   private $mode = '';
 
   public function __construct($mode='Prod') {
-    $this->displayName = '<a href="admin"><div class="d-flex sa-button" role="button">
+    $this->displayName = '<div class="d-flex sa-button" role="button">
         <div class="sa-button-logo-wrap">
           <img src="https://service.seamlessaccess.org/sa-white.svg" class="sa-button-logo" alt="Seamless Access Logo"/>
         </div>
         <div class="d-flex justify-content-center align-items-center sa-button-text text-truncate">
           <div class="sa-button-text-primary text-truncate">Access through your institution</div>
         </div>
-      </div></a>';
+      </div>';
     $this->mode = $mode;
   }
 
@@ -133,7 +134,7 @@ class HTML {
         <a class="p-2 text-dark" href="https://www.sunet.se/swamid/kontakt/">Contact us</a>
         <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
       </nav>
-      <?=$this->displayName?>
+      <a href="admin/<?=$this->destination?>"><?=$this->displayName?></a>
     </div>
 <?php }
   ###
@@ -205,6 +206,9 @@ class HTML {
   public function setDisplayName($name) {
     $this->displayName = $name;
     $this->loggedIn = true;
+  }
+  public function setDestination($destination) {
+    $this->destination = $destination;
   }
 
   public function addTableSort($tableId) {
