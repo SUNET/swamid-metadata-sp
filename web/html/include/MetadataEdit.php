@@ -1,7 +1,7 @@
 <?php
 class MetadataEdit {
   # Setup
-  private $metaDb = false;
+  private $metaDb;
   private $dbIdNr = 0;
   private $dbOldIdNr = 0;
   private $entityExists = false;
@@ -572,7 +572,7 @@ class MetadataEdit {
       } else {
         $addLink = sprintf(
           '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['type']);
+          $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
         $state = 'danger';
       }?>
         <b><?=$attribute['type']?></b>
@@ -586,7 +586,7 @@ class MetadataEdit {
         } else {
           $addLink = sprintf(
             '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['type']);
+            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
           $state = 'danger';
         }
         if ($oldType != $attribute['type']) {
