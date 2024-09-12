@@ -1,7 +1,7 @@
 <?php
 class Metadata {
   # Setup
-  private $metaDb = false;
+  private $metaDb;
   private $result = '';
   private $warning = '';
   private $error = '';
@@ -2311,13 +2311,15 @@ class Metadata {
       case 'urn:oasis:names:tc:SAML:2.0:bindings:URI' :
       # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-binding-simplesign-cd-02.html
       # 2.1
-      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign':
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign' :
         if (! $saml2) {
           $this->error .= sprintf(
             "saml-bindings-2.0-os: SAML2 Binding in %s[Binding=%s], but SAML2 not supported in %sDescriptor.\n",
             $name, $binding, $type);
         }
         break;
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP-binding' :
+        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>SOAP</b> or urn:oasis:names:tc:SAML:<b>1.0</b>:bindings:SOAP-binding\n", $binding);
       default :
         $this->result .= sprintf("Missing Binding : %s in validator\n", $binding);
     }
@@ -2677,76 +2679,75 @@ class Metadata {
       }
       if ($checkProtocol) {
         $protocolSupportEnumerations = explode(' ',$child->getAttribute('protocolSupportEnumeration'));
-          foreach ($protocolSupportEnumerations as $key => $protocol) {
-            if (
-                ($protocol == self::SAML_PROTOCOL_SAML1 ||
-                 $protocol == self::SAML_PROTOCOL_SAML11 ||
-                 $protocol == '') ||
-                ($protocol == self::SAML_PROTOCOL_SHIB && $checkProtocol == 2)) {
-              unset($protocolSupportEnumerations[$key]);
-              $this->result .= sprintf("Removed %s from %s\n", $protocol, $child->nodeName);
-            }
+        foreach ($protocolSupportEnumerations as $key => $protocol) {
+          if ($protocol == self::SAML_PROTOCOL_SAML1 ||
+                $protocol == self::SAML_PROTOCOL_SAML11 ||
+                $protocol == self::SAML_PROTOCOL_SHIB ||
+                $protocol == '') {
+            unset($protocolSupportEnumerations[$key]);
+            $this->result .= sprintf("Removed %s from %s\n", $protocol, $child->nodeName);
           }
-          if (count($protocolSupportEnumerations)){
-            $child->setAttribute('protocolSupportEnumeration', implode(' ',$protocolSupportEnumerations));
-            $subchild = $child->firstChild;
-            while ($subchild) {
-              switch ($subchild->nodeName) {
-                # 2.4.1
-                case self::SAML_MD_EXTENSIONS :
-                case self::SAML_MD_KEYDESCRIPTOR :
-                # 2.4.2
-                case self::SAML_MD_NAMEIDFORMAT :
-                # 2.4.3
-                case self::SAML_SAMLA_ATTRIBUTE :
-                # 2.4.4
-                case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
-                  $subchild = $subchild->nextSibling;
-                  break;
+        }
+        if (count($protocolSupportEnumerations)){
+          $child->setAttribute('protocolSupportEnumeration', implode(' ',$protocolSupportEnumerations));
+          $subchild = $child->firstChild;
+          while ($subchild) {
+            switch ($subchild->nodeName) {
+              # 2.4.1
+              case self::SAML_MD_EXTENSIONS :
+              case self::SAML_MD_KEYDESCRIPTOR :
+              # 2.4.2
+              case self::SAML_MD_NAMEIDFORMAT :
+              # 2.4.3
+              case self::SAML_SAMLA_ATTRIBUTE :
+              # 2.4.4
+              case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
+                $subchild = $subchild->nextSibling;
+                break;
 
-                # 2.4.2
-                case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
-                case self::SAML_MD_SINGLELOGOUTSERVICE :
-                case self::SAML_MD_MANAGENAMEIDSERVICE :
-                # 2.4.3
-                case self::SAML_MD_SINGLESIGNONSERVICE :
-                case self::SAML_MD_NAMEIDMAPPINGSERVICE :
-                case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
-                # 2.4.4
-                case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
-                # 2.4.7
-                case self::SAML_MD_ATTRIBUTESERVICE :
-                  switch ($subchild->getAttribute('Binding')) {
-                    #https://groups.oasis-open.org/higherlogic/ws/public/download/3405/oasis-sstc-saml-bindings-1.1.pdf
-                    # 3.1.1
-                    case 'urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding' :
-                    #4.1.1 Browser/Artifact Profile of SAML1
-                    case 'urn:oasis:names:tc:SAML:1.0:profiles:artifact-01' :
-                    #4.1.2 Browser/POST Profile of SAML1
-                    case 'urn:oasis:names:tc:SAML:1.0:profiles:browser-post' :
-                    # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
-                    # urn:mace:shibboleth:1.0 depends on SAML1
-                    case 'urn:mace:shibboleth:1.0:profiles:AuthnRequest' :
-                      $this->result .= sprintf ('Removing %s[%s] in %s<br>', $subchild->nodeName, $subchild->getAttribute('Binding'), $child->nodeName);
-                      $remChild = $subchild;
-                      $subchild = $subchild->nextSibling;
-                      $child->removeChild($remChild);
-                      break;
-                    default :
-                      $subchild = $subchild->nextSibling;
-                  }
-                  break;
-                default :
-                  $subchild = $subchild->nextSibling;
-              }
+              # 2.4.2
+              case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
+              case self::SAML_MD_SINGLELOGOUTSERVICE :
+              case self::SAML_MD_MANAGENAMEIDSERVICE :
+              # 2.4.3
+              case self::SAML_MD_SINGLESIGNONSERVICE :
+              case self::SAML_MD_NAMEIDMAPPINGSERVICE :
+              case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
+              # 2.4.4
+              case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
+              # 2.4.7
+              case self::SAML_MD_ATTRIBUTESERVICE :
+                switch ($subchild->getAttribute('Binding')) {
+                  #https://groups.oasis-open.org/higherlogic/ws/public/download/3405/oasis-sstc-saml-bindings-1.1.pdf
+                  # 3.1.1
+                  case 'urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding' :
+                  #4.1.1 Browser/Artifact Profile of SAML1
+                  case 'urn:oasis:names:tc:SAML:1.0:profiles:artifact-01' :
+                  #4.1.2 Browser/POST Profile of SAML1
+                  case 'urn:oasis:names:tc:SAML:1.0:profiles:browser-post' :
+                  # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
+                  # urn:mace:shibboleth:1.0 depends on SAML1
+                  case 'urn:mace:shibboleth:1.0:profiles:AuthnRequest' :
+                    $this->result .= sprintf ('Removing %s[%s] in %s<br>', $subchild->nodeName, $subchild->getAttribute('Binding'), $child->nodeName);
+                    $remChild = $subchild;
+                    $subchild = $subchild->nextSibling;
+                    $child->removeChild($remChild);
+                    break;
+                  default :
+                    $subchild = $subchild->nextSibling;
+                }
+                break;
+              default :
+                $subchild = $subchild->nextSibling;
             }
-            $child = $child->nextSibling;
-          } else {
-            $this->result .= sprintf("Removed %s since protocolSupportEnumeration was empty\n", $child->nodeName);
-            $remChild = $child;
-            $child = $child->nextSibling;
-            $entityDescriptor->removeChild($remChild);
           }
+          $child = $child->nextSibling;
+        } else {
+          $this->result .= sprintf("Removed %s since protocolSupportEnumeration was empty\n", $child->nodeName);
+          $remChild = $child;
+          $child = $child->nextSibling;
+          $entityDescriptor->removeChild($remChild);
+        }
       } else {
         $child = $child->nextSibling;
       }
