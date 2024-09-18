@@ -1,7 +1,7 @@
 <?php
 class MetadataDisplay {
   # Setup
-  private $metaDb = false;
+  private $metaDb;
   private $collapseIcons = false;
   private $mode = '';
   # From common.php
@@ -31,6 +31,7 @@ class MetadataDisplay {
   const HTML_SPACER = '      ';
   const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_TABLE_END = "    </table>\n";
+  const HTML_SELECTED = ' selected';
   const HTML_SHOW = ' show';
 
   public function __construct() {
@@ -56,30 +57,25 @@ class MetadataDisplay {
     $entityHandler = $this->metaDb->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
       FROM Entities WHERE `id` = :Id;');
-    $entityHandler->bindParam(self::BIND_ID, $entityId);
     $urlHandler1 = $this->metaDb->prepare('
       SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
-    $urlHandler1->bindParam(self::BIND_ID, $entityId);
     $urlHandler2 = $this->metaDb->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id AND type = 'error')");
-    $urlHandler2->bindParam(self::BIND_ID, $entityId);
     $urlHandler3 = $this->metaDb->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-    $urlHandler3->bindParam(self::BIND_ID, $entityId);
-
     $testResults = $this->metaDb->prepare('SELECT `test`, `result`, `time`
       FROM TestResults WHERE entityID = :EntityID');
     $entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id AND type = :Type;");
     $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
 
-    $entityHandler->execute();
+    $entityHandler->execute(array(self::BIND_ID => $entityId));
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $errors = '';
       $warnings = '';
@@ -185,7 +181,7 @@ class MetadataDisplay {
           }
         }
         // Error URLs
-        $urlHandler2->execute();
+        $urlHandler2->execute(array(self::BIND_ID => $entityId));
         while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
           if ($url['status'] > 0) {
             $errors .= sprintf(self::HTML_SHOW_URL,
@@ -206,7 +202,7 @@ class MetadataDisplay {
       }
 
       // MDUI
-      $urlHandler1->execute();
+      $urlHandler1->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0 || ($coCov1SP  && $url['cocov1Status'] > 0)) {
           $errors .= sprintf(self::HTML_SHOW_URL,
@@ -214,7 +210,7 @@ class MetadataDisplay {
         }
       }
       // OrganizationURL
-      $urlHandler3->execute();
+      $urlHandler3->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0) {
           $errors .= sprintf(self::HTML_SHOW_URL,
@@ -1444,18 +1440,27 @@ class MetadataDisplay {
       $remindersUrgentSelected='false';
       $remindersUrgentShow='';
 
-      if (isset($_GET["tab"]) && $_GET["tab"] == 'reminders') {
-        $remindersActive=self::HTML_ACTIVE;
-        $remindersSelected='true';
-        $remindersShow=self::HTML_SHOW;
-      } elseif (isset($_GET["tab"]) && $_GET["tab"] == 'reminders-urgent') {
-        $remindersUrgentActive=self::HTML_ACTIVE;
-        $remindersUrgentSelected='true';
-        $remindersUrgentShow=self::HTML_SHOW;
+      if (isset($_GET["tab"])) {
+        switch ($_GET["tab"]) {
+          case 'reminders' :
+            $remindersActive = self::HTML_ACTIVE;
+            $remindersSelected ='true';
+            $remindersShow = self::HTML_SHOW;
+            break;
+          case 'reminders-urgent' :
+            $remindersUrgentActive = self::HTML_ACTIVE;
+            $remindersUrgentSelected='true';
+            $remindersUrgentShow = self::HTML_SHOW;
+            break;
+          default :
+            $errorsActive = self::HTML_ACTIVE;
+            $errorsSelected='true';
+            $errorsShow = self::HTML_SHOW;
+          }
       } else {
-        $errorsActive=self::HTML_ACTIVE;
+        $errorsActive = self::HTML_ACTIVE;
         $errorsSelected='true';
-        $errorsShow=self::HTML_SHOW;
+        $errorsShow = self::HTML_SHOW;
       }
 
       printf('    <div class="row">
@@ -1485,14 +1490,12 @@ class MetadataDisplay {
       <div class="tab-pane fade%s%s" id="reminders" role="tabpanel" aria-labelledby="reminders-tab">%s',
         $remindersShow, $remindersActive, "\n");
       $this->showErrorMailReminders();
-      printf('      </div><!-- End tab-pane reminders -->%s',
-        "\n");
-      printf('      <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
+      printf('      </div><!-- End tab-pane reminders -->
+      <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
         $remindersUrgentShow, $remindersUrgentActive, "\n");
       $this->showErrorMailReminders(false);
       printf('      </div><!-- End tab-pane reminders-urgent -->%s    </div><!-- End tab-content -->%s',
         "\n", "\n");
-
     }
   }
   private function showErrorEntitiesList($download) {
@@ -1577,13 +1580,13 @@ class MetadataDisplay {
         printf ('%s,%s,%s,%s%s', $type, $feed, $entity['entityID'], $email, "\n");
       } else {
         printf ('          <tr>
-          <td>%s</td>
-          <td>%s</td>
-          <td>
-            <a href="?showEntity=%d"><span class="text-truncate">%s</span>
-          </td>
-          <td>%s</td>
-          <td>%s</td>%s          </tr>%s',
+            <td>%s</td>
+            <td>%s</td>
+            <td>
+              <a href="?showEntity=%d"><span class="text-truncate">%s</span>
+            </td>
+            <td>%s</td>
+            <td>%s</td>%s          </tr>%s',
           $type, $feed, $entity['id'], $entity['entityID'], $email,
           str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
       }
@@ -2250,74 +2253,7 @@ class MetadataDisplay {
       $labels, $idps, $sps, "\n", "\n");
   }
 
-  public function showEntitiesInfo() {
-    # Default values
-    $scopesActive='';
-    $scopesSelected='false';
-    $scopesShow='';
-    #
-    $organizationsActive='';
-    $organizationsSelected='false';
-    $organizationsShow='';
-
-    if (isset($_GET["tab"]) && $_GET["tab"] == 'organizations') {
-      $organizationsActive=self::HTML_ACTIVE;
-      $organizationsSelected='true';
-      $organizationsShow=self::HTML_SHOW;
-    } else {
-      $scopesActive=self::HTML_ACTIVE;
-      $scopesSelected='true';
-      $scopesShow=self::HTML_SHOW;
-    }
-
-    printf('    <div class="row">
-      <div class="col">
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link%s" id="scope-tab" data-toggle="tab" href="#scopes" role="tab"
-              aria-controls="scopes" aria-selected="%s">Scopes</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link%s" id="organizations-tab" data-toggle="tab" href="#organizations" role="tab"
-              aria-controls="organizations" aria-selected="%s">Organizations</a>
-          </li>
-        </ul>
-      </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade%s%s" id="scopes" role="tabpanel" aria-labelledby="scopes-tab">%s',
-        $scopesActive, $scopesSelected, $organizationsActive, $organizationsSelected, "\n", "\n",
-        $scopesShow, $scopesActive, "\n");
-    $this->showScopeList();
-    printf('      </div><!-- End tab-pane scopes -->
-      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">',
-        $organizationsShow, $organizationsActive);
-    $this->showOrganizationLists();
-    printf('      </div><!-- End tab-pane organizations -->%s    </div><!-- End tab-content -->%s',
-      "\n", "\n");
-  }
-  private function showScopeList() {
-    printf ('        <table id="scope-table" class="table table-striped table-bordered">
-          <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n");
-    $scopeHandler = $this->metaDb->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
-                        FROM `Scopes` ,`Entities`, `Organization`
-                        WHERE `Scopes`.`entity_id` = `Entities`.`id` AND
-                          `publishIn` > 1 AND
-                          `status` = 1 AND
-                          `Organization`.`entity_id` = `Entities`.`id` AND
-                          `Organization`.`lang` = 'sv' AND
-                          `element`= 'OrganizationName'");
-    $scopeHandler->execute();
-    while ($scope = $scopeHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf ('          <tr>
-            <td>%s</td>
-            <td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td>
-            <td>%s</td>
-          </tr>%s',
-        $scope['scope'], $scope['id'], $scope['entityID'], $scope['data'], "\n");
-    }
-    printf ('    %s', self::HTML_TABLE_END);
-  }
-
-  private function showOrganizationLists() {
+  public function showOrganizationLists() {
     $organizationHandler = $this->metaDb->prepare(
       "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
         `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
@@ -2359,27 +2295,27 @@ class MetadataDisplay {
           'OrganizationDisplayName' => $_GET['display'],
           'OrganizationURL' => $_GET['url'],
           'Lang' => $_GET['lang']));
-        printf ('        <h4>Entities</h4>
-        <table id="Entities-table" class="table table-striped table-bordered">
-          <thead><tr>
-            <th>entityID</th>
-            <th>OrganizationName</th>
-            <th>OrganizationDisplayName</th>
-            <th>OrganizationURL</th>
-          </tr></thead>%s',
+        printf ('    <h4>Entities</h4>
+    <table id="Entities-table" class="table table-striped table-bordered">
+      <thead><tr>
+        <th>entityID</th>
+        <th>OrganizationName</th>
+        <th>OrganizationDisplayName</th>
+        <th>OrganizationURL</th>
+      </tr></thead>%s',
         "\n");
         while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-          printf ('          <tr>
-            <td><a href="?showEntity=%d">%s</a></td>
-            <td>%s</td>
-            <td>%s</td>
-            <td>%s</td>
-          </tr>%s',
+          printf ('      <tr>
+        <td><a href="?showEntity=%d">%s</a></td>
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+      </tr>%s',
             $entity['id'], $entity['entityID'],
             $entity['OrganizationName'], $entity['OrganizationDisplayName'],
             $entity['OrganizationURL'], "\n");
         }
-        printf ('    %s', self::HTML_TABLE_END);
+        printf ('%s', self::HTML_TABLE_END);
       }
     } else {
       $showSv = false;
@@ -2387,35 +2323,37 @@ class MetadataDisplay {
     }
 
     $organizationHandler->execute(array('Lang' => 'sv'));
-    $this->showCollapse('Swedish', 'Organizations-sv', false, 1, $showSv);
+    $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
     $this->printOrgList($organizationHandler, 'sv');
-    $this->showCollapseEnd('Organizations-sv', 1);
+    $this->showCollapseEnd('Organizations-sv', 0);
 
     $organizationHandler->execute(array('Lang' => 'en'));
-    $this->showCollapse('English', 'Organizations-en', false, 1, $showEn);
+    $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
     $this->printOrgList($organizationHandler, 'en');
-    $this->showCollapseEnd('Organizations-en', 1);
+    $this->showCollapseEnd('Organizations-en', 0);
 
   }
   private function printOrgList($organizationHandler, $lang){
     printf ('
-                <table id="Organization%s-table" class="table table-striped table-bordered">
-                  <thead><tr>
-                    <th>OrganizationName</th>
-                    <th>OrganizationDisplayName</th>
-                    <th>OrganizationURL</th>
-                    <th>Count</th>
-                  </tr></thead>%s',
+          <table id="Organization%s-table" class="table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th>OrganizationName</th>
+                <th>OrganizationDisplayName</th>
+                <th>OrganizationURL</th>
+                <th>Count</th>
+              </tr>
+            </thead>%s',
       $lang, "\n");
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($organization['OrganizationName'] != '' && $organization['OrganizationDisplayName'] != '' &&
         $organization['OrganizationURL'] != '') {
-        printf ('                  <tr>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td><a href="?action=entitiesInfo&tab=organizations&name=%s&display=%s&url=%s&lang=%s">%d</a></td>
-                  </tr>%s',
+        printf ('            <tr>
+              <td>%s</td>
+              <td>%s</td>
+              <td>%s</td>
+              <td><a href="?action=OrganizationsInfo&name=%s&display=%s&url=%s&lang=%s">%d</a></td>
+            </tr>%s',
           $organization['OrganizationName'], $organization['OrganizationDisplayName'],
           $organization['OrganizationURL'],
           $organization['OrganizationName'], $organization['OrganizationDisplayName'],
@@ -2423,7 +2361,51 @@ class MetadataDisplay {
           $organization['count'], "\n");
       }
     }
-    printf ('            %s', self::HTML_TABLE_END);
+    printf ('      %s', self::HTML_TABLE_END);
+  }
+
+  public function showMembers($userLevel) {
+    # Default values
+    $scopesActive=self::HTML_ACTIVE;
+    $scopesSelected='true';
+    $scopesShow=self::HTML_SHOW;
+
+    printf('    <div class="row">
+      <div class="col">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link%s" id="scope-tab" data-toggle="tab" href="#scopes" role="tab"
+              aria-controls="scopes" aria-selected="%s">Scopes</a>
+          </li>
+        </ul>
+      </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade%s%s" id="scopes" role="tabpanel" aria-labelledby="scopes-tab">',
+        $scopesActive, $scopesSelected, "\n", "\n", $scopesShow, $scopesActive);
+    $this->showScopeList();
+    printf('%s      </div><!-- End tab-pane scopes -->
+    </div><!-- End tab-content -->%s',"\n", "\n");
+  }
+  private function showScopeList() {
+    printf ('        <table id="scope-table" class="table table-striped table-bordered">
+          <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n");
+    $scopeHandler = $this->metaDb->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
+                        FROM `Scopes` ,`Entities`, `Organization`
+                        WHERE `Scopes`.`entity_id` = `Entities`.`id` AND
+                          `publishIn` > 1 AND
+                          `status` = 1 AND
+                          `Organization`.`entity_id` = `Entities`.`id` AND
+                          `Organization`.`lang` = 'sv' AND
+                          `element`= 'OrganizationName'");
+    $scopeHandler->execute();
+    while ($scope = $scopeHandler->fetch(PDO::FETCH_ASSOC)) {
+      printf ('          <tr>
+            <td>%s</td>
+            <td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td>
+            <td>%s</td>
+          </tr>%s',
+        $scope['scope'], $scope['id'], $scope['entityID'], $scope['data'], "\n");
+    }
+    printf ('    %s', self::HTML_TABLE_END);
   }
 
   public function showHelp() {

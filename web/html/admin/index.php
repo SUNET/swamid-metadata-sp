@@ -339,10 +339,16 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'forceAccess' :
           $metadata = new Metadata($entitiesId);
-          $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
+          if ($userLevel > 19) {
+            $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
+          }
           showEntity($entitiesId);
           break;
         default :
+          if ($userLevel > 19) {
+            printf ('Missing action : %s', $_GET['action']);
+            exit;
+          }
       }
     } else {
       switch($_GET['action']) {
@@ -443,14 +449,31 @@ if (isset($_FILES['XMLfile'])) {
           }
           $display->showPendingList();
           break;
-        case 'entitiesInfo' :
-          $menuActive = 'entitiesInfo';
+        case 'OrganizationsInfo' :
+          $menuActive = 'OrganizationsInfo';
           $html->showHeaders(HTML_TITLE . 'Show EntityInfo');
           showMenu();
-          $display->showEntitiesInfo();
-          $html->addTableSort('scope-table');
+          $display->showOrganizationLists();
           $html->addTableSort('Organizationsv-table');
           $html->addTableSort('Organizationen-table');
+          break;
+        case 'Members' :
+          $menuActive = 'Members';
+          $html->showHeaders(HTML_TITLE . 'Show Member Information');
+          showMenu();
+          if (isset($_GET['subAction']) && isset($_GET['id'])) {
+            $imps = new metadata\IMPS();
+            switch ($_GET['subAction']) {
+              case 'editImps' :
+                $imps->editIMPS($_GET['id']);
+                break;
+              default :
+                print "Unkown action";
+            }
+          } else {
+            $display->showMembers($userLevel);
+            $html->addTableSort('scope-table');
+          }
           break;
         default :
           showEntityList();
@@ -1067,14 +1090,16 @@ function showMenu() {
     $filter, $menuActive == 'wait' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=upload%s"><button type="button" class="btn btn%s-primary">Upload new XML</button></a>',
     $filter, $menuActive == 'upload' ? '' : HTML_OUTLINE);
-  printf('<a href=".?action=entitiesInfo%s"><button type="button" class="btn btn%s-primary">Entities Info</button></a>',
-    $filter, $menuActive == 'entitiesInfo' ? '' : HTML_OUTLINE);
+  printf('<a href=".?action=OrganizationsInfo%s"><button type="button" class="btn btn%s-primary">Organizations</button></a>',
+    $filter, $menuActive == 'OrganizationsInfo' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>',
     $filter, $menuActive == 'EntityStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>',
     $filter, $menuActive == 'EcsStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=RAFStatistics%s"><button type="button" class="btn btn%s-primary">RAF statistics</button></a>',
     $filter, $menuActive == 'RAFStatistics' ? '' : HTML_OUTLINE);
+  printf('<a href=".?action=Members%s"><button type="button" class="btn btn%s-primary">Members</button></a>',
+    $filter, $menuActive == 'Members' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>',
     $filter, $menuActive == 'Errors' ? '' : HTML_OUTLINE);
   if ( $userLevel > 4 ) {

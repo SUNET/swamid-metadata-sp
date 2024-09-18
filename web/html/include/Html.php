@@ -128,11 +128,13 @@ class HTML {
         <a href=".">
           <img src="/swamid-logo-2-100x115.png" alt="SWAMID Logo" width="55">
         </a> Metadata <?= $this->mode == 'Prod' ? '' : $this->mode?>
+
       </h3>
       <nav class="my-2 my-md-0 mr-md-3">
         <a class="p-2 text-dark" href="https://www.sunet.se/swamid/">About SWAMID</a>
         <a class="p-2 text-dark" href="https://www.sunet.se/swamid/kontakt/">Contact us</a>
         <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
+
       </nav>
       <a href="admin/<?=$this->destination?>"><?=$this->displayName?></a>
     </div>
