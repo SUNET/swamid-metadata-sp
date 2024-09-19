@@ -192,7 +192,7 @@ function showUsers(){
 function showValidationOutput() {
   global $db;
 
-  $entitiesHandler = $db->prepare('SELECT `id`, `entityID` , `validationOutput` FROM `Entities` WHERE `validationOutput` != ""');
+  $entitiesHandler = $db->prepare('SELECT `id`, `entityID` , `validationOutput` FROM `Entities` WHERE `status` < 4 AND `validationOutput` != ""');
   $entitiesHandler->execute();
   printf ('        <h5>Validation Output</h5>
         <table id="validation-table" class="table table-striped table-bordered">
