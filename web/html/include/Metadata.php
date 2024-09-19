@@ -1274,7 +1274,7 @@ class Metadata {
               $data->getAttribute(self::SAML_ATTRIBUTE_REMD));
           }
         } else {
-          $this->result .= sprintf("ContactPerson->%s->Unknown subcontactType.\n", $data->getAttribute('contactType'));
+          $this->warning .= sprintf("ContactPerson->other is NOT handled as a SecurityContact.\n");
         }
         break;
       default :
