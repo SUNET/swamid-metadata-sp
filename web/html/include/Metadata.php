@@ -539,7 +539,7 @@ class Metadata {
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
       $oldDbNr = $this->dbIdNr;
-      $this->result = "";
+      $this->result = '';
       $this->dbIdNr = $this->metaDb->lastInsertId();
       $this->status = 3;
       $this->copyResponsible($oldDbNr);
@@ -2320,6 +2320,13 @@ class Metadata {
         break;
       case 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP-binding' :
         $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>SOAP</b> or urn:oasis:names:tc:SAML:<b>1.0</b>:bindings:SOAP-binding\n", $binding);
+        break;
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:artifact-01' :
+        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-Artifact</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:artifact-01\n", $binding);
+        break;
+      case 'urn:oasis:names:tc:SAML:2.0:bindings:browser-post' :
+        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-POST</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:browser-post\n", $binding);
+        break;
       default :
         $this->result .= sprintf("Missing Binding : %s in validator\n", $binding);
     }
