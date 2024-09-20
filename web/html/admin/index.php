@@ -330,12 +330,70 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'removeSaml1' :
           $metadata = new Metadata($entitiesId);
-          $metadata->removeSaml1Support();
-          $metadata->clearWarning();
-          $metadata->clearError();
-          $metadata->validateXML();
-          $metadata->validateSAML();
-          showEntity($entitiesId);
+          $metadata->getUserId($EPPN);
+          if ($metadata->isResponsible()) {
+            $metadata->removeSaml1Support();
+            $metadata->clearWarning();
+            $metadata->clearError();
+            $metadata->validateXML();
+            $metadata->validateSAML();
+            $menuActive = 'new';
+            showEntity($entitiesId);
+          } else {
+            # User have no access yet.
+            requestAccess($entitiesId);
+          }
+          break;
+        case 'draftRemoveSaml1' :
+          $metadata = new Metadata($entitiesId);
+          $metadata->getUserId($EPPN);
+          if ($metadata->isResponsible()) {
+            if ($newEntity_id = $metadata->createDraft()) {
+              $metadata->removeSaml1Support();
+              $metadata->clearWarning();
+              $metadata->clearError();
+              $metadata->validateXML();
+              $metadata->validateSAML();
+              $menuActive = 'new';
+              showEntity($newEntity_id);
+            }
+          } else {
+            # User have no access yet.
+            requestAccess($entitiesId);
+          }
+          break;
+        case 'removeObsoleteAlgorithms' :
+          $metadata = new Metadata($entitiesId);
+          $metadata->getUserId($EPPN);
+          if ($metadata->isResponsible()) {
+            $metadata->removeObsoleteAlgorithms();
+            $metadata->clearWarning();
+            $metadata->clearError();
+            $metadata->validateXML();
+            $metadata->validateSAML();
+            showEntity($entitiesId);
+          } else {
+            # User have no access yet.
+            requestAccess($entitiesId);
+          }
+          break;
+        case 'draftRemoveObsoleteAlgorithms' :
+          $metadata = new Metadata($entitiesId);
+          $metadata->getUserId($EPPN);
+          if ($metadata->isResponsible()) {
+            if ($newEntity_id = $metadata->createDraft()) {
+              $metadata->removeObsoleteAlgorithms();
+              $metadata->clearWarning();
+              $metadata->clearError();
+              $metadata->validateXML();
+              $metadata->validateSAML();
+              $menuActive = 'new';
+              showEntity($newEntity_id);
+            }
+          } else {
+            # User have no access yet.
+            requestAccess($entitiesId);
+          }
           break;
         case 'forceAccess' :
           $metadata = new Metadata($entitiesId);
@@ -346,7 +404,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         default :
           if ($userLevel > 19) {
-            printf ('Missing action : %s', $_GET['action']);
+            printf ('Missing action : %s', urlencode($_GET['action']));
             exit;
           }
       }
@@ -714,11 +772,17 @@ function showEntity($entitiesId)  {
           printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
         <button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>',
           "\n", $entitiesId, getErrors($entitiesId) == '' ? 'success' : 'secondary');
-          if ($entity['publishIn'] == 1) {
-            printf('%s          <button type="button" class="btn btn-outline-secondary">Create draft</button>', "\n");
-          } else {
-            printf('%s      <a href=".?action=createDraft&Entity=%d">
-          <button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $entitiesId);
+          printf('%s      <a href=".?action=createDraft&Entity=%d">
+        <button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $entitiesId);
+          if ($entityError['saml1Error']) {
+            printf('%s      <a href=".?action=draftRemoveSaml1&Entity=%d">
+        <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
+              "\n", $entitiesId);
+          }
+          if ($entityError['algorithmError']) {
+            printf('%s      <a href=".?action=draftRemoveObsoleteAlgorithms&Entity=%d">
+        <button type="button" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></a>',
+              "\n", $entitiesId);
           }
           printf('%s      <a href=".?action=Request+removal&Entity=%d">
         <button type="button" class="btn btn-outline-danger">Request removal</button></a>', "\n", $entitiesId);
@@ -749,6 +813,11 @@ function showEntity($entitiesId)  {
           if ($entityError['saml1Error']) {
             printf('%s      <a href=".?action=removeSaml1&Entity=%d">
             <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
+              "\n", $entitiesId);
+          }
+          if ($entityError['algorithmError']) {
+            printf('%s      <a href=".?action=removeObsoleteAlgorithms&Entity=%d">
+            <button type="button" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></a>',
               "\n", $entitiesId);
           }
           if ($oldEntitiesId > 0) {

@@ -30,6 +30,9 @@ class Metadata {
   # From common.php
   private $standardAttributes = array();
   private $FriendlyNames = array();
+  private $digestMethods = array();
+  private $signingMethods = array();
+  private $encryptionMethods = array();
 
   const BIND_APPROVEDBY = ':ApprovedBy';
   const BIND_BITS = ':Bits';
@@ -539,6 +542,9 @@ class Metadata {
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
       $oldDbNr = $this->dbIdNr;
+      $this->warning = '';
+      $this->error = '';
+      $this->errorNB = '';
       $this->result = '';
       $this->dbIdNr = $this->metaDb->lastInsertId();
       $this->status = 3;
@@ -579,9 +585,6 @@ class Metadata {
       array(self::BIND_ID => $this->dbIdNr));
     $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->isIdP = false;
-    $this->isSP = false;
-    $this->isAA = false;
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1
     $entityDescriptor = $this->getEntityDescriptor($this->xml);
@@ -590,18 +593,21 @@ class Metadata {
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :
           $this->parseExtensions($child);
+          $this->isIdP = false;
+          $this->isSP = false;
+          $this->isAA = false;
           break;
         case self::SAML_MD_IDPSSODESCRIPTOR :
           $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
-          $this->parseIDPSSODescriptor($child);
           $this->isIdP = true;
+          $this->parseIDPSSODescriptor($child);
           break;
         case self::SAML_MD_SPSSODESCRIPTOR :
           $this->metaDb->prepare('UPDATE Entities SET `isSP` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
-          $this->parseSPSSODescriptor($child);
           $this->isSP = true;
+          $this->parseSPSSODescriptor($child);
           break;
         #case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
         case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
@@ -651,8 +657,13 @@ class Metadata {
           $this->registrationInstant = $child->getAttribute('registrationInstant');
           break;
         case self::SAML_ALG_DIGESTMETHOD :
+          $this->validateDigestMethod($child);
+          break;
         case self::SAML_ALG_SIGNINGMETHOD :
+          $this->validateSigningMethod($child);
+          break;
         case self::SAML_ALG_SIGNATUREMETHOD :
+          # No signed metadata here
           break;
         # Errors
         case self::SAML_IDPDISC_DISCOVERYRESPONSE :
@@ -872,7 +883,13 @@ class Metadata {
             "EntityAttributes found in IDPSSODescriptor/Extensions should be below Extensions at root level.\n";
           break;
         case self::SAML_ALG_DIGESTMETHOD :
+          $this->validateDigestMethod($child);
+          break;
         case self::SAML_ALG_SIGNINGMETHOD :
+          $this->validateSigningMethod($child);
+          break;
+        case self::SAML_ALG_SIGNATUREMETHOD :
+          # No signed metadata here
         case self::SAML_PSC_REQUESTEDPRINCIPALSELECTION :
           break;
         default :
@@ -1419,6 +1436,7 @@ class Metadata {
           $this->parseKeyDescriptorKeyInfo($child, $type, $use, $order);
           break;
         case self::SAML_MD_ENCRYPTIONMETHOD :
+          $this->validateEncryptionMethod($child, $type);
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
@@ -1559,6 +1577,70 @@ class Metadata {
       $child = $child->nextSibling;
     }
     $keyInfoHandler->execute();
+  }
+
+  private function validateDigestMethod($data) {
+    $algorithm = $data->getAttribute('Algorithm') ? $data->getAttribute('Algorithm') : 'Unknown';
+    if (isset($this->digestMethods[$algorithm])) {
+      switch ($this->digestMethods[$algorithm]) {
+        case 'good' :
+          break;
+        case 'discouraged' :
+          $this->warning .= $this->selectError('5.1.29', '6.1.28',
+            sprintf("DigestMethod %s is discouraged in xmldsig-core.", $algorithm));
+          break;
+        case 'obsolete' :
+          $this->error .= $this->selectError('5.1.29', '6.1.28',
+            sprintf("DigestMethod %s is obsolete in xmldsig-core.", $algorithm));
+          break;
+        default :
+          $this->result .= sprintf("Common.php digestMethod[%s] have unknown status (%s).\n", $algorithm, $this->digestMethods[$algorithm]);
+      }
+    } else {
+      $this->result .= sprintf("Missing DigestMethod[%s].\n", $algorithm);
+    }
+  }
+  private function validateSigningMethod($data) {
+    $algorithm = $data->getAttribute('Algorithm') ? $data->getAttribute('Algorithm') : 'Unknown';
+    if (isset($this->signingMethods[$algorithm])) {
+      switch ($this->signingMethods[$algorithm]) {
+        case 'good' :
+          break;
+        case 'discouraged' :
+          $this->warning .= $this->selectError('5.1.29', '6.1.28',
+            sprintf("SigningMethod %s is discouraged in xmldsig-core.", $algorithm));
+          break;
+        case 'obsolete' :
+          $this->error .= $this->selectError('5.1.29', '6.1.28',
+            sprintf("SigningMethod %s is obsolete in xmldsig-core.", $algorithm));
+          break;
+        default :
+          $this->result .= sprintf("Common.php signingMethods[%s] have unknown status (%s).\n", $algorithm, $this->signingMethods[$algorithm]);
+      }
+    } else {
+      $this->result .= sprintf("Missing SigningMethod[%s].\n", $algorithm);
+    }
+  }
+  private function validateEncryptionMethod($data, $type) {
+    $algorithm = $data->getAttribute('Algorithm') ? $data->getAttribute('Algorithm') : 'Unknown';
+    if (isset($this->encryptionMethods[$algorithm])) {
+      switch ($this->encryptionMethods[$algorithm]) {
+        case 'good' :
+          break;
+        case 'discouraged' :
+          $this->warning .= $this->selectError('5.1.29', '6.1.28',
+            sprintf("EncryptionMethod %s is discouraged in xmlenc-core.", $algorithm));
+          break;
+        case 'obsolete' :
+          $this->error .= $this->selectError('5.1.29', '6.1.28',
+            sprintf("EncryptionMethod %s is obsolete in xmlenc-core.", $algorithm));
+          break;
+        default :
+          $this->result .= sprintf("Common.php encryptionMethods[%s] have unknown status (%s).\n", $algorithm, $this->encryptionMethods[$algorithm]);
+      }
+    } else {
+      $this->result .= sprintf("Missing EncryptionMethod[%s].\n", $algorithm);
+    }
   }
 
   # Validate SAML-rules
@@ -2758,6 +2840,87 @@ class Metadata {
       } else {
         $child = $child->nextSibling;
       }
+    }
+  }
+
+  # Remove Obsolete Algorithms
+  public function removeObsoleteAlgorithms() {
+    $entityDescriptor = $this->getEntityDescriptor($this->xml);
+    $child = $entityDescriptor->firstChild;
+    while ($child) {
+      switch ($child->nodeName) {
+        case self::SAML_MD_EXTENSIONS :
+          $this->removeObsoleteAlgorithmsExtensions($child);
+          break;
+        case self::SAML_MD_IDPSSODESCRIPTOR :
+        case self::SAML_MD_SPSSODESCRIPTOR :
+        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
+          $this->removeObsoleteAlgorithmsSSODescriptor($child);
+          break;
+        default :
+      }
+      $child = $child->nextSibling;
+    }
+  }
+  private function removeObsoleteAlgorithmsExtensions($data) {
+    $child = $data->firstChild;
+    while ($child) {
+      switch ($child->nodeName) {
+        case self::SAML_ALG_DIGESTMETHOD :
+          $algorithm = $child->getAttribute('Algorithm') ? $child->getAttribute('Algorithm') : 'Unknown';
+          if (isset($this->digestMethods[$algorithm]) && $this->digestMethods[$algorithm] == 'obsolete' ) {
+            $this->result .= sprintf ('Removing %s[%s] in %s<br>', $child->nodeName, $algorithm, $data->nodeName);
+            $remChild = $child;
+            $child = $child->nextSibling;
+            $data->removeChild($remChild);
+          } else {
+            $child = $child->nextSibling;
+          }
+          break;
+        case self::SAML_ALG_SIGNINGMETHOD :
+          $algorithm = $child->getAttribute('Algorithm') ? $child->getAttribute('Algorithm') : 'Unknown';
+          if (isset($this->signingMethods[$algorithm]) && $this->signingMethods[$algorithm] == 'obsolete' ) {
+            $this->result .= sprintf ('Removing %s[%s] in %s<br>', $child->nodeName, $algorithm, $data->nodeName);
+            $remChild = $child;
+            $child = $child->nextSibling;
+            $data->removeChild($remChild);
+          } else {
+            $child = $child->nextSibling;
+          }
+          break;
+        default :
+          $child = $child->nextSibling;
+      }
+    }
+  }
+  private function removeObsoleteAlgorithmsSSODescriptor($data) {
+    $child = $data->firstChild;
+    while ($child) {
+      switch ($child->nodeName) {
+        case self::SAML_MD_EXTENSIONS :
+          $this->removeObsoleteAlgorithmsExtensions($child);
+          break;
+        case self::SAML_MD_KEYDESCRIPTOR :
+          $childKeyDescriptor = $child->firstChild;
+          while ($childKeyDescriptor) {
+            if ($childKeyDescriptor->nodeName == self::SAML_MD_ENCRYPTIONMETHOD) {
+              $algorithm = $childKeyDescriptor->getAttribute('Algorithm') ? $childKeyDescriptor->getAttribute('Algorithm') : 'Unknown';
+              if (isset($this->encryptionMethods[$algorithm]) && $this->encryptionMethods[$algorithm] == 'obsolete' ) {
+                $this->result .= sprintf ('Removing %s[%s] in %s->%s<br>', $childKeyDescriptor->nodeName, $algorithm, $data->nodeName, $child->nodeName);
+                $remChild = $childKeyDescriptor;
+                $childKeyDescriptor = $childKeyDescriptor->nextSibling;
+                $child->removeChild($remChild);
+              } else {
+                $childKeyDescriptor = $childKeyDescriptor->nextSibling;
+              }
+            } else {
+              $childKeyDescriptor = $childKeyDescriptor->nextSibling;
+            }
+          }
+          break;
+        default :
+      }
+      $child = $child->nextSibling;
     }
   }
 

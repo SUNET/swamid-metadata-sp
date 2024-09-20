@@ -53,7 +53,10 @@ class MetadataDisplay {
   # Shows menu row
   ####
   public function showStatusbar($entityId, $admin = false){
-    $entityError = array('saml1Error' => false);
+    $entityError = array(
+      'saml1Error' => false,
+      'algorithmError' => false
+    );
     $entityHandler = $this->metaDb->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
       FROM Entities WHERE `id` = :Id;');
@@ -84,7 +87,8 @@ class MetadataDisplay {
       $entityError['saml1Error'] = strpos(
         $entity['errors'] . $entity['errorsNB'] . $entity['warnings'],
         'claims support for SAML1.');
-      $entityError['saml1Error'] =  strpos($entity['errors'], 'asis-sstc-saml-bindings-1.1: SAML1 Binding in ') ? true : $entityError['saml1Error'];
+      $entityError['saml1Error'] =  strpos($entity['errors'], 'oasis-sstc-saml-bindings-1.1: SAML1 Binding in ') ? true : $entityError['saml1Error'];
+      $entityError['algorithmError'] = strpos($entity['errors'], ' is obsolete in xml');
 
       if ($entity['isIdP']) {
         $ecsTagged = array(self::SAML_EC_ESI => false,
