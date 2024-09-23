@@ -1504,15 +1504,9 @@ class MetadataDisplay {
   }
   private function showErrorEntitiesList($download) {
     $emails = array();
-    if (isset($_GET['showTesting'])) {
-      $entityHandler = $this->metaDb->prepare(
-        "SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB`
-        FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
-    } else {
-      $entityHandler = $this->metaDb->prepare(
-        "SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB`
-        FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 AND publishIn > 1 ORDER BY entityID");
-    }
+    $entityHandler = $this->metaDb->prepare(
+      "SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB`
+      FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
     $entityHandler->execute();
     $contactPersonHandler = $this->metaDb->prepare(
       'SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
@@ -1527,9 +1521,6 @@ class MetadataDisplay {
         <a href=".?action=ErrorListDownload">
           <button type="button" class="btn btn-primary">Download CSV</button>
         </a>
-        <a href=".?action=ErrorList&%s">
-          <button type="button" class="btn btn-primary">%s testing</button>
-        </a>
         <br>
         <table id="error-table" class="table table-striped table-bordered">
           <thead>
@@ -1541,8 +1532,7 @@ class MetadataDisplay {
               <th>Error</th>
             </tr>
           </thead>%s',
-        isset($_GET['showTesting']) ? 'hideTesting' : 'showTesting',
-        isset($_GET['showTesting']) ? 'Hide' : 'Include', "\n");
+        "\n");
     }
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactPersonHandler->bindValue(self::BIND_ID, $entity['id']);
@@ -2453,7 +2443,7 @@ class MetadataDisplay {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+              SWAMID and eduGAIN or SWAMID Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
               Forward this to SWAMID operations as described in the e-mail.</li>
@@ -2482,7 +2472,7 @@ class MetadataDisplay {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+              SWAMID and eduGAIN or SWAMID Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
               Forward this to SWAMID operations as described in the e-mail.</li>
@@ -2509,7 +2499,7 @@ class MetadataDisplay {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN, SWAMID Only or SWAMID test federation.</li>
+              SWAMID and eduGAIN or SWAMID Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
               Forward this to SWAMID operations as described in the e-mail.</li>

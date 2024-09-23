@@ -165,7 +165,6 @@ function showEntity($entity_id, $urn = false)  {
     $html->setDestination('?showEntity='.$entities_id);
     if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
-    if (($entity['publishIn'] & 1) == 1) { $publishArray[] = 'SWAMID-testing'; }
     if ($entity['status'] > 1 && $entity['status'] < 6) {
       if ($entity['publishedId'] > 0) {
         $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
@@ -185,7 +184,6 @@ function showEntity($entity_id, $urn = false)  {
         $oldEntity_id = $entityOld['id'];
         if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
         if (($entityOld['publishIn'] & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
-        if (($entityOld['publishIn'] & 1) == 1) { $publishArrayOld[] = 'SWAMID-testing'; }
       } else {
         $oldEntity_id = 0;
       }
@@ -265,7 +263,6 @@ function showList($entities, $show) {
 
   $countSWAMID = 0;
   $counteduGAIN = 0;
-  $countTesting = 0;
   $countECanon = 0;
   $countECpseuso = 0;
   $countECpers = 0;
@@ -308,7 +305,6 @@ function showList($entities, $show) {
     } else {
       $displayName = '';
     }
-    $prodFeed = ($row['publishIn'] > 1) ? true : false;
     $entityAttributesHandler->bindValue(':Id', $row['id']);
     $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -316,68 +312,36 @@ function showList($entities, $show) {
         case 'entity-category' :
           switch ($attribute['attribute']) {
             case 'https://refeds.org/category/anonymous' :
-              if ($prodFeed) {
-                $countECanon ++;
-                $isAnon = 'X';
-              } else {
-                $isAnon = '(X)';
-              }
+              $countECanon ++;
+              $isAnon = 'X';
               break;
             case 'https://refeds.org/category/code-of-conduct/v2' :
-              if ($prodFeed) {
-                $countECcocov2 ++;
-                $isCocov2 = 'X';
-              } else {
-                $isCocov2 = '(X)';
-              }
+              $countECcocov2 ++;
+              $isCocov2 = 'X';
               break;
             case 'https://refeds.org/category/pseudonymous' :
-              if ($prodFeed) {
-                $countECpseuso ++;
-                $isPseuso = 'X';
-              } else {
-                $isPseuso = '(X)';
-              }
+              $countECpseuso ++;
+              $isPseuso = 'X';
               break;
             case 'https://refeds.org/category/personalized' :
-              if ($prodFeed) {
-                $countECpers ++;
-                $isPers = 'X';
-              } else {
-                $isPers = '(X)';
-              }
+              $countECpers ++;
+              $isPers = 'X';
               break;
             case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
-              if ($prodFeed) {
-                $countECrs ++;
-                $isRS = 'X';
-              } else {
-                $isRS = '(X)';
-              }
+              $countECrs ++;
+              $isRS = 'X';
               break;
             case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
-              if ($prodFeed) {
-                $countECcocov1 ++;
-                $isCocov1 = 'X';
-              } else {
-                $isCocov1 = '(X)';
-              }
+              $countECcocov1 ++;
+              $isCocov1 = 'X';
               break;
             case 'https://myacademicid.org/entity-categories/esi' :
-              if ($prodFeed) {
-                $countECesi ++;
-                $isESI = 'X';
-              } else {
-                $isESI = '(X)';
-              }
+              $countECesi ++;
+              $isESI = 'X';
               break;
             case 'http://refeds.org/category/hide-from-discovery' : # NOSONAR Should be http://
-              if ($prodFeed) {
-                $countHideFromDisc ++;
-                $hasHide = 'X';
-              } else {
-                $hasHide = '(X)';
-              }
+              $countHideFromDisc ++;
+              $hasHide = 'X';
               break;
             default :
           }
@@ -385,25 +349,25 @@ function showList($entities, $show) {
         case 'entity-category-support' :
           switch ($attribute['attribute']) {
             case 'https://refeds.org/category/anonymous' :
-              if ($prodFeed) { $countECSanon ++; }
+              $countECSanon ++;
               break;
             case 'https://refeds.org/category/code-of-conduct/v2' :
-              if ($prodFeed) { $countECScocov2 ++; }
+              $countECScocov2 ++;
               break;
             case 'https://refeds.org/category/personalized' :
-              if ($prodFeed) { $countECSpers ++; }
+              $countECSpers ++;
               break;
             case 'https://refeds.org/category/pseudonymous' :
-              if ($prodFeed) { $countECSpseuso ++; }
+              $countECSpseuso ++;
               break;
             case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
-              if ($prodFeed) { $countECSrs ++; }
+              $countECSrs ++;
               break;
             case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
-              if ($prodFeed) { $countECScocov1 ++; }
+              $countECScocov1 ++;
               break;
             case 'https://myacademicid.org/entity-categories/esi' :
-              if ($prodFeed) { $countECSesi ++; }
+              $countECSesi ++;
               break;
             default :
           }
@@ -411,36 +375,20 @@ function showList($entities, $show) {
         case 'assurance-certification' :
           switch ($attribute['attribute']) {
             case 'http://www.swamid.se/policy/assurance/al1' : # NOSONAR Should be http://
-              if ($prodFeed) {
-                $countAL1 ++;
-                $isAL1 = 'X';
-              } else {
-                $isAL1 = '(X)';
-              }
+              $countAL1 ++;
+              $isAL1 = 'X';
               break;
             case 'http://www.swamid.se/policy/assurance/al2' : # NOSONAR Should be http://
-              if ($prodFeed) {
-                $countAL2 ++;
-                $isAL2 = 'X';
-              } else {
-                $isAL2 = '(X)';
-              }
+              $countAL2 ++;
+              $isAL2 = 'X';
               break;
             case 'http://www.swamid.se/policy/assurance/al3' : # NOSONAR Should be http://
-              if ($prodFeed) {
-                $countAL3 ++;
-                $isAL3 = 'X';
-              } else {
-                $isAL3 = '(X)';
-              }
+              $countAL3 ++;
+              $isAL3 = 'X';
               break;
             case 'https://refeds.org/sirtfi' :
-              if ($prodFeed) {
-                $countSIRTFI ++;
-                $isSIRTFI = 'X';
-              } else {
-                $isSIRTFI = '(X)';
-              }
+              $countSIRTFI ++;
+              $isSIRTFI = 'X';
               break;
             default :
           }
@@ -448,10 +396,6 @@ function showList($entities, $show) {
       }
     }
     switch ($row['publishIn']) {
-      case 1 :
-        $countTesting ++;
-        $registeredIn = 'Test-only';
-        break;
       case 3 :
         $countSWAMID ++;
         $registeredIn = 'SWAMID';
@@ -505,15 +449,14 @@ function showList($entities, $show) {
     <table class="table table-striped table-bordered">
       <caption>Table of Entities statistics</caption>
       <tr>
-        <th id="" rowspan="3">&nbsp;Registered in</th>
+        <th id="" rowspan="2">&nbsp;Registered in</th>
         <th id="">SWAMID-Production</th><td><?=$countSWAMID?></td>
       </tr>
-      <tr><th id="">eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr>
-      <tr><th id="">SWAMID-Test only</th><td><?=$countTesting?></td></tr><?php
+      <tr><th id="">eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr><?php
   if ($show == 'All' || $show == 'SP') { ?>
 
       <tr>
-        <th id="ECS in production" rowspan="8">Entity Categories in production<br><i>Excluding testing only (X)</i></th>
+        <th id="ECS in production" rowspan="8">Entity Categories in production</th>
         <th id="Anonymous">Anonymous</th><td><?=$countECanon?></td>
       </tr>
       <tr><th id="Pseudonymous">Pseudonymous</th><td><?=$countECpseuso?></td></tr>
@@ -526,13 +469,13 @@ function showList($entities, $show) {
   } else {
     printf('
       <tr>
-        <th id="ECS in production">Entity Categories in production<br><i>Excluding testing only (X)</i></th>
+        <th id="ECS in production">Entity Categories in production</th>
         <th id="HideFromDisco">DS-hide </th><td>%d</td>
       </tr>%s', $countHideFromDisc, "\n");
   }
   if ($show == 'All' || $show == 'IdP') { ?>
       <tr>
-        <th id="ECS in production" rowspan="7">Support Categorys in production<br><i>Excluding testing only (X)</i></th>
+        <th id="ECS in production" rowspan="7">Support Categorys in production</th>
         <th id="Anonymous">Anonymous</th><td><?=$countECSanon?></td>
       </tr>
       <tr><th id="Pseudonymous">Pseudonymous</th><td><?=$countECSpseuso?></td></tr>
@@ -542,7 +485,7 @@ function showList($entities, $show) {
       <tr><th id="r and s">R&S</th><td><?=$countECSrs?></td></tr>
       <tr><th id="esi">ESI</th><td><?=$countECSesi?></td></tr>
       <tr>
-        <th id="al" rowspan="4">Assurance profiles in production<br><i>Excluding testing only (X)</i></th>
+        <th id="al" rowspan="4">Assurance profiles in production</th>
         <th id="al1">AL1</th><td><?=$countAL1?></td>
       </tr>
       <tr><th id="al2">AL2 </th><td><?=$countAL2?></td></tr>
@@ -551,7 +494,7 @@ function showList($entities, $show) {
   } else {
     printf('
       <tr>
-        <th>Assurance profiles in production<br><i>Excluding testing only (X)</i></th><th>SIRTFI </th><td>%d</td>
+        <th>Assurance profiles in production</th><th>SIRTFI </th><td>%d</td>
       </tr>', $countSIRTFI);
   }?>
 
@@ -604,9 +547,6 @@ function showFeed($id) {
   $entity->execute();
   if ($row = $entity->fetch(PDO::FETCH_ASSOC)) {
     switch($row['publishIn']) {
-      case 1 :
-        print "swamid-testing\n";
-        break;
       case 3 :
         print "swamid-2.0\n";
         break;

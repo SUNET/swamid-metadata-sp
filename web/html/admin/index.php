@@ -658,7 +658,6 @@ function showEntityList($status = 1) {
       <tr>
         <th>IdP</th>
         <th>SP</th>
-        <th>Registered in</th>
         <th><a href="?%s&%s">eduGAIN%s</a></th>
         <th>
           <form>
@@ -697,7 +696,6 @@ function showEntity($entitiesId)  {
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
-    if (($entity['publishIn'] & 1) == 1) { $publishArray[] = 'SWAMID-testing'; }
     if ($entity['status'] > 1 && $entity['status'] < 7) {
       if ($entity['publishedId'] > 0) {
         $entityHandlerOld = $db->prepare(
@@ -715,7 +713,6 @@ function showEntity($entitiesId)  {
         $oldEntitiesId = $entityOld['id'];
         if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
         if (($entityOld['publishIn'] & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
-        if (($entityOld['publishIn'] & 1) == 1) { $publishArrayOld[] = 'SWAMID-testing'; }
       } else {
         $oldEntitiesId = 0;
       }
@@ -896,7 +893,7 @@ function showEntity($entitiesId)  {
 # Shows a list of entitys
 ####
 function showList($entities, $minLevel) {
-  global $db, $EPPN, $userLevel;
+  global $EPPN, $userLevel;
 
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
@@ -913,33 +910,25 @@ function showList($entities, $minLevel) {
         <td></td>';
 
       switch ($row['publishIn']) {
-        case 1 :
-          $registerdIn = 'Test-only';
-          $export2Edugain = '';
-          break;
         case 3 :
-          $registerdIn = 'SWAMID';
           $export2Edugain = '';
           break;
         case 7 :
-          $registerdIn = 'SWAMID';
           $export2Edugain = 'X';
           break;
         default :
-          $registerdIn = '';
           $export2Edugain = '';
       }
       $validationStatus = ($row['warnings'] == '') ? '' : '<i class="fas fa-exclamation-triangle"></i>';
       $validationStatus .= ($row['errors'] == '' && $row['errorsNB'] == '') ? '' : '<i class="fas fa-exclamation"></i>';
       printf ('
         <td class="text-center">%s</td>
-        <td class="text-center">%s</td>
         <td><a href="?showEntity=%s">%s</a></td>
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>',
-        $registerdIn, $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationName'],
+        $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationName'],
         $row['lastUpdated'], $row['lastValidated'], $validationStatus);
       print "\n      </tr>\n";
     }
@@ -966,18 +955,11 @@ function showMyEntities() {
           <button type="button" class="btn btn%s-success">Show Published</button>
         </a>%s',
       isset($_GET['showPub']) ? '' : HTML_OUTLINE, "\n");
-    printf ('        <a href=".?action=myEntities&showPubTest">
-          <button type="button" class="btn btn%s-success">Show Published in test</button>
-        </a>%s',
-      isset($_GET['showPubTest']) ? '' : HTML_OUTLINE, "\n");
     printf ('      </div>%s    </div>%s', "\n", "\n");
     }
   if (isset($_GET['showPub']) && $userLevel > 9) {
     $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Entities WHERE `status` = 1 AND publishIn > 1 ORDER BY `entityID`");
-  } elseif (isset($_GET['showPubTest']) && $userLevel > 9) {
-    $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
-      FROM Entities WHERE `status` = 1 AND publishIn = 1 ORDER BY `entityID`");
   } else {
     $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Users, EntityUser, Entities
@@ -1381,7 +1363,6 @@ function move2Pending($entitiesId) {
           $oldPublishedValue = $publishedMetadata->feedValue();
           if (($oldPublishedValue & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
           if (($oldPublishedValue & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
-          if ($oldPublishedValue == 1) { $publishArrayOld[] = 'SWAMID-testing'; }
           printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArrayOld));
         } else {
           $oldPublishedValue = $draftMetadata->isIdP() ? 7 : 3;
@@ -1396,13 +1377,10 @@ function move2Pending($entitiesId) {
         } else {
           printf('      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
       <label for="SWAMID_eduGAIN">SWAMID and eduGAIN</label><br>
-      <input type="radio" id="SWAMID_Testing" name="publishedIn" value="3"%s>
-      <label for="SWAMID_Testing">SWAMID</label><br>
-      <input type="radio" id="Testing" name="publishedIn" value="1"%s>
-      <label for="Testing">Testing only</label>%s',
+      <input type="radio" id="SWAMID" name="publishedIn" value="3"%s>
+      <label for="SWAMID">SWAMID</label>%s',
           $oldPublishedValue == 7 ? HTML_CHECKED : '',
-          $oldPublishedValue == 3 ? HTML_CHECKED : '',
-          $oldPublishedValue == 1 ? HTML_CHECKED : '', "\n");
+          $oldPublishedValue == 3 ? HTML_CHECKED : '', "\n");
         }
         printf('      <br>
       <h5> Confirmation:</h5>
@@ -1762,7 +1740,6 @@ function requestRemoval($entitiesId) {
         printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $metadata->entityID());
         if (($metadata->feedValue() & 2) == 2) { $publishArray[] = 'SWAMID'; }
         if (($metadata->feedValue() & 4) == 4) { $publishArray[] = 'eduGAIN'; }
-        if ($metadata->feedValue() == 1) { $publishArray[] = 'SWAMID-testing'; }
         printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
         printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $entitiesId, "\n", "\n", "\n", "\n", "\n", "\n" ,$entitiesId);
       }

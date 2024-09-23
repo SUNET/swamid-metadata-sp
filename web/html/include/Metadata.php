@@ -1685,10 +1685,6 @@ class Metadata {
       }
     }
 
-    if ($this->feedValue == 1) {
-      $this->error .= "SWAMID-Testing is deprecated and will be removed after 2024-06-30. It is no longer possible to update this entity.\n";
-    }
-
     // 5.1.1 -> 5.1.5 / 6.1.1 -> 6.1.5
     $this->checkLangElements();
 
@@ -2956,15 +2952,11 @@ class Metadata {
   # Updates which feeds an entity belongs to
   #############
   public function updateFeed($feeds) {
-    #1 = Testing
     #2 = SWAMID
     #3 = eduGAIN
     $publishIn = 0;
     foreach (explode(' ', $feeds) as $feed ) {
       switch (strtolower($feed)) {
-        case 'testing' :
-          $publishIn += 1;
-          break;
         case 'swamid' :
           $publishIn += 2;
           break;
