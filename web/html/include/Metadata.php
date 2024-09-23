@@ -1053,7 +1053,6 @@ class Metadata {
     $serviceHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $serviceHandler->bindParam(self::BIND_INDEX, $index);
     $serviceHandler->bindValue(self::BIND_DEFAULT, $isDefault);
-    $serviceHandler->execute();
     $serviceElementHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
     $serviceElementHandler->bindParam(self::BIND_LANG, $lang);
@@ -1066,6 +1065,14 @@ class Metadata {
 
     $serviceNameFound = false;
     $requestedAttributeFound = false;
+
+    try {
+      $serviceHandler->execute();
+    } catch(PDOException $e) {
+      $this->error .= sprintf(
+        "SPSSODescriptor->AttributeConsumingService[index=%d] is not Uniq!\n",
+        $index);
+    }
 
     $child = $data->firstChild;
     while ($child) {
