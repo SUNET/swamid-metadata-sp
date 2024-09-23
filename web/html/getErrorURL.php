@@ -1,5 +1,6 @@
 <?php
 # Updated via puppet/cosmos to metadata.swamid.se
+# Used by error.swamid.se to produce helpdesks.php
 require_once __DIR__ . '/config.php';
 
 try {
@@ -12,7 +13,7 @@ try {
 
 print "<?php\n\n\$helpdesks = array(\n";
 
-$entityHandler = $db->prepare("SELECT `id`, `entityID`, `publishIn` FROM Entities WHERE `status` = 1 AND isIdP = 1 ORDER BY `entityID` ASC");
+$entityHandler = $db->prepare("SELECT `id`, `entityID` FROM Entities WHERE `status` = 1 AND isIdP = 1 ORDER BY `entityID` ASC");
 $displayHandler = $db->prepare("SELECT `lang`, `data` FROM Mdui WHERE `type` = 'IDPSSO' AND `element`= 'DisplayName' AND `entity_id`= :Id ORDER BY `lang` DESC");
 $contactHandler = $db->prepare("SELECT `emailAddress` FROM ContactPerson WHERE `contactType` = 'support' AND `entity_id`= :Id");
 $errorUrlHandler = $db->prepare("SELECT `URL` FROM EntityURLs WHERE `type` = 'error' AND `entity_id`= :Id");
@@ -22,7 +23,7 @@ $errorUrlHandler->bindParam(':Id', $Entity_id);
 $entityHandler->execute();
 while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
   $Entity_id = $entity['id'];
-  printf("  '%s' => array(\n    'feed' => '%s',\n    'displayname' => array(\n", $entity['entityID'], $entity['publishIn'] == 1 ? 'Testing'  : 'SWAMID');
+  printf("  '%s' => array(\n    'feed' => 'SWAMID',\n    'displayname' => array(\n", $entity['entityID']);
   $displayHandler->execute();
   while ($displayName = $displayHandler->fetch(PDO::FETCH_ASSOC)) {
     printf ("      '%s' => '%s',\n", $displayName['lang'], addslashes($displayName['data']));
