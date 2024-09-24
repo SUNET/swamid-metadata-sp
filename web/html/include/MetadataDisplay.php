@@ -87,7 +87,7 @@ class MetadataDisplay {
       $entityError['saml1Error'] = strpos(
         $entity['errors'] . $entity['errorsNB'] . $entity['warnings'],
         'claims support for SAML1.');
-      $entityError['saml1Error'] =  strpos($entity['errors'], 'oasis-sstc-saml-bindings-1.1: SAML1 Binding in ') ? true : $entityError['saml1Error'];
+      $entityError['saml1Error'] =  strpos($entity['errors'], 'oasis-sstc-saml-bindings-1.1: SAML1 Binding in ') === false ? $entityError['saml1Error'] : true;
       $entityError['algorithmError'] = strpos($entity['errors'], ' is obsolete in xml');
 
       if ($entity['isIdP']) {
