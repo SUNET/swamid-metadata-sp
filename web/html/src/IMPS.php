@@ -69,7 +69,7 @@ class IMPS {
           <input type="submit">
         </form>
         <a href="./?action=Members&tab=imps&id=%d"><button>Back</button></a>%s', $imps['id'], $imps['OrganizationName'],
-        $name, $maximumAL, $lastUpdated,
+        htmlspecialchars($name), $maximumAL, htmlspecialchars($lastUpdated),
         $sharedIdp ? ' checked' : '', $imps['id'], "\n");
     } else {
       print '        Can\'t find IMPS';
