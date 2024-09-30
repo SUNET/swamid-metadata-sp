@@ -82,6 +82,7 @@ function confirmEntities() {
     }
   }
 
+  $reminder = 0;
   $removeMailRemindersHandler->bindValue(':Type', 1);
   $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
   foreach ($reminders as $reminder => $level) {
@@ -209,6 +210,7 @@ function oldCerts() {
       unset($reminders[$entity['id']]);
     }
   }
+  $reminder = 0;
   $removeMailRemindersHandler->bindValue(':Type', 2);
   $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
   foreach ($reminders as $reminder => $level) {
@@ -283,6 +285,7 @@ function checkOldPending() {
     }
   }
 
+  $reminder = 0;
   $removeMailRemindersHandler->bindValue(':Type', 3);
   $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
   foreach ($reminders as $reminder => $level) {
@@ -340,6 +343,7 @@ function checkOldDraft() {
     }
   }
 
+  $reminder = 0;
   $removeMailRemindersHandler->bindValue(':Type', 3);
   $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
   foreach ($reminders as $reminder => $level) {
@@ -353,10 +357,16 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
 
   setupMail();
 
-  $addresses = getTechnicalAndAdministrativeContacts($id);
   if ($SendOut) {
-    foreach ($addresses as $address) {
-      $mailContacts->addAddress($address);
+  $addresses = getAdmins($id);
+  foreach ($addresses as $address) {
+    $mailContacts->addAddress($address);
+  }
+  if ($months == 12) {
+      $addresses = getTechnicalAndAdministrativeContacts($id);
+      foreach ($addresses as $address) {
+        $mailContacts->addAddress($address);
+      }
     }
   }
 
@@ -402,8 +412,8 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
 
   setupMail();
 
-  $addresses = getTechnicalAndAdministrativeContacts($id);
   if ($SendOut) {
+    $addresses = getTechnicalAndAdministrativeContacts($id);
     foreach ($addresses as $address) {
       $mailContacts->addAddress($address);
     }
@@ -534,6 +544,22 @@ function getLastUpdater($id) {
     return $address['email'];
   }
   return false;
+}
+
+function getAdmins($id) {
+  global $db;
+  $addresses = array();
+
+  $userHandler = $db->prepare("SELECT DISTINCT `email`
+    FROM `EntityUser`, `Users`
+    WHERE `Users`.`id` = `user_id` AND `entity_id` = :ID
+    ORDER BY lastChanged DESC;");
+
+  $userHandler->execute(array('ID' => $id));
+  while ($address = $userHandler->fetch(PDO::FETCH_ASSOC)) {
+    $addresses[] = $address['email'];
+  }
+  return $addresses;
 }
 
 function setupMail() {
