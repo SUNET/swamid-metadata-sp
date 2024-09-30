@@ -2592,7 +2592,8 @@ class MetadataDisplay {
     $impsHandler->execute();
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       $idpHandler->execute(array(self::BIND_ID => $imps['id']));
-      $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $imps['lastValidated'];
+      $lastValidated = substr($imps['lastValidated'], 0 ,10);
+      $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated;
       #showCollapse($title, $name, $haveSub=true, $step=0, $expanded=true, $extra = false, $entityId=0, $oldEntityId=0)
       $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
       $orgName = $imps['OrganizationDisplayNameSv'] == '' ? $imps['OrganizationDisplayNameEn'] : $imps['OrganizationDisplayNameSv'];
@@ -2600,7 +2601,7 @@ class MetadataDisplay {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
       }
-      $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
+      $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
       printf('%s                <ul>
                   <li>Organization  : <a href="?action=Members&tab=organizations&id=%d">%s</a></li>
                   <li>Allowed maximum AL : %d</li>
@@ -2611,7 +2612,7 @@ class MetadataDisplay {
                 <h5>Connected IdP:s</h5>
                 <ul>%s',
         "\n", $imps['orgId'], $orgName, $imps['maximumAL'],
-        $imps['lastUpdated'], $imps['lastValidated'], $validatedBy, "\n");
+        $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
         while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
           printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
         }
