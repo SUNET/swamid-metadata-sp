@@ -72,6 +72,15 @@ class MetadataDisplay {
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+    $impsHandler = $this->metaDb->prepare(
+      'SELECT `IMPS_id`, `lastValidated`,
+        NOW() - INTERVAL 10 MONTH AS `warnDate`,
+        NOW() - INTERVAL 12 MONTH AS `errorDate`,
+        lastValidated + INTERVAL 12 MONTH AS `expireDate`
+      FROM `IdpIMPS`, `IMPS`
+      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND
+        `IdpIMPS`.`entity_id` = :Id
+      ORDER BY `lastValidated`');
     $testResults = $this->metaDb->prepare('SELECT `test`, `result`, `time`
       FROM TestResults WHERE entityID = :EntityID');
     $entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute`
@@ -113,8 +122,7 @@ class MetadataDisplay {
           $ecsTagged[$attribute['attribute']] = true;
         }
 
-        $testResults->bindValue(self::BIND_ENTITYID, $entity['entityID']);
-        $testResults->execute();
+        $testResults->execute(array(self::BIND_ENTITYID => $entity['entityID']));
         while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
           $ecsTested[$testResult['test']] = true;
           switch ($testResult['test']) {
@@ -190,6 +198,21 @@ class MetadataDisplay {
           if ($url['status'] > 0) {
             $errors .= sprintf(self::HTML_SHOW_URL,
               $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+          }
+        }
+
+        if ($this->mode != 'QA') {
+          $impsHandler->execute(array(self::BIND_ID => $entityId));
+          if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($imps['warnDate'] > $imps['lastValidated']) {
+              if ($imps['errorDate'] > $imps['lastValidated']) {
+                $errors .= sprintf('The Member Organisation MUST annually confirm that their Identity Management Practice Statement is still accurate.%s', "\n");
+              } else {
+                $warnings .= sprintf('The Member Organisation MUST annually confirm that their Identity Management Practice Statement is still accurate. This must be done before %s.%s', substr($imps['expireDate'], 0, 10), "\n");
+              }
+            }
+          } else {
+            $errors .= sprintf('IdP is not bound to any IMPS%s', "\n");
           }
         }
       }
@@ -333,6 +356,78 @@ class MetadataDisplay {
         <?=$spacer?></div><!-- end col -->
       <?=$spacer?></div><!-- end row -->
     <?=$spacer?></div><!-- end collapse <?=$name?>--><?php
+  }
+
+  ####
+  # Shows Info about IMPS connected to this entity
+  ####
+  public function showIMPS($entityId, $allowEdit = false) {
+    $impsListHandler = $this->metaDb->prepare(
+      'SELECT `id`, `name`, `maximumAL`
+      FROM `IMPS`');
+    $displayNameHandler = $this->metaDb->prepare(
+      "SELECT `data`
+      FROM `Mdui`
+      WHERE `element` = 'DisplayName'
+        AND  `lang`='sv'
+        AND `entity_id` = :Id");
+    $impsHandler = $this->metaDb->prepare(
+      'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastValidated`, `lastUpdated` , `email`, `fullName`,
+        NOW() - INTERVAL 10 MONTH AS `warnDate`,
+        NOW() - INTERVAL 12 MONTH AS `errorDate`
+      FROM `IdpIMPS`, `IMPS`
+      LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
+      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND `IdpIMPS`.`entity_id` = :Id');
+    $impsHandler->execute(array(self::BIND_ID => $entityId));
+    $this->showCollapse('IMPS', 'IMPS', false, 0, false, false, $entityId, 0);
+    if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+      while ($imps) {
+        $state = $imps['warnDate'] > $imps['lastValidated'] ? 'warning' : 'none';
+        $state = $imps['errorDate'] > $imps['lastValidated'] ? 'danger' : $state;
+
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . " (" . $imps['email'] . ")";
+        printf ('%s          <div class="alert-%s"><b>%s</b><ul>
+            <li>Accepted by Board of Trustees : %s</li>
+            <li>Last validated : %s</li>
+            <li>Last validated by : %s</li>
+          </ul>
+          <a href=".?action=Confirm+IMPS&Entity=%d&ImpsId=%d">
+            <button type="button" class="btn btn-primary">Validate</button>
+          </a></div>',
+          "\n", $state, $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          substr($imps['lastValidated'], 0, 10), $validatedBy, $entityId, $imps['id']);
+        $imps = $impsHandler->fetch(PDO::FETCH_ASSOC);
+      }
+    } else {
+      if ($allowEdit) {
+        $displayNameHandler->execute(array(self::BIND_ID => $entityId));
+        if (! $displayName = $displayNameHandler->fetch(PDO::FETCH_ASSOC)) {
+          $displayName['data'] = 'Unkown';
+        }
+        $impsListHandler->execute();
+        printf ('%s          <div class="alert alert-danger" role="alert">
+            IdP is not bound to any IMPS<br>
+            Bind to :
+            <form>
+              <input type="hidden" name="action" value="AddImps2IdP">
+              <input type="hidden" name="Entity" value="%d">
+              <select name="ImpsId">', "\n", $entityId);
+        while ($imps = $impsListHandler->fetch(PDO::FETCH_ASSOC)){
+          printf ('                <option%s value="%d">%s</option>',
+          $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '', $imps['id'], $imps['name']);
+        }
+        printf ('
+              </select>
+              <input type="submit" value="Bind">
+            </form>
+          </div>');
+      } else {
+        printf ('%s          <div class="alert alert-danger" role="alert">
+            IdP is not bound to any IMPS
+          </div>', "\n");
+      }
+    }
+    $this->showCollapseEnd('IMPS', 0);
   }
 
   ####
@@ -1443,6 +1538,11 @@ class MetadataDisplay {
       $remindersUrgentActive='';
       $remindersUrgentSelected='false';
       $remindersUrgentShow='';
+      #
+      $idPsActive = '';
+      $idPsSelected = 'false';
+      $idPsShow = '';
+      $idPsId = 0;
 
       if (isset($_GET["tab"])) {
         switch ($_GET["tab"]) {
@@ -1455,6 +1555,12 @@ class MetadataDisplay {
             $remindersUrgentActive = self::HTML_ACTIVE;
             $remindersUrgentSelected='true';
             $remindersUrgentShow = self::HTML_SHOW;
+            break;
+          case 'IdPs' :
+            $idPsActive = self::HTML_ACTIVE;
+            $idPsSelected = 'true';
+            $idPsShow = self::HTML_SHOW;
+            $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
             break;
           default :
             $errorsActive = self::HTML_ACTIVE;
@@ -1482,10 +1588,14 @@ class MetadataDisplay {
             <a class="nav-link%s" id="reminders-urgent-tab" data-toggle="tab" href="#reminders-urgent" role="tab"
               aria-controls="reminders-urgent" aria-selected="%s">Reminders - Act on</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="idps-tab" data-toggle="tab" href="#idps" role="tab"
+              aria-controls="idps" aria-selected="%s">IdP:s missing IMPS</a>
+          </li>
         </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="errors" role="tabpanel" aria-labelledby="errors-tab">%s',
-          $errorsActive, $errorsSelected, $remindersActive, $remindersSelected, $remindersUrgentActive, $remindersUrgentSelected, "\n", "\n",
+          $errorsActive, $errorsSelected, $remindersActive, $remindersSelected, $remindersUrgentActive, $remindersUrgentSelected, $idPsActive, $idPsSelected, "\n", "\n",
           $errorsShow, $errorsActive, "\n");
     }
     $this->showErrorEntitiesList($download);
@@ -1498,8 +1608,12 @@ class MetadataDisplay {
       <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
         $remindersUrgentShow, $remindersUrgentActive, "\n");
       $this->showErrorMailReminders(false);
-      printf('      </div><!-- End tab-pane reminders-urgent -->%s    </div><!-- End tab-content -->%s',
-        "\n", "\n");
+      printf('      </div><!-- End tab-pane reminders-urgent -->
+      <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
+        $idPsShow, $idPsActive, "\n");
+      $this->showIdPsMissingIMPS($idPsId);
+      printf('%s      </div><!-- End tab-pane idps -->%s    </div><!-- End tab-content -->%s',
+        "\n", "\n", "\n");
     }
   }
   private function showErrorEntitiesList($download) {
@@ -1684,6 +1798,38 @@ class MetadataDisplay {
       }
     }
     printf ('    %s', self::HTML_TABLE_END);
+  }
+  private function showIdPsMissingIMPS() {
+    $idpHandler = $this->metaDb->prepare(
+      'SELECT `id`, `entityID`, `publishIn`
+      FROM `Entities`
+      WHERE `status` = 1 AND `isIdP` = 1 AND id NOT IN (SELECT `entity_id` FROM `IdpIMPS`)
+      ORDER BY `publishIn` DESC, `entityID`');
+    $impsHandler = $this->metaDb->prepare(
+      'SELECT `IMPS`.`id`,`name`, `maximumAL`
+        FROM `IMPS`
+        WHERE `id` NOT IN (SELECT `IMPS_id` FROM `IdpIMPS`)
+        ORDER BY `name`');
+    $idpHandler->execute();
+    printf('        <div class="row">
+          <div class="col">
+            <h4>IdP:s missing an IMPS</h4>
+            <ul>%s' ,"\n");
+    while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
+      $testing = $idp['publishIn'] == 1 ? ' (Testing)' : '';
+      printf('              <li><a href="?showEntity=%s" target="_blank">%s</a>%s</li>%s', $idp['id'], $idp['entityID'], $testing, "\n");
+    }
+    $impsHandler->execute();
+    printf('            </ul>
+            <h4>IMPS:s missing an IdP</h4>
+            <ul>%s' ,"\n");
+    while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+      printf('              <li><a href="?action=Members&tab=imps&id=%d">%s</a></li>%s', $imps['id'], $imps['name'], "\n");
+
+    }
+    printf('            </ul>
+          </div><!-- end col -->
+        </div><!-- end row -->');
   }
 
   public function showXMLDiff($entityId1, $entityId2) {
@@ -2360,24 +2506,174 @@ class MetadataDisplay {
 
   public function showMembers($userLevel) {
     # Default values
-    $scopesActive=self::HTML_ACTIVE;
-    $scopesSelected='true';
-    $scopesShow=self::HTML_SHOW;
+    $impsActive = '';
+    $impsSelected = 'false';
+    $impsShow = '';
+    $impsId = 0;
+    #
+    $organizationsActive = '';
+    $organizationsSelected = 'false';
+    $organizationsShow = '';
+    $orgId = 0;
+    #
+    $scopesActive='';
+    $scopesSelected='false';
+    $scopesShow='';
+
+    if (isset($_GET["tab"])) {
+      switch ($_GET["tab"]) {
+        case 'organizations' :
+          $organizationsActive = ' active';
+          $organizationsSelected = 'true';
+          $organizationsShow = ' show';
+          $orgId = isset($_GET['id']) ? $_GET['id'] : 0;
+          break;
+        case 'scopes' :
+          $scopesActive=self::HTML_ACTIVE;
+          $scopesSelected='true';
+          $scopesShow=self::HTML_SHOW;
+        default :
+          $impsActive = ' active';
+          $impsSelected = 'true';
+          $impsShow = ' show';
+          $impsId = isset($_GET['id']) ? $_GET['id'] : 0;
+      }
+    } else {
+      $impsActive = ' active';
+      $impsSelected = 'true';
+      $impsShow = ' show';
+    }
 
     printf('    <div class="row">
       <div class="col">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link%s" id="scope-tab" data-toggle="tab" href="#IMPS" role="tab"
+              aria-controls="IMPS" aria-selected="%s">IMPS</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="organizations-tab" data-toggle="tab" href="#organizations" role="tab"
+              aria-controls="organizations" aria-selected="%s">Organizations</a>
+          </li>
           <li class="nav-item">
             <a class="nav-link%s" id="scope-tab" data-toggle="tab" href="#scopes" role="tab"
               aria-controls="scopes" aria-selected="%s">Scopes</a>
           </li>
         </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',
+      $impsActive, $impsSelected, $organizationsActive, $organizationsSelected, $scopesActive, $scopesSelected, "\n", "\n",
+      $impsShow, $impsActive);
+    $this->showIMPSList($impsId, $userLevel);
+    printf('%s      </div><!-- End tab-pane IMPS -->
+      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">',
+        "\n", $organizationsShow, $organizationsActive);
+    $this->showOrganizationInfoLists($orgId, $userLevel);
+    printf('%s      </div><!-- End tab-pane organizations -->
       <div class="tab-pane fade%s%s" id="scopes" role="tabpanel" aria-labelledby="scopes-tab">',
-        $scopesActive, $scopesSelected, "\n", "\n", $scopesShow, $scopesActive);
+        "\n", $scopesShow, $scopesActive);
     $this->showScopeList();
     printf('%s      </div><!-- End tab-pane scopes -->
     </div><!-- End tab-content -->%s',"\n", "\n");
+  }
+  private function showIMPSList($id, $userLevel) {
+    $impsHandler = $this->metaDb->prepare(
+      'SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
+        `OrganizationInfo`.`id` AS orgId, `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`,
+        `email`, `fullName`
+        FROM `OrganizationInfo`, `IMPS`
+        LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
+        WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id` AND `OrganizationInfo`.`notMemberAfter` is NULL
+        ORDER BY `name`');
+    $idpHandler = $this->metaDb->prepare(
+      'SELECT `id`, `entityID`
+      FROM `Entities`, `IdpIMPS`
+      WHERE `id` = `entity_id` AND `IMPS_id` = :Id');
+    $impsHandler->execute();
+    while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+      $idpHandler->execute(array(self::BIND_ID => $imps['id']));
+      $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $imps['lastValidated'];
+      #showCollapse($title, $name, $haveSub=true, $step=0, $expanded=true, $extra = false, $entityId=0, $oldEntityId=0)
+      $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
+      $orgName = $imps['OrganizationDisplayNameSv'] == '' ? $imps['OrganizationDisplayNameEn'] : $imps['OrganizationDisplayNameSv'];
+      if ($userLevel > 10) {
+        printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
+                <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
+      }
+      $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
+      printf('%s                <ul>
+                  <li>Organization  : <a href="?action=Members&tab=organizations&id=%d">%s</a></li>
+                  <li>Allowed maximum AL : %d</li>
+                  <li>Accepted by Board of Trustees : %s</li>
+                  <li>Last validated : %s</li>
+                  <li>Last validated by : %s</li>
+                </ul>
+                <h5>Connected IdP:s</h5>
+                <ul>%s',
+        "\n", $imps['orgId'], $orgName, $imps['maximumAL'],
+        $imps['lastUpdated'], $imps['lastValidated'], $validatedBy, "\n");
+        while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
+          printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
+        }
+        print '                </ul>';
+      $this->showCollapseEnd("imps-" . $imps['id'], 1);
+    }
+  }
+  private function showOrganizationInfoLists($id, $userLevel) {
+    $organizationHandler = $this->metaDb->prepare(
+      'SELECT `OrganizationInfo`.`id` AS orgId,
+          `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
+          `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`,
+          `memberSince`, `notMemberAfter`, COUNT(`IMPS`.`id`) AS count
+        FROM `OrganizationInfo`, `IMPS`
+        WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id`
+        GROUP BY(orgId)
+        ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`');
+    $impsHandler = $this->metaDb->prepare(
+      'SELECT `id`,`name`, `maximumAL`, `lastValidated`
+        FROM `IMPS`
+        WHERE `OrganizationInfo_id` = :Id
+        ORDER BY `name`');
+    $organizationHandler->execute();
+    while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+      $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
+      $name = $organization['OrganizationDisplayNameSv'] == '' ? $organization['OrganizationDisplayNameEn'] : $organization['OrganizationDisplayNameSv'];
+      $name .= "(" . $organization['count'] . ")";
+      $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
+      printf('%s                <ul>
+                  <li>Swedish (sv)
+                    <ul>
+                      <li>Name : %s</li>
+                      <li>DisplayName : %s</li>
+                      <li>URL : %s</li>
+                    </ul>
+                  </li>
+                  <li>English (en)
+                    <ul>
+                      <li>Name : %s</li>
+                      <li>DisplayName : %s</li>
+                      <li>URL : %s</li>
+                    </ul>
+                  </li>
+                  <li>memberSince : %s</li>
+                  <li>IMPS:s
+                    <ul>%s', "\n",
+                $organization['OrganizationNameSv'],
+                $organization['OrganizationDisplayNameSv'],
+                $organization['OrganizationURLSv'],
+                $organization['OrganizationNameEn'],
+                $organization['OrganizationDisplayNameEn'],
+                $organization['OrganizationURLEn'],
+                $organization['memberSince'],
+                  "\n");
+      while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('                      <li><a href="?action=Members&tab=imps&id=%d">%s</a> (AL%d) - %s</li>%s', $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
+      }
+      print '                    </ul>
+                  </li>
+                </ul>';
+      $this->showCollapseEnd("org-" . $organization['orgId'], 1);
+    }
   }
   private function showScopeList() {
     printf ('        <table id="scope-table" class="table table-striped table-bordered">

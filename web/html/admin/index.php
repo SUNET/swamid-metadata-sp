@@ -402,6 +402,37 @@ if (isset($_FILES['XMLfile'])) {
           }
           showEntity($entitiesId);
           break;
+        case 'AddImps2IdP' :
+          if ($userLevel > 19 && isset($_GET['ImpsId'])) {
+            $imps = new metadata\IMPS();
+            $imps->BindIdP2IMPS($entitiesId, $_GET['ImpsId']);
+          }
+          $metadata = new Metadata($entitiesId);
+          showEntity($entitiesId);
+          break;
+        case 'Confirm IMPS' :
+          $metadata = new Metadata($entitiesId);
+          if ($metadata->status() == 1) {
+            $metadata->getUserId($EPPN);
+            if ($metadata->isResponsible()) {
+              $html->showHeaders(HTML_TITLE . $metadata->entityID());
+              $menuActive = 'publ';
+              showMenu();
+              $imps = new metadata\IMPS();
+              if ($imps->validateIMPS($entitiesId, $_GET['ImpsId'], $metadata->getUserId($EPPN))) {
+                showEntity($entitiesId, false);
+              }
+            } else {
+              # User have no access yet.
+              requestAccess($entitiesId);
+            }
+          } else {
+            $html->showHeaders(HTML_TITLE . 'NotFound');
+            $menuActive = 'publ';
+            showMenu();
+            print HTML_TEXT_CFE;
+          }
+          break;
         default :
           if ($userLevel > 19) {
             printf ('Missing action : %s', urlencode($_GET['action']));
@@ -524,6 +555,14 @@ if (isset($_FILES['XMLfile'])) {
             switch ($_GET['subAction']) {
               case 'editImps' :
                 $imps->editIMPS($_GET['id']);
+                break;
+              case 'saveImps' :
+                if ($imps->saveImps($_GET['id'])) {
+                  $display->showMembers($userLevel);
+                  $html->addTableSort('scope-table');
+                } else {
+                  $imps->editIMPS($_GET['id']);
+                }
                 break;
               default :
                 print "Unkown action";
@@ -682,7 +721,7 @@ function showEntityList($status = 1) {
 ####
 # Shows Entity information
 ####
-function showEntity($entitiesId)  {
+function showEntity($entitiesId, $showHeader = true)  {
   global $db, $html, $display, $userLevel, $menuActive, $EPPN, $Mode;
   $entityHandler = $db->prepare(
     'SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
@@ -752,8 +791,10 @@ function showEntity($entitiesId)  {
       $menuActive = 'publ';
       $oldEntitiesId = 0;
     }
-    $html->showHeaders(HTML_TITLE . $entity['entityID']);
-    showMenu();?>
+    if ($showHeader) {
+      $html->showHeaders(HTML_TITLE . $entity['entityID']);
+      showMenu();
+    }?>
     <div class="row">
       <div class="col">
         <h3>entityID = <?=$entity['entityID']?></h3>
@@ -802,24 +843,24 @@ function showEntity($entitiesId)  {
       case 3:
         if (checkAccess($entitiesId, $EPPN, $userLevel, 10, false)) {
           printf('%s      <a href=".?move2Pending=%d">
-          <button type="button" class="btn btn-outline-%s">Request publication</button></a>',
+        <button type="button" class="btn btn-outline-%s">Request publication</button></a>',
             "\n", $entitiesId, getBlockingErrors($entitiesId) == '' ? 'success' : 'danger' );
           printf('%s      <a href=".?removeEntity=%d">
-          <button type="button" class="btn btn-outline-danger">Discard Draft</button></a>',
+        <button type="button" class="btn btn-outline-danger">Discard Draft</button></a>',
             "\n", $entitiesId);
           if ($entityError['saml1Error']) {
             printf('%s      <a href=".?action=removeSaml1&Entity=%d">
-            <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
+        <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
               "\n", $entitiesId);
           }
           if ($entityError['algorithmError']) {
             printf('%s      <a href=".?action=removeObsoleteAlgorithms&Entity=%d">
-            <button type="button" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></a>',
+        <button type="button" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></a>',
               "\n", $entitiesId);
           }
           if ($oldEntitiesId > 0) {
             printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d">
-            <button type="button" class="btn btn-outline-primary">Merge from published</button></a>',
+        <button type="button" class="btn btn-outline-primary">Merge from published</button></a>',
               "\n", $entitiesId, $oldEntitiesId);
           }
           printf ('%s      <form>
@@ -870,6 +911,7 @@ function showEntity($entitiesId)  {
       </div>
     </div>
     <br><?php
+    if ($entity['isIdP'] && $entity['status'] == 1 && $Mode != 'QA') { $display->showIMPS($entitiesId, $userLevel > 19); }
     $display->showEntityAttributes($entitiesId, $oldEntitiesId, $allowEdit);
     $able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
     if ($entity['isIdP'] ) { $display->showIdP($entitiesId, $oldEntitiesId, $allowEdit, $able2beRemoveSSO); }
@@ -1514,7 +1556,7 @@ function annualConfirmation($entitiesId){
 
   } else {
     $html->showHeaders(HTML_TITLE . 'NotFound');
-    $menuActive = 'new';
+    $menuActive = 'myEntities';
     showMenu();
     print HTML_TEXT_CFE;
   }

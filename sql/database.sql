@@ -155,6 +155,31 @@ CREATE TABLE `ExternalEntities` (
   PRIMARY KEY (`entityID`)
 );
 
+CREATE TABLE `IMPS` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `OrganizationInfo_id` int(10) unsigned DEFAULT NULL,
+  `name` text DEFAULT NULL,
+  `maximumAL` tinyint(3) DEFAULT NULL,
+  `lastUpdated` date DEFAULT NULL,
+  `lastValidated` datetime DEFAULT NULL,
+  `user_id` int(10) unsigned DEFAULT NULL,
+  `sharedIdp` tinyint(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `OrganizationInfo_id` (`OrganizationInfo_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `IMPS_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `IMPS_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE `IdpIMPS` (
+  `entity_id` int(10) unsigned NOT NULL,
+  `IMPS_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`entity_id`,`IMPS_id`),
+  KEY `IMPS_id` (`IMPS_id`),
+  CONSTRAINT `IdpIMPS_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `IdpIMPS_ibfk_2` FOREIGN KEY (`IMPS_id`) REFERENCES `IMPS` (`id`) ON DELETE CASCADE
+);
+
 CREATE TABLE `KeyInfo` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `entity_id` int(10) unsigned NOT NULL,
@@ -205,6 +230,19 @@ CREATE TABLE `Organization` (
   CONSTRAINT `Organization_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
+CREATE TABLE `OrganizationInfo` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `OrganizationNameSv` text DEFAULT NULL,
+  `OrganizationDisplayNameSv` text DEFAULT NULL,
+  `OrganizationURLSv` text DEFAULT NULL,
+  `OrganizationNameEn` text DEFAULT NULL,
+  `OrganizationDisplayNameEn` text DEFAULT NULL,
+  `OrganizationURLEn` text DEFAULT NULL,
+  `memberSince` date DEFAULT NULL,
+  `notMemberAfter` date DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
 CREATE TABLE `Scopes` (
   `entity_id` int(10) unsigned NOT NULL,
   `scope` varchar(256) NOT NULL,
@@ -253,27 +291,4 @@ CREATE TABLE `assuranceLog` (
   PRIMARY KEY (`entityID`,`assurance`)
 );
 
-CREATE TABLE `OrganizationInfo` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `OrganizationNameSv` text DEFAULT NULL,
-  `OrganizationDisplayNameSv` text DEFAULT NULL,
-  `OrganizationURLSv` text DEFAULT NULL,
-  `OrganizationNameEn` text DEFAULT NULL,
-  `OrganizationDisplayNameEn` text DEFAULT NULL,
-  `OrganizationURLEn` text DEFAULT NULL,
-  `memberSince` datetime DEFAULT NULL,
-  `notMemberAfter` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`)
-);
 
-CREATE TABLE `IMPS` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `OrganizationInfo_id` int(10) unsigned,
-  `name` text DEFAULT NULL,
-  `maximumALlevel` int,
-  `firstRegistration` datetime DEFAULT NULL,
-  `lastUpdated` datetime DEFAULT NULL,
-  `lastValidated` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `IMPS_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
-);
