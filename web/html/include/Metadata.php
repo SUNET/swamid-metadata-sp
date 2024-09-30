@@ -3050,24 +3050,30 @@ class Metadata {
       }
       # Remove data for this Entity
       $this->metaDb->beginTransaction();
-      $this->metaDb->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
+      $this->metaDb->prepare('DELETE FROM `AccessRequests` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM AttributeConsumingService WHERE `entity_id` = :Id')->execute(
+      $this->metaDb->prepare('DELETE FROM `AttributeConsumingService` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = :Id')->execute(
-        array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute
+      $this->metaDb->prepare('DELETE FROM `AttributeConsumingService_RequestedAttribute`
         WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Organization WHERE `entity_id` = :Id')->execute(
+      $this->metaDb->prepare('DELETE FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM ContactPerson WHERE `entity_id` = :Id')->execute(
+      $this->metaDb->prepare('DELETE FROM `ContactPerson` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM EntityUser WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM Entities WHERE `id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `EntityAttributes` WHERE `entity_id` = :Id')->execute(
+        array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `EntityConfirmation` WHERE `entity_id` = :Id')->execute(
+        array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `EntityURLs` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `EntityUser` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `IdpIMPS` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `KeyInfo` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `MailReminders` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `Mdui` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `Organization` WHERE `entity_id` = :Id')->execute(
+        array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `Scopes` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->metaDb->prepare('DELETE FROM `Entities` WHERE `id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
       $this->metaDb->commit();
     }
   }
