@@ -2418,22 +2418,29 @@ class Metadata {
   }
 
   private function checkNameIDFormat($nameIDFormat) {
+    # https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
     switch ($nameIDFormat) {
+      # SAML1 only (transient in SAML2)
       case 'urn:mace:shibboleth:1.0:nameIdentifier' :
-        # SAML1 only (transient in SAML2)
-      case 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress' :
+      # 8.3.1
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified' :
+      # 8.3.2
+      case 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress' :
+      # 8.3.3
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName' :
+      # 8.3.4
       case 'urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName' :
-      case 'urn:oasis:names:tc:SAML:2.0:nameid-format:entity' :
+      # 8.3.5
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos' :
+      # 8.3.6
+      case 'urn:oasis:names:tc:SAML:2.0:nameid-format:entity' :
+      # 8.3.7
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent' :
-        #Do nothing. This is OK nameIDFormat:s
+      # 8.3.8
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient' :
-        #SAML2 only (1.0:nameIdentifier in SAML1)
         break;
       default :
-        $this->result .= sprintf("Missing NameIDFormat : %s in validator\n", $nameIDFormat);
+        $this->warning .= sprintf("Unknown NameIDFormat : %s. See saml-core-2.0-os below 8.3 for options.\n", $nameIDFormat);
     }
   }
 
