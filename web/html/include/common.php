@@ -430,11 +430,15 @@ $this->encryptionMethods = array(
   # 5.1.1 Table of Algorithms
   # https://www.w3.org/TR/xmlenc-core1/#sec-Table-of-Algorithms
   # Block Encryption
-  'http://www.w3.org/2001/04/xmlenc#tripledes-cbc' => 'discouraged',
-  'http://www.w3.org/2001/04/xmlenc#aes128-cbc' => 'discouraged',
-  'http://www.w3.org/2001/04/xmlenc#aes256-cbc' => 'discouraged',
+  #'http://www.w3.org/2001/04/xmlenc#tripledes-cbc' => 'discouraged',
+  #'http://www.w3.org/2001/04/xmlenc#aes128-cbc' => 'discouraged',
+  #'http://www.w3.org/2001/04/xmlenc#aes256-cbc' => 'discouraged',
+  'http://www.w3.org/2001/04/xmlenc#tripledes-cbc' => 'good',
+  'http://www.w3.org/2001/04/xmlenc#aes128-cbc' => 'good',
+  'http://www.w3.org/2001/04/xmlenc#aes256-cbc' => 'good',
   'http://www.w3.org/2009/xmlenc11#aes128-gcm' => 'good',
-  'http://www.w3.org/2001/04/xmlenc#aes192-cbc' => 'discouraged',
+  #'http://www.w3.org/2001/04/xmlenc#aes192-cbc' => 'discouraged',
+  'http://www.w3.org/2001/04/xmlenc#aes192-cbc' => 'good',
   'http://www.w3.org/2009/xmlenc11#aes192-gcm' => 'good',
   'http://www.w3.org/2009/xmlenc11#aes256-gcm' => 'good',
   # Key Derivation
