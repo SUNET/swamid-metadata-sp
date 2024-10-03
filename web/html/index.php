@@ -79,7 +79,7 @@ function showEntityList($show) {
         WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query
         ORDER BY `entityID` ASC");
       showMenu('IdPs', $query);
-      $extraTH = sprintf('<th>AL1</a></th><th>AL2</a></th><th>AL3</a></th><th>SIRTFI</a></th><th>Hide</th>');
+      $extraTH = sprintf('<th>AL1</th><th>AL2</th><th>AL3</th><th>SIRTFI</th><th>SIRTFI2</th><th>Hide</th>');
       break;
     case 'SP' :
       $html->showHeaders('Metadata SWAMID - SP:s');
@@ -91,7 +91,7 @@ function showEntityList($show) {
         ORDER BY `entityID` ASC");
       showMenu('SPs', $query);
       $extraTH = sprintf(
-        '<th>Anon</th><th>Pseuso</th><th>Pers</th><th>CoCo v1</th><th>CoCo v2</th><th>R&S</th><th>ESI</th><th>SIRTFI</th>');
+        '<th>Anon</th><th>Pseuso</th><th>Pers</th><th>CoCo v1</th><th>CoCo v2</th><th>R&S</th><th>ESI</th><th>SIRTFI</th><th>SIRTFI2</th>');
       break;
     case 'All' :
       $html->showHeaders('Metadata SWAMID - All');
@@ -282,6 +282,7 @@ function showList($entities, $show) {
   $countAL2 = 0;
   $countAL3 = 0;
   $countSIRTFI = 0;
+  $countSIRTFI2 = 0;
 
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
@@ -292,6 +293,7 @@ function showList($entities, $show) {
     $isPseuso = '';
     $isPers = '';
     $isSIRTFI = '';
+    $isSIRTFI2 = '';
     $isCocov1 = '';
     $isCocov2 = '';
     $isRS = '';
@@ -390,16 +392,22 @@ function showList($entities, $show) {
               $countSIRTFI ++;
               $isSIRTFI = 'X';
               break;
+            case 'https://refeds.org/sirtfi2' :
+              $countSIRTFI2 ++;
+              $isSIRTFI2 = 'X';
+              break;
             default :
           }
         default :
       }
     }
     switch ($row['publishIn']) {
+      case 2 :
       case 3 :
         $countSWAMID ++;
         $registeredIn = 'SWAMID';
         break;
+      case 6 :
       case 7 :
         $countSWAMID ++;
         $counteduGAIN ++;
@@ -422,7 +430,8 @@ function showList($entities, $show) {
         <td class="text-center">%s</td>
         <td class="text-center">%s</td>
         <td class="text-center">%s</td>
-        <td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $hasHide);
+        <td class="text-center">%s</td>
+        <td class="text-center">%s</td>', $isAL1, $isAL2, $isAL3, $isSIRTFI, $isSIRTFI2, $hasHide);
         break;
       case 'SP' :
         printf ('
@@ -433,8 +442,9 @@ function showList($entities, $show) {
         <td class="text-center">%s</td>
         <td class="text-center">%s</td>
         <td class="text-center">%s</td>
+        <td class="text-center">%s</td>
         <td class="text-center">%s</td>',
-          $isAnon, $isPseuso, $isPers, $isCocov1, $isCocov2, $isRS, $isESI, $isSIRTFI);
+          $isAnon, $isPseuso, $isPers, $isCocov1, $isCocov2, $isRS, $isESI, $isSIRTFI, $isSIRTFI);
         break;
       case 'All' :
         printf("\n        %s", $row['isIdP'] ? '<td class="text-center">X</td>' : '<td></td>');
@@ -547,9 +557,11 @@ function showFeed($id) {
   $entity->execute();
   if ($row = $entity->fetch(PDO::FETCH_ASSOC)) {
     switch($row['publishIn']) {
+      case 2 :
       case 3 :
         print "swamid-2.0\n";
         break;
+      case 6 :
       case 7 :
         print "swamid-edugain\n";
         break;
