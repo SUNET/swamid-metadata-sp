@@ -952,9 +952,11 @@ function showList($entities, $minLevel) {
         <td></td>';
 
       switch ($row['publishIn']) {
+        case 2 :
         case 3 :
           $export2Edugain = '';
           break;
+        case 6 :
         case 7 :
           $export2Edugain = 'X';
           break;

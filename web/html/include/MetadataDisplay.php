@@ -1675,9 +1675,11 @@ class MetadataDisplay {
         case 1 :
           $feed = 'T';
           break;
+        case 2 :
         case 3 :
           $feed = 'S';
           break;
+        case 6 :
         case 7 :
           $feed = 'E';
           break;
@@ -2323,7 +2325,9 @@ class MetadataDisplay {
       switch ($row['publishIn']) {
         case 1 :
           break;
+        case 2 :
         case 3 :
+        case 6 :
         case 7 :
           $nrOfEntites ++;
           $nrOfIdPs += $row['isIdP'] ? 1 : 0;

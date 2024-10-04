@@ -3607,13 +3607,15 @@ class Metadata {
     $nrOfIdPs = 0;
     $changed = 0;
     $entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `lastUpdated`, `errors`
-      FROM Entities WHERE status = 1 AND publishIn > 2");
+      FROM Entities WHERE status = 1 AND publishIn > 1");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
       switch ($row['publishIn']) {
         case 1 :
           break;
+        case 2 :
         case 3 :
+        case 6 :
         case 7 :
           $nrOfEntities ++;
           if ($row['isIdP']) { $nrOfIdPs ++; }
@@ -3650,7 +3652,9 @@ class Metadata {
       switch ($row['publishIn']) {
         case 1 :
           break;
+        case 2 :
         case 3 :
+        case 6 :
         case 7 :
           $nrOfEntities ++;
           if ($row['isIdP']) { $nrOfIdPs ++; }
