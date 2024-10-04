@@ -495,17 +495,19 @@ function showList($entities, $show) {
       <tr><th id="r and s">R&S</th><td><?=$countECSrs?></td></tr>
       <tr><th id="esi">ESI</th><td><?=$countECSesi?></td></tr>
       <tr>
-        <th id="al" rowspan="4">Assurance profiles in production</th>
+        <th id="al" rowspan="5">Assurance profiles in production</th>
         <th id="al1">AL1</th><td><?=$countAL1?></td>
       </tr>
       <tr><th id="al2">AL2 </th><td><?=$countAL2?></td></tr>
       <tr><th id="al3">AL3 </th><td><?=$countAL3?></td></tr>
-      <tr><th id="sirtfi">SIRTFI </th><td><?=$countSIRTFI?></td></tr><?php
+      <tr><th id="sirtfi">SIRTFI </th><td><?=$countSIRTFI?></td></tr>
+      <tr><th id="sirtfi">SIRTFI2 </th><td><?=$countSIRTFI2?></td></tr><?php
   } else {
     printf('
       <tr>
-        <th>Assurance profiles in production</th><th>SIRTFI </th><td>%d</td>
-      </tr>', $countSIRTFI);
+        <th  id="al" rowspan="2">Assurance profiles in production</th><th>SIRTFI</th><td>%d</td>
+      </tr>
+      <tr><th>SIRTFI2</th><td>%d</td></tr>', $countSIRTFI, $countSIRTFI2);
   }?>
 
     </table>
