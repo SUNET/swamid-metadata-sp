@@ -201,14 +201,14 @@ class MetadataDisplay {
           }
         }
 
-        if ($this->mode != 'QA') {
+        if ($this->mode != 'QA' && $entity['status'] == 1) {
           $impsHandler->execute(array(self::BIND_ID => $entityId));
           if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
             if ($imps['warnDate'] > $imps['lastValidated']) {
               if ($imps['errorDate'] > $imps['lastValidated']) {
-                $errors .= sprintf('The Member Organisation MUST annually confirm that their Identity Management Practice Statement is still accurate.%s', "\n");
+                $errors .= sprintf('The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate.%s', "\n");
               } else {
-                $warnings .= sprintf('The Member Organisation MUST annually confirm that their Identity Management Practice Statement is still accurate. This must be done before %s.%s', substr($imps['expireDate'], 0, 10), "\n");
+                $warnings .= sprintf('The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate. This must be done before %s.%s', substr($imps['expireDate'], 0, 10), "\n");
               }
             }
           } else {
