@@ -517,8 +517,8 @@ class Metadata {
     } else {
       # Add new entity into database
       $entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities
-        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`, `removalRequestedBy`)
-        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW(), 0)');
+        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`)
+        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW())');
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
