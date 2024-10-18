@@ -36,6 +36,9 @@ if (isset($_GET['showEntity'])) {
     case 'Pending' :
       showPendingQueue();
       break;
+    case 'RemoveRequested' :
+      showRemoveQueue();
+      break;
     case 'Info' :
       showInfo();
       break;
@@ -578,6 +581,16 @@ function showFeed($id) {
 function showPendingQueue() {
   global $db;
   $entities = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
+  $entities->execute();
+  while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
+    printf ('%d %s%s',$row['id'], $row['entityID'], "\n");
+  }
+  exit;
+}
+
+function showRemoveQueue() {
+  global $db;
+  $entities = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `removalRequestedBy` > 0 AND `status` = 1');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     printf ('%d %s%s',$row['id'], $row['entityID'], "\n");

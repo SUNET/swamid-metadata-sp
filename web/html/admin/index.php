@@ -1676,8 +1676,11 @@ function requestRemoval($entitiesId) {
           $mailRequester->addAddress($mail);
         }
 
-        $removeHandler = $db->prepare('UPDATE `Entities` SET `removalRequestedBy` = :UserId');
-        $removeHandler->execute(array(':UserId' => $userID));
+        $removeHandler = $db->prepare(
+          'UPDATE `Entities`
+          SET `removalRequestedBy` = :UserIds
+          WHERE `id` = :Entity_ID');
+        $removeHandler->execute(array(':UserId' => $userID, ':Entity_ID' => $entitiesId));
         $addresses = array();
         $contactHandler = $db->prepare(
           "SELECT DISTINCT emailAddress
