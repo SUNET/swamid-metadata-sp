@@ -1661,7 +1661,7 @@ function requestRemoval($entitiesId) {
   global $mailContacts, $mailRequester, $SendOut;
   $metadata = new Metadata($entitiesId);
   if ($metadata->status() == 1) {
-    $metadata->getUserId($EPPN);
+    $userID = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
       # User have access to entity
       $html->showHeaders(HTML_TITLE . $metadata->entityID());
@@ -1676,6 +1676,8 @@ function requestRemoval($entitiesId) {
           $mailRequester->addAddress($mail);
         }
 
+        $removeHandler = $db->prepare('UPDATE `Entities` SET `removalRequestedBy` = :UserId');
+        $removeHandler->execute(array(':UserId' => $userID));
         $addresses = array();
         $contactHandler = $db->prepare(
           "SELECT DISTINCT emailAddress
