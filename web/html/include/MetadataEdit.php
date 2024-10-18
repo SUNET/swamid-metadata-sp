@@ -10,8 +10,8 @@ class MetadataEdit {
   private $oldentityID = false;
   private $isIdP = false;
   private $isSP = false;
-  private $newXml = false;
-  private $oldXml = false;
+  private $newXml;
+  private $oldXml;
   private $orderAttributeRequestingService = array();
   private $orderOrganization = array();
   private $orderContactPerson = array();

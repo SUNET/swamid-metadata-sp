@@ -389,6 +389,7 @@ class Metadata {
             $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
         }
       }
+      $this->checkURLStatus($url['URL'], $verbose);
       $urlUpdateHandler->bindValue(self::BIND_HEIGHT, $height);
       $urlUpdateHandler->bindValue(self::BIND_WIDTH, $width);
       $urlUpdateHandler->bindValue(self::BIND_NOSIZE, $nosize);
@@ -411,7 +412,6 @@ class Metadata {
     $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
     $urlUpdateHandler->bindParam(self::BIND_URL, $url);
     $urlUpdateHandler->execute();
-    $this->checkURLStatus($url, $verbose);
     $this->validateURLs(5, $verbose);
   }
 
@@ -435,7 +435,7 @@ class Metadata {
       $coCoV1 = false;
       $logo = false;
       $entityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status`
-        FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL AND `status`< 4');
+        FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL AND `status` < 4');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $ssoUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
@@ -517,8 +517,8 @@ class Metadata {
     } else {
       # Add new entity into database
       $entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities
-        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`)
-        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW())');
+        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`, `removalRequestedBy`)
+        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW(), 0)');
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());

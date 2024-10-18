@@ -1315,10 +1315,6 @@ class MetadataDisplay {
 
   public function showURLStatus($url = false){
     if($url) {
-      $missing = true;
-      $coCoV1 = false;
-      $logo = false;
-      $urlType = 0;
       $urlHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
         FROM URLs WHERE `URL` = :URL');
       $urlHandler->bindValue(self::BIND_URL, $url);
@@ -1376,14 +1372,12 @@ class MetadataDisplay {
           default :
               break;
         }
-        $urlType = $urlInfo['type'];
       }
       printf ('%s    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Part</th><th></tr>%s', self::HTML_TABLE_END, "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s',
           $entity['entity_id'], $entity['entityID'], 'ErrorURL', "\n");
-        $missing = false;
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         $ecInfo = '';
@@ -1393,19 +1387,16 @@ class MetadataDisplay {
           while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
             if ($attribute['attribute'] == self::SAML_EC_COCOV1) {
               $ecInfo = ' CoCo';
-              $coCoV1 = true;
             }
           }
         }
         switch ($entity['element']) {
           case 'Logo' :
-            $logo = true;
           case 'InformationURL' :
           case 'PrivacyStatementURL' :
             printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
               $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
               substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
-            $missing = false;
             break;
           default :
         }
@@ -1415,26 +1406,9 @@ class MetadataDisplay {
           printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s',
             $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
             $entity['element'], $entity['lang'], "\n");
-          $missing = false;
         }
       }
       print self::HTML_TABLE_END;
-      if ($missing) {
-        $urlHandler = $this->metaDb->prepare('DELETE FROM URLs WHERE `URL` = :URL');
-        $urlHandler->bindValue(self::BIND_URL, $url);
-        $urlHandler->execute();
-        print "Not used anymore, removed";
-      }
-      if ($urlType > 2 && !$coCoV1 ) {
-        if ($logo) {
-          $urlHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 2 WHERE `URL` = :URL');
-        } else {
-          $urlHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 1 WHERE `URL` = :URL');
-        }
-        $urlHandler->bindValue(self::BIND_URL, $url);
-        $urlHandler->execute();
-        print "Not CoCo v1 any more. Removes that flag.";
-      }
     } else {
       $oldType = 0;
       $urlHandler = $this->metaDb->prepare(
