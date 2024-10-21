@@ -98,6 +98,7 @@ class MetadataDisplay {
         'claims support for SAML1.');
       $entityError['saml1Error'] =  strpos($entity['errors'], 'oasis-sstc-saml-bindings-1.1: SAML1 Binding in ') === false ? $entityError['saml1Error'] : true;
       $entityError['algorithmError'] = strpos($entity['errors'], ' is obsolete in xml');
+      $entityError['IMPSError'] = false;
 
       if ($entity['isIdP']) {
         $ecsTagged = array(self::SAML_EC_ESI => false,
@@ -205,6 +206,7 @@ class MetadataDisplay {
           $impsHandler->execute(array(self::BIND_ID => $entityId));
           if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
             if ($imps['warnDate'] > $imps['lastValidated']) {
+              $entityError['IMPSError'] = true;
               if ($imps['errorDate'] > $imps['lastValidated']) {
                 $errors .= sprintf('The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate.%s', "\n");
               } else {
@@ -213,6 +215,7 @@ class MetadataDisplay {
             }
           } else {
             $errors .= sprintf('IdP is not bound to any IMPS%s', "\n");
+            $entityError['IMPSError'] = true;
           }
         }
       }
@@ -361,14 +364,14 @@ class MetadataDisplay {
   ####
   # Shows Info about IMPS connected to this entity
   ####
-  public function showIMPS($entityId, $allowEdit = false) {
+  public function showIMPS($entityId, $allowEdit = false, $expanded = false) {
     $impsListHandler = $this->metaDb->prepare(
       'SELECT `id`, `name`, `maximumAL`
       FROM `IMPS`');
     $displayNameHandler = $this->metaDb->prepare(
       "SELECT `data`
-      FROM `Mdui`
-      WHERE `element` = 'DisplayName'
+      FROM `Organization`
+      WHERE `element` = 'OrganizationName'
         AND  `lang`='sv'
         AND `entity_id` = :Id");
     $impsHandler = $this->metaDb->prepare(
@@ -379,14 +382,15 @@ class MetadataDisplay {
       LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
       WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND `IdpIMPS`.`entity_id` = :Id');
     $impsHandler->execute(array(self::BIND_ID => $entityId));
-    $this->showCollapse('IMPS', 'IMPS', false, 0, false, false, $entityId, 0);
+
+    $this->showCollapse('IMPS', 'IMPS', false, 0, $expanded, false, $entityId, 0);
     if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       while ($imps) {
         $state = $imps['warnDate'] > $imps['lastValidated'] ? 'warning' : 'none';
         $state = $imps['errorDate'] > $imps['lastValidated'] ? 'danger' : $state;
 
         $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . " (" . $imps['email'] . ")";
-        printf ('%s          <div class="alert-%s"><b>%s</b><ul>
+        printf ('%s          <div class="alert-%s"><b><a href="?action=Members&tab=imps&id=%d">%s</a></b><ul>
             <li>Accepted by Board of Trustees : %s</li>
             <li>Last validated : %s</li>
             <li>Last validated by : %s</li>
@@ -394,7 +398,7 @@ class MetadataDisplay {
           <a href=".?action=Confirm+IMPS&Entity=%d&ImpsId=%d">
             <button type="button" class="btn btn-primary">Validate</button>
           </a></div>',
-          "\n", $state, $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          "\n", $state, $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy, $entityId, $imps['id']);
         $imps = $impsHandler->fetch(PDO::FETCH_ASSOC);
       }

@@ -911,7 +911,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       </div>
     </div>
     <br><?php
-    if ($entity['isIdP'] && $entity['status'] == 1 && $Mode != 'QA') { $display->showIMPS($entitiesId, $userLevel > 19); }
+    if ($entity['isIdP'] && $entity['status'] == 1 && $Mode != 'QA') { $display->showIMPS($entitiesId, $userLevel > 19, $entityError['IMPSError']); }
     $display->showEntityAttributes($entitiesId, $oldEntitiesId, $allowEdit);
     $able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
     if ($entity['isIdP'] ) { $display->showIdP($entitiesId, $oldEntitiesId, $allowEdit, $able2beRemoveSSO); }
