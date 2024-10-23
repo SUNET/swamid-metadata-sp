@@ -1678,7 +1678,7 @@ function requestRemoval($entitiesId) {
 
         $removeHandler = $db->prepare(
           'UPDATE `Entities`
-          SET `removalRequestedBy` = :UserIds
+          SET `removalRequestedBy` = :UserId
           WHERE `id` = :Entity_ID');
         $removeHandler->execute(array(':UserId' => $userID, ':Entity_ID' => $entitiesId));
         $addresses = array();
