@@ -136,7 +136,7 @@ class HTML {
         <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
 
       </nav>
-      <a href="admin/<?=$this->destination?>"><?=$this->displayName?></a>
+      <a href="/admin/<?=$this->destination?>"><?=$this->displayName?></a>
     </div>
 <?php }
   ###
