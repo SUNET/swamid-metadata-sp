@@ -2114,9 +2114,9 @@ class MetadataDisplay {
 
     $metaAssuranceHandler->execute();
     $metaAssuranceCount = array(
-      'http://www.swamid.se/policy/assurance/al1' => 0,
-      'http://www.swamid.se/policy/assurance/al2' => 0,
-      'http://www.swamid.se/policy/assurance/al3' => 0);
+      'http://www.swamid.se/policy/assurance/al1' => 0, # NOSONAR Should be http://
+      'http://www.swamid.se/policy/assurance/al2' => 0, # NOSONAR Should be http://
+      'http://www.swamid.se/policy/assurance/al3' => 0); # NOSONAR Should be http://
     while ($metaAssuranceRow = $metaAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       $metaAssuranceCount[$metaAssuranceRow['attribute']] = $metaAssuranceRow['count'];
     }
