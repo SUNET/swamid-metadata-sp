@@ -68,6 +68,7 @@ CREATE TABLE `Entities` (
   `isAA` tinyint(3) unsigned DEFAULT NULL,
   `publishIn` tinyint(3) unsigned DEFAULT NULL,
   `status` tinyint(3) unsigned DEFAULT NULL,
+  `removalRequestedBy` int(10) unsigned DEFAULT 0,
   `lastUpdated` datetime DEFAULT NULL,
   `lastValidated` datetime DEFAULT NULL,
   `validationOutput` text DEFAULT NULL,
