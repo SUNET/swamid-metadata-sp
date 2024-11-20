@@ -358,11 +358,11 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   setupMail();
 
   if ($SendOut) {
-  $addresses = getAdmins($id);
-  foreach ($addresses as $address) {
-    $mailContacts->addAddress($address);
-  }
-  if ($months == 12) {
+    $addresses = getAdmins($id);
+    foreach ($addresses as $address) {
+      $mailContacts->addAddress($address);
+    }
+    if ($months == 12) {
       $addresses = getTechnicalAndAdministrativeContacts($id);
       foreach ($addresses as $address) {
         $mailContacts->addAddress($address);
@@ -552,7 +552,7 @@ function getAdmins($id) {
 
   $userHandler = $db->prepare("SELECT DISTINCT `email`
     FROM `EntityUser`, `Users`
-    WHERE `Users`.`id` = `user_id` AND `entity_id` = :ID
+    WHERE `Users`.`id` = `user_id` AND `entity_id` = :ID AND `email` <> ''
     ORDER BY lastChanged DESC;");
 
   $userHandler->execute(array('ID' => $id));
