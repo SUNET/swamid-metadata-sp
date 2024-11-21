@@ -2,10 +2,13 @@
 
 const HTML_OUTLINE = '-outline';
 
-include_once '../config.php';
+//Load composer's autoloader
+require_once '../vendor/autoload.php';
+
+$config = new metadata\Configuration();
 
 require_once '../include/Html.php';
-$html = new HTML($Mode);
+$html = new HTML($config->getMode());
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];

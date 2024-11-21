@@ -1,7 +1,7 @@
 <?php
 class MetadataDisplay {
   # Setup
-  private $metaDb;
+  private $config;
   private $collapseIcons = false;
   private $mode = '';
   # From common.php
@@ -35,18 +35,16 @@ class MetadataDisplay {
   const HTML_SHOW = ' show';
 
   public function __construct() {
-    require __DIR__  . '/../config.php'; #NOSONAR
+    global $config;
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new metadata\Configuration();
+    }
     require __DIR__ . '/common.php'; #NOSONAR
 
-    try {
-      $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-      // set the PDO error mode to exception
-      $this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch(PDOException $e) {
-      echo "Error: " . $e->getMessage();
-    }
     $this->collapseIcons = array();
-    $this->mode = $Mode;
+    $this->mode = $config->getMode();
   }
 
   ####
@@ -57,22 +55,22 @@ class MetadataDisplay {
       'saml1Error' => false,
       'algorithmError' => false
     );
-    $entityHandler = $this->metaDb->prepare('
+    $entityHandler = $this->config->getDb()->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
       FROM Entities WHERE `id` = :Id;');
-    $urlHandler1 = $this->metaDb->prepare('
+    $urlHandler1 = $this->config->getDb()->prepare('
       SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
-    $urlHandler2 = $this->metaDb->prepare("
+    $urlHandler2 = $this->config->getDb()->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id AND type = 'error')");
-    $urlHandler3 = $this->metaDb->prepare("
+    $urlHandler3 = $this->config->getDb()->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS_id`, `lastValidated`,
         NOW() - INTERVAL 10 MONTH AS `warnDate`,
         NOW() - INTERVAL 12 MONTH AS `errorDate`,
@@ -81,9 +79,9 @@ class MetadataDisplay {
       WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND
         `IdpIMPS`.`entity_id` = :Id
       ORDER BY `lastValidated`');
-    $testResults = $this->metaDb->prepare('SELECT `test`, `result`, `time`
+    $testResults = $this->config->getDb()->prepare('SELECT `test`, `result`, `time`
       FROM TestResults WHERE entityID = :EntityID');
-    $entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute`
+    $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id AND type = :Type;");
     $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
 
@@ -365,16 +363,16 @@ class MetadataDisplay {
   # Shows Info about IMPS connected to this entity
   ####
   public function showIMPS($entityId, $allowEdit = false, $expanded = false) {
-    $impsListHandler = $this->metaDb->prepare(
+    $impsListHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `name`, `maximumAL`
       FROM `IMPS`');
-    $displayNameHandler = $this->metaDb->prepare(
+    $displayNameHandler = $this->config->getDb()->prepare(
       "SELECT `data`
       FROM `Organization`
       WHERE `element` = 'OrganizationName'
         AND  `lang`='sv'
         AND `entity_id` = :Id");
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastValidated`, `lastUpdated` , `email`, `fullName`,
         NOW() - INTERVAL 10 MONTH AS `warnDate`,
         NOW() - INTERVAL 12 MONTH AS `errorDate`
@@ -452,7 +450,7 @@ class MetadataDisplay {
     $this->showCollapseEnd('Attributes', 0);
   }
   private function showEntityAttributesPart($entityId, $otherEntityId, $added) {
-    $entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute`
+    $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
     if ($otherEntityId) {
       $entityAttributesHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -624,7 +622,7 @@ class MetadataDisplay {
   # Shows erroURL
   ####
   private function showErrorURL($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
-    $errorURLHandler = $this->metaDb->prepare("SELECT DISTINCT `URL`
+    $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
       FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
     if ($otherEntityId) {
       $errorURLHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -669,7 +667,7 @@ class MetadataDisplay {
   # Shows showScopes
   ####
   private function showScopes($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
-    $scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
     if ($otherEntityId) {
       $scopesHandler->bindParam(self::BIND_ID, $otherEntityId);
       $scopesHandler->execute();
@@ -702,13 +700,13 @@ class MetadataDisplay {
   # Shows mdui:UIInfo for IdP or SP
   ####
   private function showMDUI($entityId, $type, $otherEntityId = 0, $added = false) {
-    $mduiHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `height`, `width`, `data`
+    $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data`
       FROM Mdui WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `lang`, `element`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $otherMDUIElements = array();
     $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
     $mduiHandler->execute();
-    $urlHandler = $this->metaDb->prepare('SELECT `nosize`, `height`, `width` FROM URLs WHERE `URL` = :URL');
+    $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width` FROM URLs WHERE `URL` = :URL');
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
       $size = $mdui['height'].'x'.$mdui['width'];
@@ -807,7 +805,7 @@ class MetadataDisplay {
   # Shows mdui:DiscoHints for IdP
   ####
   private function showDiscoHints($entityId, $otherEntityId=0, $added = false) {
-    $mduiHandler = $this->metaDb->prepare("SELECT `element`, `data`
+    $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data`
       FROM Mdui WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $otherMDUIElements = array();
     $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -853,7 +851,7 @@ class MetadataDisplay {
   # Shows KeyInfo for IdP or SP
   ####
   private function showKeyInfo($entityId, $type, $otherEntityId=0, $added = false) {
-    $keyInfoStatusHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter`
+    $keyInfoStatusHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`
       FROM KeyInfo WHERE entity_id = :Id AND type = :Type');
     $keyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
     $keyInfoStatusHandler->bindParam(self::BIND_ID, $entityId);
@@ -884,7 +882,7 @@ class MetadataDisplay {
       }
     }
 
-    $keyInfoHandler = $this->metaDb->prepare('
+    $keyInfoHandler = $this->config->getDb()->prepare('
       SELECT `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber`
         FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `order`;');
     $keyInfoHandler->bindParam(self::BIND_TYPE, $type);
@@ -961,15 +959,15 @@ class MetadataDisplay {
   # Shows AttributeConsumingService for a SP
   ####
   private function showAttributeConsumingService($entityId, $otherEntityId=0, $added = false) {
-    $serviceIndexHandler = $this->metaDb->prepare('SELECT `Service_index`
+    $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index`
       FROM AttributeConsumingService WHERE `entity_id` = :Id;');
-    $serviceElementHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `data`
+    $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM AttributeConsumingService_Service
       WHERE `entity_id` = :Id AND `Service_index` = :Index
       ORDER BY `element` DESC, `lang`;');
 
     $serviceElementHandler->bindParam(self::BIND_INDEX, $serviceIndex);
-    $requestedAttributeHandler = $this->metaDb->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
+    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
       FROM AttributeConsumingService_RequestedAttribute
       WHERE `entity_id` = :Id AND `Service_index` = :Index
       ORDER BY `isRequired` DESC, `FriendlyName`;');
@@ -1077,7 +1075,7 @@ class MetadataDisplay {
     $this->showCollapseEnd('Organization', 0);
   }
   private function showOrganizationPart($entityId, $otherEntityId, $added) {
-    $organizationHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `data`
+    $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM Organization WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     if ($otherEntityId) {
       $organizationHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -1132,7 +1130,7 @@ class MetadataDisplay {
     $this->showCollapseEnd('ContactPersons', 0);
   }
   private function showContactsPart($entityId, $otherEntityId, $added) {
-    $contactPersonHandler = $this->metaDb->prepare('SELECT *
+    $contactPersonHandler = $this->config->getDb()->prepare('SELECT *
       FROM ContactPerson WHERE `entity_id` = :Id ORDER BY `contactType`;');
     if ($otherEntityId) {
       $contactPersonHandler->bindParam(self::BIND_ID, $otherEntityId);
@@ -1257,9 +1255,9 @@ class MetadataDisplay {
   ####
   # Shows XML for entiry
   ####
-  public function showMdqUrl($entityID, $Mode) {
+  public function showMdqUrl($entityID, $mode) {
     $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, 0, 0);
-    $url = sprintf('https://mds.swamid.se/%sentities/%s', $Mode == 'QA' ? 'qa/' : '', urlencode($entityID));
+    $url = sprintf('https://mds.swamid.se/%sentities/%s', $mode == 'QA' ? 'qa/' : '', urlencode($entityID));
     printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
       $url, $url, "\n");
     $this->showCollapseEnd('MDQ', 0);
@@ -1280,8 +1278,8 @@ class MetadataDisplay {
 
   public function showRawXML($entityId, $urn = false) {
     $entityHandler = $urn
-      ? $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND `status` = 1;')
-      : $this->metaDb->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
+      ? $this->config->getDb()->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND `status` = 1;')
+      : $this->config->getDb()->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $entityId);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1304,7 +1302,7 @@ class MetadataDisplay {
 
   public function showEditors($entityId){
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
-    $usersHandler = $this->metaDb->prepare('SELECT `userID`, `email`, `fullName`
+    $usersHandler = $this->config->getDb()->prepare('SELECT `userID`, `email`, `fullName`
       FROM EntityUser, Users WHERE `entity_id` = :Id AND id = user_id ORDER BY `userID`;');
     $usersHandler->bindParam(self::BIND_ID, $entityId);
     $usersHandler->execute();
@@ -1319,23 +1317,23 @@ class MetadataDisplay {
 
   public function showURLStatus($url = false){
     if($url) {
-      $urlHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
+      $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
         FROM URLs WHERE `URL` = :URL');
       $urlHandler->bindValue(self::BIND_URL, $url);
       $urlHandler->execute();
-      $entityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status`
+      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
         FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
-      $ssoUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
+      $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
         FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
-      $organizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
+      $organizationHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
         FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
       $organizationHandler->bindValue(self::BIND_URL, $url);
       $organizationHandler->execute();
-      $entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute`
+      $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
         FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category'");
 
       printf ('    <table class="table table-striped table-bordered">%s', "\n");
@@ -1415,7 +1413,7 @@ class MetadataDisplay {
       print self::HTML_TABLE_END;
     } else {
       $oldType = 0;
-      $urlHandler = $this->metaDb->prepare(
+      $urlHandler = $this->config->getDb()->prepare(
         'SELECT `URL`, `type`, `status`, `cocov1Status`, `lastValidated`, `lastSeen`, `validationOutput`
         FROM URLs WHERE `status` > 0 OR `cocov1Status` > 0 ORDER BY type DESC, `URL`;');
       $urlHandler->execute();
@@ -1449,7 +1447,7 @@ class MetadataDisplay {
 
       $warnTime = date('Y-m-d H:i', time() - 25200 ); // (7 * 60 * 60 =  7 hours)
       $warnTimeweek = date('Y-m-d H:i', time() - 608400 ); // (7 * 24 * 60 * 60 + 3600 =  7 days 1 hour)
-      $urlWaitHandler = $this->metaDb->prepare(
+      $urlWaitHandler = $this->config->getDb()->prepare(
         "SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen`, `status`
         FROM URLs
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
@@ -1596,11 +1594,11 @@ class MetadataDisplay {
   }
   private function showErrorEntitiesList($download) {
     $emails = array();
-    $entityHandler = $this->metaDb->prepare(
+    $entityHandler = $this->config->getDb()->prepare(
       "SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB`
       FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
     $entityHandler->execute();
-    $contactPersonHandler = $this->metaDb->prepare(
+    $contactPersonHandler = $this->config->getDb()->prepare(
       'SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
 
     if ($download) {
@@ -1682,7 +1680,7 @@ class MetadataDisplay {
     if (!$download) {print "    " . self::HTML_TABLE_END; }
   }
   private function showErrorMailReminders($showAll=true) {
-    $entityHandler = $this->metaDb->prepare(
+    $entityHandler = $this->config->getDb()->prepare(
       'SELECT MailReminders.*, `entityID`, `lastConfirmed`, `lastValidated`
       FROM `MailReminders`, `Entities`
       LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
@@ -1780,12 +1778,12 @@ class MetadataDisplay {
     printf ('    %s', self::HTML_TABLE_END);
   }
   private function showIdPsMissingIMPS() {
-    $idpHandler = $this->metaDb->prepare(
+    $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`, `publishIn`
       FROM `Entities`
       WHERE `status` = 1 AND `isIdP` = 1 AND id NOT IN (SELECT `entity_id` FROM `IdpIMPS`)
       ORDER BY `publishIn` DESC, `entityID`');
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`,`name`, `maximumAL`
         FROM `IMPS`
         WHERE `id` NOT IN (SELECT `IMPS_id` FROM `IdpIMPS`)
@@ -1813,7 +1811,7 @@ class MetadataDisplay {
   }
 
   public function showXMLDiff($entityId1, $entityId2) {
-    $entityHandler = $this->metaDb->prepare('SELECT `id`, `entityID`, `xml` FROM Entities WHERE `id` = :Id');
+    $entityHandler = $this->config->getDb()->prepare('SELECT `id`, `entityID`, `xml` FROM Entities WHERE `id` = :Id');
     $entityHandler->bindValue(self::BIND_ID, $entityId1);
     $entityHandler->execute();
     if ($entity1 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1846,12 +1844,12 @@ class MetadataDisplay {
   }
 
   public function showPendingList() {
-    $entitiesHandler = $this->metaDb->prepare(
+    $entitiesHandler = $this->config->getDb()->prepare(
       'SELECT Entities.`id`, `entityID`, `xml`, `lastUpdated`, `email`, `lastChanged`
       FROM Entities, EntityUser, Users
       WHERE `status` = 2 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id`
       ORDER BY lastUpdated ASC, `entityID`, `lastChanged` DESC');
-    $entityHandler = $this->metaDb->prepare(
+    $entityHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
     $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $entitiesHandler->execute();
@@ -1925,7 +1923,7 @@ class MetadataDisplay {
       'cocov2-1' => 'REFEDS CoCo (v2)',
       'esi' => 'European Student Identifier');
 
-    $idpHandler = $this->metaDb->prepare(
+    $idpHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`id`) AS `count` FROM Entities WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1");
     $idpHandler->execute();
     if ($idps = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1933,7 +1931,7 @@ class MetadataDisplay {
     } else {
       $nrOfIdPs = 0;
     }
-    $entityAttributesHandler = $this->metaDb->prepare(
+    $entityAttributesHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
       FROM EntityAttributes, Entities
       WHERE type = 'entity-category-support' AND `entity_id` = `Entities`.`id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
@@ -1943,7 +1941,7 @@ class MetadataDisplay {
       $ecsTested[$ecsTagged[$attribute['attribute']]]['MarkedWithECS'] = $attribute['count'];
     }
 
-    $testResultsHandeler = $this->metaDb->prepare(
+    $testResultsHandeler = $this->config->getDb()->prepare(
       "SELECT COUNT(entityID) AS `count`, `test`, `result`
       FROM TestResults
       WHERE TestResults.`entityID` IN (SELECT `entityID`
@@ -2078,7 +2076,7 @@ class MetadataDisplay {
   }
 
   public function showRAFStatistics() {
-    $idpCountHandler = $this->metaDb->prepare(
+    $idpCountHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`');
     $idpCountHandler->execute();
     if ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -2087,7 +2085,7 @@ class MetadataDisplay {
       $idps = 0;
     }
 
-    $idpAssuranceHandler = $this->metaDb->prepare(
+    $idpAssuranceHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(`entityID`) as `count`, `assurance` FROM `assuranceLog` GROUP BY `assurance`');
     $idpAssuranceHandler->execute();
     $assuranceCount = array(
@@ -2102,7 +2100,7 @@ class MetadataDisplay {
       $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
     }
 
-    $metaAssuranceHandler = $this->metaDb->prepare(
+    $metaAssuranceHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`Entities`.`id`) AS `count`, `attribute`
       FROM `Entities`, `EntityAttributes`
       WHERE `Entities`.`id` = `EntityAttributes`.`entity_id`
@@ -2171,7 +2169,7 @@ class MetadataDisplay {
       $idps - $assuranceCount['RAF-low'],
       "\n");
 
-    $assuranceHandler = $this->metaDb->prepare(
+    $assuranceHandler = $this->config->getDb()->prepare(
       'SELECT `entityID`, `assurance`, `logDate`
       FROM `assuranceLog` ORDER BY `entityID`, `assurance`');
     $assuranceHandler->execute();
@@ -2296,7 +2294,7 @@ class MetadataDisplay {
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
 
-    $entitys = $this->metaDb->prepare(
+    $entitys = $this->config->getDb()->prepare(
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE status = 1 AND publishIn > 2");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
@@ -2329,7 +2327,7 @@ class MetadataDisplay {
     array_unshift($spArray, $nrOfSPs);
     array_unshift($idpArray, $nrOfIdPs);
 
-    $statusRows = $this->metaDb->prepare(
+    $statusRows = $this->config->getDb()->prepare(
       "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM EntitiesStatistics ORDER BY `date` DESC");
     $statusRows->execute();
     while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
@@ -2376,7 +2374,7 @@ class MetadataDisplay {
   }
 
   public function showOrganizationLists() {
-    $organizationHandler = $this->metaDb->prepare(
+    $organizationHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
         `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
       FROM `Entities`
@@ -2401,7 +2399,7 @@ class MetadataDisplay {
           $showEn = true;
       }
       if (isset($_GET['name']) && isset($_GET['display']) && isset($_GET['url'])) {
-        $entitiesHandler = $this->metaDb->prepare(
+        $entitiesHandler = $this->config->getDb()->prepare(
           "SELECT `id`, `entityID`, `Org1`.`data` AS `OrganizationName`,
             `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
           FROM `Entities`, `Organization` AS Org1, `Organization` AS Org2, `Organization` AS Org3
@@ -2559,7 +2557,7 @@ class MetadataDisplay {
     </div><!-- End tab-content -->%s',"\n", "\n");
   }
   private function showIMPSList($id, $userLevel) {
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
         `OrganizationInfo`.`id` AS orgId, `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`,
         `email`, `fullName`
@@ -2567,7 +2565,7 @@ class MetadataDisplay {
         LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
         WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id` AND `OrganizationInfo`.`notMemberAfter` is NULL
         ORDER BY `name`');
-    $idpHandler = $this->metaDb->prepare(
+    $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`
       FROM `Entities`, `IdpIMPS`
       WHERE `id` = `entity_id` AND `IMPS_id` = :Id');
@@ -2603,7 +2601,7 @@ class MetadataDisplay {
     }
   }
   private function showOrganizationInfoLists($id, $userLevel) {
-    $organizationHandler = $this->metaDb->prepare(
+    $organizationHandler = $this->config->getDb()->prepare(
       'SELECT `OrganizationInfo`.`id` AS orgId,
           `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
           `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`,
@@ -2612,7 +2610,7 @@ class MetadataDisplay {
         WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id`
         GROUP BY(orgId)
         ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`');
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `id`,`name`, `maximumAL`, `lastValidated`
         FROM `IMPS`
         WHERE `OrganizationInfo_id` = :Id
@@ -2661,7 +2659,7 @@ class MetadataDisplay {
   private function showScopeList() {
     printf ('        <table id="scope-table" class="table table-striped table-bordered">
           <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n");
-    $scopeHandler = $this->metaDb->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
+    $scopeHandler = $this->config->getDb()->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
                         FROM `Scopes` ,`Entities`, `Organization`
                         WHERE `Scopes`.`entity_id` = `Entities`.`id` AND
                           `publishIn` > 1 AND

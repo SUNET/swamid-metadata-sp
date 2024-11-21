@@ -7,21 +7,13 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-include_once __DIR__ . '/../html/config.php';  # NOSONAR
+$config = new metadata\Configuration();
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "DB Error";
-}
-
-$updateMailRemindersHandler = $db->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
+$updateMailRemindersHandler = $config->getDb()->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
   VALUES (:Entity_Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()');
-$removeMailRemindersHandler = $db->prepare('DELETE FROM MailReminders
+$removeMailRemindersHandler = $config->getDb()->prepare('DELETE FROM MailReminders
   WHERE `entity_id` = :Entity_Id AND `type` = :Type');
-$getMailRemindersHandler = $db->prepare(
+$getMailRemindersHandler = $config->getDb()->prepare(
   'SELECT `entity_id`, `level` FROM MailReminders WHERE `type` = :Type');
 
 confirmEntities();
@@ -30,7 +22,7 @@ checkOldPending();
 checkOldDraft();
 
 function confirmEntities() {
-  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $db;
+  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
   # Time to confirm entities again ?
   $reminders = array();
   $getMailRemindersHandler->execute(array('Type' => 1));
@@ -39,7 +31,7 @@ function confirmEntities() {
   }
   $getMailRemindersHandler->closeCursor();
 
-  $flagDates = $db->query('SELECT NOW() - INTERVAL 10 MONTH AS `warn1Date`,
+  $flagDates = $config->getDb()->query('SELECT NOW() - INTERVAL 10 MONTH AS `warn1Date`,
     NOW() - INTERVAL 11 MONTH AS `warn2Date`,
     NOW() - INTERVAL 12 MONTH AS `errorDate`', PDO::FETCH_ASSOC);
   foreach ($flagDates as $dates) {
@@ -50,7 +42,7 @@ function confirmEntities() {
   }
   $flagDates->closeCursor();
 
-  $entitiesHandler = $db->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastConfirmed`, `data` AS DisplayName
+  $entitiesHandler = $config->getDb()->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastConfirmed`, `data` AS DisplayName
     FROM `Entities`
     LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
     LEFT JOIN `Mdui` ON `Mdui`.`entity_id` = `Entities`.`id` AND `element` = 'DisplayName' AND `lang` = 'en'
@@ -92,7 +84,7 @@ function confirmEntities() {
 }
 
 function oldCerts() {
-  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $db;
+  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
   # Time to update certs ?
   $reminders = array();
   $getMailRemindersHandler->execute(array('Type' => 2));
@@ -101,7 +93,7 @@ function oldCerts() {
   }
   $getMailRemindersHandler->closeCursor();
 
-  $flagDates = $db->query('SELECT NOW() + INTERVAL 1 MONTH AS `warn1Date`,
+  $flagDates = $config->getDb()->query('SELECT NOW() + INTERVAL 1 MONTH AS `warn1Date`,
     NOW() `nowDate`', PDO::FETCH_ASSOC);
   foreach ($flagDates as $dates) {
     # Need to use foreach to fetch row. $flagDates is a PDOStatement
@@ -110,11 +102,11 @@ function oldCerts() {
   }
   $flagDates->closeCursor();
 
-  $keyHandler = $db->prepare('SELECT `notValidAfter`, `type`, `use`, `order`
+  $keyHandler = $config->getDb()->prepare('SELECT `notValidAfter`, `type`, `use`, `order`
     FROM `KeyInfo`
     WHERE `KeyInfo`.`entity_id` = :Id
     ORDER BY `type`, `notValidAfter` DESC');
-  $entitiesHandler = $db->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `data` AS DisplayName
+  $entitiesHandler = $config->getDb()->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `data` AS DisplayName
     FROM `KeyInfo`, `Entities`
     LEFT JOIN `Mdui` ON `Mdui`.`entity_id` = Entities.`id` AND `element` = 'DisplayName' AND `lang` = 'en'
     WHERE `Entities`.`id` = `KeyInfo`.`entity_id`
@@ -230,7 +222,7 @@ function parserKeyError($keyStatus, $keyType) {
 }
 
 function checkOldPending() {
-  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $db;
+  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
 
   # Warn for pending not handled
   $reminders = array();
@@ -240,7 +232,7 @@ function checkOldPending() {
   }
   $getMailRemindersHandler->closeCursor();
 
-  $flagDates = $db->query('SELECT NOW() - INTERVAL 1 WEEK AS `warn1Date`,
+  $flagDates = $config->getDb()->query('SELECT NOW() - INTERVAL 1 WEEK AS `warn1Date`,
     NOW() - INTERVAL 4 WEEK AS `warn2Date`,
     NOW() - INTERVAL 11 WEEK AS `warn3Date`', PDO::FETCH_ASSOC);
   foreach ($flagDates as $dates) {
@@ -251,7 +243,7 @@ function checkOldPending() {
   }
   $flagDates->closeCursor();
 
-  $entitiesHandler = $db->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastValidated`,
+  $entitiesHandler = $config->getDb()->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastValidated`,
       `lastValidated` + INTERVAL 12 WEEK AS removeDate, `data` AS DisplayName
     FROM `Entities`
     LEFT JOIN `Mdui` ON `Mdui`.`entity_id` = Entities.`id` AND `element` = 'DisplayName' AND `lang` = 'en'
@@ -295,7 +287,7 @@ function checkOldPending() {
 }
 
 function checkOldDraft() {
-  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $db;
+  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
 
   # Warn for drafts not handled
   $reminders = array();
@@ -305,7 +297,7 @@ function checkOldDraft() {
   }
   $getMailRemindersHandler->closeCursor();
 
-  $flagDates = $db->query('SELECT NOW() - INTERVAL 2 WEEK AS `warn1Date`,
+  $flagDates = $config->getDb()->query('SELECT NOW() - INTERVAL 2 WEEK AS `warn1Date`,
     NOW() - INTERVAL 7 WEEK AS `warn2Date`', PDO::FETCH_ASSOC);
   foreach ($flagDates as $dates) {
     # Need to use foreach to fetch row. $flagDates is a PDOStatement
@@ -314,7 +306,7 @@ function checkOldDraft() {
   }
   $flagDates->closeCursor();
 
-  $entitiesHandler = $db->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastValidated`,
+  $entitiesHandler = $config->getDb()->prepare("SELECT DISTINCT `Entities`.`id`, `entityID`, `lastValidated`,
       `lastValidated` + INTERVAL 8 WEEK AS removeDate, `data` AS DisplayName
     FROM `Entities`
     LEFT JOIN `Mdui` ON `Mdui`.`entity_id` = Entities.`id` AND `element` = 'DisplayName' AND `lang` = 'en'
@@ -353,11 +345,11 @@ function checkOldDraft() {
 }
 
 function sendEntityConfirmation($id, $entityID, $displayName, $months) {
-  global $SendOut, $baseURL, $mailContacts;
+  global $config, $mailContacts;
 
   setupMail();
 
-  if ($SendOut) {
+  if ($config->sendOut()) {
     $addresses = getAdmins($id);
     foreach ($addresses as $address) {
       $mailContacts->addAddress($address);
@@ -385,7 +377,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     --<br>
     On behalf of SWAMID Operations</p>
   </body>\n</html>",
-  $displayName, $entityID, $months, $baseURL, $id, $baseURL, $id);
+  $displayName, $entityID, $months, $config->baseURL(), $id, $config->baseURL(), $id);
   $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has not been validated/confirmed for %d months.
     The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational and fulfils
     the Technology Profile. If not annually confirmed the Operations team will start the process to remove the entity
@@ -395,7 +387,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
     --
     On behalf of SWAMID Operations",
-    $displayName, $entityID, $months, $baseURL, $id);
+    $displayName, $entityID, $months, $config->baseURL(), $id);
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
   $mailContacts->Subject  = 'Warning : SWAMID metadata for ' . $shortEntityid . ' needs to be validated';
@@ -408,11 +400,11 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
 }
 
 function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
-  global $SendOut, $baseURL, $mailContacts;
+  global $config, $mailContacts;
 
   setupMail();
 
-  if ($SendOut) {
+  if ($config->sendOut()) {
     $addresses = getTechnicalAndAdministrativeContacts($id);
     foreach ($addresses as $address) {
       $mailContacts->addAddress($address);
@@ -439,7 +431,7 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
     --<br>
     On behalf of SWAMID Operations</p>
   </body>\n</html>",
-  $displayName, $entityID, $expireStatus, $baseURL, $id, $baseURL, $id);
+  $displayName, $entityID, $expireStatus, $config->baseURL(), $id, $config->baseURL(), $id);
   $mailContacts->AltBody = sprintf("Hi.\n
     \nThe SAML certificate in your metadata registered in SWAMID \"%s\" (%s)%s.
     \nThe SWAMID SAML WebSSO Technology Profile requires that signing and encryption certificates MUST NOT be expired.
@@ -450,7 +442,7 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
     \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
     --
     On behalf of SWAMID Operations",
-    $displayName, $entityID, $expireStatus, $baseURL, $id);
+    $displayName, $entityID, $expireStatus, $config->baseURL(), $id);
 
   try {
     $mailContacts->send();
@@ -460,12 +452,12 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
 }
 
 function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pending = true) {
-  global $SendOut, $baseURL, $mailContacts;
+  global $config, $mailContacts;
 
   setupMail();
 
   $address = getLastUpdater($id);
-  if ($SendOut && $address ) {
+  if ($config->sendOut() && $address ) {
     printf ("Sending info to %s\n", $address);
     $mailContacts->addAddress($address);
   } else {
@@ -489,7 +481,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
   $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
   $pending ? '<p>To get a change published forward this mail to operations@swamid.se</p>' : '',
   $pending ? 'request' : 'draft',
-  $baseURL, $id, $baseURL, $id);
+  $config->baseURL(), $id, $config->baseURL(), $id);
   $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has been in %s for %d week(s).
     If nothing happens your %s will be removed short after %s.
     \nYou have received this email because you are the last person updating this entity.
@@ -501,7 +493,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
     $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
     $pending ? "\nTo get a change published forward this mail to operations@swamid.se" : '',
     $pending ? 'request' : 'draft',
-    $baseURL, $id);
+    $config->baseURL(), $id);
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
   $mailContacts->Subject  = sprintf ('Warning : SWAMID %s metadata for %s needs to be acted on',
@@ -515,10 +507,10 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
 }
 
 function getTechnicalAndAdministrativeContacts($id) {
-  global $db;
+  global $config;
   $addresses = array();
 
-  $contactHandler = $db->prepare("SELECT DISTINCT emailAddress
+  $contactHandler = $config->getDb()->prepare("SELECT DISTINCT emailAddress
     FROM `Entities`, `ContactPerson`
     WHERE `Entities`.`id` = `entity_id`
       AND `Entities`.`id` = :ID AND `status` = 1
@@ -532,9 +524,9 @@ function getTechnicalAndAdministrativeContacts($id) {
 }
 
 function getLastUpdater($id) {
-  global $db;
+  global $config;
 
-  $userHandler = $db->prepare("SELECT DISTINCT `email`
+  $userHandler = $config->getDb()->prepare("SELECT DISTINCT `email`
     FROM `EntityUser`, `Users`
     WHERE `Users`.`id` = `user_id` AND `entity_id` = :ID
     ORDER BY lastChanged DESC;");
@@ -547,10 +539,10 @@ function getLastUpdater($id) {
 }
 
 function getAdmins($id) {
-  global $db;
+  global $config;
   $addresses = array();
 
-  $userHandler = $db->prepare("SELECT DISTINCT `email`
+  $userHandler = $config->getDb()->prepare("SELECT DISTINCT `email`
     FROM `EntityUser`, `Users`
     WHERE `Users`.`id` = `user_id` AND `entity_id` = :ID AND `email` <> ''
     ORDER BY lastChanged DESC;");
@@ -563,19 +555,24 @@ function getAdmins($id) {
 }
 
 function setupMail() {
-  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom, $mailContacts;
+  global $config, $mailContacts;
+
   $mailContacts = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailContacts->Host = $SMTPHost;
-  $mailContacts->SMTPAuth = true;
-  $mailContacts->SMTPAutoTLS = true;
-  $mailContacts->Port = 587;
-  $mailContacts->Username = $SASLUser;
-  $mailContacts->Password = $SASLPassword;
-  $mailContacts->SMTPSecure = 'tls';
+	$mailContacts->isSMTP();
+	$mailContacts->Host = $config->getSmtp()['host'];
+	$mailContacts->Port = $config->getSmtp()['port'];
+	$mailContacts->SMTPAutoTLS = true;
+	if ($config->smtpAuth()) {
+		$mailContacts->SMTPAuth = true;
+		$mailContacts->Username = $config->getSmtp()['sasl']['user'];
+		$mailContacts->Password = $config->getSmtp()['sasl']['password'];
+		$mailContacts->SMTPSecure = 'tls';
+	}
 
   //Recipients
-  $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
-  $mailContacts->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo('operations@swamid.se', 'SWAMID Operations');
+  $mailContacts->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
+  if ($config->getSMTP()['bcc']) {
+		$mailContacts->addBCC($config->getSMTP()['bcc']);
+	}
+	$mailContacts->addReplyTo($config->getSMTP()['replayTo'], $config->getSMTP()['replayName']);
 }

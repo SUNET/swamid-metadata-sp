@@ -1,13 +1,32 @@
 <?php
-$dbServername = "mariadb";
-$dbUsername = "metdata_admin";
-$dbPassword = "adminpwd"; # NOSONAR
-$dbName = "metadata";
+$db = array(
+  'name'        => 'metadata',      # Name of Database
+  'servername'  => 'mariadb',       # Name of DB server
+  'username'    => 'metdata_admin', # Username for DB
+  'password'    => 'adminpwd'       # Password for DB NOSONAR
 
-$SMTPHost = 'smtp.host.se';
-$SASLUser = 'SASL User';
-$SASLPassword = 'SASL Password';
-$MailFrom = 'Sending user/alias';
-$SendOut = false;   // Switch to true to start sending mails
+  # optional parameter
+  
+  # The file path to the SSL certificate authority.
+  # Activates PDO::MYSQL_ATTR_SSL_CA in options.
+  #'caPath' => '/etc/ssl/CA.pem'
+);
 
-$DiscoveryService='seamless';
+$smtp = array(
+  'host'        => 'smtp.host.se',        # SMTP host
+  'from'        => 'metadata@host.se',    # Address to send from (will get bounces)
+  'replayTo'    => 'operations@host.se',  # Address where any reply:s should go
+  'replayName'  => 'Operations Host',     # Name in mail where any reply:s should go
+  'sendOut'     => false,
+
+  # optional parameter
+  # if sasl is set PHPMailer will use SMTPAuth and default to port 587 for sending
+  'sasl'        => array(
+    'user'      => 'SASL User',           #
+    'password'  => 'SASL Password'        #
+  ),
+  # If bcc is set, a copy of outgoing mail will be sent to this address
+  'bcc'         => 'admin@host.se'        #
+);
+$mode = 'Lab';
+$baseURL = 'https://metadata.host.se/';

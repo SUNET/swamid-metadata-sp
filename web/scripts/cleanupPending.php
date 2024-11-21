@@ -1,18 +1,13 @@
 <?php
-// file deepcode ignore FileInclusion:
-include __DIR__ . '/../html/config.php'; # NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
+
+$config = new metadata\Configuration();
+
 // file deepcode ignore FileInclusion:
 include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error Connecting DB";
-}
-
-$entitiesHandler = $db->prepare(
+$entitiesHandler = $config->getDb()->prepare(
   'SELECT `id`, `entityID` FROM Entities WHERE `status` = 2 ORDER BY lastUpdated ASC, `entityID`');
 $entitiesHandler->execute();
 while ($pendingEntity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {

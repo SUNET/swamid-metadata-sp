@@ -1,7 +1,7 @@
 <?php
 class Metadata {
   # Setup
-  private $metaDb;
+  private $config;
   private $result = '';
   private $warning = '';
   private $error = '';
@@ -165,24 +165,22 @@ class Metadata {
   const TEXT_COCOV2_REQ = 'GÉANT Data Protection Code of Conduct (v2) Require';
 
   public function __construct() {
+    global $config;
     $a = func_get_args();
     $i = func_num_args();
-    require __DIR__  . '/../config.php'; #NOSONAR
-    require __DIR__ . '/common.php'; #NOSONAR
-    try {
-      $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-      // set the PDO error mode to exception
-      $this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch(PDOException $e) {
-      echo "Error: " . $e->getMessage();
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new metadata\Configuration();
     }
+    require __DIR__ . '/common.php'; #NOSONAR
     if (method_exists($this,$f='construct'.$i)) {
         call_user_func_array(array($this,$f),$a);
     }
   }
 
   private function construct1($id) { #NOSONAR is called from construct above
-    $entityHandler = $this->metaDb->prepare('
+    $entityHandler = $this->config->getDb()->prepare('
       SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `errors`, `errorsNB`, `warnings`
         FROM Entities WHERE `id` = :Id');
     $entityHandler->bindValue(self::BIND_ID, $id);
@@ -226,7 +224,7 @@ class Metadata {
         $this->status = 3;
     }
 
-    $entityHandler = $this->metaDb->prepare('
+    $entityHandler = $this->config->getDb()->prepare('
       SELECT `id`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
         FROM Entities WHERE `entityID` = :Id AND `status` = :Status');
     $entityHandler->bindValue(self::BIND_ID, $entityID);
@@ -252,26 +250,26 @@ class Metadata {
     // 1 Check reachable (OK If reachable)
     // 2 Check reachable (NEED to be reachable)
     // 3 Check CoCo privacy
-    $urlHandler = $this->metaDb->prepare('SELECT `type` FROM URLs WHERE `URL` = :URL');
+    $urlHandler = $this->config->getDb()->prepare('SELECT `type` FROM URLs WHERE `URL` = :URL');
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->execute();
 
     if ($currentType = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($currentType['type'] < $type) {
         // Update type and lastSeen + force revalidate
-        $urlUpdateHandler = $this->metaDb->prepare("
+        $urlUpdateHandler = $this->config->getDb()->prepare("
           UPDATE URLs SET `type` = :Type, `lastValidated` = '1972-01-01', `lastSeen` = NOW() WHERE `URL` = :URL;");
         $urlUpdateHandler->bindParam(self::BIND_URL, $url);
         $urlUpdateHandler->bindParam(self::BIND_TYPE, $type);
         $urlUpdateHandler->execute();
       } else {
         // Update lastSeen
-        $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastSeen` = NOW() WHERE `URL` = :URL;");
+        $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE URLs SET `lastSeen` = NOW() WHERE `URL` = :URL;");
         $urlUpdateHandler->bindParam(self::BIND_URL, $url);
         $urlUpdateHandler->execute();
       }
     } else {
-      $urlAddHandler = $this->metaDb->prepare("INSERT INTO URLs
+      $urlAddHandler = $this->config->getDb()->prepare("INSERT INTO URLs
         (`URL`, `type`, `status`, `lastValidated`, `lastSeen`)
         VALUES (:URL, :Type, 10, '1972-01-01', NOW());");
       $urlAddHandler->bindParam(self::BIND_URL, $url);
@@ -291,7 +289,7 @@ class Metadata {
 
     curl_setopt($ch, CURLINFO_HEADER_OUT, 0);
 
-    $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs
+    $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE URLs
       SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status,
         `height` = :Height, `width` = :Width, `nosize` = :NoSize, `validationOutput` = :Result
       WHERE `URL` = :URL;");
@@ -307,7 +305,7 @@ class Metadata {
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-8:0:0'))
         ORDER BY `lastValidated` LIMIT $limit;";
     }
-    $urlHandler = $this->metaDb->prepare($sql);
+    $urlHandler = $this->config->getDb()->prepare($sql);
     $urlHandler->execute();
     $count = 0;
     if ($verbose) {
@@ -409,7 +407,7 @@ class Metadata {
   }
 
   public function revalidateURL($url, $verbose = false) {
-    $urlUpdateHandler = $this->metaDb->prepare("UPDATE URLs SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
+    $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE URLs SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
     $urlUpdateHandler->bindParam(self::BIND_URL, $url);
     $urlUpdateHandler->execute();
     $this->validateURLs(5, $verbose);
@@ -417,7 +415,7 @@ class Metadata {
 
   public function checkOldURLS($age = 30, $verbose = false) {
     $sql = sprintf("SELECT URL, lastSeen from URLs where lastSeen < ADDTIME(NOW(), '-%d 0:0:0')", $age);
-    $urlHandler = $this->metaDb->prepare($sql);
+    $urlHandler = $this->config->getDb()->prepare($sql);
     $urlHandler->execute();
     while ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($verbose) { printf ("Checking : %s last seen %s\n", $urlInfo['URL'], $urlInfo['lastSeen']); }
@@ -426,7 +424,7 @@ class Metadata {
   }
 
   private function checkURLStatus($url, $verbose = false){
-    $urlHandler = $this->metaDb->prepare('SELECT `type`, `validationOutput`, `lastValidated`
+    $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`
       FROM URLs WHERE `URL` = :URL');
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->execute();
@@ -434,19 +432,19 @@ class Metadata {
       $missing = true;
       $coCoV1 = false;
       $logo = false;
-      $entityHandler = $this->metaDb->prepare('SELECT `entity_id`, `entityID`, `status`
+      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
         FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL AND `status` < 4');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
-      $ssoUIIHandler = $this->metaDb->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
+      $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
         FROM `Mdui`, `Entities` WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
-      $organizationHandler = $this->metaDb->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
+      $organizationHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
         FROM Organization, Entities WHERE entity_id = id AND `data` = :URL AND `status`< 4');
       $organizationHandler->bindValue(self::BIND_URL, $url);
       $organizationHandler->execute();
-      $entityAttributesHandler = $this->metaDb->prepare("SELECT `attribute`
+      $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
         FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category'");
       if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
         $missing = false;
@@ -480,15 +478,15 @@ class Metadata {
         }
       }
       if ($missing) {
-        $urlHandler = $this->metaDb->prepare('DELETE FROM URLs WHERE `URL` = :URL');
+        $urlHandler = $this->config->getDb()->prepare('DELETE FROM URLs WHERE `URL` = :URL');
         $urlHandler->bindValue(self::BIND_URL, $url);
         $urlHandler->execute();
         if ($verbose) { print "Removing URL. Not in use any more\n"; }
       } elseif ($urlInfo['type'] > 2 && !$coCoV1 ) {
         if ($logo) {
-          $urlHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 2 WHERE `URL` = :URL');
+          $urlHandler = $this->config->getDb()->prepare('UPDATE URLs SET `type` = 2 WHERE `URL` = :URL');
         } else {
-          $urlHandler = $this->metaDb->prepare('UPDATE URLs SET `type` = 1 WHERE `URL` = :URL');
+          $urlHandler = $this->config->getDb()->prepare('UPDATE URLs SET `type` = 1 WHERE `URL` = :URL');
         }
         $urlHandler->bindValue(self::BIND_URL, $url);
         $urlHandler->execute();
@@ -507,7 +505,7 @@ class Metadata {
     $this->cleanOutAttribuesInIDPSSODescriptor();
     if ($this->entityExists && $this->status == 1) {
       # Update entity in database
-      $entityHandlerUpdate = $this->metaDb->prepare('UPDATE Entities
+      $entityHandlerUpdate = $this->config->getDb()->prepare('UPDATE Entities
         SET `isIdP` = 0, `isSP` = 0, `isAA` = 0, `xml` = :Xml , `lastUpdated` = NOW()
         WHERE `entityID` = :Id AND `status` = :Status');
       $entityHandlerUpdate->bindValue(self::BIND_ID, $this->entityID);
@@ -516,14 +514,14 @@ class Metadata {
       $entityHandlerUpdate->execute();
     } else {
       # Add new entity into database
-      $entityHandlerInsert = $this->metaDb->prepare('INSERT INTO Entities
+      $entityHandlerInsert = $this->config->getDb()->prepare('INSERT INTO Entities
         (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`)
         VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW())');
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
-      $this->dbIdNr = $this->metaDb->lastInsertId();
+      $this->dbIdNr = $this->config->getDb()->lastInsertId();
     }
     $this->isIdP = false;
     $this->isSP = false;
@@ -535,7 +533,7 @@ class Metadata {
   public function createDraft() {
     if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
       # Add new entity into database
-      $entityHandlerInsert = $this->metaDb->prepare('
+      $entityHandlerInsert = $this->config->getDb()->prepare('
         INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`)
           VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW())');
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
@@ -546,7 +544,7 @@ class Metadata {
       $this->error = '';
       $this->errorNB = '';
       $this->result = '';
-      $this->dbIdNr = $this->metaDb->lastInsertId();
+      $this->dbIdNr = $this->config->getDb()->lastInsertId();
       $this->status = 3;
       $this->copyResponsible($oldDbNr);
       return $this->dbIdNr;
@@ -563,27 +561,27 @@ class Metadata {
     }
 
     # Remove old ContactPersons / Organization from previous runs
-    $this->metaDb->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM AttributeConsumingService WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM AttributeConsumingService WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute
+    $this->config->getDb()->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute
       WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM Organization WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM Organization WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM ContactPerson WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM ContactPerson WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
+    $this->config->getDb()->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1
@@ -598,20 +596,20 @@ class Metadata {
           $this->isAA = false;
           break;
         case self::SAML_MD_IDPSSODESCRIPTOR :
-          $this->metaDb->prepare('UPDATE Entities SET `isIdP` = 1 WHERE `id` = :Id')->execute(
+          $this->config->getDb()->prepare('UPDATE Entities SET `isIdP` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
           $this->isIdP = true;
           $this->parseIDPSSODescriptor($child);
           break;
         case self::SAML_MD_SPSSODESCRIPTOR :
-          $this->metaDb->prepare('UPDATE Entities SET `isSP` = 1 WHERE `id` = :Id')->execute(
+          $this->config->getDb()->prepare('UPDATE Entities SET `isSP` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
           $this->isSP = true;
           $this->parseSPSSODescriptor($child);
           break;
         #case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
         case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          $this->metaDb->prepare('UPDATE Entities SET `isAA` = 1 WHERE `id` = :Id')->execute(
+          $this->config->getDb()->prepare('UPDATE Entities SET `isAA` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
           $this->parseAttributeAuthorityDescriptor($child);
           $this->isAA = true;
@@ -631,7 +629,7 @@ class Metadata {
       $child = $child->nextSibling;
     }
 
-    $resultHandler = $this->metaDb->prepare("UPDATE Entities
+    $resultHandler = $this->config->getDb()->prepare("UPDATE Entities
       SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput,
         `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `xml` = :Xml, `lastValidated` = NOW()
       WHERE `id` = :Id;");
@@ -695,7 +693,7 @@ class Metadata {
 
   # Extensions -> EntityAttributes -> Attribute
   private function parseExtensionsEntityAttributesAttribute($data) {
-    $entityAttributesHandler = $this->metaDb->prepare('INSERT INTO EntityAttributes (`entity_id`, `type`, `attribute`)
+    $entityAttributesHandler = $this->config->getDb()->prepare('INSERT INTO EntityAttributes (`entity_id`, `type`, `attribute`)
       VALUES (:Id, :Type, :Value)');
 
     if (! $data->hasAttribute('NameFormat') && $data->hasAttribute('Name')) {
@@ -845,7 +843,7 @@ class Metadata {
   }
 
   private function parseIDPSSODescriptorExtensions($data) {
-    $scopesHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`)
+    $scopesHandler = $this->config->getDb()->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`)
       VALUES (:Id, :Scope, :Regexp)');
     $scopesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
@@ -904,7 +902,7 @@ class Metadata {
   # Used by IDPSSODescriptor
   #############
   private function parseIDPSSODescriptorExtensionsDiscoHints($data) {
-    $ssoUIIHandler = $this->metaDb->prepare("INSERT INTO Mdui
+    $ssoUIIHandler = $this->config->getDb()->prepare("INSERT INTO Mdui
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
       VALUES (:Id, 'IDPDisco', :Lang, :Height, :Width, :Element, :Value)");
 
@@ -1042,11 +1040,11 @@ class Metadata {
     $isDefault = ($data->getAttribute('isDefault') &&
       ($data->getAttribute('isDefault') == 'true' || $data->getAttribute('isDefault') == '1')) ? 1 : 0;
 
-    $serviceHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService
+    $serviceHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService
       (`entity_id`, `Service_index`, `isDefault`) VALUES (:Id, :Index, :Default)');
-    $serviceElementHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_Service
+    $serviceElementHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_Service
       (`entity_id`, `Service_index`, `lang`, `element`, `data`) VALUES (:Id, :Index, :Lang, :Element, :Data)');
-    $requestedAttributeHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute
+    $requestedAttributeHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute
       (`entity_id`, `Service_index`, `FriendlyName`, `Name`, `NameFormat`, `isRequired`)
       VALUES (:Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired)');
 
@@ -1230,7 +1228,7 @@ class Metadata {
   #############
   private function parseOrganization($data) {
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.3.2.1
-    $organizationHandler = $this->metaDb->prepare('INSERT INTO Organization (`entity_id`, `lang`, `element`, `data`)
+    $organizationHandler = $this->config->getDb()->prepare('INSERT INTO Organization (`entity_id`, `lang`, `element`, `data`)
       VALUES (:Id, :Lang, :Element, :Value)');
 
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -1273,7 +1271,7 @@ class Metadata {
     $contactType = $data->getAttribute('contactType');
     $subcontactType = '';
 
-    $contactPersonHandler = $this->metaDb->prepare('INSERT INTO ContactPerson
+    $contactPersonHandler = $this->config->getDb()->prepare('INSERT INTO ContactPerson
       (`entity_id`, `contactType`, `subcontactType`, `company`, `emailAddress`,
         `extensions`, `givenName`, `surName`, `telephoneNumber`)
       VALUES (:Id, :ContactType, :SubcontactType, :Company, :EmailAddress,
@@ -1353,10 +1351,10 @@ class Metadata {
   # Used by IDPSSODescriptor and SPSSODescriptor
   #############
   private function parseSSODescriptorExtensionsUIInfo($data, $type) {
-    $ssoUIIHandler = $this->metaDb->prepare('INSERT INTO Mdui
+    $ssoUIIHandler = $this->config->getDb()->prepare('INSERT INTO Mdui
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
       VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Value)');
-    $urlHandler = $this->metaDb->prepare('SELECT `nosize`, `height`, `width`, `status` FROM URLs WHERE `URL` = :URL');
+    $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width`, `status` FROM URLs WHERE `URL` = :URL');
 
     $ssoUIIHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $ssoUIIHandler->bindValue(self::BIND_TYPE, $type);
@@ -1480,7 +1478,7 @@ class Metadata {
   # Extract Certs and check dates
   #############
   private function parseKeyDescriptorKeyInfoX509Data($data, $type, $use, $order, $name) {
-    $keyInfoHandler = $this->metaDb->prepare('INSERT INTO KeyInfo
+    $keyInfoHandler = $this->config->getDb()->prepare('INSERT INTO KeyInfo
       (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`,
         `subject`, `issuer`, `bits`, `key_type`, `serialNumber`)
       VALUES (:Id, :Type, :Use, :Order, :Name, :NotValidAfter,
@@ -1662,7 +1660,7 @@ class Metadata {
     $this->isSPandCoCov2 = false;
     $this->isSIRTFI = false;
 
-    $entityAttributesHandler = $this->metaDb->prepare('SELECT `type`, `attribute`
+    $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->execute();
@@ -1760,7 +1758,7 @@ class Metadata {
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
 
-    $resultHandler = $this->metaDb->prepare("UPDATE Entities
+    $resultHandler = $this->config->getDb()->prepare("UPDATE Entities
       SET `validationOutput` = :validationOutput,
         `warnings` = :Warnings,
         `errors` = :Errors,
@@ -1780,7 +1778,7 @@ class Metadata {
   private function checkLangElements() {
     $mduiArray = array();
     $usedLangArray = array();
-    $mduiHandler = $this->metaDb->prepare("SELECT `type`, `lang`, `element`
+    $mduiHandler = $this->config->getDb()->prepare("SELECT `type`, `lang`, `element`
       FROM Mdui WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
@@ -1817,7 +1815,7 @@ class Metadata {
     $serviceNameArray = array();
     $serviceDescriptionArray = array();
 
-    $serviceElementHandler = $this->metaDb->prepare('SELECT `element`, `lang`, `Service_index`
+    $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `Service_index`
       FROM AttributeConsumingService_Service WHERE `entity_id` = :Id');
     $serviceElementHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $serviceElementHandler->execute();
@@ -1862,7 +1860,7 @@ class Metadata {
     }
 
     $organizationArray = array();
-    $organizationHandler = $this->metaDb->prepare('SELECT `lang`, `element` FROM Organization WHERE `entity_id` = :Id');
+    $organizationHandler = $this->config->getDb()->prepare('SELECT `lang`, `element` FROM Organization WHERE `entity_id` = :Id');
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1940,7 +1938,7 @@ class Metadata {
 
   // 5.1.9 -> 5.1.11 / 6.1.9 -> 6.1.11
   private function checkEntityAttributes($type) {
-    $entityAttributesHandler = $this->metaDb->prepare('SELECT `attribute`
+    $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id AND `type` = :Type');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
@@ -1990,7 +1988,7 @@ class Metadata {
 
   # 5.1.13 errorURL
   private function checkErrorURL() {
-    $errorURLHandler = $this->metaDb->prepare("SELECT DISTINCT `URL`
+    $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
       FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $errorURLHandler->execute();
@@ -2001,7 +1999,7 @@ class Metadata {
 
   // 5.1.15, 5.1.16 Scope
   private function checkIDPScope() {
-    $scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $scopesHandler->execute();
     $missingScope = true;
@@ -2024,7 +2022,7 @@ class Metadata {
       'InformationURL' => false,
       'PrivacyStatementURL' => false,
       'Logo' => false);
-    $mduiDNUniqHandler = $this->metaDb->prepare("SELECT `entityID`
+    $mduiDNUniqHandler = $this->config->getDb()->prepare("SELECT `entityID`
       FROM `Entities`, `Mdui`
       WHERE `Entities`.`id` = `entity_id`
         AND `type`  = 'IDPSSO'
@@ -2033,7 +2031,7 @@ class Metadata {
         AND `lang` = :Lang
         AND `status` = 1
         AND `entityID` <> :EntityID;");
-    $mduiHandler = $this->metaDb->prepare('SELECT `entityID`, `element`, `data`, `lang`
+    $mduiHandler = $this->config->getDb()->prepare('SELECT `entityID`, `element`, `data`, `lang`
       FROM `Entities`, `Mdui` WHERE `Entities`.`id` = `entity_id` AND `entity_id` = :Id AND `type`  = :Type');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->bindValue(self::BIND_TYPE, 'IDPSSO');
@@ -2082,7 +2080,7 @@ class Metadata {
       'Description' => false,
       'InformationURL' => false,
       'PrivacyStatementURL' => false);
-    $mduiHandler = $this->metaDb->prepare("SELECT DISTINCT `element`, `data`
+    $mduiHandler = $this->config->getDb()->prepare("SELECT DISTINCT `element`, `data`
       FROM Mdui WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
@@ -2114,7 +2112,7 @@ class Metadata {
   // 5.1.20, 5.2.x / 6.1.14, 6.2.x
   private function checkRequiredSAMLcertificates($type) {
     $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false, 'AttributeAuthority' => false);
-    $keyInfoHandler = $this->metaDb->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
+    $keyInfoHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
       FROM KeyInfo
       WHERE `entity_id` = :Id AND `type` =:Type
       ORDER BY notValidAfter DESC');
@@ -2456,7 +2454,7 @@ class Metadata {
   private function checkRequiredOrganizationElements() {
     $elementArray = array('OrganizationName' => false, 'OrganizationDisplayName' => false, 'OrganizationURL' => false);
 
-    $organizationHandler = $this->metaDb->prepare('SELECT DISTINCT `element`
+    $organizationHandler = $this->config->getDb()->prepare('SELECT DISTINCT `element`
       FROM Organization WHERE `entity_id` = :Id');
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
@@ -2474,7 +2472,7 @@ class Metadata {
   // 5.1.23 -> 5.1.28 / 6.1.22 -> 6.1.26
   private function checkRequiredContactPersonElements($type) {
     $usedContactTypes = array();
-    $contactPersonHandler = $this->metaDb->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
+    $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
       FROM ContactPerson WHERE `entity_id` = :Id');
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
@@ -2546,7 +2544,7 @@ class Metadata {
   # https://refeds.org/category/research-and-scholarship
   private function validateSPRandS() {
     $mduiArray = array();
-    $mduiHandler = $this->metaDb->prepare("SELECT `lang`, `element`
+    $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`
       FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
@@ -2568,7 +2566,7 @@ class Metadata {
       $this->error .= "REFEDS Research and Scholarship 4.3.3 Require a MDUI:DisplayName and a MDUI:InformationURL.\n";
     }
 
-    $contactPersonHandler = $this->metaDb->prepare("SELECT `emailAddress`
+    $contactPersonHandler = $this->config->getDb()->prepare("SELECT `emailAddress`
       FROM ContactPerson WHERE `contactType` = 'technical' AND `entity_id` = :Id;");
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
@@ -2582,9 +2580,9 @@ class Metadata {
   private function validateSPCoCov1() {
     $mduiArray = array();
     $mduiElementArray = array();
-    $mduiHandler = $this->metaDb->prepare("SELECT `lang`, `element`, `data`
+    $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`, `data`
       FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
-    $requestedAttributeHandler = $this->metaDb->prepare('SELECT DISTINCT `Service_index`
+    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT DISTINCT `Service_index`
       FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -2635,11 +2633,11 @@ class Metadata {
   private function validateSPCoCov2() {
     $mduiArray = array();
     $mduiElementArray = array();
-    $mduiHandler = $this->metaDb->prepare("SELECT `lang`, `element`, `data`
+    $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`, `data`
       FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
-    $requestedAttributeHandler = $this->metaDb->prepare('SELECT DISTINCT `Service_index`
+    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT DISTINCT `Service_index`
       FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id');
-    $entityAttributesHandler =  $this->metaDb->prepare('SELECT attribute
+    $entityAttributesHandler =  $this->config->getDb()->prepare('SELECT attribute
       FROM EntityAttributes WHERE `type` = :Type AND `entity_id` = :Id');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -2953,7 +2951,7 @@ class Metadata {
   # Adds an url to DB
   #############
   private function addEntityUrl($type, $url) {
-    $urlHandler = $this->metaDb->prepare("INSERT INTO EntityURLs
+    $urlHandler = $this->config->getDb()->prepare("INSERT INTO EntityURLs
       (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, :Type)");
     $urlHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $urlHandler->bindValue(self::BIND_URL, $url);
@@ -2980,7 +2978,7 @@ class Metadata {
         default :
       }
     }
-    $publishedHandler = $this->metaDb->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
+    $publishedHandler = $this->config->getDb()->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
     $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $publishedHandler->bindValue(self::BIND_PUBLISHIN, $publishIn);
     $publishedHandler->execute();
@@ -2991,7 +2989,7 @@ class Metadata {
   # Updates which feeds by value
   #############
   public function updateFeedByValue($publishIn) {
-    $publishedHandler = $this->metaDb->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
+    $publishedHandler = $this->config->getDb()->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
     $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $publishedHandler->bindValue(self::BIND_PUBLISHIN, $publishIn);
     $publishedHandler->execute();
@@ -3002,7 +3000,7 @@ class Metadata {
   # Updates which user that is responsible for an entity
   #############
   public function updateResponsible($approvedBy) {
-    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+    $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
     $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $approvedBy);
@@ -3013,11 +3011,11 @@ class Metadata {
   # Copies which user that is responsible for an entity from another entity
   #############
   public function copyResponsible($otherEntity_id) {
-    $entityUserHandler = $this->metaDb->prepare(
+    $entityUserHandler = $this->config->getDb()->prepare(
       'INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
       VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged)
       ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
-    $otherEntityUserHandler = $this->metaDb->prepare(
+    $otherEntityUserHandler = $this->config->getDb()->prepare(
       'SELECT `user_id`, `approvedBy`, `lastChanged`
       FROM EntityUser
       WHERE `entity_id` = :OtherEntity_Id');
@@ -3040,7 +3038,7 @@ class Metadata {
     $this->removeEntityReal($this->dbIdNr);
   }
   private function removeEntityReal($dbIdNr) {
-    $entityHandler = $this->metaDb->prepare('SELECT publishedId FROM Entities WHERE id = :Id');
+    $entityHandler = $this->config->getDb()->prepare('SELECT publishedId FROM Entities WHERE id = :Id');
     $entityHandler->bindParam(self::BIND_ID, $dbIdNr);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -3049,32 +3047,32 @@ class Metadata {
         $this->removeEntityReal($entity['publishedId']);
       }
       # Remove data for this Entity
-      $this->metaDb->beginTransaction();
-      $this->metaDb->prepare('DELETE FROM `AccessRequests` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->beginTransaction();
+      $this->config->getDb()->prepare('DELETE FROM `AccessRequests` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `AttributeConsumingService` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `AttributeConsumingService_RequestedAttribute`
+      $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_RequestedAttribute`
         WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `ContactPerson` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->prepare('DELETE FROM `ContactPerson` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `EntityAttributes` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->prepare('DELETE FROM `EntityAttributes` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `EntityConfirmation` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->prepare('DELETE FROM `EntityConfirmation` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `EntityURLs` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `EntityUser` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `IdpIMPS` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `KeyInfo` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `MailReminders` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `Mdui` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `Organization` WHERE `entity_id` = :Id')->execute(
+      $this->config->getDb()->prepare('DELETE FROM `EntityURLs` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `EntityUser` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `IdpIMPS` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `KeyInfo` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `MailReminders` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `Mdui` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `Organization` WHERE `entity_id` = :Id')->execute(
         array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `Scopes` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->prepare('DELETE FROM `Entities` WHERE `id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
-      $this->metaDb->commit();
+      $this->config->getDb()->prepare('DELETE FROM `Scopes` WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->prepare('DELETE FROM `Entities` WHERE `id` = :Id')->execute(array(self::BIND_ID => $dbIdNr));
+      $this->config->getDb()->commit();
     }
   }
 
@@ -3082,12 +3080,12 @@ class Metadata {
   # Check if an entity from pendingQueue exists with same XML in published
   #############
   public function checkPendingIfPublished() {
-    $pendingHandler = $this->metaDb->prepare('SELECT `entityID`, `xml`, `lastUpdated`
+    $pendingHandler = $this->config->getDb()->prepare('SELECT `entityID`, `xml`, `lastUpdated`
       FROM Entities WHERE `status` = 2 AND `id` = :Id');
     $pendingHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $pendingHandler->execute();
 
-    $publishedHandler = $this->metaDb->prepare('SELECT `xml`, `lastUpdated`
+    $publishedHandler = $this->config->getDb()->prepare('SELECT `xml`, `lastUpdated`
       FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
     $publishedHandler->bindParam(self::BIND_ENTITYID, $entityID);
 
@@ -3127,7 +3125,7 @@ class Metadata {
   # Moves an entity from Published to SoftDelete state
   #############
   public function move2SoftDelete() {
-    $entityHandler = $this->metaDb->prepare('UPDATE Entities
+    $entityHandler = $this->config->getDb()->prepare('UPDATE Entities
       SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityHandler->execute();
@@ -3139,22 +3137,22 @@ class Metadata {
   public function movePublishedPending() {
     # Check if entity id exist as status pending
     if ($this->status == 2) {
-      $publishedEntityHandler = $this->metaDb->prepare('SELECT `id`
+      $publishedEntityHandler = $this->config->getDb()->prepare('SELECT `id`
         FROM Entities WHERE `status` = 1 AND `entityID` = :Id');
       # Get id of published version
       $publishedEntityHandler->bindParam(self::BIND_ID, $this->entityID);
       $publishedEntityHandler->execute();
       if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
-        $entityHandler = $this->metaDb->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
-        $entityUserHandler = $this->metaDb->prepare('SELECT `user_id`, `approvedBy`, `lastChanged`
+        $entityHandler = $this->config->getDb()->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
+        $entityUserHandler = $this->config->getDb()->prepare('SELECT `user_id`, `approvedBy`, `lastChanged`
           FROM EntityUser WHERE `entity_id` = :Entity_id ORDER BY `lastChanged`');
-        $addEntityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser
+        $addEntityUserHandler = $this->config->getDb()->prepare('INSERT INTO EntityUser
           (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
           VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged)
           ON DUPLICATE KEY
           UPDATE `lastChanged` =
             IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged)');
-        $updateEntityConfirmationHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation
+        $updateEntityConfirmationHandler = $this->config->getDb()->prepare('INSERT INTO EntityConfirmation
           (`entity_id`, `user_id`, `lastConfirmed`)
           VALUES (:Entity_id, :User_id, :LastConfirmed)
           ON DUPLICATE KEY UPDATE `user_id` = :User_id, `lastConfirmed` = :LastConfirmed');
@@ -3184,7 +3182,7 @@ class Metadata {
         $updateEntityConfirmationHandler->execute();
       }
       # Move entity to status PendingPublished
-      $entityUpdateHandler = $this->metaDb->prepare('UPDATE Entities
+      $entityUpdateHandler = $this->config->getDb()->prepare('UPDATE Entities
         SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
       $entityUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $entityUpdateHandler->execute();
@@ -3278,7 +3276,7 @@ class Metadata {
   #############
   public function moveDraftToPending($publishedEntity_id) {
     $this->addRegistrationInfo();
-    $entityHandler = $this->metaDb->prepare('UPDATE Entities
+    $entityHandler = $this->config->getDb()->prepare('UPDATE Entities
       SET `status` = 2, `publishedId` = :PublishedId, `lastUpdated` = NOW(), `xml` = :Xml
       WHERE `status` = 3 AND `id` = :Id');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -3388,7 +3386,7 @@ class Metadata {
 
   public function entityDisplayName() {
     if (! $this->entityDisplayName ) {
-      $displayHandler = $this->metaDb->prepare(
+      $displayHandler = $this->config->getDb()->prepare(
         "SELECT `data` AS DisplayName
         FROM Mdui WHERE entity_id = :Entity_id AND `element` = 'DisplayName' AND `lang` = 'en'");
       $displayHandler->bindParam(self::BIND_ENTITY_ID,$this->dbIdNr);
@@ -3407,7 +3405,7 @@ class Metadata {
 
     # If entity in Published will only match one.
     # If entity in draft, will match both draft and published and get addresses from both.
-    $contactHandler = $this->metaDb->prepare("SELECT DISTINCT emailAddress
+    $contactHandler = $this->config->getDb()->prepare("SELECT DISTINCT emailAddress
       FROM `Entities`, `ContactPerson`
       WHERE `Entities`.`id` = `entity_id`
         AND ((`entityID` = :EntityID AND `status` = 1) OR (`Entities`.`id` = :Entity_id AND `status` = 3))
@@ -3430,7 +3428,7 @@ class Metadata {
   }
 
   public function confirmEntity($userId) {
-    $entityConfirmHandler = $this->metaDb->prepare('INSERT INTO EntityConfirmation
+    $entityConfirmHandler = $this->config->getDb()->prepare('INSERT INTO EntityConfirmation
       (`entity_id`, `user_id`, `lastConfirmed`)
       VALUES (:Id, :User_id, NOW())
       ON DUPLICATE KEY UPDATE  `user_id` = :User_id, `lastConfirmed` = NOW()');
@@ -3441,16 +3439,16 @@ class Metadata {
 
   public function getUser($userID, $email = '', $fullName = '', $add = false) {
     if ($this->user['id'] == 0) {
-      $userHandler = $this->metaDb->prepare('SELECT `id`, `email`, `fullName` FROM Users WHERE `userID` = :Id');
+      $userHandler = $this->config->getDb()->prepare('SELECT `id`, `email`, `fullName` FROM Users WHERE `userID` = :Id');
       $userHandler->bindValue(self::BIND_ID, strtolower($userID));
       $userHandler->execute();
       if ($this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
-        $lastSeenUserHandler = $this->metaDb->prepare('UPDATE Users
+        $lastSeenUserHandler = $this->config->getDb()->prepare('UPDATE Users
           SET `lastSeen` = NOW() WHERE `userID` = :Id');
         $lastSeenUserHandler->bindValue(self::BIND_ID, strtolower($userID));
         $lastSeenUserHandler->execute();
         if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
-          $userHandler = $this->metaDb->prepare('UPDATE Users
+          $userHandler = $this->config->getDb()->prepare('UPDATE Users
             SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
           $userHandler->bindValue(self::BIND_ID, strtolower($userID));
           $userHandler->bindParam(self::BIND_EMAIL, $email);
@@ -3458,13 +3456,13 @@ class Metadata {
           $userHandler->execute();
         }
       } elseif ($add) {
-        $addNewUserHandler = $this->metaDb->prepare('INSERT INTO Users
+        $addNewUserHandler = $this->config->getDb()->prepare('INSERT INTO Users
           (`userID`, `email`, `fullName`, `lastSeen`) VALUES(:Id, :Email, :FullName, NOW())');
         $addNewUserHandler->bindValue(self::BIND_ID, strtolower($userID));
         $addNewUserHandler->bindParam(self::BIND_EMAIL, $email);
         $addNewUserHandler->bindParam(self::BIND_FULLNAME, $fullName);
         $addNewUserHandler->execute();
-        $this->user['id'] = $this->metaDb->lastInsertId();
+        $this->user['id'] = $this->config->getDb()->lastInsertId();
         $this->user['email'] = $email;
         $this->user['fullname'] = $fullName;
       } else {
@@ -3484,7 +3482,7 @@ class Metadata {
   }
 
   public function updateUser($userID, $email, $fullName) {
-    $userHandler = $this->metaDb->prepare('UPDATE Users
+    $userHandler = $this->config->getDb()->prepare('UPDATE Users
       SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
     $userHandler->bindValue(self::BIND_ID, strtolower($userID));
     $userHandler->bindValue(self::BIND_EMAIL, $email);
@@ -3497,7 +3495,7 @@ class Metadata {
   #############
   public function isResponsible() {
     if ($this->user['id'] > 0) {
-      $userHandler = $this->metaDb->prepare('SELECT *
+      $userHandler = $this->config->getDb()->prepare('SELECT *
         FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :Entity_id' );
       $userHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
       $userHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
@@ -3509,7 +3507,7 @@ class Metadata {
   }
 
   public function getResponsibles() {
-    $usersHandler = $this->metaDb->prepare('SELECT `id`, `userID`, `email`, `fullName`
+    $usersHandler = $this->config->getDb()->prepare('SELECT `id`, `userID`, `email`, `fullName`
       FROM EntityUser, Users WHERE `entity_id` = :Entity_id AND id = user_id ORDER BY `userID`;');
     $usersHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $usersHandler->execute();
@@ -3519,7 +3517,7 @@ class Metadata {
   public function createAccessRequest($userId) {
     $hash = hash_hmac('md5',$this->entityID(),time());
     $code = base64_encode(sprintf ('%d:%d:%s', $this->dbIdNr, $userId, $hash));
-    $addNewRequestHandler = $this->metaDb->prepare('INSERT INTO `AccessRequests`
+    $addNewRequestHandler = $this->config->getDb()->prepare('INSERT INTO `AccessRequests`
       (`entity_id`, `user_id`, `hash`, `requestDate`)
       VALUES (:Entity_id, :User_id, :Hashvalue, NOW())
       ON DUPLICATE KEY UPDATE `hash` = :Hashvalue, `requestDate` = NOW()');
@@ -3532,7 +3530,7 @@ class Metadata {
 
   public function validateCode($userId, $hash, $approvedBy) {
     if ($userId > 0) {
-      $userHandler = $this->metaDb->prepare('SELECT *
+      $userHandler = $this->config->getDb()->prepare('SELECT *
         FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :EntityID' );
       $userHandler->bindParam(self::BIND_USER_ID, $userId);
       $userHandler->bindParam(self::BIND_ENTITYID, $this->dbIdNr);
@@ -3540,7 +3538,7 @@ class Metadata {
       if ($userHandler->fetch(PDO::FETCH_ASSOC)) {
         $result = array('returnCode' => 1, 'info' => 'User already had access');
       } else {
-        $requestHandler = $this->metaDb->prepare('SELECT `requestDate`, NOW() - INTERVAL 1 DAY AS `limit`,
+        $requestHandler = $this->config->getDb()->prepare('SELECT `requestDate`, NOW() - INTERVAL 1 DAY AS `limit`,
           `email`, `fullName`, `entityID`
           FROM `AccessRequests`, `Users`, `Entities`
           WHERE Users.`id` = `user_id`
@@ -3548,7 +3546,7 @@ class Metadata {
             AND `entity_id` =  :Entity_id
             AND `user_id` = :User_id
             AND `hash` = :Hashvalue');
-        $requestRemoveHandler = $this->metaDb->prepare('DELETE FROM `AccessRequests`
+        $requestRemoveHandler = $this->config->getDb()->prepare('DELETE FROM `AccessRequests`
           WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
         $requestHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
         $requestHandler->bindParam(self::BIND_USER_ID, $userId);
@@ -3577,7 +3575,7 @@ class Metadata {
   }
 
   public function addAccess2Entity($userId, $approvedBy) {
-    $entityUserHandler = $this->metaDb->prepare('INSERT INTO EntityUser
+    $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO EntityUser
       (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
       VALUES(:Entity_id, :User_id, :ApprovedBy, NOW())
       ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
@@ -3588,7 +3586,7 @@ class Metadata {
   }
 
   public function removeAccessFromEntity($userId) {
-    $entityUserHandler = $this->metaDb->prepare('DELETE FROM EntityUser
+    $entityUserHandler = $this->config->getDb()->prepare('DELETE FROM EntityUser
       WHERE `entity_id` = :Entity_id AND `user_id` = :User_id');
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
@@ -3606,7 +3604,7 @@ class Metadata {
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
     $changed = 0;
-    $entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `lastUpdated`, `errors`
+    $entitys = $this->config->getDb()->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `lastUpdated`, `errors`
       FROM Entities WHERE status = 1 AND publishIn > 1");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
@@ -3631,7 +3629,7 @@ class Metadata {
           printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
       }
     }
-    $statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatus
+    $statsUpdate = $this->config->getDb()->prepare("INSERT INTO EntitiesStatus
       (`date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed`)
       VALUES ('$date', $errorsTotal, $errorsSPs, $errorsIdPs, $nrOfEntities, $nrOfSPs, $nrOfIdPs, '$changed')");
     $statsUpdate->execute();
@@ -3645,7 +3643,7 @@ class Metadata {
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
 
-    $entitys = $this->metaDb->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
+    $entitys = $this->config->getDb()->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
       FROM Entities WHERE status = 1 AND publishIn > 2");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
@@ -3664,7 +3662,7 @@ class Metadata {
           printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
       }
     }
-    $statsUpdate = $this->metaDb->prepare("INSERT INTO EntitiesStatistics
+    $statsUpdate = $this->config->getDb()->prepare("INSERT INTO EntitiesStatistics
       (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`)
       VALUES ('$date', $nrOfEntities, $nrOfSPs, $nrOfIdPs)");
     $statsUpdate->execute();

@@ -9,17 +9,15 @@ class IMPS {
   const BIND_IMPS_ID = 'IMPS_id';
   const BIND_USER_ID = ':User_id';
 
-  private $metaDb;
+  private $config;
   private $errors = '';
 
   public function __construct() {
-    require __DIR__ . '/../config.php'; #NOSONAR
-    try {
-      $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-      // set the PDO error mode to exception
-      $this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch(PDOException $e) {
-      echo "Error: " . $e->getMessage();
+    global $config;
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new Configuration();
     }
   }
 
@@ -32,7 +30,7 @@ class IMPS {
     print '    <div class="row">
       <div class="col">' . "\n";
 
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `OrganizationInfo`.`OrganizationNameSv` AS `OrganizationName`, `name`, `maximumAL`, `lastUpdated`, `sharedIdp`
       FROM `IMPS`, `OrganizationInfo`
       WHERE `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
@@ -82,7 +80,7 @@ class IMPS {
     if (isset($_POST['name']) && isset($_POST['maximumAL']) && isset($_POST['lastUpdated'])) {
       $maximumAL = $_POST['maximumAL'];
       if ($maximumAL > 0 && $maximumAL < 4) {
-        $impsHandler = $this->metaDb->prepare(
+        $impsHandler = $this->config->getDb()->prepare(
           'UPDATE IMPS 
           SET `name` = :Name, `maximumAL` = :MaximunAL,
             `lastUpdated` = :LastUpdated,
@@ -102,28 +100,28 @@ class IMPS {
     return false;
   }
   public function BindIdP2IMPS($entity_Id, $imps_Id) {
-    $impsHandler = $this->metaDb->prepare('INSERT INTO `IdpIMPS`
+    $impsHandler = $this->config->getDb()->prepare('INSERT INTO `IdpIMPS`
       (`entity_id`, `IMPS_id`) VALUES
       (:Entity_id, :IMPS_id)');
     $impsHandler->execute(array('Entity_id' => $entity_Id, self::BIND_IMPS_ID => $imps_Id));
   }
 
   public function validateIMPS($entity_Id, $imps_Id, $userId) {
-    $checkHandler = $this->metaDb->prepare(
+    $checkHandler = $this->config->getDb()->prepare(
       'SELECT * FROM `IdpIMPS`
       WHERE `entity_id` = :Entity_id AND
         `IMPS_id` = :IMPS_id');
     $checkHandler->execute(array('Entity_id' => $entity_Id, self::BIND_IMPS_ID => $imps_Id));
-    $impsHandler = $this->metaDb->prepare(
+    $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `lastValidated`, `lastUpdated` , `email`, `fullName`
       FROM `IMPS`
       LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
       WHERE `IMPS`.`id` = :IMPS_id');
-    $idpsHandler = $this->metaDb->prepare(
+    $idpsHandler = $this->config->getDb()->prepare(
       'SELECT `entity_id`, `entityID` FROM `IdpIMPS`, `Entities`
       WHERE `IMPS_id` = :IMPS_id AND
         `entity_id` = `Entities`.`id`');
-    $assuranceHandler = $this->metaDb->prepare(
+    $assuranceHandler = $this->config->getDb()->prepare(
       "SELECT `attribute`
       FROM `EntityAttributes`
       WHERE `entity_id` = :Entity_id AND 
@@ -134,7 +132,7 @@ class IMPS {
     if ($checkHandler->fetch()) {
       if (isset($_GET['FormVisit'])) {
         if (isset($_GET['impsIsValid'])) {
-          $impsConfirmHandler = $this->metaDb->prepare(
+          $impsConfirmHandler = $this->config->getDb()->prepare(
             'UPDATE `IMPS`
             SET `lastValidated` = NOW(), `user_id` = :User_id
             WHERE `id` = :IMPS_id');

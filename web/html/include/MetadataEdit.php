@@ -1,7 +1,7 @@
 <?php
 class MetadataEdit {
   # Setup
-  private $metaDb;
+  private $config;
   private $dbIdNr = 0;
   private $dbOldIdNr = 0;
   private $entityExists = false;
@@ -124,15 +124,13 @@ class MetadataEdit {
   const TEXT_ENC_SIGN = 'encryption & signing';
 
   public function __construct($newID, $oldID = 0) {
-    require __DIR__ . '/../config.php'; #NOSONAR
-    require __DIR__ . '/common.php'; #NOSONAR
-    try {
-      $this->metaDb = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-      // set the PDO error mode to exception
-      $this->metaDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    } catch(PDOException $e) {
-      echo "Error: " . $e->getMessage();
+    global $config;
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new metadata\Configuration();
     }
+    require __DIR__ . '/common.php'; #NOSONAR
     $this->dbIdNr = is_numeric($newID) ? $newID : 0;
     $this->dbOldIdNr = is_numeric($oldID) ? $oldID : 0;
     $this->oldExists = false;
@@ -153,7 +151,7 @@ class MetadataEdit {
       self::SAML_MD_TELEPHONENUMBER => 5,
       self::SAML_MD_EXTENSIONS => 6);
 
-    $entityHandler = $this->metaDb->prepare('SELECT entityID, isIdP, isSP, status, xml FROM Entities WHERE id = :Id;');
+    $entityHandler = $this->config->getDb()->prepare('SELECT entityID, isIdP, isSP, status, xml FROM Entities WHERE id = :Id;');
     $entityHandler->bindValue(self::BIND_ID, $newID);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -250,7 +248,7 @@ class MetadataEdit {
   }
 
   private function editEntityAttributes() {
-    $entityAttributesHandler = $this->metaDb->prepare(
+    $entityAttributesHandler = $this->config->getDb()->prepare(
       'SELECT type, attribute FROM EntityAttributes WHERE entity_id = :Id ORDER BY type, attribute;');
 
     if (isset($_GET['action']) && isset($_GET['attribute']) && trim($_GET['attribute']) != '' ) {
@@ -363,7 +361,7 @@ class MetadataEdit {
             $attributeValue->nodeValue = trim($_GET['attribute']);
             $attribute->appendChild($attributeValue);
 
-            $entityAttributesAddHandler = $this->metaDb->prepare(
+            $entityAttributesAddHandler = $this->config->getDb()->prepare(
               'INSERT INTO EntityAttributes (entity_id, type, attribute) VALUES (:Id, :Type, :Attribute) ;');
             $entityAttributesAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
             $entityAttributesAddHandler->bindParam(self::BIND_TYPE, $_GET['type']);
@@ -415,7 +413,7 @@ class MetadataEdit {
                       $extensions->removeChild($entityAttributes);
                     }
                   }
-                  $entityAttributesRemoveHandler = $this->metaDb->prepare(
+                  $entityAttributesRemoveHandler = $this->config->getDb()->prepare(
                     'DELETE FROM EntityAttributes WHERE entity_id=:Id AND type=:Type AND attribute=:Attribute;');
                   $entityAttributesRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                   $entityAttributesRemoveHandler->bindParam(self::BIND_TYPE, $_GET['type']);
@@ -622,7 +620,7 @@ class MetadataEdit {
         case 'Update' :
           if ($idpSSODescriptor) {
             $idpSSODescriptor->setAttribute('errorURL', $errorURLValue);
-            $errorURLUpdateHandler = $this->metaDb->prepare(
+            $errorURLUpdateHandler = $this->config->getDb()->prepare(
               "INSERT INTO EntityURLs (`entity_id`, `URL`, `type`)
               VALUES (:Id, :URL, 'error')  ON DUPLICATE KEY UPDATE `URL` = :URL;");
             $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -634,7 +632,7 @@ class MetadataEdit {
         case 'Delete' :
           if ($idpSSODescriptor) {
             $idpSSODescriptor->removeAttribute('errorURL');
-            $errorURLUpdateHandler = $this->metaDb->prepare(
+            $errorURLUpdateHandler = $this->config->getDb()->prepare(
               "DELETE FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
             $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
             $errorURLUpdateHandler->execute();
@@ -651,7 +649,7 @@ class MetadataEdit {
       $errorURLValue = '';
     }
 
-    $errorURLHandler = $this->metaDb->prepare(
+    $errorURLHandler = $this->config->getDb()->prepare(
       "SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $errorURLHandler->execute();
@@ -789,7 +787,7 @@ class MetadataEdit {
             }
 
             if ($changed) {
-              $scopesInsertHandler = $this->metaDb->prepare(
+              $scopesInsertHandler = $this->config->getDb()->prepare(
                 'INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, 0);');
               $scopesInsertHandler->bindParam(self::BIND_ID, $this->dbIdNr);
               $scopesInsertHandler->bindParam(self::BIND_SCOPE, $scopeValue);
@@ -825,7 +823,7 @@ class MetadataEdit {
                 $idpSSODescriptor->removeChild($extensions);
               }
               if ($changed) {
-                $scopesDeleteHandler = $this->metaDb->prepare(
+                $scopesDeleteHandler = $this->config->getDb()->prepare(
                   'DELETE FROM Scopes WHERE entity_id = :Id AND scope = :Scope;');
                 $scopesDeleteHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $scopesDeleteHandler->bindParam(self::BIND_SCOPE, $scopeValue);
@@ -844,7 +842,7 @@ class MetadataEdit {
       $scopeValue = '';
     }
 
-    $scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $scopesHandler->execute();
     $oldScopes = array();
@@ -1025,7 +1023,7 @@ class MetadataEdit {
                 # Update value
                 $mduiElement->nodeValue = htmlspecialchars($value);
                 if ($elementmd == self::SAML_MDUI_LOGO) {
-                  $mduiUpdateHandler = $this->metaDb->prepare(
+                  $mduiUpdateHandler = $this->config->getDb()->prepare(
                     'UPDATE Mdui
                     SET data = :Data
                     WHERE type = :Type
@@ -1037,7 +1035,7 @@ class MetadataEdit {
                   $mduiUpdateHandler->bindParam(self::BIND_HEIGHT, $heightValue);
                   $mduiUpdateHandler->bindParam(self::BIND_WIDTH, $widthValue);
                 } else {
-                  $mduiUpdateHandler = $this->metaDb->prepare(
+                  $mduiUpdateHandler = $this->config->getDb()->prepare(
                     'UPDATE Mdui
                     SET data = :Data
                     WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND element = :Element;');
@@ -1055,13 +1053,13 @@ class MetadataEdit {
                 if ($elementmd == self::SAML_MDUI_LOGO) {
                   $mduiElement->setAttribute('height', $heightValue);
                   $mduiElement->setAttribute('width', $widthValue);
-                  $mduiAddHandler = $this->metaDb->prepare(
+                  $mduiAddHandler = $this->config->getDb()->prepare(
                     'INSERT INTO Mdui (entity_id, type, lang, height, width, element, data)
                     VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
                   $mduiAddHandler->bindParam(self::BIND_HEIGHT, $heightValue);
                   $mduiAddHandler->bindParam(self::BIND_WIDTH, $widthValue);
                 } else {
-                  $mduiAddHandler = $this->metaDb->prepare(
+                  $mduiAddHandler = $this->config->getDb()->prepare(
                     'INSERT INTO Mdui (entity_id, type, lang, height, width, element, data)
                     VALUES (:Id, :Type, :Lang, 0, 0, :Element, :Data);');
                 }
@@ -1125,7 +1123,7 @@ class MetadataEdit {
                   if ($mduiElement) {
                     # Remove Node
                     if ($elementmd == self::SAML_MDUI_LOGO) {
-                      $mduiRemoveHandler = $this->metaDb->prepare(
+                      $mduiRemoveHandler = $this->config->getDb()->prepare(
                         'DELETE FROM Mdui
                         WHERE type = :Type
                         AND entity_id = :Id
@@ -1136,7 +1134,7 @@ class MetadataEdit {
                       $mduiRemoveHandler->bindParam(self::BIND_HEIGHT, $heightValue);
                       $mduiRemoveHandler->bindParam(self::BIND_WIDTH, $widthValue);
                     } else {
-                      $mduiRemoveHandler = $this->metaDb->prepare(
+                      $mduiRemoveHandler = $this->config->getDb()->prepare(
                         'DELETE FROM Mdui
                         WHERE type = :Type AND entity_id = :Id AND lang = :Lang AND element = :Element;');
                     }
@@ -1176,7 +1174,7 @@ class MetadataEdit {
       $heightValue = 0;
       $widthValue = 0;
     }
-    $mduiHandler = $this->metaDb->prepare(
+    $mduiHandler = $this->config->getDb()->prepare(
       'SELECT element, lang, height, width, data
       FROM Mdui
       WHERE entity_id = :Id AND type = :Type ORDER BY lang, element;');
@@ -1434,7 +1432,7 @@ class MetadataEdit {
                 # Add if missing
                 $mduiElement = $this->newXml->createElement($elementmd, $value);
                 $discoHints->appendChild($mduiElement);
-                $mduiAddHandler = $this->metaDb->prepare("INSERT INTO Mdui (entity_id, type, element, data)
+                $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO Mdui (entity_id, type, element, data)
                   VALUES (:Id, 'IDPDisco', :Element, :Data);");
                 $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $mduiAddHandler->bindParam(self::BIND_ELEMENT, $elementValue);
@@ -1483,7 +1481,7 @@ class MetadataEdit {
                   $moreMduiElement = $moreMduiElement ? true : $child;
                   if ($mduiElement) {
                     # Remove Node
-                    $mduiRemoveHandler = $this->metaDb->prepare(
+                    $mduiRemoveHandler = $this->config->getDb()->prepare(
                       "DELETE FROM Mdui
                       WHERE type = 'IDPDisco' AND entity_id = :Id AND element = :Element AND data = :Data;");
                     $mduiRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -1515,7 +1513,7 @@ class MetadataEdit {
       $elementValue = '';
       $value = '';
     }
-    $mduiHandler = $this->metaDb->prepare(
+    $mduiHandler = $this->config->getDb()->prepare(
       "SELECT element, data FROM Mdui WHERE entity_id = :Id AND type = 'IDPDisco' ORDER BY element;");
     $oldMDUIElements = array();
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -1717,12 +1715,12 @@ class MetadataEdit {
 
           $this->saveXML();
 
-          $reorderKeyOrderHandler = $this->metaDb->prepare(
+          $reorderKeyOrderHandler = $this->config->getDb()->prepare(
             'UPDATE KeyInfo SET `order` = `order` +1  WHERE entity_id = :Id;');
           $reorderKeyOrderHandler->bindParam(self::BIND_ID, $this->dbIdNr);
           $reorderKeyOrderHandler->execute();
 
-          $KeyInfoHandler = $this->metaDb->prepare(
+          $KeyInfoHandler = $this->config->getDb()->prepare(
             'INSERT INTO KeyInfo
             (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`,
               `subject`, `issuer`, `bits`, `key_type`, `serialNumber`)
@@ -1887,7 +1885,7 @@ class MetadataEdit {
                 if ($moveKeyDescriptor && $previousKeyDescriptor) {
                   $ssoDescriptor->insertBefore($keyDescriptor, $previousKeyDescriptor);
 
-                  $reorderKeyOrderHandler = $this->metaDb->prepare(
+                  $reorderKeyOrderHandler = $this->config->getDb()->prepare(
                     'UPDATE KeyInfo SET `order` = :NewOrder WHERE entity_id = :Id AND `order` = :OldOrder;');
                   $reorderKeyOrderHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                   #Move key out of way
@@ -1927,7 +1925,7 @@ class MetadataEdit {
                   if ($moveKeyDescriptor) {
                     $ssoDescriptor->insertBefore($child, $keyDescriptor);
 
-                    $reorderKeyOrderHandler = $this->metaDb->prepare(
+                    $reorderKeyOrderHandler = $this->config->getDb()->prepare(
                       'UPDATE KeyInfo SET `order` = :NewOrder WHERE entity_id = :Id AND `order` = :OldOrder;');
                     $reorderKeyOrderHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                     #Move key out of way
@@ -2031,7 +2029,7 @@ class MetadataEdit {
                 if ($removeKeyDescriptor) {
 
                   $ssoDescriptor->removeChild($keyDescriptor);
-                  $keyInfoDeleteHandler = $this->metaDb->prepare(
+                  $keyInfoDeleteHandler = $this->config->getDb()->prepare(
                     'DELETE FROM KeyInfo
                     WHERE entity_id = :Id AND `type` = :Type AND `use` = :Use AND `serialNumber` = :SerialNumber
                     ORDER BY `order` LIMIT 1;');
@@ -2041,7 +2039,7 @@ class MetadataEdit {
                   $keyInfoDeleteHandler->bindParam(self::BIND_SERIALNUMBER, $serialNumber);
                   $keyInfoDeleteHandler->execute();
 
-                  $reorderKeyOrderHandler = $this->metaDb->prepare(
+                  $reorderKeyOrderHandler = $this->config->getDb()->prepare(
                     'UPDATE KeyInfo SET `order` = `order` -1  WHERE entity_id = :Id AND `order` > :Order;');
                   $reorderKeyOrderHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                   $reorderKeyOrderHandler->bindParam(self::BIND_ORDER, $order);
@@ -2105,7 +2103,7 @@ class MetadataEdit {
                   } else {
                     $keyDescriptor->setAttribute('use', $newUse);
                   }
-                  $keyInfoUpdateHandler = $this->metaDb->prepare(
+                  $keyInfoUpdateHandler = $this->config->getDb()->prepare(
                     'UPDATE KeyInfo SET `use` = :NewUse
                     WHERE entity_id = :Id
                       AND `type` = :Type
@@ -2135,7 +2133,7 @@ class MetadataEdit {
       }
     }
 
-    $keyInfoStatusHandler = $this->metaDb->prepare(
+    $keyInfoStatusHandler = $this->config->getDb()->prepare(
       'SELECT `use`, `order`, `notValidAfter` FROM KeyInfo WHERE entity_id = :Id AND type = :Type ORDER BY `order`');
     $keyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
     $keyInfoStatusHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2177,7 +2175,7 @@ class MetadataEdit {
       }
       $maxOrder = $keyInfoStatus['order'];
     }
-    $keyInfoHandler = $this->metaDb->prepare(
+    $keyInfoHandler = $this->config->getDb()->prepare(
       'SELECT `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber`
       FROM KeyInfo
       WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `order`;');
@@ -2338,7 +2336,7 @@ class MetadataEdit {
       $elementValue = '';
       $error = '';
       if ($_GET['action'] == 'AddIndex') {
-        $nextServiceIndexHandler = $this->metaDb->prepare(
+        $nextServiceIndexHandler = $this->config->getDb()->prepare(
           'SELECT MAX(Service_index) AS lastIndex FROM AttributeConsumingService WHERE entity_id = :Id;');
         $nextServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
 
@@ -2453,12 +2451,12 @@ class MetadataEdit {
                 $attributeConsumingService->setAttribute('index', $indexValue);
                 $ssoDescriptor->appendChild($attributeConsumingService);
 
-                $addServiceIndexHandler = $this->metaDb->prepare(
+                $addServiceIndexHandler = $this->config->getDb()->prepare(
                   'INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
-                $serviceElementAddHandler = $this->metaDb->prepare(
+                $serviceElementAddHandler = $this->config->getDb()->prepare(
                   'INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data)
                   VALUES ( :Id, :Index, :Element, :Lang, :Data );');
-                $mduiHandler = $this->metaDb->prepare(
+                $mduiHandler = $this->config->getDb()->prepare(
                   "SELECT lang, data
                   FROM Mdui
                   WHERE entity_id = :Id AND element = 'DisplayName' AND type = 'SPSSO'
@@ -2501,19 +2499,19 @@ class MetadataEdit {
               if ($attributeConsumingService) {
                 $changed = true;
                 $ssoDescriptor->removeChild($attributeConsumingService);
-                $serviceRemoveHandler = $this->metaDb->prepare(
+                $serviceRemoveHandler = $this->config->getDb()->prepare(
                   'DELETE FROM AttributeConsumingService WHERE entity_id = :Id AND Service_index = :Index;');
                 $serviceRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $serviceRemoveHandler->bindParam(self::BIND_INDEX, $indexValue);
                 $serviceRemoveHandler->execute();
 
-                $serviceElementRemoveHandler = $this->metaDb->prepare(
+                $serviceElementRemoveHandler = $this->config->getDb()->prepare(
                   'DELETE FROM AttributeConsumingService_Service WHERE entity_id = :Id AND Service_index = :Index;');
                 $serviceElementRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $serviceElementRemoveHandler->bindParam(self::BIND_INDEX, $indexValue);
                 $serviceElementRemoveHandler->execute();
 
-                $requestedAttributeRemoveHandler = $this->metaDb->prepare(
+                $requestedAttributeRemoveHandler = $this->config->getDb()->prepare(
                   'DELETE FROM AttributeConsumingService_RequestedAttribute WHERE entity_id = :Id AND Service_index = :Index;');
                 $requestedAttributeRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $requestedAttributeRemoveHandler->bindParam(self::BIND_INDEX, $indexValue);
@@ -2549,7 +2547,7 @@ class MetadataEdit {
                 $attributeConsumingService = $this->newXml->createElement(self::SAML_MD_ATTRIBUTECONSUMINGSERVICE);
                 $attributeConsumingService->setAttribute('index', $indexValue);
                 $ssoDescriptor->appendChild($attributeConsumingService);
-                $addServiceIndexHandler = $this->metaDb->prepare(
+                $addServiceIndexHandler = $this->config->getDb()->prepare(
                   'INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
                 $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $addServiceIndexHandler->bindParam(self::BIND_INDEX, $indexValue);
@@ -2590,7 +2588,7 @@ class MetadataEdit {
                 if ($placement < 3 ) {
                   $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $langvalue);
                   $attributeConsumingServiceElement->nodeValue = $value;
-                  $serviceElementUpdateHandler = $this->metaDb->prepare(
+                  $serviceElementUpdateHandler = $this->config->getDb()->prepare(
                     'UPDATE AttributeConsumingService_Service
                     SET data = :Data
                     WHERE entity_id = :Id AND Service_index = :Index AND element = :Element AND lang = :Lang;');
@@ -2609,7 +2607,7 @@ class MetadataEdit {
                     $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
                   }
                   $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
-                  $requestedAttributeUpdateHandler = $this->metaDb->prepare(
+                  $requestedAttributeUpdateHandler = $this->config->getDb()->prepare(
                     'UPDATE AttributeConsumingService_RequestedAttribute
                     SET FriendlyName = :FriendlyName, NameFormat = :NameFormat, isRequired = :IsRequired
                     WHERE entity_id = :Id AND Service_index = :Index AND Name = :Name;');
@@ -2625,7 +2623,7 @@ class MetadataEdit {
                 # Added NEW, Insert into DB
                 if ($placement < 3 ) {
                   $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $langvalue);
-                  $serviceElementAddHandler = $this->metaDb->prepare(
+                  $serviceElementAddHandler = $this->config->getDb()->prepare(
                     'INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data)
                     VALUES ( :Id, :Index, :Element, :Lang, :Data );');
                   $serviceElementAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2643,7 +2641,7 @@ class MetadataEdit {
                     $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
                   }
                   $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
-                  $requestedAttributeAddHandler = $this->metaDb->prepare(
+                  $requestedAttributeAddHandler = $this->config->getDb()->prepare(
                     'INSERT INTO AttributeConsumingService_RequestedAttribute
                     (entity_id, Service_index, FriendlyName, Name, NameFormat, isRequired)
                     VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
@@ -2691,14 +2689,14 @@ class MetadataEdit {
                   $attributeConsumingService->removeChild($attributeConsumingServiceElement);
                   if (! $moreElements) {
                     $ssoDescriptor->removeChild($attributeConsumingService);
-                    $serviceRemoveHandler = $this->metaDb->prepare(
+                    $serviceRemoveHandler = $this->config->getDb()->prepare(
                       'DELETE FROM AttributeConsumingService WHERE entity_id = :Id AND Service_index = :Index;');
                     $serviceRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                     $serviceRemoveHandler->bindParam(self::BIND_INDEX, $indexValue);
                     $serviceRemoveHandler->execute();
                   }
                   if ($placement < 3 ) {
-                    $serviceElementRemoveHandler = $this->metaDb->prepare(
+                    $serviceElementRemoveHandler = $this->config->getDb()->prepare(
                       'DELETE FROM AttributeConsumingService_Service
                       WHERE entity_id = :Id AND Service_index = :Index AND element = :Element AND lang = :Lang;');
                     $serviceElementRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2707,7 +2705,7 @@ class MetadataEdit {
                     $serviceElementRemoveHandler->bindParam(self::BIND_LANG, $langvalue);
                     $serviceElementRemoveHandler->execute();
                   } else {
-                    $requestedAttributeRemoveHandler = $this->metaDb->prepare(
+                    $requestedAttributeRemoveHandler = $this->config->getDb()->prepare(
                       'DELETE FROM AttributeConsumingService_RequestedAttribute
                       WHERE entity_id = :Id AND Service_index = :Index AND Name = :Name;');
                     $requestedAttributeRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2743,14 +2741,14 @@ class MetadataEdit {
       $isRequired = '';
     }
 
-    $serviceIndexHandler = $this->metaDb->prepare(
+    $serviceIndexHandler = $this->config->getDb()->prepare(
       'SELECT Service_index FROM AttributeConsumingService
       WHERE entity_id = :Id ORDER BY Service_index;');
-    $serviceElementHandler = $this->metaDb->prepare(
+    $serviceElementHandler = $this->config->getDb()->prepare(
       'SELECT element, lang, data FROM AttributeConsumingService_Service
       WHERE entity_id = :Id AND Service_index = :Index ORDER BY element DESC, lang;');
     $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
-    $requestedAttributeHandler = $this->metaDb->prepare(
+    $requestedAttributeHandler = $this->config->getDb()->prepare(
       'SELECT FriendlyName, Name, NameFormat, isRequired FROM AttributeConsumingService_RequestedAttribute
       WHERE entity_id = :Id AND Service_index = :Index ORDER BY isRequired DESC, FriendlyName;');
     $requestedAttributeHandler->bindParam(self::BIND_INDEX, $index);
@@ -3013,7 +3011,7 @@ class MetadataEdit {
     print self::HTML_END_DIV_COL_ROW;
   }
   private function editOrganization() {
-    $organizationHandler = $this->metaDb->prepare(
+    $organizationHandler = $this->config->getDb()->prepare(
       'SELECT element, lang, data FROM Organization WHERE entity_id = :Id ORDER BY element, lang;');
 
     if (isset($_GET['action'])) {
@@ -3101,7 +3099,7 @@ class MetadataEdit {
             }
             if ($newOrg) {
               # Add if missing
-              $organizationAddHandler = $this->metaDb->prepare(
+              $organizationAddHandler = $this->config->getDb()->prepare(
                 'INSERT INTO Organization (entity_id, element, lang, data) VALUES (:Id, :Element, :Lang, :Data) ;');
               $organizationAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
               $organizationAddHandler->bindParam(self::BIND_ELEMENT, $element);
@@ -3111,7 +3109,7 @@ class MetadataEdit {
               $changed = true;
             } elseif ($organizationElement->nodeValue != $value) {
               $organizationElement->nodeValue = $value;
-              $organizationUpdateHandler = $this->metaDb->prepare(
+              $organizationUpdateHandler = $this->config->getDb()->prepare(
                 'UPDATE Organization SET data = :Data WHERE entity_id = :Id AND element = :Element AND lang = :Lang;');
               $organizationUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
               $organizationUpdateHandler->bindParam(self::BIND_ELEMENT, $element);
@@ -3140,7 +3138,7 @@ class MetadataEdit {
                   $entityDescriptor->removeChild($organization);
                 }
 
-                $organizationRemoveHandler = $this->metaDb->prepare(
+                $organizationRemoveHandler = $this->config->getDb()->prepare(
                   'DELETE FROM Organization
                   WHERE entity_id = :Id AND element = :Element AND lang = :Lang AND data = :Data;');
                 $organizationRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -3256,7 +3254,7 @@ class MetadataEdit {
     print self::HTML_END_DIV_COL_ROW;
   }
   private function editContactPersons(){
-    $contactPersonHandler = $this->metaDb->prepare(
+    $contactPersonHandler = $this->config->getDb()->prepare(
       'SELECT * FROM ContactPerson WHERE entity_id = :Id ORDER BY contactType;');
 
     if (isset($_GET['action'])
@@ -3337,7 +3335,7 @@ class MetadataEdit {
             }
             $entityDescriptor->appendChild($contactPerson);
 
-            $contactPersonAddHandler = $this->metaDb->prepare('INSERT INTO ContactPerson (entity_id, contactType) VALUES (:Id, :ContactType) ;');
+            $contactPersonAddHandler = $this->config->getDb()->prepare('INSERT INTO ContactPerson (entity_id, contactType) VALUES (:Id, :ContactType) ;');
             $contactPersonAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
             $contactPersonAddHandler->bindParam(self::BIND_CONTACTTYPE, $type);
             $contactPersonAddHandler->execute();
@@ -3365,7 +3363,7 @@ class MetadataEdit {
             $contactPersonElement->nodeValue = $value;
             $sql="UPDATE ContactPerson SET $part = :Data WHERE entity_id = :Id AND contactType = :ContactType ;";
             // SONAR Comment : $part is validated above. Must exist as index in in $this->orderContactPerson
-            $contactPersonUpdateHandler = $this->metaDb->prepare($sql); # NOSONAR
+            $contactPersonUpdateHandler = $this->config->getDb()->prepare($sql); # NOSONAR
             $contactPersonUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
             $contactPersonUpdateHandler->bindParam(self::BIND_CONTACTTYPE, $type);
             $contactPersonUpdateHandler->bindParam(self::BIND_DATA, $value);
@@ -3406,14 +3404,14 @@ class MetadataEdit {
                   $sql="UPDATE ContactPerson SET $part = ''
                     WHERE entity_id = :Id AND contactType = :ContactType AND $part = :Value;";
                   // SONAR Comment : $part is validated above. Must exist as index in in $this->orderContactPerson
-                  $contactPersonUpdateHandler = $this->metaDb->prepare($sql); # NOSONAR
+                  $contactPersonUpdateHandler = $this->config->getDb()->prepare($sql); # NOSONAR
                   $contactPersonUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                   $contactPersonUpdateHandler->bindParam(self::BIND_CONTACTTYPE, $type);
                   $contactPersonUpdateHandler->bindParam(self::BIND_VALUE, $value);
                   $contactPersonUpdateHandler->execute();
                 } else {
                   $entityDescriptor->removeChild($contactPerson);
-                  $contactPersonDeleteHandler = $this->metaDb->prepare(
+                  $contactPersonDeleteHandler = $this->config->getDb()->prepare(
                     'DELETE FROM ContactPerson WHERE entity_id = :Id AND contactType = :ContactType ;');
                   $contactPersonDeleteHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                   $contactPersonDeleteHandler->bindParam(self::BIND_CONTACTTYPE, $type);
@@ -3605,7 +3603,7 @@ class MetadataEdit {
       return;
     }
 
-    $registrationInstantHandler = $this->metaDb->prepare(
+    $registrationInstantHandler = $this->config->getDb()->prepare(
       'SELECT registrationInstant AS ts FROM Entities WHERE id = :Id;');
     $registrationInstantHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $registrationInstantHandler->execute();
@@ -3679,7 +3677,7 @@ class MetadataEdit {
     if ( !$this->oldExists) {
       return;
     }
-    $entityAttributesHandler = $this->metaDb->prepare(
+    $entityAttributesHandler = $this->config->getDb()->prepare(
       'SELECT type, attribute FROM EntityAttributes WHERE entity_id = :Id ORDER BY type, attribute;');
     $entityAttributesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $entityAttributesHandler->execute();
@@ -3791,7 +3789,7 @@ class MetadataEdit {
   private function mergeIdpErrorURL () {
     if ( !$this->oldExists)
       return;
-    $errorURLHandler = $this->metaDb->prepare(
+    $errorURLHandler = $this->config->getDb()->prepare(
       "SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $errorURLHandler->execute();
@@ -3809,7 +3807,7 @@ class MetadataEdit {
 
       if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
         $idpSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
-        $errorURLUpdateHandler = $this->metaDb->prepare(
+        $errorURLUpdateHandler = $this->config->getDb()->prepare(
           "INSERT INTO EntityURLs (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')
           ON DUPLICATE KEY UPDATE `URL`= :URL;");
@@ -3822,10 +3820,10 @@ class MetadataEdit {
   private function mergeIdPScopes() {
     if ( !$this->oldExists)
       return;
-    $scopesHandler = $this->metaDb->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $scopesHandler->execute();
-    $scopesInsertHandler = $this->metaDb->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
+    $scopesInsertHandler = $this->config->getDb()->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
     $scopesInsertHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $oldScopes[$scope['scope']] = $scope['regexp'];
@@ -3899,7 +3897,7 @@ class MetadataEdit {
   private function mergeUIInfo($type) {
     if ( !$this->oldExists)
       return;
-    $mduiHandler = $this->metaDb->prepare('SELECT element, lang, height, width, data FROM Mdui WHERE entity_id = :Id AND type = :Type ORDER BY element, lang;');
+    $mduiHandler = $this->config->getDb()->prepare('SELECT element, lang, height, width, data FROM Mdui WHERE entity_id = :Id AND type = :Type ORDER BY element, lang;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
@@ -3986,7 +3984,7 @@ class MetadataEdit {
           }
           $child = $child->nextSibling;
         }
-        $mduiAddHandler = $this->metaDb->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
+        $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
         $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
         foreach ($oldMDUIElements as $element => $data) {
@@ -4017,7 +4015,7 @@ class MetadataEdit {
   private function mergeDiscoHints() {
     if ( !$this->oldExists)
       return;
-    $mduiHandler = $this->metaDb->prepare("SELECT element, data FROM Mdui WHERE entity_id = :Id AND type = 'IDPDisco' ORDER BY element;");
+    $mduiHandler = $this->config->getDb()->prepare("SELECT element, data FROM Mdui WHERE entity_id = :Id AND type = 'IDPDisco' ORDER BY element;");
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -4088,7 +4086,7 @@ class MetadataEdit {
           }
           $child = $child->nextSibling;
         }
-        $mduiAddHandler = $this->metaDb->prepare("INSERT INTO Mdui (entity_id, type, element, data) VALUES (:Id, 'IDPDisco', :Element, :Data);");
+        $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO Mdui (entity_id, type, element, data) VALUES (:Id, 'IDPDisco', :Element, :Data);");
         $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         foreach ($oldMDUIElements as $element => $valueArray) {
           foreach ($valueArray as $value => $true) {
@@ -4107,14 +4105,14 @@ class MetadataEdit {
     if ( !$this->oldExists)
       return;
 
-    $serviceIndexHandler = $this->metaDb->prepare('SELECT Service_index FROM AttributeConsumingService WHERE entity_id = :Id ORDER BY Service_index;');
+    $serviceIndexHandler = $this->config->getDb()->prepare('SELECT Service_index FROM AttributeConsumingService WHERE entity_id = :Id ORDER BY Service_index;');
     $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
 
-    $serviceElementHandler = $this->metaDb->prepare('SELECT element, lang, data FROM AttributeConsumingService_Service WHERE entity_id = :Id AND Service_index = :Index ORDER BY element DESC, lang;');
+    $serviceElementHandler = $this->config->getDb()->prepare('SELECT element, lang, data FROM AttributeConsumingService_Service WHERE entity_id = :Id AND Service_index = :Index ORDER BY element DESC, lang;');
     $serviceElementHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
 
-    $requestedAttributeHandler = $this->metaDb->prepare('SELECT FriendlyName, Name, NameFormat, isRequired FROM AttributeConsumingService_RequestedAttribute WHERE entity_id = :Id AND Service_index = :Index ORDER BY isRequired DESC, FriendlyName;');
+    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT FriendlyName, Name, NameFormat, isRequired FROM AttributeConsumingService_RequestedAttribute WHERE entity_id = :Id AND Service_index = :Index ORDER BY isRequired DESC, FriendlyName;');
     $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $requestedAttributeHandler->bindParam(self::BIND_INDEX, $index);
 
@@ -4146,17 +4144,17 @@ class MetadataEdit {
       $child = $child->nextSibling;
     }
     if ($ssoDescriptor && isset($oldServiceIndexes)) {
-      $addServiceIndexHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
+      $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
       $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $addServiceIndexHandler->bindParam(self::BIND_INDEX, $index);
 
-      $serviceElementAddHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
+      $serviceElementAddHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
       $serviceElementAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $serviceElementAddHandler->bindParam(self::BIND_INDEX, $index);
       $serviceElementAddHandler->bindParam(self::BIND_LANG, $lang);
       $serviceElementAddHandler->bindParam(self::BIND_DATA, $value);
 
-      $requestedAttributeAddHandler = $this->metaDb->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute (entity_id, Service_index, FriendlyName, Name, NameFormat, isRequired) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
+      $requestedAttributeAddHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute (entity_id, Service_index, FriendlyName, Name, NameFormat, isRequired) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
       $requestedAttributeAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $requestedAttributeAddHandler->bindParam(self::BIND_INDEX, $index);
       $requestedAttributeAddHandler->bindParam(self::BIND_FRIENDLYNAME, $friendlyName);
@@ -4322,7 +4320,7 @@ class MetadataEdit {
   private function mergeOrganization() {
     if ( !$this->oldExists)
       return;
-    $organizationHandler = $this->metaDb->prepare(
+    $organizationHandler = $this->config->getDb()->prepare(
       'SELECT element, lang, data FROM Organization WHERE entity_id = :Id ORDER BY element, lang;');
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
@@ -4410,7 +4408,7 @@ class MetadataEdit {
     if ( !$this->oldExists) {
       return;
     }
-    $contactPersonHandler = $this->metaDb->prepare('SELECT * FROM ContactPerson WHERE entity_id = :Id;');
+    $contactPersonHandler = $this->config->getDb()->prepare('SELECT * FROM ContactPerson WHERE entity_id = :Id;');
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $contactPersonHandler->execute();
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -4539,7 +4537,7 @@ class MetadataEdit {
   }
 
   public function saveXML() {
-    $entityHandler = $this->metaDb->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
+    $entityHandler = $this->config->getDb()->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityHandler->bindValue(self::BIND_XML, $this->newXml->saveXML());
     $entityHandler->execute();
@@ -4567,7 +4565,7 @@ class MetadataEdit {
   }
 
   public function updateUser($userID, $email, $fullName) {
-    $userHandler = $this->metaDb->prepare(
+    $userHandler = $this->config->getDb()->prepare(
       'UPDATE Users SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
     $userHandler->bindValue(self::BIND_ID, strtolower($userID));
     $userHandler->bindValue(self::BIND_EMAIL, $email);

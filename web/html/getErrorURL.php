@@ -1,22 +1,18 @@
 <?php
 # Updated via puppet/cosmos to metadata.swamid.se
-# Used by error.swamid.se to produce helpdesks.php
-require_once __DIR__ . '/config.php';
+# Used by error.swamid.se to produce helpdesk.php
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
+//Load composer's autoloader
+require_once 'vendor/autoload.php';
+
+$config = new metadata\Configuration();
 
 print "<?php\n\n\$helpdesks = array(\n";
 
-$entityHandler = $db->prepare("SELECT `id`, `entityID` FROM Entities WHERE `status` = 1 AND isIdP = 1 ORDER BY `entityID` ASC");
-$displayHandler = $db->prepare("SELECT `lang`, `data` FROM Mdui WHERE `type` = 'IDPSSO' AND `element`= 'DisplayName' AND `entity_id`= :Id ORDER BY `lang` DESC");
-$contactHandler = $db->prepare("SELECT `emailAddress` FROM ContactPerson WHERE `contactType` = 'support' AND `entity_id`= :Id");
-$errorUrlHandler = $db->prepare("SELECT `URL` FROM EntityURLs WHERE `type` = 'error' AND `entity_id`= :Id");
+$entityHandler = $config->getDb()->prepare("SELECT `id`, `entityID` FROM Entities WHERE `status` = 1 AND isIdP = 1 ORDER BY `entityID` ASC");
+$displayHandler = $config->getDb()->prepare("SELECT `lang`, `data` FROM Mdui WHERE `type` = 'IDPSSO' AND `element`= 'DisplayName' AND `entity_id`= :Id ORDER BY `lang` DESC");
+$contactHandler = $config->getDb()->prepare("SELECT `emailAddress` FROM ContactPerson WHERE `contactType` = 'support' AND `entity_id`= :Id");
+$errorUrlHandler = $config->getDb()->prepare("SELECT `URL` FROM EntityURLs WHERE `type` = 'error' AND `entity_id`= :Id");
 $displayHandler->bindParam(':Id', $Entity_id);
 $contactHandler->bindParam(':Id', $Entity_id);
 $errorUrlHandler->bindParam(':Id', $Entity_id);

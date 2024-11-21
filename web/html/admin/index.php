@@ -44,28 +44,18 @@ const HTML_TEXT_STPINFO_SP = '<ul>
           </ul></li>
           <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
         </ul>';
-const OPERATIONS_NAME = 'SWAMID Operations';
-const OPERATIONS_MAIL = 'operations@swamid.se';
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
 
-require_once '../config.php'; #NOSONAR
+$config = new metadata\Configuration();
 
 require_once '../include/Html.php'; #NOSONAR
-$html = new HTML($Mode);
-
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
+$html = new HTML($config->getMode());
 
 /* BEGIN RAF Logging */
-$assuranceHandler = $db->prepare(
+$assuranceHandler = $config->getDb()->prepare(
   'INSERT INTO `assuranceLog` (`entityID`, `assurance`, `logDate`)
     VALUES (:EntityID, :Assurance, NOW()) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
 $assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
@@ -589,7 +579,7 @@ $html->showFooter($display->getCollapseIcons());
 # Shows EntityList
 ####
 function showEntityList($status = 1) {
-  global $db, $html;
+  global $config, $html;
 
   $feedOrder = 'feedDesc';
   $orgOrder = 'orgAsc';
@@ -675,7 +665,7 @@ function showEntityList($status = 1) {
   }
   showMenu();
   if ($status == 1) {
-    $entities = $db->prepare( # NOSONAR $sortOrder is secure
+    $entities = $config->getDb()->prepare( # NOSONAR $sortOrder is secure
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
         `lastUpdated`, `lastConfirmed` AS lastValidated, `warnings`, `errors`, `errorsNB`
       FROM Entities
@@ -683,7 +673,7 @@ function showEntityList($status = 1) {
       LEFT JOIN EntityConfirmation ON EntityConfirmation.entity_id = id
       WHERE status = $status AND entityID LIKE :Query ORDER BY $sortOrder");
   } else {
-    $entities = $db->prepare( # NOSONAR $sortOrder is secure
+    $entities = $config->getDb()->prepare( # NOSONAR $sortOrder is secure
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName,
         `lastUpdated`, `lastValidated`, `warnings`, `errors`, `errorsNB`
       FROM Entities
@@ -722,8 +712,8 @@ function showEntityList($status = 1) {
 # Shows Entity information
 ####
 function showEntity($entitiesId, $showHeader = true)  {
-  global $db, $html, $display, $userLevel, $menuActive, $EPPN, $Mode;
-  $entityHandler = $db->prepare(
+  global $config, $html, $display, $userLevel, $menuActive, $EPPN;
+  $entityHandler = $config->getDb()->prepare(
     'SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
     FROM Entities WHERE `id` = :Id;');
   $publishArray = array();
@@ -737,12 +727,12 @@ function showEntity($entitiesId, $showHeader = true)  {
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if ($entity['status'] > 1 && $entity['status'] < 7) {
       if ($entity['publishedId'] > 0) {
-        $entityHandlerOld = $db->prepare(
+        $entityHandlerOld = $config->getDb()->prepare(
           'SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
         $entityHandlerOld->bindParam(':Id', $entity['publishedId']);
         $headerCol2 = 'Old metadata - when requested publication';
       } else {
-        $entityHandlerOld = $db->prepare(
+        $entityHandlerOld = $config->getDb()->prepare(
           'SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
         $entityHandlerOld->bindParam(':Id', $entity['entityID']);
         $headerCol2 = 'Published now';
@@ -869,16 +859,16 @@ function showEntity($entitiesId, $showHeader = true)  {
           if ($entity['isIdP'] ) {
             if ($entity['isSP'] ) {
               // is both SP and IdP
-              $mergeEntityHandler = $db->prepare(
+              $mergeEntityHandler = $config->getDb()->prepare(
                 'SELECT id, entityID FROM Entities WHERE status = 1 ORDER BY entityID;');
             } else {
               // isIdP only
-              $mergeEntityHandler = $db->prepare(
+              $mergeEntityHandler = $config->getDb()->prepare(
                 'SELECT id, entityID FROM Entities WHERE status = 1 AND isIdP = 1 ORDER BY entityID;');
             }
           } else {
             // isSP only
-            $mergeEntityHandler = $db->prepare(
+            $mergeEntityHandler = $config->getDb()->prepare(
               'SELECT id, entityID FROM Entities WHERE status = 1 AND isSP = 1 ORDER BY entityID;');
           }
           $mergeEntityHandler->execute();
@@ -911,7 +901,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       </div>
     </div>
     <br><?php
-    if ($entity['isIdP'] && $entity['status'] == 1 && $Mode != 'QA') { $display->showIMPS($entitiesId, $userLevel > 19, $entityError['IMPSError']); }
+    if ($entity['isIdP'] && $entity['status'] == 1 && $config->getMode() != 'QA') { $display->showIMPS($entitiesId, $userLevel > 19, $entityError['IMPSError']); }
     $display->showEntityAttributes($entitiesId, $oldEntitiesId, $allowEdit);
     $able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
     if ($entity['isIdP'] ) { $display->showIdP($entitiesId, $oldEntitiesId, $allowEdit, $able2beRemoveSSO); }
@@ -919,7 +909,7 @@ function showEntity($entitiesId, $showHeader = true)  {
     if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, $allowEdit); }
     $display->showOrganization($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
-    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $Mode); }
+    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
     $display->showXML($entitiesId);
     if ($oldEntitiesId > 0 && $userLevel > 10) {
       $display->showDiff($entitiesId, $oldEntitiesId);
@@ -985,7 +975,7 @@ function showList($entities, $minLevel) {
 # Shows list for entities this user have access to do Annual Check for.
 ####
 function showMyEntities() {
-  global $db, $html, $EPPN, $userLevel;
+  global $config, $html, $EPPN, $userLevel;
 
   $html->showHeaders(HTML_TITLE . 'Annual Check');
   showMenu();
@@ -1002,10 +992,10 @@ function showMyEntities() {
     printf ('      </div>%s    </div>%s', "\n", "\n");
     }
   if (isset($_GET['showPub']) && $userLevel > 9) {
-    $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+    $entitiesHandler = $config->getDb()->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Entities WHERE `status` = 1 AND publishIn > 1 ORDER BY `entityID`");
   } else {
-    $entitiesHandler = $db->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
+    $entitiesHandler = $config->getDb()->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Users, EntityUser, Entities
       WHERE EntityUser.`entity_id` = Entities.`id`
         AND EntityUser.`user_id` = Users.`id`
@@ -1014,7 +1004,7 @@ function showMyEntities() {
       ORDER BY `entityID`, `status`");
     $entitiesHandler->bindValue(':UserID', $EPPN);
   }
-  $entityConfirmationHandler = $db->prepare(
+  $entityConfirmationHandler = $config->getDb()->prepare(
     "SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`,
       NOW() - INTERVAL 12 MONTH AS 'errorDate'
     FROM Users, EntityConfirmation
@@ -1221,7 +1211,7 @@ function validateEntity($entitiesId) {
 function move2Pending($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName;
-  global $mailContacts, $mailRequester, $SendOut, $Mode;
+  global $mailContacts, $mailRequester, $config;
 
   $draftMetadata = new Metadata($entitiesId);
 
@@ -1281,7 +1271,7 @@ function move2Pending($entitiesId) {
           $oldEntitiesId = 0;
         }
 
-        if ($Mode == 'QA') {
+        if ($config->getMode() == 'QA') {
           printf ("    <p>Your entity will be published within 15 to 30 minutes</p>\n");
           printf ('    <hr>
           <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
@@ -1290,7 +1280,7 @@ function move2Pending($entitiesId) {
           $displayName = $draftMetadata->entityDisplayName();
 
           $addresses = $draftMetadata->getTechnicalAndAdministrativeContacts();
-          if ($SendOut) {
+          if ($config->sendOut()) {
             $mailRequester->addAddress($mail);
             foreach ($addresses as $address) {
               $mailContacts->addAddress($address);
@@ -1415,7 +1405,7 @@ function move2Pending($entitiesId) {
     <form>
       <input type="hidden" name="move2Pending" value="%d">%s',
           $entitiesId,"\n");
-        if ($Mode == 'QA') {
+        if ($config->getMode() == 'QA') {
           printf('      <input type="radio" id="SWAMID" name="publishedIn" value="2" checked>
       <label for="SWAMID">SWAMID QA</label>%s',"\n");
         } else {
@@ -1656,9 +1646,9 @@ function annualConfirmationList($list){
 }
 
 function requestRemoval($entitiesId) {
-  global $db, $html, $menuActive;
+  global $config, $html, $menuActive;
   global $EPPN, $mail, $fullName;
-  global $mailContacts, $mailRequester, $SendOut;
+  global $mailContacts, $mailRequester;
   $metadata = new Metadata($entitiesId);
   if ($metadata->status() == 1) {
     $userID = $metadata->getUserId($EPPN);
@@ -1672,24 +1662,24 @@ function requestRemoval($entitiesId) {
 
         setupMail();
 
-        if ($SendOut) {
+        if ($config->sendOut()) {
           $mailRequester->addAddress($mail);
         }
 
-        $removeHandler = $db->prepare(
+        $removeHandler = $config->getDb()->prepare(
           'UPDATE `Entities`
           SET `removalRequestedBy` = :UserId
           WHERE `id` = :Entity_ID');
         $removeHandler->execute(array(':UserId' => $userID, ':Entity_ID' => $entitiesId));
         $addresses = array();
-        $contactHandler = $db->prepare(
+        $contactHandler = $config->getDb()->prepare(
           "SELECT DISTINCT emailAddress
           FROM ContactPerson
           WHERE entity_id = :Entity_ID AND (contactType='technical' OR contactType='administrative')");
         $contactHandler->bindParam(':Entity_ID',$entitiesId);
         $contactHandler->execute();
         while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
-          if ($SendOut) {
+          if ($config->sendOut()) {
             $mailContacts->addAddress(substr($address['emailAddress'],7));
           }
           $addresses[] = substr($address['emailAddress'],7);
@@ -1806,45 +1796,47 @@ function requestRemoval($entitiesId) {
 }
 
 function setupMail() {
+  global $config;
   global $mailContacts, $mailRequester;
-  global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
-
+  
   $mailContacts = new PHPMailer(true);
   $mailRequester = new PHPMailer(true);
   $mailContacts->isSMTP();
   $mailRequester->isSMTP();
   $mailContacts->CharSet = "UTF-8";
   $mailRequester->CharSet = "UTF-8";
-  $mailContacts->Host = $SMTPHost;
-  $mailRequester->Host = $SMTPHost;
-  $mailContacts->SMTPAuth = true;
-  $mailRequester->SMTPAuth = true;
+  $mailContacts->Host = $config->getSmtp()['host'];
+  $mailRequester->Host = $config->getSmtp()['host'];
+  $mailContacts->Port = $config->getSmtp()['port'];
+  $mailRequester->Port = $config->getSmtp()['port'];
   $mailContacts->SMTPAutoTLS = true;
   $mailRequester->SMTPAutoTLS = true;
-  $mailContacts->Port = 587;
-  $mailRequester->Port = 587;
-  $mailContacts->SMTPAuth = true;
-  $mailRequester->SMTPAuth = true;
-  $mailContacts->Username = $SASLUser;
-  $mailRequester->Username = $SASLUser;
-  $mailContacts->Password = $SASLPassword;
-  $mailRequester->Password = $SASLPassword;
-  $mailContacts->SMTPSecure = 'tls';
-  $mailRequester->SMTPSecure = 'tls';
-
+  if ($config->smtpAuth()) {
+    $mailContacts->SMTPAuth = true;
+    $mailRequester->SMTPAuth = true;
+    $mailContacts->Username = $config->getSmtp()['sasl']['user'];
+    $mailRequester->Username = $config->getSmtp()['sasl']['user'];
+    $mailContacts->Password = $config->getSmtp()['sasl']['password'];
+    $mailRequester->Password = $config->getSmtp()['sasl']['password'];
+    $mailContacts->SMTPSecure = 'tls';
+    $mailRequester->SMTPSecure = 'tls';
+  }
+  
   //Recipients
-  $mailContacts->setFrom($MailFrom, 'Metadata - Admin');
-  $mailRequester->setFrom($MailFrom, 'Metadata - Admin');
-  $mailContacts->addBCC('bjorn@sunet.se');
-  $mailRequester->addBCC('bjorn@sunet.se');
-  $mailContacts->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
-  $mailRequester->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
+  $mailContacts->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
+  $mailRequester->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
+  if ($config->getSMTP()['bcc']) {
+    $mailContacts->addBCC($config->getSMTP()['bcc']);
+    $mailRequester->addBCC($config->getSMTP()['bcc']);
+  }
+  $mailContacts->addReplyTo($config->getSMTP()['replayTo'], $config->getSMTP()['replayName']);
+  $mailRequester->addReplyTo($config->getSMTP()['replayTo'], $config->getSMTP()['replayName']);
 }
 
 function move2Draft($entitiesId) {
-  global $db, $html, $display, $menuActive;
+  global $config, $html, $display, $menuActive;
   global $EPPN,$mail;
-  $entityHandler = $db->prepare('SELECT `entityID`, `xml` FROM Entities WHERE `status` = 2 AND `id` = :Id;');
+  $entityHandler = $config->getDb()->prepare('SELECT `entityID`, `xml` FROM Entities WHERE `status` = 2 AND `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1887,8 +1879,8 @@ function mergeEntity($entitiesId, $oldEntitiesId) {
 }
 
 function removeEntity($entitiesId) {
-  global $db, $html, $menuActive;
-  $entityHandler = $db->prepare('SELECT entityID, status FROM Entities WHERE id = :Id;');
+  global $config, $html, $menuActive;
+  $entityHandler = $config->getDb()->prepare('SELECT entityID, status FROM Entities WHERE id = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1960,7 +1952,7 @@ function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=fal
 function requestAccess($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName, $userLevel;
-  global $mailContacts, $mailRequester, $SendOut;
+  global $mailContacts, $mailRequester, $config;
 
   $metadata = new Metadata($entitiesId);
   if ($metadata->entityExists()) {
@@ -1983,7 +1975,7 @@ function requestAccess($entitiesId) {
         # Get code to send in email
         $requestCode = urlencode($metadata->createAccessRequest($user_id));
         setupMail();
-        if ($SendOut) {
+        if ($config->sendOut()) {
           foreach ($addresses as $address) {
             $mailContacts->addAddress($address);
           }
@@ -2066,10 +2058,10 @@ function requestAccess($entitiesId) {
 
 # Return Blocking errors
 function getBlockingErrors($entitiesId) {
-  global $db;
+  global $config;
   $errors = '';
 
-  $entityHandler = $db->prepare('SELECT `entityID`, `errors` FROM Entities WHERE `id` = :Id;');
+  $entityHandler = $config->getDb()->prepare('SELECT `entityID`, `errors` FROM Entities WHERE `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
 
   $entityHandler->execute();
@@ -2081,10 +2073,10 @@ function getBlockingErrors($entitiesId) {
 
 # Return All errors, both blocking and nonblocking
 function getErrors($entitiesId) {
-  global $db;
+  global $config;
   $errors = '';
 
-  $entityHandler = $db->prepare('SELECT `entityID`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
+  $entityHandler = $config->getDb()->prepare('SELECT `entityID`, `errors`, `errorsNB` FROM Entities WHERE `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
 
   $entityHandler->execute();
@@ -2104,7 +2096,7 @@ function showHelp() {
 }
 
 function approveAccessRequest($code) {
-  global $EPPN;
+  global $EPPN, $config;
   $codeArray = explode(':', base64_decode($code));
   if (isset($codeArray[2])) {
     $metadata = new Metadata($codeArray[0]);
@@ -2113,21 +2105,20 @@ function approveAccessRequest($code) {
       if ($result['returnCode'] < 10) {
         $info = $result['info'];
         if ($result['returnCode'] == 2) {
-          global $SMTPHost, $SASLUser, $SASLPassword, $MailFrom;
-
           $mail = new PHPMailer(true);
           $mail->isSMTP();
-          $mail->Host = $SMTPHost;
-          $mail->SMTPAuth = true;
+          $mail->Host = $config->getSmtp()['host'];
+          $mail->Port = $config->getSmtp()['port'];
           $mail->SMTPAutoTLS = true;
-          $mail->Port = 587;
-          $mail->SMTPAuth = true;
-          $mail->Username = $SASLUser;
-          $mail->Password = $SASLPassword;
-          $mail->SMTPSecure = 'tls';
+          if ($config->smtpAuth()) {
+            $mail->SMTPAuth = true;
+            $mail->Username = $config->getSmtp()['sasl']['user'];
+            $mail->Password = $config->getSmtp()['sasl']['password'];
+            $mail->SMTPSecure = 'tls';
+          }
 
           //Recipients
-          $mail->setFrom($MailFrom, 'Metadata');
+          $mail->setFrom($config->getSmtp()['from'], 'Metadata');
           $mail->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
           $mail->addAddress($result['email']);
           $mail->Body = sprintf("<!DOCTYPE html>

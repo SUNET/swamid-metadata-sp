@@ -1,22 +1,17 @@
 <?php
-include __DIR__ . '/../html/config.php'; #NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
+$config = new metadata\Configuration();
 
 function parseJson($json) {
-  global $db;
+  global $config;
   $importFrom = date('Y-m-d H:i', time() - (7 * 24 * 60 * 60)); // 1 week
   $removeBefore = date('Y-m-d H:i', time() - (396 * 24 * 60 * 60)); // 1 year + 1 month
 
   if ($results = json_decode($json,true)) {
     if (isset($results['objects'])) {
-      $resultHandler = $db->prepare(
+      $resultHandler = $config->getDb()->prepare(
         'INSERT INTO TestResults (`entityID`, `test`, `time`, `result` )
         VALUES (:EntityID, :Test, :Time, :Result)
         ON DUPLICATE KEY UPDATE `time` = :Time, `result` = :Result');
@@ -34,7 +29,7 @@ function parseJson($json) {
           $resultHandler->execute();
         }
       }
-      $resultCleanupHandler = $db->prepare('DELETE FROM TestResults WHERE `time` < :Time');
+      $resultCleanupHandler = $config->getDb()->prepare('DELETE FROM TestResults WHERE `time` < :Time');
       $resultCleanupHandler->bindParam(':Time', $removeBefore);
       $resultCleanupHandler->execute();
     } else {
@@ -47,7 +42,7 @@ function parseJson($json) {
 
 
 function fetchJson() {
-  global $Mode;
+  global $config;
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_HEADER, 0);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -57,7 +52,7 @@ function fetchJson() {
   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
   curl_setopt($ch, CURLINFO_HEADER_OUT, 1);
-  if ($Mode == 'QA') {
+  if ($config->getMode() == 'QA') {
     curl_setopt($ch, CURLOPT_URL, 'https://release-check.qa.swamid.se/metaDump.php');
   } else {
     curl_setopt($ch, CURLOPT_URL, 'https://release-check.swamid.se/metaDump.php');

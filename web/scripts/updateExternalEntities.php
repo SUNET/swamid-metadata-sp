@@ -1,19 +1,14 @@
 <?php
-include __DIR__ . '/../html/config.php'; #NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
+
+$config = new metadata\Configuration();
 
 const MD_EXTENSIONS = 'md:Extensions';
 const SAML_ATTRIBUTEVALUE = 'saml:AttributeValue';
 const XML_LANG = 'xml:lang';
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
-
-$db->query('UPDATE ExternalEntities SET updated = 0');
+$config->getDb()->query('UPDATE ExternalEntities SET updated = 0');
 
 $xml = new DOMDocument;
 $xml->preserveWhiteSpace = false;
@@ -23,10 +18,10 @@ $xml->encoding = 'UTF-8';
 
 checkEntities($xml);
 unset($xml);
-$db->query('DELETE FROM ExternalEntities WHERE updated = 0');
+$config->getDb()->query('DELETE FROM ExternalEntities WHERE updated = 0');
 
 function checkEntities(&$xml) {
-  global $db;
+  global $config;
 
   $entityID = '';
   $isIdP = 0;
@@ -41,7 +36,7 @@ function checkEntities(&$xml) {
   $assuranceC = '';
   $registrationAuthority = 'Not Set';
 
-  $updateHandler = $db->prepare('UPDATE ExternalEntities
+  $updateHandler = $config->getDb()->prepare('UPDATE ExternalEntities
     SET
       `updated` = 1,
       `isIdP` = :IsIdP,
@@ -71,7 +66,7 @@ function checkEntities(&$xml) {
   $updateHandler->bindParam(':Assurancec', $assuranceC);
   $updateHandler->bindParam(':RegistrationAuthority', $registrationAuthority);
 
-  $insertHandler = $db->prepare('INSERT INTO ExternalEntities
+  $insertHandler = $config->getDb()->prepare('INSERT INTO ExternalEntities
       (`entityID`, `updated`, `isIdP`, `isSP`, `isAA`, `displayName`, `serviceName`, `organization`,
       `contacts`, `scopes`, `ecs`, `ec`, `assurancec`,`ra`)
     VALUES

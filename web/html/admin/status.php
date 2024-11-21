@@ -3,10 +3,13 @@
 const HTML_OUTLINE = '-outline';
 const HTML_TABLE_END = "        </table>\n";
 
-include_once '../config.php';
+//Load composer's autoloader
+require_once '../vendor/autoload.php';
+
+$config = new metadata\Configuration();
 
 require_once '../include/Html.php';
-$html = new HTML($Mode);
+$html = new HTML($config->getMode());
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];
@@ -39,14 +42,6 @@ switch ($EPPN) {
 }
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
-
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
 
 $html->showHeaders('Metadata SWAMID');
 if (isset($_GET['action'])) {
@@ -91,8 +86,8 @@ $html->showFooter(array());
 # End of page
 
 function showShadowEntities() {
-  global $db;
-  $entityHandler = $db->prepare('SELECT id, `entityID`, `lastValidated` FROM Entities WHERE status = 6 AND id NOT IN (SELECT publishedId FROM Entities WHERE `status`=5 OR `status`=2);');
+  global $config;
+  $entityHandler = $config->getDb()->prepare('SELECT id, `entityID`, `lastValidated` FROM Entities WHERE status = 6 AND id NOT IN (SELECT publishedId FROM Entities WHERE `status`=5 OR `status`=2);');
   $entityHandler->execute();
   printf ('        <h5>Entities only in shadow</h5>%s        <table id="shadow-table" class="table table-striped table-bordered">%s          <thead><tr><th>Id</th><th>EntityID</th><th>Created</th></tr></thead>%s', "\n", "\n", "\n");
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -102,8 +97,8 @@ function showShadowEntities() {
 }
 
 function showSoftDeletedEntities() {
-  global $db;
-  $entityHandler = $db->prepare('SELECT id, `entityID`, `lastUpdated` FROM Entities WHERE status = 4;');
+  global $config;;
+  $entityHandler = $config->getDb()->prepare('SELECT id, `entityID`, `lastUpdated` FROM Entities WHERE status = 4;');
   $entityHandler->execute();
   printf ('        <h5>Entities in Soft Delete</h5>%s        <table id="softDel-table" class="table table-striped table-bordered">%s          <thead><tr><th>Action</th><th>EntityID</th><th>Removed</th></tr></thead>%s', "\n", "\n", "\n");
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -113,8 +108,8 @@ function showSoftDeletedEntities() {
 }
 
 function showPublishedPendingEntities() {
-  global $db;
-  $entityHandler = $db->prepare(
+  global $config;;
+  $entityHandler = $config->getDb()->prepare(
     'SELECT Entities.`id`, `entityID`, `lastUpdated`, `email`
     FROM Entities, EntityUser, Users
     WHERE `status` = 5 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id`;');
@@ -130,13 +125,13 @@ function showPublishedPendingEntities() {
 }
 
 function showUsers(){
-  global $db;
+  global $config;;
   if (isset($_GET['user'])) {
-    $userHandler = $db->prepare('SELECT `userID`, `fullName` FROM Users WHERE id = :Id');
+    $userHandler = $config->getDb()->prepare('SELECT `userID`, `fullName` FROM Users WHERE id = :Id');
     $userHandler->bindValue(':Id', $_GET['user']);
     $userHandler->execute();
     if ($user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entitiesHandler = $db->prepare('SELECT `id`, `entityID`, `status`
+      $entitiesHandler = $config->getDb()->prepare('SELECT `id`, `entityID`, `status`
         FROM Entities, EntityUser
         WHERE entity_id = Entities.id AND user_id = :Id
         ORDER BY `status`, `entityID`');
@@ -176,7 +171,7 @@ function showUsers(){
     }
   }
 
-  $usersHandler = $db->prepare('SELECT `id`, `userID`, `email`, `fullName`, `lastSeen`, COUNT(entity_id) AS count
+  $usersHandler = $config->getDb()->prepare('SELECT `id`, `userID`, `email`, `fullName`, `lastSeen`, COUNT(entity_id) AS count
     FROM Users  LEFT JOIN EntityUser ON Users.id = user_id GROUP BY id;');
   $usersHandler->execute();
   printf ('        <h5>Users</h5>
@@ -190,9 +185,9 @@ function showUsers(){
 }
 
 function showValidationOutput() {
-  global $db;
+  global $config;;
 
-  $entitiesHandler = $db->prepare('SELECT `id`, `entityID` , `validationOutput` FROM `Entities` WHERE `status` < 4 AND `validationOutput` != ""');
+  $entitiesHandler = $config->getDb()->prepare('SELECT `id`, `entityID` , `validationOutput` FROM `Entities` WHERE `status` < 4 AND `validationOutput` != ""');
   $entitiesHandler->execute();
   printf ('        <h5>Validation Output</h5>
         <table id="validation-table" class="table table-striped table-bordered">

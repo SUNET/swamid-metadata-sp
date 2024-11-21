@@ -4,25 +4,20 @@
     * PublishedPending entities lastUpdated < 3 months
     * Shadow entities lastUpdated < 4 months (Should be 3 month + 2-3 days)
 */
-// file deepcode ignore FileInclusion:
-include __DIR__ . '/../html/config.php'; # NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
+
+$config = new metadata\Configuration();
+
 // file deepcode ignore FileInclusion:
 include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 
 const BIND_STATUS = ':Status';
 const BIND_REMOVEDATE = ':RemoveDate';
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error Connecting DB";
-}
-
 $removeDate = '1971-01-01';
 $removeDateShadow = '1971-01-01';
-$flagDates = $db->query('SELECT
+$flagDates = $config->getDb()->query('SELECT
   NOW() - INTERVAL 3 MONTH AS `removeDate`,
   NOW() - INTERVAL 4 MONTH AS `removeDateShadow`,
   NOW() - INTERVAL 13 WEEK AS `removePending`,
@@ -36,11 +31,11 @@ foreach ($flagDates as $dates) {
 }
 $flagDates->closeCursor();
 
-$entitiesUpdatedHandler = $db->prepare(
+$entitiesUpdatedHandler = $config->getDb()->prepare(
   'SELECT id, `entityID`, `lastUpdated` FROM Entities WHERE `status` = :Status AND `lastUpdated` < :RemoveDate;');
 $entitiesUpdatedHandler->bindValue(BIND_REMOVEDATE, $removeDate);
 
-$entitiesValidatedHandler = $db->prepare(
+$entitiesValidatedHandler = $config->getDb()->prepare(
   'SELECT id, `entityID`, `lastValidated` FROM Entities WHERE `status` = :Status AND `lastValidated` < :RemoveDate;');
 
 # Remove SoftDeleted entities

@@ -1,5 +1,9 @@
 <?php
-include __DIR__ . '/../html/config.php'; #NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
+
+$config = new metadata\Configuration();
+
 include __DIR__ . '/../html/include/Metadata.php'; #NOSONAR
 
 if ($argc < 3) {
@@ -12,15 +16,7 @@ if (! is_numeric($argv[2])) {
   exit;
 }
 
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
-
-$entities = $db->prepare(sprintf(
+$entities = $config->getDb()->prepare(sprintf(
   'SELECT id, entityID FROM Entities
   WHERE lastValidated <  NOW() - INTERVAL :Days DAY AND status = 1
   ORDER BY lastValidated LIMIT %d',$argv[2]));

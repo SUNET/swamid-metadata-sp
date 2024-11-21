@@ -1,4 +1,7 @@
 <?php
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
+
 include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 include __DIR__ . '/../html/include/NormalizeXML.php'; # NOSONAR
 

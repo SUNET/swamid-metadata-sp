@@ -4,22 +4,16 @@
     * PublishedPending entities lastUpdated < 3 months
     * Shadow entities lastUpdated < 4 months (Should be 3 month + 2-3 days)
 */
-// file deepcode ignore FileInclusion:
-include __DIR__ . '/../html/config.php'; # NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
+
+$config = new metadata\Configuration();
+
 // file deepcode ignore FileInclusion:
 #include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 
 const BIND_STATUS = ':Status';
 const BIND_REMOVEDATE = ':RemoveDate';
-
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error Connecting DB";
-}
-
 
 switch ($argc) {
   case 3 :
@@ -40,8 +34,8 @@ switch ($argc) {
 }
 
 function listUsers() {
-  global $db;
-  $usersHandler = $db->prepare('SELECT `userID`, `fullName` FROM Users ORDER BY `userID`');
+  global $config;
+  $usersHandler = $config->getDb()->prepare('SELECT `userID`, `fullName` FROM Users ORDER BY `userID`');
   $usersHandler->execute();
   while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
     printf("%s -> %s\n", $user['userID'], $user['fullName']);
@@ -50,8 +44,8 @@ function listUsers() {
 }
 
 function getUser($userID) {
-  global $db;
-  $usersHandler = $db->prepare('SELECT `id`, `userID`, `fullName` FROM Users WHERE `userID` = :UserID');
+  global $config;
+  $usersHandler = $config->getDb()->prepare('SELECT `id`, `userID`, `fullName` FROM Users WHERE `userID` = :UserID');
   $usersHandler->execute(array('UserID'=> $userID));
   if ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
     return $user;
@@ -62,9 +56,9 @@ function getUser($userID) {
 }
 
 function listAccess(&$user) {
-  global $db;
+  global $config;
   printf ("User %s has access to : \n", $user['userID']);
-  $entitiesAccessHandler = $db->prepare("SELECT `entityID`
+  $entitiesAccessHandler = $config->getDb()->prepare("SELECT `entityID`
       FROM EntityUser, Entities
       WHERE EntityUser.`entity_id` = Entities.`id`
         AND EntityUser.`user_id` = :UsersId
@@ -78,16 +72,16 @@ function listAccess(&$user) {
 }
 
 function addAccess(&$user, $entityID) {
-  global $db, $argv;
-  $entitiesHandler = $db->prepare("SELECT `id`
+  global $config;
+  $entitiesHandler = $config->getDb()->prepare("SELECT `id`
     FROM Entities
     WHERE `entityID` = :EntityID
       AND status = 1");
-  $entitiesAccessHandler = $db->prepare("SELECT *
+  $entitiesAccessHandler = $config->getDb()->prepare("SELECT *
     FROM EntityUser
     WHERE `entity_id` = :EntityId
       AND `user_id` = :UsersId");
-  $entitiesAddAccessHandler = $db->prepare("INSERT
+  $entitiesAddAccessHandler = $config->getDb()->prepare("INSERT
     INTO EntityUser
     SET `entity_id` = :EntityId, `user_id` = :UsersId, `approvedBy` = 'Admin', `lastChanged` = NOW()");
 

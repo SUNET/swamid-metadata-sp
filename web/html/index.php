@@ -7,18 +7,10 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
 
-require_once 'config.php'; #NOSONAR
+$config = new metadata\Configuration();
 
 require_once 'include/Html.php'; #NOSONAR
-$html = new HTML($Mode);
-
-try {
-  $db = new PDO("mysql:host=$dbServername;dbname=$dbName", $dbUsername, $dbPassword);
-  // set the PDO error mode to exception
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-  echo "Error: " . $e->getMessage();
-}
+$html = new HTML($config->getMode());
 
 require_once 'include/MetadataDisplay.php'; #NOSONAR
 $display = new MetadataDisplay();
@@ -67,14 +59,14 @@ $html->showFooter($display->getCollapseIcons());
 # Shows EntityList
 ####
 function showEntityList($show) {
-  global $db, $html;
+  global $config, $html;
 
   $query = isset($_GET['query']) ? $_GET['query'] : '';
 
   switch ($show) {
     case 'IdP' :
       $html->showHeaders('Metadata SWAMID - IdP:s');
-      $entities = $db->prepare(
+      $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
         LEFT JOIN Organization ON `entity_id` = `id`
@@ -86,7 +78,7 @@ function showEntityList($show) {
       break;
     case 'SP' :
       $html->showHeaders('Metadata SWAMID - SP:s');
-      $entities = $db->prepare(
+      $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
         LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
@@ -98,7 +90,7 @@ function showEntityList($show) {
       break;
     case 'All' :
       $html->showHeaders('Metadata SWAMID - All');
-      $entities = $db->prepare(
+      $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName
         FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
         WHERE `status` = 1 AND `entityID` LIKE :Query
@@ -152,11 +144,11 @@ function showMenu($menuActive, $query = '') {
 # Shows Entity information
 ####
 function showEntity($entity_id, $urn = false)  {
-  global $db, $html, $display, $Mode;
+  global $config, $html, $display;
   $entityHandler = $urn ?
-    $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
+    $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
       FROM Entities WHERE entityID = :Id AND status = 1;') :
-    $db->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
+    $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
       FROM Entities WHERE id = :Id;');
   $publishArray = array();
   $publishArrayOld = array();
@@ -170,13 +162,13 @@ function showEntity($entity_id, $urn = false)  {
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if ($entity['status'] > 1 && $entity['status'] < 6) {
       if ($entity['publishedId'] > 0) {
-        $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
+        $entityHandlerOld = $config->getDb()->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
           FROM Entities
           WHERE `id` = :Id AND `status` = 6;');
         $entityHandlerOld->bindParam(':Id', $entity['publishedId']);
         $headerCol2 = 'Old metadata - when requested publication';
       } else {
-        $entityHandlerOld = $db->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
+        $entityHandlerOld = $config->getDb()->prepare('SELECT `id`, `isIdP`, `isSP`, `publishIn`
           FROM Entities
           WHERE `entityID` = :Id AND `status` = 1;');
         $entityHandlerOld->bindParam(':Id', $entity['entityID']);
@@ -246,7 +238,7 @@ function showEntity($entity_id, $urn = false)  {
     if ($entity['isAA'] ) { $display->showAA($entities_id, $oldEntity_id); }
     $display->showOrganization($entities_id, $oldEntity_id);
     $display->showContacts($entities_id, $oldEntity_id);
-    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $Mode); }
+    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
     $display->showXML($entities_id);
   } else {
     $html->showHeaders('Metadata SWAMID - NotFound');
@@ -258,9 +250,9 @@ function showEntity($entity_id, $urn = false)  {
 # Shows a list of entitys
 ####
 function showList($entities, $show) {
-  global $db;
-  $entityAttributesHandler = $db->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
-  $mduiHandler = $db->prepare("SELECT data FROM Mdui
+  global $config;
+  $entityAttributesHandler = $config->getDb()->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
+  $mduiHandler = $config->getDb()->prepare("SELECT data FROM Mdui
     WHERE element = 'DisplayName' AND entity_id = :Id
     ORDER BY type,lang;");
 
@@ -556,8 +548,8 @@ function showInfo() {
 }
 
 function showFeed($id) {
-  global $db;
-  $entity = $db->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id');
+  global $config;
+  $entity = $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id');
   $entity->bindParam(':Id', $id);
   $entity->execute();
   if ($row = $entity->fetch(PDO::FETCH_ASSOC)) {
@@ -579,8 +571,8 @@ function showFeed($id) {
 }
 
 function showPendingQueue() {
-  global $db;
-  $entities = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
+  global $config;
+  $entities = $config->getDb()->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     printf ('%d %s%s',$row['id'], $row['entityID'], "\n");
@@ -589,8 +581,8 @@ function showPendingQueue() {
 }
 
 function showRemoveQueue() {
-  global $db;
-  $entities = $db->prepare('SELECT `id`, `entityID` FROM Entities WHERE `removalRequestedBy` > 0 AND `status` = 1');
+  global $config;
+  $entities = $config->getDb()->prepare('SELECT `id`, `entityID` FROM Entities WHERE `removalRequestedBy` > 0 AND `status` = 1');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
     printf ('%d %s%s',$row['id'], $row['entityID'], "\n");
@@ -599,7 +591,7 @@ function showRemoveQueue() {
 }
 
 function showInterfederation($type){
-  global $html, $db;
+  global $html, $config;
   if ($type == 'IDP') {
     $html->showHeaders('Metadata SWAMID - eduGAIN - IdP:s');
     showMenu('fedIdPs','');
@@ -616,7 +608,7 @@ function showInterfederation($type){
         </tr>
       </thead>%s', "\n");
     $html->addTableSort('IdP-table');
-    $entityList = $db->query('SELECT `entityID`, `organization`, `contacts`, `scopes`, `ecs`, `assurancec`, `ra`
+    $entityList = $config->getDb()->query('SELECT `entityID`, `organization`, `contacts`, `scopes`, `ecs`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isIdP = 1');
     foreach ($entityList as $entity) {
       printf ('        <tr>
@@ -647,7 +639,7 @@ function showInterfederation($type){
         </tr>
       </thead>%s', "\n");
     $html->addTableSort('SP-table');
-    $entityList = $db->query('SELECT `entityID`, `displayName`, `serviceName`,
+    $entityList = $config->getDb()->query('SELECT `entityID`, `displayName`, `serviceName`,
         `organization`, `contacts`, `ec`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isSP = 1');
     foreach ($entityList as $entity) {
