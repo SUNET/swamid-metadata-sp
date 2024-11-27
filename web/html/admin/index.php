@@ -504,6 +504,7 @@ if (isset($_FILES['XMLfile'])) {
           $display->showErrorList();
           $html->addTableSort('error-table');
           $html->addTableSort('reminder-table');
+          $html->addTableSort('reminder-table-actOn');
           break;
         case 'ErrorListDownload' :
           if ($userLevel > 1) {

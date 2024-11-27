@@ -1690,9 +1690,9 @@ class MetadataDisplay {
     printf ('        <br>
         <h5>Entities that we sent mail reminders to</h5>
         <p>Updated every wednesday at 7:15 UTC</p>
-        <table id="reminder-table" class="table table-striped table-bordered">
+        <table id="reminder-table%s" class="table table-striped table-bordered">
           <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed/Validated</th></tr></thead>%s',
-      "\n");
+      $showAll ? '' : '-actOn', "\n");
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $showUrgent = false;
       switch ($entity['type']) {
