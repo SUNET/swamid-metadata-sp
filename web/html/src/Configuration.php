@@ -17,7 +17,7 @@ class Configuration {
     $reqParams = array('db', 'smtp', 'mode', 'baseURL');
     $reqParamsDB = array('servername', 'username', 'password',
       'name');
-    $reqParamsSmtp = array('host', 'sasl', 'from', 'replayTo', 'replayName', 'sendOut');
+    $reqParamsSmtp = array('host', 'from', 'replayTo', 'replayName', 'sendOut');
     $reqParamsSmtpSasl = array('user', 'user');
 
     foreach ($reqParams as $param) {
