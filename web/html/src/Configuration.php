@@ -76,8 +76,8 @@ class Configuration {
         $options[PDO::MYSQL_ATTR_SSL_CA] = $db['caPath'];
       } 
       try {
-        $dbDSN = sprintf('mysql:host=%s;dbname=%s', $db['servername'], $db['name'], $options);
-        $this->db = new PDO($dbDSN, $db['username'], $db['password']);
+        $dbDSN = sprintf('mysql:host=%s;dbname=%s', $db['servername'], $db['name']);
+        $this->db = new PDO($dbDSN, $db['username'], $db['password'], $options);
         // set the PDO error mode to exception
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
       } catch(PDOException $e) {
