@@ -17,7 +17,7 @@ class Configuration {
     $reqParams = array('db', 'smtp', 'mode', 'baseURL');
     $reqParamsDB = array('servername', 'username', 'password',
       'name');
-    $reqParamsSmtp = array('host', 'sasl', 'from', 'replayTo', 'replayName', 'sendOut');
+    $reqParamsSmtp = array('host', 'from', 'replyTo', 'replyName', 'sendOut');
     $reqParamsSmtpSasl = array('user', 'user');
 
     foreach ($reqParams as $param) {
@@ -76,8 +76,8 @@ class Configuration {
         $options[PDO::MYSQL_ATTR_SSL_CA] = $db['caPath'];
       } 
       try {
-        $dbDSN = sprintf('mysql:host=%s;dbname=%s', $db['servername'], $db['name'], $options);
-        $this->db = new PDO($dbDSN, $db['username'], $db['password']);
+        $dbDSN = sprintf('mysql:host=%s;dbname=%s', $db['servername'], $db['name']);
+        $this->db = new PDO($dbDSN, $db['username'], $db['password'], $options);
         // set the PDO error mode to exception
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
       } catch(PDOException $e) {

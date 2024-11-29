@@ -1830,8 +1830,8 @@ function setupMail() {
     $mailContacts->addBCC($config->getSMTP()['bcc']);
     $mailRequester->addBCC($config->getSMTP()['bcc']);
   }
-  $mailContacts->addReplyTo($config->getSMTP()['replayTo'], $config->getSMTP()['replayName']);
-  $mailRequester->addReplyTo($config->getSMTP()['replayTo'], $config->getSMTP()['replayName']);
+  $mailContacts->addReplyTo($config->getSMTP()['replyTo'], $config->getSMTP()['replyName']);
+  $mailRequester->addReplyTo($config->getSMTP()['replyTo'], $config->getSMTP()['replyName']);
 }
 
 function move2Draft($entitiesId) {
