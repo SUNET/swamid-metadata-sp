@@ -17,8 +17,8 @@ $db = array(
 $smtp = array(
   'host'        => 'smtp.host.se',        # SMTP host
   'from'        => 'metadata@host.se',    # Address to send from (will get bounces)
-  'replayTo'    => 'operations@host.se',  # Address where any reply:s should go
-  'replayName'  => 'Operations Host',     # Name in mail where any reply:s should go
+  'replyTo'     => 'operations@host.se',  # Address where any reply:s should go
+  'replyName'   => 'Operations Host',     # Name in mail where any reply:s should go
   'sendOut'     => false,
 
   # optional parameters

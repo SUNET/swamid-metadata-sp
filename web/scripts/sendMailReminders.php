@@ -574,5 +574,5 @@ function setupMail() {
   if ($config->getSMTP()['bcc']) {
 		$mailContacts->addBCC($config->getSMTP()['bcc']);
 	}
-	$mailContacts->addReplyTo($config->getSMTP()['replayTo'], $config->getSMTP()['replayName']);
+	$mailContacts->addReplyTo($config->getSMTP()['replyTo'], $config->getSMTP()['replyName']);
 }
