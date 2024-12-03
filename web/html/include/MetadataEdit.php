@@ -268,6 +268,9 @@ class MetadataEdit {
         case 'swamid/assurance-requirement' :
           $attributeType ='http://www.swamid.se/assurance-requirement'; # NOSONAR Should be http://
           break;
+        case 'entity-selection-profile' :
+          $attributeType ='https://refeds.org/entity-selection-profile';
+          break;
         default :
           printf ('Missing type (%s)', urlencode($_GET['type']));
           exit;
@@ -301,6 +304,7 @@ class MetadataEdit {
 
       switch ($_GET['action']) {
         case 'Add' :
+          $update = true;
           if (! $extensions) {
             # Add if missing
             $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
@@ -349,7 +353,23 @@ class MetadataEdit {
           $child = $attribute->firstChild;
           $attributeValue = false;
           while ($child && ! $attributeValue) {
-            if ($child->nodeValue == trim($_GET['attribute'])) {
+            if ($_GET['type'] == 'entity-selection-profile') {
+              $attributeValue = $child;
+              if (isset($this->config->entitySelectionProfiles()[trim($_GET['attribute'])])) {
+                # Update with new value
+                $child->nodeValue = $this->config->entitySelectionProfiles()[trim($_GET['attribute'])]["base64"];
+                $attribute->appendChild($attributeValue);
+                $this->saveXML();
+                $entityAttributesUpdateHandler = $this->config->getDb()->prepare(
+                  'UPDATE EntityAttributes SET `attribute` = :Attribute WHERE `entity_id`= :Id AND `type` = :Type');
+                $entityAttributesUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+                $entityAttributesUpdateHandler->bindParam(self::BIND_TYPE, $_GET['type']);
+                $entityAttributesUpdateHandler->bindValue(self::BIND_ATTRIBUTE, trim($_GET['attribute']));
+                $entityAttributesUpdateHandler->execute();
+              } else {
+                $update = false;
+              }
+            } elseif ($child->nodeValue == trim($_GET['attribute'])) {
               $attributeValue = $child;
             } else {
               $child = $child->nextSibling;
@@ -358,16 +378,28 @@ class MetadataEdit {
           if (! $attributeValue) {
             # Add if missing
             $attributeValue = $this->newXml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-            $attributeValue->nodeValue = trim($_GET['attribute']);
-            $attribute->appendChild($attributeValue);
+            if ($_GET['type'] == 'entity-selection-profile') {
+              if (isset($this->config->entitySelectionProfiles()[trim($_GET['attribute'])])) {
+                # Update with new value
+                $attributeValue->nodeValue = $this->config->entitySelectionProfiles()[trim($_GET['attribute'])]["base64"];
+                $attribute->appendChild($attributeValue);
+              } else {
+                $update = false;
+              }
+            } else {
+              $attributeValue->nodeValue = trim($_GET['attribute']);
+              $attribute->appendChild($attributeValue);
+            }
 
-            $entityAttributesAddHandler = $this->config->getDb()->prepare(
-              'INSERT INTO EntityAttributes (entity_id, type, attribute) VALUES (:Id, :Type, :Attribute) ;');
-            $entityAttributesAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-            $entityAttributesAddHandler->bindParam(self::BIND_TYPE, $_GET['type']);
-            $entityAttributesAddHandler->bindValue(self::BIND_ATTRIBUTE, trim($_GET['attribute']));
-            $entityAttributesAddHandler->execute();
-            $this->saveXML();
+            if ($update) {
+              $entityAttributesAddHandler = $this->config->getDb()->prepare(
+                'INSERT INTO EntityAttributes (entity_id, type, attribute) VALUES (:Id, :Type, :Attribute) ;');
+              $entityAttributesAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+              $entityAttributesAddHandler->bindParam(self::BIND_TYPE, $_GET['type']);
+              $entityAttributesAddHandler->bindValue(self::BIND_ATTRIBUTE, trim($_GET['attribute']));
+              $entityAttributesAddHandler->execute();
+              $this->saveXML();
+            }
           }
           break;
         case 'Delete' :
@@ -399,7 +431,7 @@ class MetadataEdit {
                 $attributeValue = false;
                 $moreAttributeValues = false;
                 while ($child && ! $attributeValue) {
-                  if ($child->nodeValue == $_GET['attribute']) {
+                  if ($child->nodeValue == $_GET['attribute'] || $_GET['type'] == 'entity-selection-profile') {
                     $attributeValue = $child;
                   }
                   $child = $child->nextSibling;
@@ -452,8 +484,13 @@ class MetadataEdit {
       $existingAttributeValues[$type] = array();
       $existingAttributeValues[$type][$value] = true;
       $state = isset($oldAttributeValues[$type][$value]) ? 'dark' : 'success';
-      $error = self::HTML_CLASS_ALERT_WARNING;
-      $entityType = '?';
+      if ($type == 'entity-selection-profile') {
+        $error = $this->isSP ? '' : self::HTML_CLASS_ALERT_DANGER;
+        $entityType = 'SP';
+      } else {
+        $error = self::HTML_CLASS_ALERT_WARNING;
+        $entityType = '?';
+      }
       if (isset($this->standardAttributes[$type])) {
         foreach ($this->standardAttributes[$type] as $data) {
           if ($data['value'] == $value) {
@@ -485,8 +522,13 @@ class MetadataEdit {
         } else {
           $state = 'success';
         }
-        $error = self::HTML_CLASS_ALERT_WARNING;
-        $entityType = '?';
+        if ($type == 'entity-selection-profile') {
+          $error = $this->isSP ? '' : self::HTML_CLASS_ALERT_DANGER;
+          $entityType = 'SP';
+        } else {
+          $error = self::HTML_CLASS_ALERT_WARNING;
+          $entityType = '?';
+        }
         if (isset($this->standardAttributes[$type])) {
           foreach ($this->standardAttributes[$type] as $data) {
             if ($data['value'] == $value) {
@@ -538,7 +580,18 @@ class MetadataEdit {
           }
         }
       }
-      printf ('%s  %s</li>', "\n", self::HTML_END_UL);
+      printf ('%s  %s', "\n", self::HTML_END_UL);
+    }
+    $entitySelectionProfiles = $this->config->entitySelectionProfiles();
+    if ($this->isSP && count($entitySelectionProfiles) > 0)  {
+      printf ('%s          <li>entity-selection-profile</li><ul>', "\n");
+      foreach ($entitySelectionProfiles as $key => $data) {
+        printf ('
+            <li>
+              <a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=entity-selection-profile&attribute=%s&action=Add">[set]<a> %s - %s
+            </li>', $this->dbIdNr, $this->dbOldIdNr, $key, $key, $data["desc"]);
+      }
+      printf ('%s  %s', "\n", self::HTML_END_UL);
     }
     print '
         </ul>
@@ -568,9 +621,13 @@ class MetadataEdit {
         $addLink = '';
         $state = 'dark';
       } else {
-        $addLink = sprintf(
-          '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
+        if ($attribute['type'] != 'entity-selection-profile' ||
+          ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
+          ) {
+          $addLink = sprintf(
+            '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
+            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
+        }
         $state = 'danger';
       }?>
         <b><?=$attribute['type']?></b>
@@ -582,9 +639,13 @@ class MetadataEdit {
           $addLink = '';
           $state = 'dark';
         } else {
-          $addLink = sprintf(
-            '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
+          if ($attribute['type'] != 'entity-selection-profile' ||
+            ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
+            ) {
+            $addLink = sprintf(
+              '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
+              $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
+          }
           $state = 'danger';
         }
         if ($oldType != $attribute['type']) {

@@ -36,5 +36,12 @@ $smtp = array(
   ###
   # 'bcc'         => 'admin@host.se',      #
 );
+
+# Optional if you want to support https://refeds.org/entity-selection-profile for SeamlessAccess Idp filtering
+#$entitySelectionProfiles = array(
+#  'swamid-only'                 => array('desc' => 'Registered in SWAMID','base64' => 'eyJwcm9maWxlcyI6eyJzd2FtaWQtb25seSI6eyJzdHJpY3QiOnRydWUsImVudGl0aWVzIjpbeyJzZWxlY3QiOiJodHRwOi8vd3d3LnN3YW1pZC5zZS8iLCJtYXRjaCI6InJlZ2lzdHJhdGlvbkF1dGhvcml0eSIsImluY2x1ZGUiOnRydWV9XX19fQo='),
+#  'swamid-edugain'              => array('desc' => 'Registered in SWAMID or imported from eduGAIN','base64' => 'eyJwcm9maWxlcyI6InN3YW1pZC1lZHVnYWluIjp7InN0cmljdCI6dHJ1ZSwiZW50aXRpZXMiOlt7InNlbGVjdCI6ImZpbGU6Ly8vb3B0L3B5ZmYvbWV0YWRhdGEvb3BlbmF0aGVucy54bWwiLCJtYXRjaCI6Im1kX3NvdXJjZSIsImluY2x1ZGUiOmZhbHNlfV19fX0K')
+#);
+
 $mode = 'Lab';
 $baseURL = 'https://metadata.host.se/';
