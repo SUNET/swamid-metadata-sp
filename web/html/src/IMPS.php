@@ -41,8 +41,7 @@ class IMPS {
       $maximumAL = isset($_POST['maximumAL']) ? $_POST['maximumAL'] : $imps['maximumAL'];
       $lastUpdated = isset($_POST['lastUpdated']) ? $_POST['lastUpdated'] : $imps['lastUpdated'];
       $sharedIdp = isset($_POST['sharedIdp']) ? true : $imps['sharedIdp'];
-      
-      
+
       printf('        <form action="?action=Members&subAction=saveImps&id=%d&tab=imps" method="POST" enctype="multipart/form-data">
           <div class="row">
             <div class="col-2">Organization</div>
@@ -81,10 +80,10 @@ class IMPS {
       $maximumAL = $_POST['maximumAL'];
       if ($maximumAL > 0 && $maximumAL < 4) {
         $impsHandler = $this->config->getDb()->prepare(
-          'UPDATE IMPS 
+          'UPDATE IMPS
           SET `name` = :Name, `maximumAL` = :MaximunAL,
             `lastUpdated` = :LastUpdated,
-            `lastValidated` = IF(lastValidated < :LastUpdated, :LastUpdated, lastValidated), `sharedIdp` = :SharedIdP 
+            `lastValidated` = IF(lastValidated < :LastUpdated, :LastUpdated, lastValidated), `sharedIdp` = :SharedIdP
           WHERE `id` = :Id');
         return $impsHandler->execute(array(
           self::BIND_ID => $id, ':Name' => $_POST['name'],
@@ -92,7 +91,7 @@ class IMPS {
           ':LastUpdated' => $_POST['lastUpdated'],
           ':SharedIdP' => isset($_POST['sharedIdP']) ? 1 : 0));
       } else {
-        $this->errors .= "AL should be between 1 and 3\n";  
+        $this->errors .= "AL should be between 1 and 3\n";
       }
     } else {
       $this->errors .= "Missing POST variable(s)\n";
@@ -124,10 +123,10 @@ class IMPS {
     $assuranceHandler = $this->config->getDb()->prepare(
       "SELECT `attribute`
       FROM `EntityAttributes`
-      WHERE `entity_id` = :Entity_id AND 
+      WHERE `entity_id` = :Entity_id AND
         `type` = 'assurance-certification' AND
         `attribute` LIKE '%http://www.swamid.se/policy/assurance/al%'
-      ORDER BY attribute DESC 
+      ORDER BY attribute DESC
       LIMIT 1");
     if ($checkHandler->fetch()) {
       if (isset($_GET['FormVisit'])) {
@@ -156,7 +155,7 @@ class IMPS {
           </ul>
           If you are missing your IMPS please contact Swamid Operations<br>
           <br>
-            The following Identity Providers are bound to this IMPS : 
+          The following Identity Providers are bound to this IMPS :
           <ul>%s',
           $imps['name'], substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy, "\n");
@@ -186,7 +185,7 @@ class IMPS {
         printf('    <div class="row alert alert-danger" role="alert">%s      <div class="col">
         <div class="row"><b>Error:</b></div>
         <div class="row">No IMPS found!</div>%s      </div>%s    </div>', "\n", "\n", "\n");
-      }  
+      }
     } else {
       printf('    <div class="row alert alert-danger" role="alert">
       <div class="col">

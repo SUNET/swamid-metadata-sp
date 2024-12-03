@@ -11,7 +11,7 @@ class Configuration {
   private $baseURL = '';
   private $db;
 
-  public function __construct($startDB = true, $scope = false) {
+  public function __construct($startDB = true) {
     include __DIR__ . '/../config.php'; # NOSONAR
 
     $reqParams = array('db', 'smtp', 'mode', 'baseURL');
@@ -68,13 +68,13 @@ class Configuration {
     if (! isset($smtp['bcc'])) {
       $this->smtp['bcc'] = false;
     }
-    
+
     # Database
     if ($startDB) {
       $options = array();
       if (isset($db['caPath'])) {
         $options[PDO::MYSQL_ATTR_SSL_CA] = $db['caPath'];
-      } 
+      }
       try {
         $dbDSN = sprintf('mysql:host=%s;dbname=%s', $db['servername'], $db['name']);
         $this->db = new PDO($dbDSN, $db['username'], $db['password'], $options);
@@ -85,20 +85,8 @@ class Configuration {
       }
       $this->checkDBVersion();
     }
-    
-/*
-    
-    if (isset($instances[$this->scope])) {
-      $this->instance = $instances[$this->scope];
 
-      foreach ($reqParamsInstance as $param) {
-        if (! isset($this->instance[$param])) {
-          printf('Missing $instances[%s][%s] in config.php<br>', $this->scope, $param);
-          exit;
-        }
-      }
-      $this->orgName = $instances[$this->scope]['orgName'];
-    }
+    /*
     if ($startDB) {
       $this->checkInstanceExitInDB($this->scope);
     }*/
@@ -174,7 +162,7 @@ class Configuration {
       $this->db->query("UPDATE params SET value = 4 WHERE `instance_id` = 1 AND `id` = 'dbVersion'");
     }*/
   }
-  
+
   public function getSMTP() {
     return $this->smtp;
   }

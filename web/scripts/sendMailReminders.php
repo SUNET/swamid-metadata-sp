@@ -558,21 +558,21 @@ function setupMail() {
   global $config, $mailContacts;
 
   $mailContacts = new PHPMailer(true);
-	$mailContacts->isSMTP();
-	$mailContacts->Host = $config->getSmtp()['host'];
-	$mailContacts->Port = $config->getSmtp()['port'];
-	$mailContacts->SMTPAutoTLS = true;
-	if ($config->smtpAuth()) {
-		$mailContacts->SMTPAuth = true;
-		$mailContacts->Username = $config->getSmtp()['sasl']['user'];
-		$mailContacts->Password = $config->getSmtp()['sasl']['password'];
-		$mailContacts->SMTPSecure = 'tls';
-	}
+  $mailContacts->isSMTP();
+  $mailContacts->Host = $config->getSmtp()['host'];
+  $mailContacts->Port = $config->getSmtp()['port'];
+  $mailContacts->SMTPAutoTLS = true;
+  if ($config->smtpAuth()) {
+    $mailContacts->SMTPAuth = true;
+    $mailContacts->Username = $config->getSmtp()['sasl']['user'];
+    $mailContacts->Password = $config->getSmtp()['sasl']['password'];
+    $mailContacts->SMTPSecure = 'tls';
+  }
 
   //Recipients
   $mailContacts->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
   if ($config->getSMTP()['bcc']) {
-		$mailContacts->addBCC($config->getSMTP()['bcc']);
-	}
-	$mailContacts->addReplyTo($config->getSMTP()['replyTo'], $config->getSMTP()['replyName']);
+    $mailContacts->addBCC($config->getSMTP()['bcc']);
+  }
+  $mailContacts->addReplyTo($config->getSMTP()['replyTo'], $config->getSMTP()['replyName']);
 }

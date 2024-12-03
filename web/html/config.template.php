@@ -2,11 +2,11 @@
 $db = array(
   'name'        => 'metadata',      # Name of Database
   'servername'  => 'mariadb',       # Name of DB server
-  'username'    => 'metdata_admin', # Username for DB
+  'username'    => 'metadata_admin', # Username for DB
   'password'    => 'adminpwd',       # Password for DB NOSONAR
 
   # optional parameter
-  
+
   ###
   # The file path to the SSL certificate authority.
   # Activates PDO::MYSQL_ATTR_SSL_CA in options.

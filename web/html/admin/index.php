@@ -1799,7 +1799,7 @@ function requestRemoval($entitiesId) {
 function setupMail() {
   global $config;
   global $mailContacts, $mailRequester;
-  
+
   $mailContacts = new PHPMailer(true);
   $mailRequester = new PHPMailer(true);
   $mailContacts->isSMTP();
@@ -1822,7 +1822,7 @@ function setupMail() {
     $mailContacts->SMTPSecure = 'tls';
     $mailRequester->SMTPSecure = 'tls';
   }
-  
+
   //Recipients
   $mailContacts->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
   $mailRequester->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
@@ -2120,7 +2120,7 @@ function approveAccessRequest($code) {
 
           //Recipients
           $mail->setFrom($config->getSmtp()['from'], 'Metadata');
-          $mail->addReplyTo(OPERATIONS_MAIL, OPERATIONS_NAME);
+          $mail->addReplyTo($config->getSmtp()['replyTo'], $config->getSmtp()['replyName']);
           $mail->addAddress($result['email']);
           $mail->Body = sprintf("<!DOCTYPE html>
             <html lang=\"en\">
