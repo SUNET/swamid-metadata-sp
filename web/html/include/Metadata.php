@@ -731,10 +731,13 @@ class Metadata {
         case 'http://www.swamid.se/assurance-requirement' : # NOSONAR Should be http://
           $attributeType = 'swamid/assurance-requirement';
           break;
+        case 'https://refeds.org/entity-selection-profile' :
+          $attributeType = 'entity-selection-profile';
+          break;
         default :
           $this->result .= sprintf("Unknown Name (%s) in Extensions/EntityAttributes/Attribute.\n",
             $data->getAttribute('Name'));
-          $attributeType = $data->getAttribute('Name');
+          $attributeType = substr($data->getAttribute('Name'),0,30);
       }
 
       $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -743,7 +746,28 @@ class Metadata {
       $child = $data->firstChild;
       while ($child) {
         if ($child->nodeName == self::SAML_SAMLA_ATTRIBUTEVALUE) {
-          $entityAttributesHandler->bindValue(self::BIND_VALUE, trim($child->textContent));
+          if ($attributeType == 'entity-selection-profile') {
+            $profileList = 'No profiles found';
+            if ($json_profile = base64_decode($child->textContent, true)) {
+              if ($json_profile_array = json_decode($json_profile)) {
+                if (isset($json_profile_array->profiles)) {
+                  foreach($json_profile_array->profiles as $key => $profile) {
+                    $profiles_array[$key] = $key;
+                  }
+                  if (count($profiles_array) >= 1) {
+                    $profileList = implode (', ', $profiles_array);
+                  }
+                }
+              } else {
+                $profileList = 'Invalid format of json in profile';
+              }
+            } else {
+              $profileList = 'Invalid BASE64 encoded profile';
+            }
+            $entityAttributesHandler->bindValue(self::BIND_VALUE, $profileList);
+          } else {
+            $entityAttributesHandler->bindValue(self::BIND_VALUE, substr(trim($child->textContent),0,256));
+          }
           $entityAttributesHandler->execute();
         } else {
           $this->result .= 'Extensions -> EntityAttributes -> Attribute -> ' . $child->nodeName . " saknas.\n";

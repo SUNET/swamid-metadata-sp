@@ -9,6 +9,7 @@ class Configuration {
   private $smtp = false;
   private $mode = 'Lab';
   private $baseURL = '';
+  private $entitySelectionProfiles = array();
   private $db;
 
   public function __construct($startDB = true) {
@@ -43,6 +44,7 @@ class Configuration {
 
     $this->mode =  $mode;
     $this->baseURL = $baseURL;
+    $this->entitySelectionProfiles = isset($entitySelectionProfiles) ? $entitySelectionProfiles : array();
 
     # SMTP
     $this->smtp = $smtp;
@@ -169,6 +171,10 @@ class Configuration {
 
   public function baseURL() {
     return $this->baseURL;
+  }
+
+  public function entitySelectionProfiles() {
+    return $this->entitySelectionProfiles;
   }
 
   public function smtpAuth() {

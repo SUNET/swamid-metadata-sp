@@ -476,7 +476,7 @@ class MetadataDisplay {
       } else {
         $state = 'dark';
       }
-      $error = self::HTML_CLASS_ALERT_WARNING;
+      $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
       if (isset($this->standardAttributes[$type])) {
         foreach ($this->standardAttributes[$type] as $data) {
           if ($data['value'] == $value) {
@@ -499,7 +499,7 @@ class MetadataDisplay {
         } else {
           $state = 'dark';
         }
-        $error = self::HTML_CLASS_ALERT_WARNING;
+        $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
         if (isset($this->standardAttributes[$type])) {
           foreach ($this->standardAttributes[$type] as $data) {
             if ($data['value'] == $value) {
