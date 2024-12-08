@@ -33,24 +33,8 @@ if (isset($_SERVER['displayName'])) {
   $fullName = '';
 }
 
-switch ($EPPN) {
-  case 'bjorn@sunet.se' :
-  case 'pax@sunet.se' :
-  case 'jocar@sunet.se' :
-  case 'mifr@sunet.se' :
-    $userLevel = 20;
-    break;
-  case 'frkand02@umu.se' :
-  case 'paulscot@kau.se' :
-    $userLevel = 10;
-    break;
-  case 'johpe12@liu.se' :
-  case 'toylon98@umu.se' :
-    $userLevel = 5;
-    break;
-  default :
-    exit;
-}
+$userLevel = $config->getUserLevels()[$EPPN] ?? 1;
+if ($userLevel < 5) { exit; };
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 $collapseIcons = array();

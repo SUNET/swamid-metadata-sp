@@ -45,3 +45,10 @@ $smtp = array(
 
 $mode = 'Lab';
 $baseURL = 'https://metadata.host.se/';
+
+$userLevels = array(
+  'adminuser1@federation.org' => 20,
+  'adminuser2@federation.org' => 20,
+  'user1@inst1.org' => 10,
+  'user1@inst2.org' => 5,
+);
