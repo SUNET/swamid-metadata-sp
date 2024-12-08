@@ -11,11 +11,12 @@ class Configuration {
   private $baseURL = '';
   private $entitySelectionProfiles = array();
   private $db;
+  private $userLevels = array(); // indexed by username, maps to user privilege level
 
   public function __construct($startDB = true) {
     include __DIR__ . '/../config.php'; # NOSONAR
 
-    $reqParams = array('db', 'smtp', 'mode', 'baseURL');
+    $reqParams = array('db', 'smtp', 'mode', 'baseURL', 'userLevels');
     $reqParamsDB = array('servername', 'username', 'password',
       'name');
     $reqParamsSmtp = array('host', 'from', 'replyTo', 'replyName', 'sendOut');
@@ -92,6 +93,9 @@ class Configuration {
     if ($startDB) {
       $this->checkInstanceExitInDB($this->scope);
     }*/
+
+    # Users
+    $this->userLevels = $userLevels;
   }
 
   private function checkDBVersion() {
@@ -187,6 +191,10 @@ class Configuration {
 
   public function getDb() {
     return $this->db;
+  }
+
+  public function getUserLevels() {
+    return $this->userLevels;
   }
 
   public function getMode() {

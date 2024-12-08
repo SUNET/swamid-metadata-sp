@@ -30,16 +30,8 @@ if (isset($_SERVER['displayName'])) {
   $fullName = '';
 }
 
-switch ($EPPN) {
-  case 'bjorn@sunet.se' :
-  case 'pax@sunet.se' :
-  case 'jocar@sunet.se' :
-  case 'mifr@sunet.se' :
-    $userLevel = 20;
-    break;
-  default :
-    exit;
-}
+$userLevel = $config->getUserLevels()[$EPPN] ?? 1;
+if ($userLevel < 20) { exit; };
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 
