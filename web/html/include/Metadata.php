@@ -23,6 +23,7 @@ class Metadata {
   private $isSPandCoCov1 = false;
   private $isSPandCoCov2 = false;
   private $isSIRTFI = false;
+  private $discoveryResponseFound = false;
 
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
@@ -1028,6 +1029,9 @@ class Metadata {
     if ($this->swamid6116error) {
       $this->cleanOutAssertionConsumerServiceHTTPRedirect();
     }
+    if (! $this->discoveryResponseFound) {
+      $this->warning .= sprintf("SeamlessAccess: No DiscoveryResponse registered. SeamlessAccess will show a warning message if not added. Please consider to add.\n");
+    }
   }
 
   private function parseSPSSODescriptorExtensions($data) {
@@ -1035,6 +1039,8 @@ class Metadata {
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_IDPDISC_DISCOVERYRESPONSE :
+          $this->discoveryResponseFound = true;
+          break;
         case 'init:RequestInitiator' :
           break;
         case self::SAML_MDUI_UIINFO :
