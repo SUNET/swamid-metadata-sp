@@ -128,21 +128,29 @@ class IMPS {
         `attribute` LIKE '%http://www.swamid.se/policy/assurance/al%'
       ORDER BY attribute DESC
       LIMIT 1");
+    $impsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
     if ($checkHandler->fetch()) {
-      if (isset($_GET['FormVisit'])) {
-        if (isset($_GET['impsIsValid'])) {
-          $impsConfirmHandler = $this->config->getDb()->prepare(
-            'UPDATE `IMPS`
-            SET `lastValidated` = NOW(), `user_id` = :User_id
-            WHERE `id` = :IMPS_id');
-          $impsConfirmHandler->execute(array(self::BIND_IMPS_ID => $imps_Id, self::BIND_USER_ID => $userId));
-          return true;
-        } else {
-          printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error:</b></div>%s        <div class="row">You must check that you confirm!</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", "\n", "\n");
-        }
-      }
-      $impsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
       if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+        if ($imps['lastUpdated'] < '2020-12-31') {
+          printf('    <div class="row alert alert-danger" role="alert">
+          <div class="col">
+            <div class="row"><b>Error:</b></div>
+            <div class="row"><p><b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.</p></div>
+          </div>%s    </div>', "\n");
+          return false;
+        }
+        if (isset($_GET['FormVisit'])) {
+          if (isset($_GET['impsIsValid'])) {
+            $impsConfirmHandler = $this->config->getDb()->prepare(
+              'UPDATE `IMPS`
+              SET `lastValidated` = NOW(), `user_id` = :User_id
+              WHERE `id` = :IMPS_id');
+            $impsConfirmHandler->execute(array(self::BIND_IMPS_ID => $imps_Id, self::BIND_USER_ID => $userId));
+            return true;
+          } else {
+            printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error:</b></div>%s        <div class="row">You must check that you confirm!</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", "\n", "\n");
+          }
+        }
         $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
         printf ('      <div class="row">
         <div class="col">
@@ -175,7 +183,7 @@ class IMPS {
             <input type="hidden" name="ImpsId" value="%d">
             <input type="hidden" name="FormVisit" value="true">
             <input type="checkbox" id="impsIsValid" name="impsIsValid">
-            <label for="impsIsValid">On behalf of our Member Organisation I confirm that our IMPS is valid and that the Identity Providers follow it</label><br>
+            <label for="impsIsValid">On behalf of our Member Organisation, I confirm that our IMPS is accurate and valid, and that the Identity Providers adhere to it.</label><br>
             <br>
             <input type="submit" name="action" value="Confirm IMPS">
           </form>

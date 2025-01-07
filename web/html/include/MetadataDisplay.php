@@ -71,7 +71,7 @@ class MetadataDisplay {
       FROM URLs
       WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
     $impsHandler = $this->config->getDb()->prepare(
-      'SELECT `IMPS_id`, `lastValidated`,
+      'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
         NOW() - INTERVAL 10 MONTH AS `warnDate`,
         NOW() - INTERVAL 12 MONTH AS `errorDate`,
         lastValidated + INTERVAL 12 MONTH AS `expireDate`
@@ -203,12 +203,15 @@ class MetadataDisplay {
         if ($this->mode != 'QA' && $entity['status'] == 1) {
           $impsHandler->execute(array(self::BIND_ID => $entityId));
           if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($imps['lastUpdated'] < '2020-12-31') {
+              $errors .= sprintf('SWAMID Assurance 3.1: Evidence of compliance with this profile MUST be part of the Identity Management Practice Statement. Current approved IMPS is based on a earlier version of the assurance profile.%s', "\n");
+            }
             if ($imps['warnDate'] > $imps['lastValidated']) {
               $entityError['IMPSError'] = true;
               if ($imps['errorDate'] > $imps['lastValidated']) {
-                $errors .= sprintf('The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate.%s', "\n");
+                $errors .= sprintf('SWAMID Assurance 3.2: The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate.%s', "\n");
               } else {
-                $warnings .= sprintf('The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate. This must be done before %s.%s', substr($imps['expireDate'], 0, 10), "\n");
+                $warnings .= sprintf('SWAMID Assurance 3.2: The Member Organisation MUST annually confirm that their approved Identity Management Practice Statement is still accurate. This must be done before %s.%s', substr($imps['expireDate'], 0, 10), "\n");
               }
             }
           } else {
@@ -388,16 +391,25 @@ class MetadataDisplay {
         $state = $imps['errorDate'] > $imps['lastValidated'] ? 'danger' : $state;
 
         $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . " (" . $imps['email'] . ")";
-        printf ('%s          <div class="alert-%s"><b><a href="?action=Members&tab=imps&id=%d">%s</a></b><ul>
-            <li>Accepted by Board of Trustees : %s</li>
-            <li>Last validated : %s</li>
-            <li>Last validated by : %s</li>
-          </ul>
-          <a href=".?action=Confirm+IMPS&Entity=%d&ImpsId=%d">
-            <button type="button" class="btn btn-primary">Validate</button>
-          </a></div>',
+        printf ('%s          <div class="alert-%s">
+            <b><a href="?action=Members&tab=imps&id=%d">%s</a></b>
+            <ul>
+              <li>Accepted by Board of Trustees : %s</li>
+              <li>Last validated : %s</li>
+              <li>Last validated by : %s</li>
+            </ul>',
           "\n", $state, $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
-          substr($imps['lastValidated'], 0, 10), $validatedBy, $entityId, $imps['id']);
+          substr($imps['lastValidated'], 0, 10), $validatedBy);
+        if ($imps['lastUpdated'] < '2020-12-31') {
+          printf ('%s            <b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.
+          </div>', "\n");
+        } else {
+        printf ('%s            <a href=".?action=Confirm+IMPS&Entity=%d&ImpsId=%d">
+              <button type="button" class="btn btn-primary">Validate</button>
+            </a>
+          </div>',
+          "\n", $entityId, $imps['id']);
+        }
         $imps = $impsHandler->fetch(PDO::FETCH_ASSOC);
       }
     } else {
