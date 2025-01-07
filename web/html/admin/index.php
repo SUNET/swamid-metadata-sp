@@ -1315,7 +1315,7 @@ function move2Pending($entitiesId) {
               <p>You have requested an update of \"%s\" (%s)</p>
               <p>To continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
               If you don’t do this the publication request will not be processed.</p>
-              <p>The new version can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+              <p>The new version can be found at <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a></p>
               <p>An email has also been sent to the following addresses since they are the new or old technical
               and/or administrative contacts : </p>
               <p><ul>
@@ -1332,7 +1332,7 @@ function move2Pending($entitiesId) {
           \nYou have requested an update of \"%s\" (%s)
           \nTo continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
           If you don’t do this the publication request will not be processed.
-          \nThe new version can be found at %s/?showEntity=%d
+          \nThe new version can be found at %s/admin/?showEntity=%d
           \nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s
           \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
           --
