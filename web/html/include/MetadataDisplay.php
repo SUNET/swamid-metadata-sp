@@ -200,10 +200,10 @@ class MetadataDisplay {
           }
         }
 
-        if ($this->mode != 'QA' && $entity['status'] == 1) {
+        if ($this->config->getIMPS() && $entity['status'] == 1) {
           $impsHandler->execute(array(self::BIND_ID => $entityId));
           if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-            if ($imps['lastUpdated'] < '2020-12-31') {
+            if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
               $errors .= sprintf('SWAMID Assurance 3.1: Evidence of compliance with this profile MUST be part of the Identity Management Practice Statement. Current approved IMPS is based on a earlier version of the assurance profile.%s', "\n");
             }
             if ($imps['warnDate'] > $imps['lastValidated']) {
@@ -400,7 +400,7 @@ class MetadataDisplay {
             </ul>',
           "\n", $state, $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy);
-        if ($imps['lastUpdated'] < '2020-12-31') {
+        if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
           printf ('%s            <b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.
           </div>', "\n");
         } else {

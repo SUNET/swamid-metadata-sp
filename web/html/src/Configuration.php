@@ -7,6 +7,7 @@ use PDOException;
 class Configuration {
   private $smtpAuth = false; // Used while sending out in PHPMailer
   private $smtp = false;
+  private $imps = false;
   private $mode = 'Lab';
   private $baseURL = '';
   private $entitySelectionProfiles = array();
@@ -89,13 +90,19 @@ class Configuration {
       $this->checkDBVersion();
     }
 
-    /*
-    if ($startDB) {
-      $this->checkInstanceExitInDB($this->scope);
-    }*/
-
     # Users
     $this->userLevels = $userLevels;
+
+    # IMPS
+    if (isset($imps)) {
+      $this->imps = $imps;
+      foreach (array('oldDate', 'warn1', 'warn2', 'error') as $param) {
+        if (! isset($imps[$param])) {
+          printf ('Missing $imps[%s] in config.php<br>', $param);
+          exit;
+        }
+      }
+    }
   }
 
   private function checkDBVersion() {
@@ -195,6 +202,10 @@ class Configuration {
 
   public function getUserLevels() {
     return $this->userLevels;
+  }
+
+  public function getIMPS() {
+    return $this->imps;
   }
 
   public function getMode() {

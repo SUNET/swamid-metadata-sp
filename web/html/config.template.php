@@ -52,3 +52,12 @@ $userLevels = array(
   'user1@inst1.org' => 10,
   'user1@inst2.org' => 5,
 );
+
+# Optional if you want to support IMPS:es
+#$imps = array(
+#  'oldDate' => '2020-12-31', # If older then this date. IMPS needs to be updated!
+  # Number of months since last validation before sending
+#  'warn1' => '10', # 1:st warning
+#  'warn2' => '11', # 2:nd warning
+#  'error' => '12' # last warning
+#);

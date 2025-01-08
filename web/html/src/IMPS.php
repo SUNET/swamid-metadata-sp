@@ -131,7 +131,7 @@ class IMPS {
     $impsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
     if ($checkHandler->fetch()) {
       if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-        if ($imps['lastUpdated'] < '2020-12-31') {
+        if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
           printf('    <div class="row alert alert-danger" role="alert">
           <div class="col">
             <div class="row"><b>Error:</b></div>

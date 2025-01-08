@@ -20,6 +20,12 @@ confirmEntities();
 oldCerts();
 checkOldPending();
 checkOldDraft();
+if ($config->getIMPS()) {
+  print "Checking old IMPS:es.\n";
+  checkOldIMPS();
+} else {
+  print "Skipping check of old IMPS since config missing.\n";
+}
 
 function confirmEntities() {
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
@@ -344,6 +350,77 @@ function checkOldDraft() {
   $entitiesHandler->closeCursor();
 }
 
+function checkOldIMPS() {
+  global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
+
+  # Warn for IMPS:es not validated
+  $idpImpsHandler = $config->getDb()->prepare('SELECT `IMPS_id`
+    FROM `IdpIMPS`
+    WHERE `entity_id` = :Entity_Id');
+
+  $reminders = array();
+  $reminderIMPS = array();
+  $getMailRemindersHandler->execute(array('Type' => 5));
+  while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
+    $idpImpsHandler->execute(array('Entity_Id' => $entity['entity_id']));
+    while ($imps = $idpImpsHandler->fetch(PDO::FETCH_ASSOC)) {
+      $reminderIMPS[$imps['IMPS_id']] = $entity['level'];
+    }
+    $reminders[$entity['entity_id']] = true;
+  }
+  $getMailRemindersHandler->closeCursor();
+
+  $flagDates = $config->getDb()->query('SELECT NOW() - INTERVAL ' . $config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
+    NOW() - INTERVAL ' . $config->getIMPS()['warn2'] . ' MONTH AS `warn2Date`,
+    NOW() - INTERVAL ' . $config->getIMPS()['error'] . ' MONTH AS `errorDate`', PDO::FETCH_ASSOC);
+
+  foreach ($flagDates as $dates) {
+    # Need to use foreach to fetch row. $flagDates is a PDOStatement
+    $warn1Date = $dates['warn1Date'];
+    $warn2Date = $dates['warn2Date'];
+    $errorDate = $dates['errorDate'];
+  }
+  $oldDate = $config->getIMPS()['oldDate'];
+  $flagDates->closeCursor();
+
+  $impsHandler = $config->getDb()->prepare('SELECT `IMPS`.`id`, `name`, `lastValidated`, `lastUpdated` , `entity_id`
+    FROM `IdpIMPS`, `IMPS`
+    LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
+    WHERE `IMPS_id` = `IMPS`.`id`');
+  $impsHandler->execute();
+  while ($imps = $impsHandler->fetch((PDO::FETCH_ASSOC))) {
+    if ($warn1Date > $imps['lastValidated']) {
+      if (! isset($reminderIMPS[$imps['id']])) {
+        $reminderIMPS[$imps['id']] = 0;
+      }
+      if ($oldDate > $imps['lastUpdated'] && $reminderIMPS[$imps['id']] < 4) {
+        printf('Error old profile %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
+        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 4));
+        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), 99);
+      } elseif ($errorDate > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 3) {
+        printf('Error %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
+        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 3));
+        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['error']);
+      } elseif ($warn2Date > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 2) {
+        printf('Warn2 %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
+        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 2));
+        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['warn2']);
+      } elseif ($warn1Date > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 1) {
+        printf('Warn1 %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
+        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 1));
+        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['warn1']);
+      }
+      unset($reminders[$imps['entity_id']]);
+    }
+  }
+
+  foreach ($reminders as $reminder => $level) {
+    print "Removing $reminder\n";
+    $removeMailRemindersHandler->execute(array('Type' => 5, 'Entity_Id' => $reminder));
+  }
+  $impsHandler->closeCursor();
+}
+
 function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   global $config, $mailContacts;
 
@@ -498,6 +575,86 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
   $mailContacts->Subject  = sprintf ('Warning : SWAMID %s metadata for %s needs to be acted on',
     $pending ? 'pending' : 'draft', $shortEntityid );
+
+  try {
+    $mailContacts->send();
+  } catch (Exception $e) {
+    echo 'Message could not be sent to contacts.<br>';
+  }
+}
+
+function sendImpsReminder($id, $name, $months) {
+  global $config, $mailContacts;
+
+  setupMail();
+
+  if ($config->sendOut()) {
+    $addresses = getAdmins($id);
+    foreach ($addresses as $address) {
+      $mailContacts->addAddress($address);
+    }
+    if ($months >= $config->getIMPS()['error']) {
+      $addresses = getTechnicalAndAdministrativeContacts($id);
+      foreach ($addresses as $address) {
+        $mailContacts->addAddress($address);
+      }
+    }
+  }
+
+  //Content
+  $mailContacts->isHTML(true);
+  if ($months == 99) {
+    $mailContacts->Body    = sprintf("<html>\n  <body>
+    <p>Hi.</p>
+    <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
+    Current approved IMPS is based on a earlier version of the assurance profile.
+    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
+    to remove the entity related to this IMPS from SWAMID metadata registry.</p>
+    <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    <p>You can view information about your IMPS at
+    <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
+    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    --<br>
+    On behalf of SWAMID Operations</p>\n  </body>\n</html>",
+    $name, $config->baseURL(), $id, $config->baseURL(), $id);
+    $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
+    Current approved IMPS is based on a earlier version of the assurance profile.
+    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
+    to remove the entity related to this IMPS from SWAMID metadata registry.
+    \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    \nYou can view information about your IMPS at %sadmin/?showEntity=%d .
+    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    --
+    On behalf of SWAMID Operations",
+    $name, $config->baseURL(), $id);
+  } else {
+    $mailContacts->Body    = sprintf("<html>\n  <body>
+    <p>Hi.</p>
+    <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
+    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
+    to remove the entity related to this IMPS from SWAMID metadata registry.</p>
+    <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    <p>You can validate/confirm your IMPS at
+    <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
+    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    --<br>
+    On behalf of SWAMID Operations</p>\n  </body>\n</html>",
+    $name, $months, $config->baseURL(), $id, $config->baseURL(), $id);
+    $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
+    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
+    to remove the entity related to this IMPS from SWAMID metadata registry.
+    \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
+    \nYou can validate/confirm your IMPS at %sadmin/?showEntity=%d .
+    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    --
+    On behalf of SWAMID Operations",
+    $name, $months, $config->baseURL(), $id);
+  }
+  $mailContacts->Subject  = 'Warning : SWAMID IMPS ' . $name . ' needs to be validated';
 
   try {
     $mailContacts->send();
