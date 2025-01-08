@@ -1692,12 +1692,18 @@ class MetadataDisplay {
     if (!$download) {print "    " . self::HTML_TABLE_END; }
   }
   private function showErrorMailReminders($showAll=true) {
+    $impsDates = $this->config->getIMPS();
     $entityHandler = $this->config->getDb()->prepare(
       'SELECT MailReminders.*, `entityID`, `lastConfirmed`, `lastValidated`
       FROM `MailReminders`, `Entities`
       LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
       WHERE `Entities`.`id` = `MailReminders`.`entity_id`
       ORDER BY `entityID`, `type`');
+    $impsHandler = $this->config->getDb()->prepare(
+      'SELECT `lastValidated`
+      FROM `IMPS`, `IdpIMPS`
+      WHERE `id` = `IMPS_id`
+        AND `entity_id` = :Id');
     $entityHandler->execute();
     printf ('        <br>
         <h5>Entities that we sent mail reminders to</h5>
@@ -1774,7 +1780,30 @@ class MetadataDisplay {
           }
           $date = $entity['lastValidated'];
           break;
+        case 5 :
+          // Old IMPS:es
+          switch ($entity['level']) {
+            case 1 :
+              $reason = sprintf ('%d months since IMPS last was validated', $impsDates['warn1']);
+              break;
+            case 2 :
+              $reason = sprintf ('%d months since IMPS last was validated', $impsDates['warn2']);
+              break;
+            case 3 :
+              $reason = sprintf ('%d months since IMPS last was validated', $impsDates['error']);
+              $showUrgent = true;
+              break;
+            case 4 :
+            default :
+              $reason = 'IMPS needs to be updated';
+              $showUrgent = true;
+          }
+          $impsHandler->execute(array(self::BIND_ID => $entity['entity_id']));
+          $date = $impsHandler->fetchColumn();
+          break;
         default :
+          $date = '????';
+          $reason = sprintf('Missing config for type = %d', $entity['type']);
       }
       if ($showAll || $showUrgent) {
         printf(
