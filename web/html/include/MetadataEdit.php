@@ -3756,7 +3756,15 @@ class MetadataEdit {
         case 'subject-id:req' :
           $attributeType = 'urn:oasis:names:tc:SAML:profiles:subject-id:req';
           break;
+        case 'entity-selection-profile' :
+          $attributeType = 'https://refeds.org/entity-selection-profile';
+          if (isset($this->config->entitySelectionProfiles()[$attribute['attribute']])) {
+            # Update with new value
+            $attribute['attribute'] = $this->config->entitySelectionProfiles()[$attribute['attribute']]["base64"];
+          }
+          break;
         default :
+          printf ('Merge EntityAttributes : unknown type %s', $attribute['type']);
           exit;
       }
       if (! isset($oldAttributeValues[$attributeType]) ) {
