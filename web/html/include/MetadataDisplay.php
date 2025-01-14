@@ -1515,17 +1515,17 @@ class MetadataDisplay {
   public function showErrorList($download = false) {
     if (! $download) {
       # Default values
-      $errorsActive='';
-      $errorsSelected='false';
-      $errorsShow='';
+      $remindersUrgentActive='';
+      $remindersUrgentSelected='false';
+      $remindersUrgentShow='';
       #
       $remindersActive='';
       $remindersSelected='false';
       $remindersShow='';
       #
-      $remindersUrgentActive='';
-      $remindersUrgentSelected='false';
-      $remindersUrgentShow='';
+      $errorsActive='';
+      $errorsSelected='false';
+      $errorsShow='';
       #
       $idPsActive = '';
       $idPsSelected = 'false';
@@ -1551,30 +1551,30 @@ class MetadataDisplay {
             $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
             break;
           default :
-            $errorsActive = self::HTML_ACTIVE;
-            $errorsSelected='true';
-            $errorsShow = self::HTML_SHOW;
+          $remindersUrgentActive = self::HTML_ACTIVE;
+          $remindersUrgentSelected='true';
+          $remindersUrgentShow = self::HTML_SHOW;
           }
       } else {
-        $errorsActive = self::HTML_ACTIVE;
-        $errorsSelected='true';
-        $errorsShow = self::HTML_SHOW;
+        $remindersUrgentActive = self::HTML_ACTIVE;
+        $remindersUrgentSelected='true';
+        $remindersUrgentShow = self::HTML_SHOW;
       }
 
       printf('    <div class="row">
       <div class="col">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
           <li class="nav-item">
-            <a class="nav-link%s" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
-              aria-controls="errors" aria-selected="%s">Errors</a>
+            <a class="nav-link%s" id="reminders-urgent-tab" data-toggle="tab" href="#reminders-urgent" role="tab"
+              aria-controls="reminders-urgent" aria-selected="%s">Expired</a>
           </li>
           <li class="nav-item">
             <a class="nav-link%s" id="reminders-tab" data-toggle="tab" href="#reminders" role="tab"
-              aria-controls="reminders" aria-selected="%s">Reminders</a>
+              aria-controls="reminders" aria-selected="%s">Notified</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link%s" id="reminders-urgent-tab" data-toggle="tab" href="#reminders-urgent" role="tab"
-              aria-controls="reminders-urgent" aria-selected="%s">Reminders - Act on</a>
+            <a class="nav-link%s" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
+              aria-controls="errors" aria-selected="%s">Errors</a>
           </li>
           <li class="nav-item">
             <a class="nav-link%s" id="idps-tab" data-toggle="tab" href="#idps" role="tab"
@@ -1582,21 +1582,22 @@ class MetadataDisplay {
           </li>
         </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade%s%s" id="errors" role="tabpanel" aria-labelledby="errors-tab">%s',
-          $errorsActive, $errorsSelected, $remindersActive, $remindersSelected, $remindersUrgentActive, $remindersUrgentSelected, $idPsActive, $idPsSelected, "\n", "\n",
-          $errorsShow, $errorsActive, "\n");
-    }
-    $this->showErrorEntitiesList($download);
-    if (! $download) {
-      printf('      </div><!-- End tab-pane errors -->
+      <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
+        $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected, 
+        $errorsActive, $errorsSelected, $idPsActive, $idPsSelected, "\n", "\n",
+        $remindersUrgentShow, $remindersUrgentActive, "\n");
+      $this->showErrorMailReminders(false);
+      printf('      </div><!-- End tab-pane reminders-urgent -->
       <div class="tab-pane fade%s%s" id="reminders" role="tabpanel" aria-labelledby="reminders-tab">%s',
         $remindersShow, $remindersActive, "\n");
       $this->showErrorMailReminders();
       printf('      </div><!-- End tab-pane reminders -->
-      <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
-        $remindersUrgentShow, $remindersUrgentActive, "\n");
-      $this->showErrorMailReminders(false);
-      printf('      </div><!-- End tab-pane reminders-urgent -->
+      <div class="tab-pane fade%s%s" id="errors" role="tabpanel" aria-labelledby="errors-tab">%s',
+        $errorsShow, $errorsActive, "\n");
+    }
+    $this->showErrorEntitiesList($download);
+    if (! $download) {
+      printf('      </div><!-- End tab-pane errors -->
       <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
         $idPsShow, $idPsActive, "\n");
       $this->showIdPsMissingIMPS($idPsId);
@@ -1706,10 +1707,11 @@ class MetadataDisplay {
         AND `entity_id` = :Id');
     $entityHandler->execute();
     printf ('        <br>
-        <h5>Entities that we sent mail reminders to</h5>
-        <p>Updated every wednesday at 7:15 UTC</p>
+        <h5>%s</h5>
+        <p>Updated every Wednesday at 7:15 UTC</p>
         <table id="reminder-table%s" class="table table-striped table-bordered">
           <thead><tr><th>EntityID</th><th>Reason</th><th>Mail sent</th><th>Last Confirmed/Validated</th></tr></thead>%s',
+      $showAll ? 'Entities that we sent notifications to' : 'Entities that are about to expire / be removed',
       $showAll ? '' : '-actOn', "\n");
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
       $showUrgent = false;
@@ -1741,7 +1743,7 @@ class MetadataDisplay {
               break;
             case 2 :
               $showUrgent = true;
-              $reason = 'Certificate have expired';
+              $reason = 'Certificate has expired';
               break;
             default :
               $showUrgent = true;
@@ -1784,13 +1786,13 @@ class MetadataDisplay {
           // Old IMPS:es
           switch ($entity['level']) {
             case 1 :
-              $reason = sprintf ('%d months since IMPS last was validated', $impsDates['warn1']);
+              $reason = sprintf ('%d months since IMPS was validated', $impsDates['warn1']);
               break;
             case 2 :
-              $reason = sprintf ('%d months since IMPS last was validated', $impsDates['warn2']);
+              $reason = sprintf ('%d months since IMPS was validated', $impsDates['warn2']);
               break;
             case 3 :
-              $reason = sprintf ('%d months since IMPS last was validated', $impsDates['error']);
+              $reason = sprintf ('%d months since IMPS was validated', $impsDates['error']);
               $showUrgent = true;
               break;
             case 4 :
