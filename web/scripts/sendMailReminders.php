@@ -445,8 +445,9 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     <p>Hi.</p>
     <p>The entity \"%s\" (%s) has not been validated/confirmed for %d months.
     The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational
-    and fulfils the Technology Profile. If not annually confirmed the Operations team will start the process
-    to remove the entity from SWAMID metadata registry.</p>
+    and fulfils the Technology Profile.</p>
+    <p>If the entity should no longer be used within SWAMID please remove it from the metadata registry.</p>
+    <p>If not annually confirmed the Operations team will start the process to remove the entity from the SWAMID metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact.</p>
     <p>You can confirm, update or remove your entity at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
@@ -457,8 +458,9 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   $displayName, $entityID, $months, $config->baseURL(), $id, $config->baseURL(), $id);
   $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has not been validated/confirmed for %d months.
     The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational and fulfils
-    the Technology Profile. If not annually confirmed the Operations team will start the process to remove the entity
-    from SWAMID metadata registry.
+    the Technology Profile.
+    \nIf the entity should no longer be used within SWAMID please remove it from the metadata registry.
+    \nIf not annually confirmed the Operations team will start the process to remove the entity from the SWAMID metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact.
     \nYou can confirm, update or remove your entity at %sadmin/?showEntity=%d .
     \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
