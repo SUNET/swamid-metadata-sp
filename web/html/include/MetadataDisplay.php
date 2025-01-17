@@ -2612,12 +2612,24 @@ class MetadataDisplay {
       'SELECT `id`, `entityID`
       FROM `Entities`, `IdpIMPS`
       WHERE `id` = `entity_id` AND `IMPS_id` = :Id');
+    $flagDates = $this->config->getDb()->query('SELECT NOW() - INTERVAL ' . $this->config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
+      NOW() - INTERVAL ' . $this->config->getIMPS()['error'] . ' MONTH AS `errorDate`', PDO::FETCH_ASSOC);
+
+    foreach ($flagDates as $dates) {
+      # Need to use foreach to fetch row. $flagDates is a PDOStatement
+      $warn1Date = $dates['warn1Date'];
+      $errorDate = $dates['errorDate'];
+    }
     $impsHandler->execute();
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($warn1Date > $imps['lastValidated']) {
+        $validationStatus = $errorDate > $imps['lastValidated'] ? ' <i class="fas fa-exclamation"></i>' : ' <i class="fas fa-exclamation-triangle"></i>';
+      } else {
+        $validationStatus = '';
+      }
       $idpHandler->execute(array(self::BIND_ID => $imps['id']));
       $lastValidated = substr($imps['lastValidated'], 0 ,10);
-      $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated;
-      #showCollapse($title, $name, $haveSub=true, $step=0, $expanded=true, $extra = false, $entityId=0, $oldEntityId=0)
+      $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
       $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
       $orgName = $imps['OrganizationDisplayNameSv'] == '' ? $imps['OrganizationDisplayNameEn'] : $imps['OrganizationDisplayNameSv'];
       if ($userLevel > 10) {
