@@ -147,6 +147,8 @@ function checkEntities(&$xml) {
                               }
                             }
                             break;
+                          case 'https://refeds.org/entity-selection-profile' :
+                            break;
                           case 'urn:oasis:names:tc:SAML:profiles:subject-id:req' :
                           case 'http://www.swamid.se/assurance-requirement' : # NOSONAR Should be http://
                           case 'https://federation.renater.fr/member-of' :
