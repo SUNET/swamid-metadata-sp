@@ -3674,7 +3674,7 @@ class Metadata {
     $nrOfIdPs = 0;
 
     $entitys = $this->config->getDb()->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
-      FROM Entities WHERE status = 1 AND publishIn > 2");
+      FROM Entities WHERE status = 1 AND publishIn > 1");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
       switch ($row['publishIn']) {
