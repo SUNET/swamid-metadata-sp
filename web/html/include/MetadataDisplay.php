@@ -1720,13 +1720,13 @@ class MetadataDisplay {
           // Confirmation/Validation reminder
           switch ($entity['level']) {
             case 1 :
-              $reason = 'Not validated/confirmed for 10 months';
+              $reason = 'Metadata has not been validated/confirmed for 10 months';
               break;
             case 2 :
-              $reason = 'Not validated/confirmed for 11 months';
+              $reason = 'Metadata has not been validated/confirmed for 11 months';
               break;
             case 3:
-              $reason = 'Not validated/confirmed for 12 months';
+              $reason = 'Metadata has not been validated/confirmed for 12 months';
               $showUrgent = true;
               break;
             default :
@@ -1786,13 +1786,13 @@ class MetadataDisplay {
           // Old IMPS:es
           switch ($entity['level']) {
             case 1 :
-              $reason = sprintf ('%d months since IMPS was validated', $impsDates['warn1']);
+              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['warn1']);
               break;
             case 2 :
-              $reason = sprintf ('%d months since IMPS was validated', $impsDates['warn2']);
+              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['warn2']);
               break;
             case 3 :
-              $reason = sprintf ('%d months since IMPS was validated', $impsDates['error']);
+              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['error']);
               $showUrgent = true;
               break;
             case 4 :
