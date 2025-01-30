@@ -10,7 +10,7 @@ require_once 'vendor/autoload.php';
 $config = new metadata\Configuration();
 
 require_once 'include/Html.php'; #NOSONAR
-$html = new HTML($config->getMode());
+$html = new HTML($config);
 
 require_once 'include/MetadataDisplay.php'; #NOSONAR
 $display = new MetadataDisplay();

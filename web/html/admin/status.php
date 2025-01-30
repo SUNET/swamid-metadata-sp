@@ -9,7 +9,7 @@ require_once '../vendor/autoload.php';
 $config = new metadata\Configuration();
 
 require_once '../include/Html.php';
-$html = new HTML($config->getMode());
+$html = new HTML($config);
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];
