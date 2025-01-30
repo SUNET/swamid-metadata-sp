@@ -65,7 +65,7 @@ function showEntityList($show) {
 
   switch ($show) {
     case 'IdP' :
-      $html->showHeaders('Metadata SWAMID - IdP:s');
+      $html->showHeaders('IdP:s');
       $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
@@ -77,7 +77,7 @@ function showEntityList($show) {
       $extraTH = sprintf('<th>AL1</th><th>AL2</th><th>AL3</th><th>SIRTFI</th><th>SIRTFI2</th><th>Hide</th>');
       break;
     case 'SP' :
-      $html->showHeaders('Metadata SWAMID - SP:s');
+      $html->showHeaders('SP:s');
       $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
@@ -89,7 +89,7 @@ function showEntityList($show) {
         '<th>Anon</th><th>Pseuso</th><th>Pers</th><th>CoCo v1</th><th>CoCo v2</th><th>R&S</th><th>ESI</th><th>SIRTFI</th><th>SIRTFI2</th>');
       break;
     case 'All' :
-      $html->showHeaders('Metadata SWAMID - All');
+      $html->showHeaders('All');
       $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName
         FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
@@ -99,7 +99,7 @@ function showEntityList($show) {
       $extraTH = '<th>IdP</th><th>SP</th>';
       break;
     default :
-      $html->showHeaders('Metadata SWAMID - Error');
+      $html->showHeaders('Error');
       print 'Show what ??????';
       return;
   }
@@ -208,7 +208,7 @@ function showEntity($entity_id, $urn = false)  {
       $headerCol1 = '';
       $oldEntity_id = 0;
     }
-    $html->showHeaders('Metadata SWAMID - ' . $entity['entityID']); ?>
+    $html->showHeaders($entity['entityID']); ?>
 
     <div class="row">
       <div class="col">
@@ -241,7 +241,7 @@ function showEntity($entity_id, $urn = false)  {
     if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
     $display->showXML($entities_id);
   } else {
-    $html->showHeaders('Metadata SWAMID - NotFound');
+    $html->showHeaders('NotFound');
     print "Can't find Entity";
   }
 }
@@ -511,7 +511,7 @@ function showList($entities, $show) {
 
 function showInfo() {
   global $html;
-  $html->showHeaders('Metadata SWAMID - Info');
+  $html->showHeaders('Info');
   showMenu('info',''); ?>
     <div class="row">
       <div class="col">
@@ -593,7 +593,7 @@ function showRemoveQueue() {
 function showInterfederation($type){
   global $html, $config;
   if ($type == 'IDP') {
-    $html->showHeaders('Metadata SWAMID - eduGAIN - IdP:s');
+    $html->showHeaders('eduGAIN - IdP:s');
     showMenu('fedIdPs','');
     printf ('    <table  id="IdP-table" class="table table-striped table-bordered">
       <thead>
@@ -624,7 +624,7 @@ function showInterfederation($type){
         $entity['scopes'], $entity['ecs'], $entity['assurancec'], $entity['ra'], "\n");
     }
   } else {
-    $html->showHeaders('Metadata SWAMID - eduGAIN - SP:s');
+    $html->showHeaders('eduGAIN - SP:s');
     showMenu('fedSPs','');
     printf ('    <table id="SP-table" class="table table-striped table-bordered">
       <thead>

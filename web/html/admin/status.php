@@ -35,7 +35,7 @@ if ($userLevel < 20) { exit; };
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 
-$html->showHeaders('Metadata SWAMID');
+$html->showHeaders('');
 if (isset($_GET['action'])) {
   switch($_GET['action']) {
     case 'shadow' :

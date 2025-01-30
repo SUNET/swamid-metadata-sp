@@ -25,12 +25,12 @@ class HTML {
   ###
   # Print start of webpage
   ###
-  public function showHeaders($title = "") { ?>
+  public function showHeaders($title_part = "") { ?>
 <!DOCTYPE html>
 <html lang="en" xml:lang="en">
 <head>
   <meta charset="UTF-8">
-  <title><?=htmlspecialchars($title)?></title>
+  <title><?=htmlspecialchars($this->getPageTitle($title_part))?></title>
   <link href="/fontawesome/css/fontawesome.min.css" rel="stylesheet">
   <link href="/fontawesome/css/solid.min.css" rel="stylesheet">
   <link href="/fontawesome/css/regular.min.css" rel="stylesheet">
@@ -217,5 +217,9 @@ class HTML {
 
   public function addTableSort($tableId) {
     $this->tableToSort[] = $tableId;
+  }
+
+  public function getPageTitle($title_part) {
+    return 'Metadata ' . $this->federation['displayName'] . ( $title_part ? ' - ' . $title_part : '');
   }
 }
