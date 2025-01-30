@@ -13,15 +13,17 @@ class Configuration {
   private $entitySelectionProfiles = array();
   private $db;
   private $userLevels = array(); // indexed by username, maps to user privilege level
+  private $federation = array(); // hash of federation parameters
 
   public function __construct($startDB = true) {
     include __DIR__ . '/../config.php'; # NOSONAR
 
-    $reqParams = array('db', 'smtp', 'mode', 'baseURL', 'userLevels');
+    $reqParams = array('db', 'smtp', 'mode', 'baseURL', 'userLevels', 'federation');
     $reqParamsDB = array('servername', 'username', 'password',
       'name');
     $reqParamsSmtp = array('host', 'from', 'replyTo', 'replyName', 'sendOut');
     $reqParamsSmtpSasl = array('user', 'user');
+    $reqParamsFederation = array('displayName', 'name', 'aboutURL', 'contactURL', 'logoURL', 'logoWidth', 'logoHeight');
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
@@ -40,6 +42,13 @@ class Configuration {
     foreach ($reqParamsSmtp as $param) {
       if (! isset($smtp[$param])) {
         printf ('Missing $smtp[%s] in config.php<br>', $param);
+        exit;
+      }
+    }
+
+    foreach ($reqParamsFederation as $param) {
+      if (! isset($federation[$param])) {
+        printf ('Missing $federation[%s] in config.php<br>', $param);
         exit;
       }
     }
@@ -92,6 +101,9 @@ class Configuration {
 
     # Users
     $this->userLevels = $userLevels;
+
+    # Federation params
+    $this->federation = $federation;
 
     # IMPS
     if (isset($imps)) {
@@ -202,6 +214,10 @@ class Configuration {
 
   public function getUserLevels() {
     return $this->userLevels;
+  }
+
+  public function getFederation() {
+    return $this->federation;
   }
 
   public function getIMPS() {
