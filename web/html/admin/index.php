@@ -50,7 +50,7 @@ require_once '../vendor/autoload.php';
 $config = new metadata\Configuration();
 
 require_once '../include/Html.php'; #NOSONAR
-$html = new HTML($config);
+$html = new HTML();
 
 /* BEGIN RAF Logging */
 $assuranceHandler = $config->getDb()->prepare(

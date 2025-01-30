@@ -8,7 +8,8 @@ class HTML {
   private $showDownload = true;
   private $mode = '';
 
-  public function __construct($config) {
+  public function __construct() {
+    global $config;
     $this->displayName = '<div class="d-flex sa-button" role="button">
         <div class="sa-button-logo-wrap">
           <img src="https://service.seamlessaccess.org/sa-white.svg" class="sa-button-logo" alt="Seamless Access Logo"/>
@@ -17,7 +18,11 @@ class HTML {
           <div class="sa-button-text-primary text-truncate">Access through your institution</div>
         </div>
       </div>';
-    $this->config = $config;
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new metadata\Configuration();
+    }
     $this->mode = $this->config->getMode();
     $this->federation = $this->config->getFederation();
   }
