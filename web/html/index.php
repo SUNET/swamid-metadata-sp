@@ -148,6 +148,7 @@ function showMenu($menuActive, $query = '') {
 ####
 function showEntity($entity_id, $urn = false)  {
   global $config, $html, $display;
+  $federation = $config->getFederation();
   $entityHandler = $urn ?
     $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
       FROM Entities WHERE entityID = :Id AND status = 1;') :
@@ -161,7 +162,7 @@ function showEntity($entity_id, $urn = false)  {
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     $entities_id = $entity['id'];
     $html->setDestination('?showEntity='.$entities_id);
-    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
+    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = $federation['displayName']; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if ($entity['status'] > 1 && $entity['status'] < 6) {
       if ($entity['publishedId'] > 0) {
@@ -180,7 +181,7 @@ function showEntity($entity_id, $urn = false)  {
       $entityHandlerOld->execute();
       if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
         $oldEntity_id = $entityOld['id'];
-        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = $federation['displayName']; }
         if (($entityOld['publishIn'] & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
       } else {
         $oldEntity_id = 0;
@@ -254,6 +255,7 @@ function showEntity($entity_id, $urn = false)  {
 ####
 function showList($entities, $show) {
   global $config;
+  $federation = $config->getFederation();
   $entityAttributesHandler = $config->getDb()->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
   $mduiHandler = $config->getDb()->prepare("SELECT data FROM Mdui
     WHERE element = 'DisplayName' AND entity_id = :Id
@@ -403,13 +405,13 @@ function showList($entities, $show) {
       case 2 :
       case 3 :
         $countSWAMID ++;
-        $registeredIn = 'SWAMID';
+        $registeredIn = $federation['displayName'];
         break;
       case 6 :
       case 7 :
         $countSWAMID ++;
         $counteduGAIN ++;
-        $registeredIn = ' SWAMID + eduGAIN';
+        $registeredIn = $federation['displayName']. ' + eduGAIN';
         break;
       default :
         $registeredIn = '';
@@ -458,7 +460,7 @@ function showList($entities, $show) {
       <caption>Table of Entities statistics</caption>
       <tr>
         <th id="" rowspan="2">&nbsp;Registered in</th>
-        <th id="">SWAMID-Production</th><td><?=$countSWAMID?></td>
+        <th id=""><?= $federation['displayName'] ?></th><td><?=$countSWAMID?></td>
       </tr>
       <tr><th id="">eduGAIN-Export</th><td><?=$counteduGAIN?></td></tr><?php
   if ($show == 'All' || $show == 'SP') { ?>

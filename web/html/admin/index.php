@@ -695,6 +695,7 @@ function showEntityList($status = 1) {
 ####
 function showEntity($entitiesId, $showHeader = true)  {
   global $config, $html, $display, $userLevel, $menuActive, $EPPN;
+  $federation = $config->getFederation();
   $entityHandler = $config->getDb()->prepare(
     'SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
     FROM Entities WHERE `id` = :Id;');
@@ -705,7 +706,7 @@ function showEntity($entitiesId, $showHeader = true)  {
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
+    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = $federation['displayName']; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if ($entity['status'] > 1 && $entity['status'] < 7) {
       if ($entity['publishedId'] > 0) {
@@ -722,7 +723,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       $entityHandlerOld->execute();
       if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
         $oldEntitiesId = $entityOld['id'];
-        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = $federation['displayName']; }
         if (($entityOld['publishIn'] & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
       } else {
         $oldEntitiesId = 0;
@@ -1194,6 +1195,7 @@ function move2Pending($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester, $config;
+  $federation = $config->getFederation();
 
   $draftMetadata = new Metadata($entitiesId);
 
@@ -1377,7 +1379,7 @@ function move2Pending($entitiesId) {
         $publishArrayOld = array();
         if ($publishedMetadata->entityExists()) {
           $oldPublishedValue = $publishedMetadata->feedValue();
-          if (($oldPublishedValue & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+          if (($oldPublishedValue & 2) == 2) { $publishArrayOld[] = $federation['displayName']; }
           if (($oldPublishedValue & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
           printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArrayOld));
         } else {
@@ -1389,12 +1391,12 @@ function move2Pending($entitiesId) {
           $entitiesId,"\n");
         if ($config->getMode() == 'QA') {
           printf('      <input type="radio" id="SWAMID" name="publishedIn" value="2" checked>
-      <label for="SWAMID">SWAMID QA</label>%s',"\n");
+      <label for="SWAMID">' . $federation['displayNameQA'] . '</label>%s',"\n");
         } else {
           printf('      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
-      <label for="SWAMID_eduGAIN">SWAMID and eduGAIN</label><br>
+      <label for="SWAMID_eduGAIN">' . $federation['displayName'] . ' and eduGAIN</label><br>
       <input type="radio" id="SWAMID" name="publishedIn" value="3"%s>
-      <label for="SWAMID">SWAMID</label>%s',
+      <label for="SWAMID">' . $federation['displayName'] . '</label>%s',
           $oldPublishedValue == 7 ? HTML_CHECKED : '',
           $oldPublishedValue == 3 ? HTML_CHECKED : '', "\n");
         }
@@ -1631,6 +1633,7 @@ function requestRemoval($entitiesId) {
   global $config, $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester;
+  $federation = $config->getFederation();
   $metadata = new Metadata($entitiesId);
   if ($metadata->status() == 1) {
     $userID = $metadata->getUserId($EPPN);
@@ -1758,8 +1761,8 @@ function requestRemoval($entitiesId) {
       } else {
         $menuActive = 'publ';
         showMenu();
-        printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $metadata->entityID());
-        if (($metadata->feedValue() & 2) == 2) { $publishArray[] = 'SWAMID'; }
+        printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the %s metadata.</p>', "\n", $metadata->entityID(), $federation['displayName']);
+        if (($metadata->feedValue() & 2) == 2) { $publishArray[] = $federation['displayName']; }
         if (($metadata->feedValue() & 4) == 4) { $publishArray[] = 'eduGAIN'; }
         printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
         printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $entitiesId, "\n", "\n", "\n", "\n", "\n", "\n" ,$entitiesId);
