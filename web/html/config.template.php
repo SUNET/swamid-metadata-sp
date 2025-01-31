@@ -55,6 +55,7 @@ $userLevels = array(
 
 $federation = array(
   'displayName' => 'SWAMID',
+  'displayNameQA' => 'SWAMID QA',
   'name' => 'swamid',
   'aboutURL' => 'https://www.sunet.se/swamid/',
   'contactURL' => 'https://www.sunet.se/swamid/kontakt/',
