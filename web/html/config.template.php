@@ -53,6 +53,17 @@ $userLevels = array(
   'user1@inst2.org' => 5,
 );
 
+$federation = array(
+  'displayName' => 'SWAMID',
+  'displayNameQA' => 'SWAMID QA',
+  'name' => 'swamid',
+  'aboutURL' => 'https://www.sunet.se/swamid/',
+  'contactURL' => 'https://www.sunet.se/swamid/kontakt/',
+  'logoURL' => '/swamid-logo-2-100x115.png',
+  'logoWidth' => 55,
+  'logoHeight' => 63,
+);
+
 # Optional if you want to support IMPS:es
 #$imps = array(
 #  'oldDate' => '2020-12-31', # If older then this date. IMPS needs to be updated!

@@ -8,7 +8,8 @@ class HTML {
   private $showDownload = true;
   private $mode = '';
 
-  public function __construct($mode='Prod') {
+  public function __construct() {
+    global $config;
     $this->displayName = '<div class="d-flex sa-button" role="button">
         <div class="sa-button-logo-wrap">
           <img src="https://service.seamlessaccess.org/sa-white.svg" class="sa-button-logo" alt="Seamless Access Logo"/>
@@ -17,18 +18,24 @@ class HTML {
           <div class="sa-button-text-primary text-truncate">Access through your institution</div>
         </div>
       </div>';
-    $this->mode = $mode;
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new metadata\Configuration();
+    }
+    $this->mode = $this->config->getMode();
+    $this->federation = $this->config->getFederation();
   }
 
   ###
   # Print start of webpage
   ###
-  public function showHeaders($title = "") { ?>
+  public function showHeaders($title_part = "") { ?>
 <!DOCTYPE html>
 <html lang="en" xml:lang="en">
 <head>
   <meta charset="UTF-8">
-  <title><?=htmlspecialchars($title)?></title>
+  <title><?=htmlspecialchars($this->getPageTitle($title_part))?></title>
   <link href="/fontawesome/css/fontawesome.min.css" rel="stylesheet">
   <link href="/fontawesome/css/solid.min.css" rel="stylesheet">
   <link href="/fontawesome/css/regular.min.css" rel="stylesheet">
@@ -126,13 +133,13 @@ class HTML {
     <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
       <h3 class="my-0 mr-md-auto font-weight-normal">
         <a href=".">
-          <img src="/swamid-logo-2-100x115.png" alt="SWAMID Logo" width="55">
+          <img src="<?= $this->federation['logoURL'] ?>" alt="<?= $this->federation['displayName'] ?> Logo" width="<?= $this->federation['logoWidth'] ?>" height="<?= $this->federation['logoHeight'] ?>">
         </a> Metadata <?= $this->mode == 'Prod' ? '' : $this->mode?>
 
       </h3>
       <nav class="my-2 my-md-0 mr-md-3">
-        <a class="p-2 text-dark" href="https://www.sunet.se/swamid/">About SWAMID</a>
-        <a class="p-2 text-dark" href="https://www.sunet.se/swamid/kontakt/">Contact us</a>
+        <a class="p-2 text-dark" href="<?= $this->federation['aboutURL'] ?>">About <?= $this->federation['displayName'] ?></a>
+        <a class="p-2 text-dark" href="<?= $this->federation['contactURL'] ?>">Contact us</a>
         <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
 
       </nav>
@@ -215,5 +222,9 @@ class HTML {
 
   public function addTableSort($tableId) {
     $this->tableToSort[] = $tableId;
+  }
+
+  public function getPageTitle($title_part) {
+    return 'Metadata ' . $this->federation['displayName'] . ( $title_part ? ' - ' . $title_part : '');
   }
 }

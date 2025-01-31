@@ -9,7 +9,7 @@ require_once '../vendor/autoload.php';
 $config = new metadata\Configuration();
 
 require_once '../include/Html.php';
-$html = new HTML($config->getMode());
+$html = new HTML();
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];
@@ -35,7 +35,7 @@ if ($userLevel < 20) { exit; };
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 
-$html->showHeaders('Metadata SWAMID');
+$html->showHeaders('');
 if (isset($_GET['action'])) {
   switch($_GET['action']) {
     case 'shadow' :

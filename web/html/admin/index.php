@@ -5,8 +5,6 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 const BIND_ASSURANCE = ':Assurance';
-const HTML_TITLE = 'Metadata SWAMID - ';
-const HTML_TITLE_PROBLEM = 'Metadata SWAMID - Problem';
 const HTML_CLASS_FA_UP = '<i class="fa fa-arrow-up"></i>';
 const HTML_CLASS_FA_DOWN = '<i class="fa fa-arrow-down"></i>';
 const HTML_OUTLINE = '-outline';
@@ -52,7 +50,7 @@ require_once '../vendor/autoload.php';
 $config = new metadata\Configuration();
 
 require_once '../include/Html.php'; #NOSONAR
-$html = new HTML($config->getMode());
+$html = new HTML();
 
 /* BEGIN RAF Logging */
 $assuranceHandler = $config->getDb()->prepare(
@@ -199,7 +197,7 @@ if (isset($_SERVER['displayName'])) {
 }
 
 if ($errors != '') {
-  $html->showHeaders(HTML_TITLE_PROBLEM);
+  $html->showHeaders('Problem');
   printf('
     <div class="row alert alert-danger" role="alert">
       <div class="col">
@@ -229,7 +227,7 @@ if (isset($_FILES['XMLfile'])) {
     $editMeta = new MetadataEdit($_GET['Entity'], $_GET['oldEntity']);
     $editMeta->updateUser($EPPN, $mail, $fullName);
     if (checkAccess($_GET['Entity'], $EPPN, $userLevel, 10, true)) {
-      $html->showHeaders(HTML_TITLE . 'Edit - '.$_GET['edit']);
+      $html->showHeaders('Edit - '.$_GET['edit']);
       $editMeta->edit($_GET['edit']);
     }
   } else {
@@ -388,7 +386,7 @@ if (isset($_FILES['XMLfile'])) {
           if ($metadata->status() == 1) {
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
-              $html->showHeaders(HTML_TITLE . $metadata->entityID());
+              $html->showHeaders($metadata->entityID());
               $menuActive = 'publ';
               showMenu();
               $imps = new metadata\IMPS();
@@ -400,7 +398,7 @@ if (isset($_FILES['XMLfile'])) {
               requestAccess($entitiesId);
             }
           } else {
-            $html->showHeaders(HTML_TITLE . 'NotFound');
+            $html->showHeaders('NotFound');
             $menuActive = 'publ';
             showMenu();
             print HTML_TEXT_CFE;
@@ -436,25 +434,25 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'EntityStatistics' :
           $menuActive = 'EntityStatistics';
-          $html->showHeaders(HTML_TITLE . 'Entity Statistics');
+          $html->showHeaders('Entity Statistics');
           showMenu();
           $display->showEntityStatistics();
           break;
         case 'EcsStatistics' :
           $menuActive = 'EcsStatistics';
-          $html->showHeaders(HTML_TITLE . 'EntityCategorySupport status');
+          $html->showHeaders('EntityCategorySupport status');
           showMenu();
           $display->showEcsStatistics();
           break;
         case 'RAFStatistics' :
           $menuActive = 'RAFStatistics';
-          $html->showHeaders(HTML_TITLE . 'RAF status');
+          $html->showHeaders('RAF status');
           showMenu();
           $display->showRAFStatistics();
           break;
         case 'showURL' :
           $menuActive = '';
-          $html->showHeaders(HTML_TITLE . 'URL status');
+          $html->showHeaders('URL status');
           showMenu();
           if (isset($_GET['URL'])) {
             if (isset($_GET['recheck'])) {
@@ -467,7 +465,7 @@ if (isset($_FILES['XMLfile'])) {
         case 'URLlist' :
           if ($userLevel > 4) {
             $menuActive = 'URLlist';
-            $html->showHeaders(HTML_TITLE . 'URL status');
+            $html->showHeaders('URL status');
             showMenu();
             if (isset($_GET['URL'])) {
               if (isset($_GET['recheck'])) {
@@ -482,7 +480,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'ErrorList' :
           $menuActive = 'Errors';
-          $html->showHeaders(HTML_TITLE . 'Error status');
+          $html->showHeaders('Error status');
           showMenu();
           $display->showErrorList();
           $html->addTableSort('error-table');
@@ -498,14 +496,14 @@ if (isset($_FILES['XMLfile'])) {
         case 'CleanPending' :
           if ($userLevel > 10) {
             $menuActive = 'CleanPending';
-            $html->showHeaders(HTML_TITLE . 'Clean Pending');
+            $html->showHeaders('Clean Pending');
             showMenu();
             $display->showPendingList();
           }
           break;
         case 'ShowDiff' :
           $menuActive = 'CleanPending';
-          $html->showHeaders(HTML_TITLE . 'Clean Pending');
+          $html->showHeaders('Clean Pending');
           showMenu();
           if (isset($_GET['entity_id1']) && isset($_GET['entity_id2'])) {
             $display->showXMLDiff($_GET['entity_id1'], $_GET['entity_id2']);
@@ -514,7 +512,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'OrganizationsInfo' :
           $menuActive = 'OrganizationsInfo';
-          $html->showHeaders(HTML_TITLE . 'Show EntityInfo');
+          $html->showHeaders('Show EntityInfo');
           showMenu();
           $display->showOrganizationLists();
           $html->addTableSort('Organizationsv-table');
@@ -522,7 +520,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'Members' :
           $menuActive = 'Members';
-          $html->showHeaders(HTML_TITLE . 'Show Member Information');
+          $html->showHeaders('Show Member Information');
           showMenu();
           if (isset($_GET['subAction']) && isset($_GET['id'])) {
             $imps = new metadata\IMPS();
@@ -612,40 +610,40 @@ function showEntityList($status = 1) {
 
   switch ($status) {
     case 1 :
-      $html->showHeaders(HTML_TITLE . 'Published');
+      $html->showHeaders('Published');
       $action = 'pub';
       $minLevel = 0;
       $filter .= '&action=pub';
       break;
     case 2 :
-      $html->showHeaders(HTML_TITLE . 'Pending');
+      $html->showHeaders('Pending');
       $action = 'wait';
       $minLevel = 5;
       $filter .= '&action=wait';
       break;
     case 3 :
-      $html->showHeaders(HTML_TITLE . 'Drafts');
+      $html->showHeaders('Drafts');
       $action = 'new';
       $minLevel = 5;
       $filter .= '&action=new';
       break;
     case 4 :
-      $html->showHeaders(HTML_TITLE . 'Deleted');
+      $html->showHeaders('Deleted');
       $action = 'pub';
       $minLevel = 5;
       break;
     case 5 :
-      $html->showHeaders(HTML_TITLE . 'Pending already Published');
+      $html->showHeaders('Pending already Published');
       $action = 'pub';
       $minLevel = 5;
       break;
     case 6 :
-      $html->showHeaders(HTML_TITLE . 'Published when added to Pending');
+      $html->showHeaders('Published when added to Pending');
       $action = 'pub';
       $minLevel = 5;
       break;
     default :
-      $html->showHeaders(HTML_TITLE);
+      $html->showHeaders('');
   }
   showMenu();
   if ($status == 1) {
@@ -697,6 +695,7 @@ function showEntityList($status = 1) {
 ####
 function showEntity($entitiesId, $showHeader = true)  {
   global $config, $html, $display, $userLevel, $menuActive, $EPPN;
+  $federation = $config->getFederation();
   $entityHandler = $config->getDb()->prepare(
     'SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
     FROM Entities WHERE `id` = :Id;');
@@ -707,7 +706,7 @@ function showEntity($entitiesId, $showHeader = true)  {
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = 'SWAMID'; }
+    if (($entity['publishIn'] & 2) == 2) { $publishArray[] = $federation['displayName']; }
     if (($entity['publishIn'] & 4) == 4) { $publishArray[] = 'eduGAIN'; }
     if ($entity['status'] > 1 && $entity['status'] < 7) {
       if ($entity['publishedId'] > 0) {
@@ -724,7 +723,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       $entityHandlerOld->execute();
       if ($entityOld = $entityHandlerOld->fetch(PDO::FETCH_ASSOC)) {
         $oldEntitiesId = $entityOld['id'];
-        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+        if (($entityOld['publishIn'] & 2) == 2) { $publishArrayOld[] = $federation['displayName']; }
         if (($entityOld['publishIn'] & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
       } else {
         $oldEntitiesId = 0;
@@ -766,7 +765,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       $oldEntitiesId = 0;
     }
     if ($showHeader) {
-      $html->showHeaders(HTML_TITLE . $entity['entityID']);
+      $html->showHeaders($entity['entityID']);
       showMenu();
     }?>
     <div class="row">
@@ -900,7 +899,7 @@ function showEntity($entitiesId, $showHeader = true)  {
     }
     $display->showEditors($entitiesId);
   } else {
-    $html->showHeaders(HTML_TITLE . 'NotFound');
+    $html->showHeaders('NotFound');
     print HTML_TEXT_CFE;
   }
 }
@@ -961,7 +960,7 @@ function showList($entities, $minLevel) {
 function showMyEntities() {
   global $config, $html, $EPPN, $userLevel;
 
-  $html->showHeaders(HTML_TITLE . 'Annual Check');
+  $html->showHeaders('Annual Check');
   showMenu();
   if ($userLevel > 9) {
     printf ('    <div class="row">%s      <div class="col">%s', "\n", "\n");
@@ -1063,7 +1062,7 @@ function showMyEntities() {
 ####
 function showUpload() {
   global $html;
-  $html->showHeaders(HTML_TITLE . 'Add new XML');
+  $html->showHeaders('Add new XML');
   showMenu();
   ?>
     <form action="." method="post" enctype="multipart/form-data">
@@ -1108,7 +1107,7 @@ function importXML(){
       }
       showEntity($metadata->id());
     } else {
-      $html->showHeaders(HTML_TITLE_PROBLEM);
+      $html->showHeaders('Problem');
       printf('%s    <div class="row alert alert-danger" role="alert">
       <div class="col">
         <b>Error in XML-syntax:</b>
@@ -1117,7 +1116,7 @@ function importXML(){
       $html->showFooter(array());
     }
   } else {
-    $html->showHeaders(HTML_TITLE_PROBLEM);
+    $html->showHeaders('Problem');
     printf('%s    <div class="row alert alert-danger" role="alert">
       <div class="col">
         <b>Error in XML-file:</b>
@@ -1196,6 +1195,7 @@ function move2Pending($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester, $config;
+  $federation = $config->getFederation();
 
   $draftMetadata = new Metadata($entitiesId);
 
@@ -1214,7 +1214,7 @@ function move2Pending($entitiesId) {
       $sections = HTML_TEXT_STP_SP ;
       $infoText = HTML_TEXT_STPINFO_SP;
     }
-    $html->showHeaders(HTML_TITLE . $draftMetadata->entityID());
+    $html->showHeaders($draftMetadata->entityID());
     $errors = getBlockingErrors($entitiesId);
     if ($errors == '') {
       if (isset($_GET['publishedIn'])) {
@@ -1379,7 +1379,7 @@ function move2Pending($entitiesId) {
         $publishArrayOld = array();
         if ($publishedMetadata->entityExists()) {
           $oldPublishedValue = $publishedMetadata->feedValue();
-          if (($oldPublishedValue & 2) == 2) { $publishArrayOld[] = 'SWAMID'; }
+          if (($oldPublishedValue & 2) == 2) { $publishArrayOld[] = $federation['displayName']; }
           if (($oldPublishedValue & 4) == 4) { $publishArrayOld[] = 'eduGAIN'; }
           printf('%s    <p>Currently published in <b>%s</b></p>', "\n", implode (' and ', $publishArrayOld));
         } else {
@@ -1391,12 +1391,12 @@ function move2Pending($entitiesId) {
           $entitiesId,"\n");
         if ($config->getMode() == 'QA') {
           printf('      <input type="radio" id="SWAMID" name="publishedIn" value="2" checked>
-      <label for="SWAMID">SWAMID QA</label>%s',"\n");
+      <label for="SWAMID">' . $federation['displayNameQA'] . '</label>%s',"\n");
         } else {
           printf('      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
-      <label for="SWAMID_eduGAIN">SWAMID and eduGAIN</label><br>
+      <label for="SWAMID_eduGAIN">' . $federation['displayName'] . ' and eduGAIN</label><br>
       <input type="radio" id="SWAMID" name="publishedIn" value="3"%s>
-      <label for="SWAMID">SWAMID</label>%s',
+      <label for="SWAMID">' . $federation['displayName'] . '</label>%s',
           $oldPublishedValue == 7 ? HTML_CHECKED : '',
           $oldPublishedValue == 3 ? HTML_CHECKED : '', "\n");
         }
@@ -1431,7 +1431,7 @@ function move2Pending($entitiesId) {
         str_ireplace("\n", "<br>", $errors), $entitiesId);
     }
   } else {
-    $html->showHeaders(HTML_TITLE . 'NotFound');
+    $html->showHeaders('NotFound');
     $menuActive = 'new';
     showMenu();
     print HTML_TEXT_CFE;
@@ -1480,7 +1480,7 @@ function annualConfirmation($entitiesId){
           $menuActive = 'myEntities';
           showMyEntities();
         } else {
-          $html->showHeaders(HTML_TITLE . $metadata->entityID());
+          $html->showHeaders($metadata->entityID());
           $menuActive = '';
           showMenu();
           if ($errors != '') {
@@ -1509,7 +1509,7 @@ function annualConfirmation($entitiesId){
         requestAccess($entitiesId);
       }
     } else {
-      $html->showHeaders(HTML_TITLE . $metadata->entityID());
+      $html->showHeaders($metadata->entityID());
       printf('%s    <div class="row alert alert-danger" role="alert">
       <div class="col">
         <b>Please fix the following errors before confirming:</b><br>
@@ -1531,7 +1531,7 @@ function annualConfirmation($entitiesId){
     printf('    </ul>%s', "\n");
 
   } else {
-    $html->showHeaders(HTML_TITLE . 'NotFound');
+    $html->showHeaders('NotFound');
     $menuActive = 'myEntities';
     showMenu();
     print HTML_TEXT_CFE;
@@ -1595,7 +1595,7 @@ function annualConfirmationList($list){
         ? "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n"
         : '';
 
-      $html->showHeaders(HTML_TITLE . 'Validate list');
+      $html->showHeaders('Validate list');
       $menuActive = '';
       showMenu();
       if ($errors != '') {
@@ -1633,12 +1633,13 @@ function requestRemoval($entitiesId) {
   global $config, $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester;
+  $federation = $config->getFederation();
   $metadata = new Metadata($entitiesId);
   if ($metadata->status() == 1) {
     $userID = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
       # User have access to entity
-      $html->showHeaders(HTML_TITLE . $metadata->entityID());
+      $html->showHeaders($metadata->entityID());
       if (isset($_GET['confirmRemoval'])) {
         $menuActive = 'publ';
         showMenu();
@@ -1760,8 +1761,8 @@ function requestRemoval($entitiesId) {
       } else {
         $menuActive = 'publ';
         showMenu();
-        printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the SWAMID metadata.</p>', "\n", $metadata->entityID());
-        if (($metadata->feedValue() & 2) == 2) { $publishArray[] = 'SWAMID'; }
+        printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the %s metadata.</p>', "\n", $metadata->entityID(), $federation['displayName']);
+        if (($metadata->feedValue() & 2) == 2) { $publishArray[] = $federation['displayName']; }
         if (($metadata->feedValue() & 4) == 4) { $publishArray[] = 'eduGAIN'; }
         printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
         printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $entitiesId, "\n", "\n", "\n", "\n", "\n", "\n" ,$entitiesId);
@@ -1771,7 +1772,7 @@ function requestRemoval($entitiesId) {
       requestAccess($entitiesId);
     }
   } else {
-    $html->showHeaders(HTML_TITLE . 'NotFound');
+    $html->showHeaders('NotFound');
     $menuActive = 'publ';
     showMenu();
     print HTML_TEXT_CFE;
@@ -1837,7 +1838,7 @@ function move2Draft($entitiesId) {
       $oldMetadata = new Metadata($entitiesId);
       $oldMetadata->removeEntity();
     } else {
-      $html->showHeaders(HTML_TITLE . $entity['entityID']);
+      $html->showHeaders($entity['entityID']);
       $menuActive = 'wait';
       showMenu();
       printf('%s    <p>You are about to cancel your request for publication of <b>%s</b></p>', "\n", $entity['entityID']);
@@ -1848,7 +1849,7 @@ function move2Draft($entitiesId) {
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $entitiesId, $entitiesId);
     }
   } else {
-    $html->showHeaders(HTML_TITLE . 'NotFound');
+    $html->showHeaders('NotFound');
     $menuActive = 'wait';
     showMenu();
     print HTML_TEXT_CFE;
@@ -1868,7 +1869,7 @@ function removeEntity($entitiesId) {
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    $html->showHeaders(HTML_TITLE . $entity['entityID']);
+    $html->showHeaders($entity['entityID']);
     $ok2Remove = true;
     switch($entity['status']) {
       case 2 :
@@ -1905,7 +1906,7 @@ function removeEntity($entitiesId) {
       print "You can't Remove / Discard this entity";
     }
   } else {
-    $html->showHeaders(HTML_TITLE . 'NotFound');
+    $html->showHeaders('NotFound');
     $menuActive = 'new';
     showMenu();
     print HTML_TEXT_CFE;
@@ -1924,7 +1925,7 @@ function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=fal
     return true;
   } else {
     if ($showError) {
-      $html->showHeaders(HTML_TITLE);
+      $html->showHeaders('');
       print "You doesn't have access to this entityID";
       printf('%s      <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-danger">Back to entity</button></a>', "\n", $entitiesId);
     }
@@ -1943,7 +1944,7 @@ function requestAccess($entitiesId) {
     $user_id = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
       # User already have access.
-      $html->showHeaders(HTML_TITLE . $metadata->entityID());
+      $html->showHeaders($metadata->entityID());
       $menuActive = '';
       showMenu();
       printf('%s    <p>You already have access to <b>%s</b></p>%s', "\n", $metadata->entityID(), "\n");
@@ -2010,7 +2011,7 @@ function requestAccess($entitiesId) {
         showText($info, true, false);
       } else {
         $errors .= isset($_GET['FormVisit']) ? "You must check the box to confirm.\n" : '';
-        $html->showHeaders(HTML_TITLE . $metadata->entityID());
+        $html->showHeaders($metadata->entityID());
         $menuActive = '';
         showMenu();
         if ($errors != '') {
@@ -2073,7 +2074,7 @@ function getErrors($entitiesId) {
 
 function showHelp() {
   global $html, $display, $menuActive;
-  $html->showHeaders(HTML_TITLE);
+  $html->showHeaders('');
   $menuActive = '';
   showMenu();
   $display->showHelp();
@@ -2152,9 +2153,9 @@ function approveAccessRequest($code) {
 function showText($text, $showMenu = false, $error = false) {
   global $html, $menuActive;
   if ($error) {
-    $html->showHeaders(HTML_TITLE . 'Error');
+    $html->showHeaders('Error');
   } else {
-    $html->showHeaders(HTML_TITLE . 'Info');
+    $html->showHeaders('Info');
   }
   if ($showMenu) { showMenu(); }
   printf ('    <div class="row">%s      <div class="col">%s        %s%s      </div>%s    </div>%s',
