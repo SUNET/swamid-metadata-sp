@@ -129,11 +129,14 @@ function showEntityList($show) {
 # Shows menu row
 ####
 function showMenu($menuActive, $query = '') {
+  global $config;
+  $federation = $config->getFederation();
+
   print "\n    ";
   $query = $query == '' ? '' : '&query=' . urlencode($query);
-  printf('<a href="./?show=All%s"><button type="button" class="btn btn%s-primary">All in SWAMID</button></a>', $query, $menuActive == 'all' ? '' : '-outline');
-  printf('<a href="./?show=IdP%s"><button type="button" class="btn btn%s-primary">IdP in SWAMID</button></a>', $query, $menuActive == 'IdPs' ? '' : '-outline');
-  printf('<a href="./?show=SP%s"><button type="button" class="btn btn%s-primary">SP in SWAMID</button></a>', $query, $menuActive == 'SPs' ? '' : '-outline');
+  printf('<a href="./?show=All%s"><button type="button" class="btn btn%s-primary">All in %s</button></a>', $query, $menuActive == 'all' ? '' : '-outline', $federation['displayName']);
+  printf('<a href="./?show=IdP%s"><button type="button" class="btn btn%s-primary">IdP in %s</button></a>', $query, $menuActive == 'IdPs' ? '' : '-outline', $federation['displayName']);
+  printf('<a href="./?show=SP%s"><button type="button" class="btn btn%s-primary">SP in %s</button></a>', $query, $menuActive == 'SPs' ? '' : '-outline', $federation['displayName']);
   printf('<a href="./?show=InterIdP"><button type="button" class="btn btn%s-primary">IdP via interfederation</button></a>', $menuActive == 'fedIdPs' ? '' : '-outline');
   printf('<a href="./?show=InterSP"><button type="button" class="btn btn%s-primary">SP via interfederation</button></a>', $menuActive == 'fedSPs' ? '' : '-outline');
   printf('<a href="./?show=Info%s"><button type="button" class="btn btn%s-primary">Info</button></a>', $query, $menuActive == 'info' ? '' : '-outline');
@@ -510,35 +513,36 @@ function showList($entities, $show) {
 }
 
 function showInfo() {
-  global $html;
+  global $html, $config;
+  $federation = $config->getFederation();
   $html->showHeaders('Info');
   showMenu('info',''); ?>
     <div class="row">
       <div class="col">
         <br>
-        <h3>SWAMID Metadata Tool</h3>
-        <p>Welcome to the SWAMID Metadata Tool. With this tool you can browse and examine
-          metadata available through SWAMID.
+        <h3><?= $federation['displayName'] ?> Metadata Tool</h3>
+        <p>Welcome to the <?= $federation['displayName'] ?> Metadata Tool. With this tool you can browse and examine
+          metadata available through <?= $federation['displayName'] ?>.
         <h4>Public available information</h4>
-        <p>To view entities, i.e. Identity Providers and Service Providers, available in SWAMID, select a tab:<ul>
-          <li><b>All in SWAMID</b> lists all entities registered in SWAMID.</li>
-          <li><b>IdP in SWAMID</b> lists Identity Providers registered in SWAMID
+        <p>To view entities, i.e. Identity Providers and Service Providers, available in <?= $federation['displayName'] ?>, select a tab:<ul>
+          <li><b>All in <?= $federation['displayName'] ?></b> lists all entities registered in <?= $federation['displayName'] ?>.</li>
+          <li><b>IdP in <?= $federation['displayName'] ?></b> lists Identity Providers registered in <?= $federation['displayName'] ?>
             including identity assurance profiles.</li>
-          <li><b>SP in SWAMID</b> lists Service Providers registered in SWAMID
+          <li><b>SP in <?= $federation['displayName'] ?></b> lists Service Providers registered in <?= $federation['displayName'] ?>
             including requested entity categories.</li>
-          <li><b>IdP via interfederation</b> lists Identity Providers imported into SWAMID from interfederations.</li>
-          <li><b>SP via interfederation</b> lists Service Providers imported into SWAMID from interfederations.</li>
+          <li><b>IdP via interfederation</b> lists Identity Providers imported into <?= $federation['displayName'] ?> from interfederations.</li>
+          <li><b>SP via interfederation</b> lists Service Providers imported into <?= $federation['displayName'] ?> from interfederations.</li>
         </ul></p>
         <p>The entities can be sorted and filtered using the headers of the tables and the entityID search form.
           E.g entering "umu.se" in the entityID search form will list all entities
           including "umu.se" in their entityID.</p>
         <h4>Add or Update Identity Provider or Service Provider metadata</h4>
         <p>Login using the orange button at the top right corner of this page to add, update or request removal of
-          your entites in SWAMID. SWAMID Operations authenticates and validates all updates before changes are
-          published in the SWAMID metadata. After login, help on adding/updating entites is available in the menu
+          your entites in <?= $federation['displayName'] ?>. <?= $federation['displayName'] ?> Operations authenticates and validates all updates before changes are
+          published in the <?= $federation['displayName'] ?> metadata. After login, help on adding/updating entites is available in the menu
           at the top. When you have requested publication you will get an e-mail that you need to forward to
           operations for compleation.</p>
-        <p>If you do not have an active user account at a SWAMID Identity Provider,
+        <p>If you do not have an active user account at a <?= $federation['displayName'] ?> Identity Provider,
           you can create an eduID account at <a href="https://eduid.se">eduID.se</a>.
           Make sure that the primary email address of your eduID account matches an email address
           associated with a contact person of your entities.</p>
