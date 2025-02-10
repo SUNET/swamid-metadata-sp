@@ -1093,7 +1093,7 @@ function importXML(){
     $validate = new ValidateXML($import->getXML());
     if ($validate->validateSchema('../../schemas/schema.xsd')) {
       $metadata = new Metadata($entityID, 'New');
-      $metadata->importXML($import->getXML());
+      $metadata->importXML($import->cleanOutRegistrationInfo($import->getXML()));
       $metadata->getUser($EPPN, $mail, $fullName, true);
       $metadata->updateResponsible($EPPN);
       $metadata->validateXML();
