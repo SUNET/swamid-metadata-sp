@@ -4,6 +4,8 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 
 $config = new metadata\Configuration();
 
+$samlValidator = 'metadata\\' . $config->getFederation()['validator'];
+
 include __DIR__ . '/../html/include/Metadata.php'; #NOSONAR
 
 if ($argc < 3) {
@@ -32,7 +34,9 @@ while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
   $metadata->clearWarning();
   $metadata->clearError();
   $metadata->validateXML();
-  $metadata->validateSAML();
+  $validator = new $samlValidator($entitiesId);
+  $validator->saml();
+  $metadata->validateURLs();
   if ($metadata->getResult() <> "") {
     printf ("\nValidate ->\n%s#\n" ,$metadata->getResult());
   }

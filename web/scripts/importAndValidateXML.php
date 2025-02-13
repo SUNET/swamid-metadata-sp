@@ -5,6 +5,9 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 include __DIR__ . '/../html/include/NormalizeXML.php'; # NOSONAR
 
+$config = new metadata\Configuration();
+$samlValidator = 'metadata\\' . $config->getFederation()['validator'];
+
 $import = new NormalizeXML();
 $import->fromFile($argv[1]);
 if ($import->getStatus()) {
@@ -21,7 +24,9 @@ if ($import->getStatus()) {
   $metadata->clearWarning();
   $metadata->clearError();
   $metadata->validateXML();
-  $metadata->validateSAML();
+  $validator = new $samlValidator($entitiesId);
+  $validator->saml();
+  $metadata->validateURLs();
   if ($metadata->getResult() <> "") {
     printf ("\nValidate ->\n%s#\n" ,$metadata->getResult());
   }

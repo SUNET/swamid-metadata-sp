@@ -1587,7 +1587,7 @@ class MetadataDisplay {
         </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
-        $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected, 
+        $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected,
         $errorsActive, $errorsSelected, $idPsActive, $idPsSelected, "\n", "\n",
         $remindersUrgentShow, $remindersUrgentActive, "\n");
       $this->showErrorMailReminders(false);

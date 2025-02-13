@@ -7,6 +7,8 @@ class HTML {
   private $tableToSort = array();
   private $showDownload = true;
   private $mode = '';
+  private $config;
+  private $federation = array();
 
   public function __construct() {
     global $config;
