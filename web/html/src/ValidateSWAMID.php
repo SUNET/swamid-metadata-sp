@@ -42,9 +42,7 @@ class ValidateSWAMID extends Validate {
       substr($this->entityID, 0, 7) == self::TEXT_HTTP )) {
         $this->error .= $this->selectError('5.1.7', '6.1.7',
           'entityID MUST start with either urn:, https:// or http://.');
-    }
-
-    if (substr($this->entityID, 0, 4) == 'urn:' ) {
+    } elseif (substr($this->entityID, 0, 4) == 'urn:' ) {
       $this->warning .= $this->selectError('5.1.7', '6.1.7', 'entityID SHOULD NOT start with urn: for new entities.');
     }
 
@@ -56,7 +54,6 @@ class ValidateSWAMID extends Validate {
     if ($this->isIdP) {
       // 5.1.9 -> 5.1.12
       $this->checkEntityAttributes('IDPSSO');
-
       // 5.1.13 errorURL
       $this->checkErrorURL();
       // 5.1.15, 5.1.16 Scope
@@ -83,18 +80,7 @@ class ValidateSWAMID extends Validate {
     $this->checkRequiredOrganizationElements();
 
     // 5.1.23 -> 5.1.28 / 6.1.21 -> 6.1.26
-    if ($this->isIdP) {
-      if ($this->isSP) {
-        // 5.1.23 -> 5.1.28 / 6.1.21 -> 6.1.26
-        $this->checkRequiredContactPersonElements('both');
-      } else {
-        // 5.1.23 -> 5.1.28
-        $this->checkRequiredContactPersonElements('IDPSSO');
-      }
-    } else {
-      // 6.1.21 -> 6.1.26
-      $this->checkRequiredContactPersonElements('SPSSO');
-    }
+    $this->checkRequiredContactPersonElements();
 
     if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
@@ -102,7 +88,6 @@ class ValidateSWAMID extends Validate {
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
     $this->saveResults();
   }
-
 
   /**
    * Validate LangElements
@@ -122,8 +107,7 @@ class ValidateSWAMID extends Validate {
     $usedLangArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `type`, `lang`, `element`
       FROM Mdui WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
-    $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
-    $mduiHandler->execute();
+    $mduiHandler->execute(array(self::BIND_ID => $this->dbIdNr));
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $type = $mdui['type'];
       $lang = $mdui['lang'];
@@ -131,9 +115,7 @@ class ValidateSWAMID extends Validate {
       if (isset(Common::LANG_CODES[$lang])) {
         $usedLangArray[$lang] = $lang;
       } else {
-        if (! $lang == '') {
-          $usedLangArray[$lang] = $lang;
-        }
+        $usedLangArray[$lang] = $lang;
         if ($type == 'SPSSO') {
           $this->error .= sprintf("SWAMID Tech 6.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
             $lang, $element, $type);
@@ -165,8 +147,7 @@ class ValidateSWAMID extends Validate {
       }
     }
 
-    $serviceNameArray = array();
-    $serviceDescriptionArray = array();
+    $serviceArray = array();
 
     $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `Service_index`
       FROM AttributeConsumingService_Service WHERE `entity_id` = :Id');
@@ -176,39 +157,14 @@ class ValidateSWAMID extends Validate {
       $element = $service['element'];
       $lang = $service['lang'];
       $index = $service['Service_index'];
-      if (! $lang == '') {
-        $usedLangArray[$lang] = $lang;
-      }
+      $usedLangArray[$lang] = $lang;
 
-      switch ($element) {
-        case 'ServiceName' :
-          if (! isset ($serviceNameArray[$index])) {
-            $serviceNameArray[$index] = array();
-          }
-
-          if (isset($serviceNameArray[$index][$lang])) {
-            $this->error .= sprintf(
-              "SWAMID Tech 6.1.2: More than one ServiceName with lang=%s in AttributeConsumingService (index=%d).\n",
-              $lang, $index);
-          } else {
-            $serviceNameArray[$index][$lang] = true;
-          }
-          break;
-        case 'ServiceDescription' :
-          if (! isset ($serviceDescriptionArray[$index])) {
-            $serviceDescriptionArray[$index] = array();
-          }
-          if (isset($serviceDescriptionArray[$index][$lang])) {
-            $this->error .= 'SWAMID Tech 6.1.2: More than one ServiceDescription with ';
-            $this->error .= sprintf(
-              "lang=%s in AttributeConsumingService (index=%d).\n",
-              $lang, $index);
-          } else {
-            $serviceDescriptionArray[$index][$lang] = true;
-          }
-          break;
-        default :
-          $this->result .= sprintf("Missing %s in checkLangElements.\n", $element);
+      if (isset($serviceArray[$element][$index][$lang])) {
+        $this->error .= sprintf(
+          "SWAMID Tech 6.1.2: More than one %s with lang=%s in AttributeConsumingService (index=%d).\n",
+          $element, $lang, $index);
+      } else {
+        $serviceArray[$element][$index][$lang] = true;
       }
     }
 
@@ -219,14 +175,7 @@ class ValidateSWAMID extends Validate {
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $lang = $organization['lang'];
       $element = $organization['element'];
-      if (! $lang == '') {
-        $usedLangArray[$lang] = $lang;
-      }
-
-      if (! isset ($organizationArray[$element])) {
-        $organizationArray[$element] = array();
-      }
-
+      $usedLangArray[$lang] = $lang;
       if (isset($organizationArray[$element][$lang])) {
         $this->error .= $this->selectError('5.1.2', '6.1.2',
           sprintf('More than one %s with lang=%s in Organization.', $element, $lang));
@@ -241,7 +190,9 @@ class ValidateSWAMID extends Validate {
     foreach ($mduiArray as $type => $elementArray) {
       foreach ($elementArray as $element => $langArray) {
         foreach ($usedLangArray as $lang) {
-          if (! isset($langArray[$lang])) {
+          if ( $lang == '' ) {
+            unset($usedLangArray[$lang]);
+          } elseif (! isset($langArray[$lang])) {
             if ($type == 'IDPSSO') {
               $this->error .= sprintf("SWAMID Tech 5.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
                 $lang, $element, $type);
@@ -253,19 +204,13 @@ class ValidateSWAMID extends Validate {
         }
       }
     }
-    foreach ($serviceNameArray as $langArray) {
-      foreach ($usedLangArray as $lang) {
-        if (! isset($langArray[$lang])) {
-          $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for ServiceName in AttributeConsumingService.\n",
-            $lang);
-        }
-      }
-    }
-    foreach ($serviceDescriptionArray as $langArray) {
-      foreach ($usedLangArray as $lang) {
-        if (! isset($langArray[$lang])) {
-          $this->error .= sprintf('SWAMID Tech 6.1.3: Missing lang=%s', $lang);
-          $this->error .= " for ServiceDescription in AttributeConsumingService.\n";
+    foreach ($serviceArray as $element => $indexArray) {
+      foreach ($indexArray as $langArray) {
+        foreach ($usedLangArray as $lang) {
+          if (! isset($langArray[$lang])) {
+            $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
+              $lang, $element, $index);
+          }
         }
       }
     }
@@ -302,9 +247,8 @@ class ValidateSWAMID extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'assurance-certification');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        if ($entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' ) { # NOSONAR Should be http://
-          $swamid519error = false;
-        }
+        $swamid519error = $entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' ? # NOSONAR Should be http://
+          false : $swamid519error ;
       }
       if ($swamid519error) {
         $this->error .= 'SWAMID Tech 5.1.9: SWAMID Identity Assurance Profile compliance MUST';
@@ -315,13 +259,9 @@ class ValidateSWAMID extends Validate {
       ///       the entity category entity attribute as defined by the respective Entity Category.
       // Not handled yet.
 
-      $swamid5111error = true;
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category-support');
       $entityAttributesHandler->execute();
-      if ($entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        $swamid5111error = false;
-      }
-      if ($swamid5111error) {
+      if (! $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         $this->warning .= 'SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the';
         $this->warning .= " entity category support entity attribute as defined by the respective Entity Category.\n";
       }
@@ -329,11 +269,10 @@ class ValidateSWAMID extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        foreach (Common::STANDARD_ATTRIBUTES['entity-category'] as $data) {
-          if ($data['value'] == $entityAttribute['attribute'] && ! $data['standard']) {
+        if (isset(Common::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]) &&
+          ! Common::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]['standard']) {
             $this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n",
               $entityAttribute['attribute']);
-          }
         }
       }
     }
@@ -421,9 +360,7 @@ class ValidateSWAMID extends Validate {
     }
 
     foreach ($elementArray as $element => $value) {
-      if (! $value) {
-        $this->error .= sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
-      }
+      $this->error .= $value ? '' : sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
     }
   }
 
@@ -824,7 +761,7 @@ class ValidateSWAMID extends Validate {
   }
 
   // 5.1.23 -> 5.1.28 / 6.1.22 -> 6.1.26
-  private function checkRequiredContactPersonElements($type) {
+  private function checkRequiredContactPersonElements() {
     $usedContactTypes = array();
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
       FROM ContactPerson WHERE `entity_id` = :Id');
@@ -876,11 +813,10 @@ class ValidateSWAMID extends Validate {
     // 5.1.27 Identity Providers MUST have one ContactPerson element of type support.
     // 6.1.26 Service Providers SHOULD have one ContactPerson element of type support.
     if (!isset ($usedContactTypes['support'])) {
-      if ($type == 'SPSSO') {
-        $this->warning .= "SWAMID Tech 6.1.26: Missing ContactPerson of type support.\n";
+      if ($this->isIdP) {
+        $this->error .= $this->selectError('5.1.27', '6.1.26', 'Missing ContactPerson of type support.');
       } else {
-        // $type = IDPSSO or both
-        $this->error .= "SWAMID Tech 5.1.27: Missing ContactPerson of type support.\n";
+        $this->warning .= $this->selectError('5.1.27', '6.1.26', 'Missing ContactPerson of type support.');
       }
     }
 

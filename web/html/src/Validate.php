@@ -124,28 +124,22 @@ class Validate {
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->execute();
     while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-      switch ($entityAttribute['attribute']) {
-        case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
-          if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
+      if ($entityAttribute['attribute'] == 'https://refeds.org/sirtfi' &&
+        $entityAttribute['type'] == 'assurance-certification' ) {
+        $this->isSIRTFI = true;
+      } elseif ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
+        switch ($entityAttribute['attribute']) {
+          case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
             $this->isSPandRandS = true;
-          }
-          break;
-        case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' : # NOSONAR Should be http://
-          if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
+            break;
+          case 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' :  # NOSONAR Should be http://
             $this->isSPandCoCov1 = true;
-          }
-          break;
-        case 'https://refeds.org/category/code-of-conduct/v2' :
-          if ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
+            break;
+          case 'https://refeds.org/category/code-of-conduct/v2' :
             $this->isSPandCoCov2 = true;
-          }
-          break;
-        case 'https://refeds.org/sirtfi' :
-          if ($entityAttribute['type'] == 'assurance-certification' ) {
-            $this->isSIRTFI = true;
-          }
-          break;
-        default :
+            break;
+          default:
+        }
       }
     }
   }
@@ -167,9 +161,6 @@ class Validate {
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $lang = $mdui['lang'];
       $element = $mdui['element'];
-      if (! isset ($mduiArray[$element])) {
-        $mduiArray[$element] = array();
-      }
       $mduiArray[$element][$lang] = true;
     }
 
@@ -213,9 +204,7 @@ class Validate {
       $lang = $mdui['lang'];
       $element = $mdui['element'];
       $data = $mdui['data'];
-      if (! isset ($mduiArray[$lang])) {
-        $mduiArray[$lang] = array();
-      }
+
       $mduiArray[$lang][$element] = $data;
       $mduiElementArray[$element] = true;
       if ($element == 'PrivacyStatementURL' ) {
@@ -223,27 +212,23 @@ class Validate {
       }
     }
 
-    if (isset($mduiArray['en'])) {
-      if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
+    if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
+      $this->error .= 'GÉANT Data Protection Code of Conduct Require a';
+      $this->error .= " MDUI - PrivacyStatementURL with at least lang=en.\n";
+    }
+    if (! isset($mduiArray['en']['DisplayName'])) {
+      $this->warning .= 'GÉANT Data Protection Code of Conduct Recomend a';
+      $this->warning .= " MDUI - DisplayName with at least lang=en.\n";
+    }
+    if (! isset($mduiArray['en']['Description'])) {
+      $this->warning .= 'GÉANT Data Protection Code of Conduct Recomend a';
+      $this->warning .= " MDUI - Description with at least lang=en.\n";
+    }
+    foreach ($mduiElementArray as $element => $value) {
+      if (! isset($mduiArray['en'][$element])) {
         $this->error .= 'GÉANT Data Protection Code of Conduct Require a';
-        $this->error .= " MDUI - PrivacyStatementURL with at least lang=en.\n";
+        $this->error .= sprintf(" MDUI - %s with lang=en for all present elements.\n", $element);
       }
-      if (! isset($mduiArray['en']['DisplayName'])) {
-        $this->warning .= 'GÉANT Data Protection Code of Conduct Recomend a';
-        $this->warning .= " MDUI - DisplayName with at least lang=en.\n";
-      }
-      if (! isset($mduiArray['en']['Description'])) {
-        $this->warning .= 'GÉANT Data Protection Code of Conduct Recomend a';
-        $this->warning .= " MDUI - Description with at least lang=en.\n";
-      }
-      foreach ($mduiElementArray as $element => $value) {
-        if (! isset($mduiArray['en'][$element])) {
-          $this->error .= 'GÉANT Data Protection Code of Conduct Require a';
-          $this->error .= sprintf(" MDUI - %s with lang=en for all present elements.\n", $element);
-        }
-      }
-    } else {
-      $this->error .= "GÉANT Data Protection Code of Conduct Require MDUI with lang=en.\n";
     }
     $requestedAttributeHandler->execute();
     if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -275,9 +260,7 @@ class Validate {
       $lang = $mdui['lang'];
       $element = $mdui['element'];
       $data = $mdui['data'];
-      if (! isset ($mduiArray[$lang])) {
-        $mduiArray[$lang] = array();
-      }
+
       $mduiArray[$lang][$element] = $data;
       $mduiElementArray[$element] = true;
       if ($element == 'PrivacyStatementURL' ) {
@@ -285,27 +268,23 @@ class Validate {
       }
     }
 
-    if (isset($mduiArray['en'])) {
-      if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
+    if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
+      $this->error .= self::TEXT_COCOV2_REQ;
+      $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
+    }
+    if (! isset($mduiArray['en']['DisplayName'])) {
+      $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
+      $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
+    }
+    if (! isset($mduiArray['en']['Description'])) {
+      $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
+      $this->warning .= " a MDUI - Description with at least lang=en.\n";
+    }
+    foreach ($mduiElementArray as $element => $value) {
+      if (! isset($mduiArray['en'][$element])) {
         $this->error .= self::TEXT_COCOV2_REQ;
-        $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
+        $this->error .= sprintf(" a MDUI - %s with lang=en for all present elements.\n", $element);
       }
-      if (! isset($mduiArray['en']['DisplayName'])) {
-        $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
-        $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
-      }
-      if (! isset($mduiArray['en']['Description'])) {
-        $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
-        $this->warning .= " a MDUI - Description with at least lang=en.\n";
-      }
-      foreach ($mduiElementArray as $element => $value) {
-        if (! isset($mduiArray['en'][$element])) {
-          $this->error .= self::TEXT_COCOV2_REQ;
-          $this->error .= sprintf(" a MDUI - %s with lang=en for all present elements.\n", $element);
-        }
-      }
-    } else {
-      $this->error .= "GÉANT Data Protection Code of Conduct (v2) Require MDUI with lang=en.\n";
     }
 
     $requestedAttributeHandler->execute();
@@ -320,19 +299,19 @@ class Validate {
   }
 
   /**
-  * Add URL to list for checking
-  *
-  * Add the URL to list of URL:s to check
-  *
-  * @param string $url URL that should be checked
-  *
-  * @param integer $type
-  *  - 1 Check reachable (OK If reachable)
-  *  - 2 Check reachable (NEED to be reachable)
-  *  - 3 Check CoCo privacy
-  *
-  * @return void
-  */
+   * Add URL to list for checking
+   *
+   * Add the URL to list of URL:s to check
+   *
+   * @param string $url URL that should be checked
+   *
+   * @param integer $type
+   *  - 1 Check reachable (OK If reachable)
+   *  - 2 Check reachable (NEED to be reachable)
+   *  - 3 Check CoCo privacy
+   *
+   * @return void
+   */
   protected function addURL($url, $type) {
     $urlHandler = $this->config->getDb()->prepare('SELECT `type` FROM URLs WHERE `URL` = :URL');
     $urlHandler->bindValue(self::BIND_URL, $url);

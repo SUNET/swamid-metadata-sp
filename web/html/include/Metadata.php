@@ -19,17 +19,12 @@ class Metadata {
   private $dbIdNr = 0;
   private $status = 0;
   private $xml;
-  private $isSPandRandS = false;
-  private $isSPandCoCov1 = false;
-  private $isSPandCoCov2 = false;
-  private $isSIRTFI = false;
   private $discoveryResponseFound = false;
 
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
   private $swamid6116error;
   # From common.php
-  private $standardAttributes = array();
   private $FriendlyNames = array();
   private $digestMethods = array();
   private $signingMethods = array();

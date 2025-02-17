@@ -13,285 +13,200 @@ class Common {
    */
   const STANDARD_ATTRIBUTES = array(
     'assurance-certification' => array(
-      array(
-        'type' => 'IdP',
-        'value' => 'http://www.swamid.se/policy/assurance/al1', # NOSONAR Should be http://
-        'standard' => true
+      'http://www.swamid.se/policy/assurance/al1' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'http://www.swamid.se/policy/assurance/al2', # NOSONAR Should be http://
-        'standard' => true
+      'http://www.swamid.se/policy/assurance/al2' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'http://www.swamid.se/policy/assurance/al3', # NOSONAR Should be http://
-        'standard' => true
+      'http://www.swamid.se/policy/assurance/al3' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP/SP',
-        'value' => 'https://refeds.org/sirtfi',
-        'standard' => true
+      'https://refeds.org/sirtfi' => array(
+        'type' => 'IdP/SP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP/SP',
-        'value' => 'https://refeds.org/sirtfi2',
-        'standard' => true
+      'https://refeds.org/sirtfi2' => array(
+        'type' => 'IdP/SP', 'standard' => true
       )
     ),
     'entity-category' => array(
-      array(
-        'type' => 'SP',
-        'value' => 'http://refeds.org/category/research-and-scholarship', # NOSONAR Should be http://
-        'standard' => true
+      'http://refeds.org/category/research-and-scholarship' => array( # NOSONAR Should be http://
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'https://refeds.org/category/anonymous',
-        'standard' => true
+      'https://refeds.org/category/anonymous' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'https://refeds.org/category/pseudonymous',
-        'standard' => true
+      'https://refeds.org/category/pseudonymous' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'https://refeds.org/category/personalized',
-        'standard' => true
+      'https://refeds.org/category/personalized' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', # NOSONAR Should be http://
-        'standard' => true
+      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'https://refeds.org/category/code-of-conduct/v2',
-        'standard' => true
+      'https://refeds.org/category/code-of-conduct/v2' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'https://myacademicid.org/entity-categories/esi',
-        'standard' => true
+      'https://myacademicid.org/entity-categories/esi' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'http://refeds.org/category/hide-from-discovery', # NOSONAR Should be http://
-        'standard' => true
+      'http://refeds.org/category/hide-from-discovery' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
       )
     ),
 
     'entity-category-support' => array(
-      array(
-        'type' => 'IdP',
-        'value' => 'https://refeds.org/category/anonymous',
-        'standard' => true
+      'https://refeds.org/category/anonymous' => array(
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'https://refeds.org/category/pseudonymous',
-        'standard' => true
+      'https://refeds.org/category/pseudonymous' => array(
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'https://refeds.org/category/personalized',
-        'standard' => true
+      'https://refeds.org/category/personalized' => array(
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'http://refeds.org/category/research-and-scholarship', # NOSONAR Should be http://
-        'standard' => true
+      'http://refeds.org/category/research-and-scholarship' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1', # NOSONAR Should be http://
-        'standard' => true
+      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'https://myacademicid.org/entity-categories/esi',
-        'standard' => true
+      'https://myacademicid.org/entity-categories/esi' => array(
+        'type' => 'IdP', 'standard' => true
       ),
-      array(
-        'type' => 'IdP',
-        'value' => 'https://refeds.org/category/code-of-conduct/v2',
-        'standard' => true
+      'https://refeds.org/category/code-of-conduct/v2' => array(
+        'type' => 'IdP', 'standard' => true
       )
     ),
     'subject-id:req' => array(
-      array(
-        'type' => 'SP',
-        'value' => 'subject-id',
-        'standard' => true
+      'subject-id' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'pairwise-id',
-        'standard' => true
+      'pairwise-id' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'none',
-        'standard' => true
+      'none' => array(
+        'type' => 'SP', 'standard' => true
       ),
-      array(
-        'type' => 'SP',
-        'value' => 'any',
-        'standard' => true
+      'any' => array(
+        'type' => 'SP', 'standard' => true
       )
     )
   );
   const FRIENDLY_NAMES = array(
     'urn:oid:2.5.4.6' => array(
-      'desc' => 'c',
-      'standard' => true
+      'desc' => 'c', 'standard' => true
     ),
     'urn:oid:2.5.4.3' => array(
-      'desc' => 'cn',
-      'standard' => true
+      'desc' => 'cn', 'standard' => true
     ),
     'urn:oid:0.9.2342.19200300.100.1.43' => array(
-      'desc' => 'co',
-      'standard' => true
+      'desc' => 'co', 'standard' => true
     ),
     'urn:oid:2.16.840.1.113730.3.1.241' => array(
-      'desc' => 'displayName',
-      'standard' => true
+      'desc' => 'displayName', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.1' => array(
-      'desc' => 'eduPersonAffiliation',
-      'standard' => true
+      'desc' => 'eduPersonAffiliation', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.11' => array(
-      'desc' => 'eduPersonAssurance',
-      'standard' => true
+      'desc' => 'eduPersonAssurance', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.7' => array(
-      'desc' => 'eduPersonEntitlement',
-      'standard' => false
+      'desc' => 'eduPersonEntitlement', 'standard' => false
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.16' => array(
-      'desc' => 'eduPersonOrcid',
-      'standard' => true
+      'desc' => 'eduPersonOrcid', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.5' => array(
-      'desc' => 'eduPersonPrimaryAffiliation',
-      'standard' => false
+      'desc' => 'eduPersonPrimaryAffiliation', 'standard' => false
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.6' => array(
-      'desc' => 'eduPersonPrincipalName',
-      'standard' => true
+      'desc' => 'eduPersonPrincipalName', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.9' => array(
-      'desc' => 'eduPersonScopedAffiliation',
-      'standard' => true
+      'desc' => 'eduPersonScopedAffiliation', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.10' => array(
-      'desc' => 'eduPersonTargetedID',
-      'standard' => true
+      'desc' => 'eduPersonTargetedID', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.5923.1.1.1.13' => array(
-      'desc' => 'eduPersonUniqueId',
-      'standard' => true
+      'desc' => 'eduPersonUniqueId', 'standard' => true
     ),
     'urn:oid:2.16.840.1.113730.3.1.4' => array(
-      'desc' => 'employeeType',
-      'standard' => false
+      'desc' => 'employeeType', 'standard' => false
     ),
     'urn:oid:2.16.840.1.113730.3.1.13' => array(
-      'desc' => 'mailLocalAddress',
-      'standard' => true
+      'desc' => 'mailLocalAddress', 'standard' => true
     ),
     'urn:oid:2.5.4.42' => array(
-      'desc' => 'givenName',
-      'standard' => true
+      'desc' => 'givenName', 'standard' => true
     ),
     'urn:oid:0.9.2342.19200300.100.1.10' => array(
-      'desc' => 'manager',
-      'standard' => false
+      'desc' => 'manager', 'standard' => false
     ),
     'urn:oid:0.9.2342.19200300.100.1.3' => array(
-      'desc' => 'mail',
-      'standard' => true
+      'desc' => 'mail', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.2428.90.1.6' => array(
-      'desc' => 'norEduOrgAcronym',
-      'standard' => true
+      'desc' => 'norEduOrgAcronym', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.2428.90.1.10' => array(
-      'desc' => 'norEduPersonLegalName',
-      'standard' => true
+      'desc' => 'norEduPersonLegalName', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.2428.90.1.5' => array(
-      'desc' => 'norEduPersonNIN',
-      'standard' => true
+      'desc' => 'norEduPersonNIN', 'standard' => true
     ),
     'urn:oid:2.5.4.10' => array(
-      'desc' => 'o',
-      'standard' => true
+      'desc' => 'o', 'standard' => true
     ),
     'urn:oid:1.2.752.29.4.13' => array(
-      'desc' => 'personalIdentityNumber',
-      'standard' => true
+      'desc' => 'personalIdentityNumber', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.25178.1.2.3' => array(
-      'desc' => 'schacDateOfBirth',
-      'standard' => true
+      'desc' => 'schacDateOfBirth', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.25178.1.2.9' => array(
-      'desc' => 'schacHomeOrganization',
-      'standard' => true
+      'desc' => 'schacHomeOrganization', 'standard' => true
     ),
     'urn:oid:1.3.6.1.4.1.25178.1.2.10' => array(
-      'desc' => 'schacHomeOrganizationType',
-      'standard' => true
+      'desc' => 'schacHomeOrganizationType', 'standard' => true
     ),
     'urn:oid:2.5.4.4' => array(
-      'desc' => 'sn',
-      'standard' => true
+      'desc' => 'sn', 'standard' => true
     ),
     'urn:oid:0.9.2342.19200300.100.1.1' => array(
-      'desc' => 'uid',
-      'standard' => false
+      'desc' => 'uid', 'standard' => false
     ),
 
     'urn:mace:dir:attribute-def:cn' => array(
-      'desc' => 'cn',
-      'standard' => false
+      'desc' => 'cn', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:displayName' => array(
-      'desc' => 'displayName',
-      'standard' => false
+      'desc' => 'displayName', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:eduPersonPrincipalName' => array(
-      'desc' => 'eduPersonPrincipalName',
-      'standard' => false
+      'desc' => 'eduPersonPrincipalName', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:eduPersonScopedAffiliation' => array(
-      'desc' => 'eduPersonScopedAffiliation',
-      'standard' => false
+      'desc' => 'eduPersonScopedAffiliation', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:eduPersonTargetedID' => array(
-      'desc' => 'eduPersonTargetedID',
-      'standard' => false
+      'desc' => 'eduPersonTargetedID', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:givenName' => array(
-      'desc' => 'givenName',
-      'standard' => false
+      'desc' => 'givenName', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:mail' => array(
-      'desc' => 'mail',
-      'standard' => false
+      'desc' => 'mail', 'standard' => false
     ),
     'urn:mace:dir:attribute-def:sn' => array(
-      'desc' => 'sn',
-      'standard' => false
+      'desc' => 'sn', 'standard' => false
     ),
 
     'urn:oid:1.2.840.113549.1.9.1.1' => array(
-      'desc' => 'Wrong - email',
-      'standard' => false
+      'desc' => 'Wrong - email', 'standard' => false
     )
   );
   const LANG_CODES = array(
@@ -513,10 +428,7 @@ class Common {
     'http://www.w3.org/2007/05/xmldsig-more#sha3-512' => 'good',
     # https://www.w3.org/TR/xmlenc-core1/#sec-Alg-MessageDigest
     # Message Digest
-    'http://www.w3.org/2000/09/xmldsig#sha1' => 'discouraged',
-    'http://www.w3.org/2001/04/xmlenc#sha256' => 'good',
     'http://www.w3.org/2001/04/xmlenc#sha384' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#sha512' => 'good',
     'http://www.w3.org/2001/04/xmlenc#ripemd160' => 'good',
   );
   const SIGNING_METHODS = array(
