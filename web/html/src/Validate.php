@@ -68,12 +68,10 @@ class Validate {
       $this->xml->loadXML($entity['xml']);
       $this->xml->encoding = 'UTF-8';
       $this->dbIdNr = $entity['id'];
-      #$this->status = $entity['status'];
       $this->entityID = $entity['entityID'];
       $this->isIdP = $entity['isIdP'];
       $this->isSP = $entity['isSP'];
       $this->isAA = $entity['isAA'];
-      #$this->feedValue = $entity['publishIn'];
       $this->warning = $entity['warnings'];
       $this->error = $entity['errors'];
       $this->errorNB = $entity['errorsNB'];
