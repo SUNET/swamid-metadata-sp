@@ -366,6 +366,11 @@ class Validate {
     return $this->error . $this->errorNB;
   }
 
+  /**
+   * Save Results
+   *
+   * @return void
+   */
   protected function saveResults() {
     $resultHandler = $this->config->getDb()->prepare("UPDATE Entities
       SET `validationOutput` = :validationOutput,
