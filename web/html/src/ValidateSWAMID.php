@@ -425,7 +425,7 @@ class ValidateSWAMID extends Validate {
    *  - 6.1.12
    *
    * @return void
-   */
+   */ 
   private function checkRequiredMDUIelementsSP() {
     $elementArray = array ('DisplayName' => false,
       'Description' => false,
