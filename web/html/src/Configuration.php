@@ -15,6 +15,15 @@ class Configuration {
   private $userLevels = array(); // indexed by username, maps to user privilege level
   private $federation = array(); // hash of federation parameters
 
+  /**
+   * Setup the class
+   *
+   * Return an array with the smtp configuration
+   *
+   * @param boolean $startDB If we should start the database connection or not.
+   *
+   * @return void
+   */
   public function __construct($startDB = true) {
     include __DIR__ . '/../config.php'; # NOSONAR
 
@@ -51,6 +60,10 @@ class Configuration {
         printf ('Missing $federation[%s] in config.php<br>', $param);
         exit;
       }
+    }
+
+    if (! isset($federation['validator'])) {
+      $federation['validator'] = 'Validate';
     }
 
     $this->mode =  $mode;
@@ -188,6 +201,13 @@ class Configuration {
     }*/
   }
 
+  /**
+   * Return smtp config
+   *
+   * Return an array with the smtp configuration
+   *
+   * @return array
+   */
   public function getSMTP() {
     return $this->smtp;
   }

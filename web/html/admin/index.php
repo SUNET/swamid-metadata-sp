@@ -52,6 +52,8 @@ $config = new metadata\Configuration();
 require_once '../include/Html.php'; #NOSONAR
 $html = new HTML();
 
+$samlValidator = 'metadata\\' . $config->getFederation()['validator'];
+
 /* BEGIN RAF Logging */
 $assuranceHandler = $config->getDb()->prepare(
   'INSERT INTO `assuranceLog` (`entityID`, `assurance`, `logDate`)
@@ -281,7 +283,9 @@ if (isset($_FILES['XMLfile'])) {
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
               $metadata->validateXML();
-              $metadata->validateSAML();
+              $validator = new $samlValidator($entitiesId);
+              $validator->saml();
+              $metadata->validateURLs();
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -307,7 +311,9 @@ if (isset($_FILES['XMLfile'])) {
             $metadata->clearWarning();
             $metadata->clearError();
             $metadata->validateXML();
-            $metadata->validateSAML();
+            $validator = new $samlValidator($entitiesId);
+            $validator->saml();
+            $metadata->validateURLs();
             $menuActive = 'new';
             showEntity($entitiesId);
           } else {
@@ -324,7 +330,9 @@ if (isset($_FILES['XMLfile'])) {
               $metadata->clearWarning();
               $metadata->clearError();
               $metadata->validateXML();
-              $metadata->validateSAML();
+              $validator = new $samlValidator($entitiesId);
+              $validator->saml();
+              $metadata->validateURLs();
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -341,7 +349,9 @@ if (isset($_FILES['XMLfile'])) {
             $metadata->clearWarning();
             $metadata->clearError();
             $metadata->validateXML();
-            $metadata->validateSAML();
+            $validator = new $samlValidator($entitiesId);
+            $validator->saml();
+            $metadata->validateURLs();
             showEntity($entitiesId);
           } else {
             # User have no access yet.
@@ -357,7 +367,9 @@ if (isset($_FILES['XMLfile'])) {
               $metadata->clearWarning();
               $metadata->clearError();
               $metadata->validateXML();
-              $metadata->validateSAML();
+              $validator = new $samlValidator($entitiesId);
+              $validator->saml();
+              $metadata->validateURLs();
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -1082,6 +1094,7 @@ function showUpload() {
 function importXML(){
   global $html;
   global $EPPN,$mail, $fullName;
+  global $samlValidator;
 
   require_once '../include/NormalizeXML.php';
   require_once '../include/ValidateXML.php';
@@ -1093,11 +1106,13 @@ function importXML(){
     $validate = new ValidateXML($import->getXML());
     if ($validate->validateSchema('../../schemas/schema.xsd')) {
       $metadata = new Metadata($entityID, 'New');
-      $metadata->importXML($import->getXML());
+      $metadata->importXML($import->cleanOutRegistrationInfo($import->getXML()));
       $metadata->getUser($EPPN, $mail, $fullName, true);
       $metadata->updateResponsible($EPPN);
       $metadata->validateXML();
-      $metadata->validateSAML();
+      $validator = new $samlValidator($entitiesId);
+      $validator->saml();
+      $metadata->validateURLs();
 
       $prodmetadata = new Metadata($entityID, 'Prod');
       if ($prodmetadata->entityExists()) {
@@ -1184,17 +1199,21 @@ function showMenu() {
 }
 
 function validateEntity($entitiesId) {
+  global $samlValidator;
   $metadata = new Metadata($entitiesId);
   $metadata->clearWarning();
   $metadata->clearError();
   $metadata->validateXML();
-  $metadata->validateSAML();
+  $validator = new $samlValidator($entitiesId);
+  $validator->saml();
+  $metadata->validateURLs();
 }
 
 function move2Pending($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester, $config;
+  global $samlValidator;
   $federation = $config->getFederation();
 
   $draftMetadata = new Metadata($entitiesId);
@@ -1203,7 +1222,9 @@ function move2Pending($entitiesId) {
     $draftMetadata->clearWarning();
     $draftMetadata->clearError();
     $draftMetadata->validateXML();
-    $draftMetadata->validateSAML();
+    $validator = new $samlValidator($entitiesId);
+    $validator->saml();
+    $draftMetadata->validateURLs();
     if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
       $sections = HTML_TEXT_STP_BOTH ;
       $infoText = HTML_TEXT_STPINFO_BOTH;
@@ -1247,7 +1268,9 @@ function move2Pending($entitiesId) {
           $shadowMetadata->importXML($publishedMetadata->xml());
           $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
           $shadowMetadata->validateXML();
-          $shadowMetadata->validateSAML();
+          $validator = new $samlValidator($entitiesId);
+          $validator->saml();
+          $shadowMetadata->validateURLs();
           $oldEntitiesId = $shadowMetadata->id();
         } else {
           $mailContacts->Subject  = 'Info : New SWAMID metadata for ' . $shortEntityid;
@@ -1820,7 +1843,7 @@ function setupMail() {
 
 function move2Draft($entitiesId) {
   global $config, $html, $display, $menuActive;
-  global $EPPN,$mail;
+  global $samlValidator;
   $entityHandler = $config->getDb()->prepare('SELECT `entityID`, `xml` FROM Entities WHERE `status` = 2 AND `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
@@ -1831,7 +1854,9 @@ function move2Draft($entitiesId) {
       $draftMetadata->clearWarning();
       $draftMetadata->clearError();
       $draftMetadata->validateXML();
-      $draftMetadata->validateSAML(true);
+      $validator = new $samlValidator($entitiesId);
+      $validator->saml();
+      $draftMetadata->validateURLs();
       $menuActive = 'new';
       $draftMetadata->copyResponsible($entitiesId);
       showEntity($draftMetadata->id());
