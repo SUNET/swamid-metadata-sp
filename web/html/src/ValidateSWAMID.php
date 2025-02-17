@@ -94,7 +94,8 @@ class ValidateSWAMID extends Validate {
    *
    * Validate LangElements in
    *  - MDUI
-   *  -
+   *  - AttributeConsumingService
+   *  - Organization
    *
    * SWAMID Tech
    *  - 5.1.1 -> 5.1.5
@@ -234,7 +235,20 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  // 5.1.9 -> 5.1.11 / 6.1.9 -> 6.1.11
+  /**
+   * Validate Entity Attributes
+   *
+   * Validate Entity Attributes
+   *  - EntityCategory
+   *  - EntityCategorySupport
+   *  - Assurance Certification
+   *
+   * SWAMID Tech
+   *  - 5.1.9 -> 5.1.11
+   *  - 6.1.9 -> 6.1.11
+   *
+   * @return void
+   */
   private function checkEntityAttributes($type) {
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `attribute`
       FROM EntityAttributes WHERE `entity_id` = :Id AND `type` = :Type');
@@ -278,7 +292,16 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  # 5.1.13 errorURL
+  /**
+   * Validate Error URL of an IdP
+   *
+   * Validate than an Error URL exists in IDPSSODecriptor
+   *
+   * SWAMID Tech
+   *  - 5.1.13 errorURL
+   *
+   * @return void
+   */
   private function checkErrorURL() {
     $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
       FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
@@ -289,7 +312,18 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  // 5.1.15, 5.1.16 Scope
+  /**
+   * Validate IdP Scope
+   *
+   * Validate IdP ScopeEntity Attributes
+   *  - RegExp
+   *  - Missing Scope
+   *
+   * SWAMID Tech
+   *  - 5.1.15, 5.1.16
+   *
+   * @return void
+   */
   private function checkIDPScope() {
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -307,7 +341,21 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  // 5.1.17
+  /**
+   * Validate Required MDUI-elements IdP
+   *
+   * Validate Required MDUI-elements for an IdP
+   *  - DisplayName
+   *  - Description
+   *  - InformationURL
+   *  - PrivacyStatementURL
+   *  - Logo
+   *
+   * SWAMID Tech
+   *  - 5.1.17
+   *
+   * @return void
+   */
   private function checkRequiredMDUIelementsIdP() {
     $elementArray = array ('DisplayName' => false,
       'Description' => false,
@@ -364,7 +412,20 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  // 6.1.12
+  /**
+   * Validate Required MDUI-elements SP
+   *
+   * Validate Required MDUI-elements for a SP
+   *  - DisplayName
+   *  - Description
+   *  - InformationURL
+   *  - PrivacyStatementURL
+   *
+   * SWAMID Tech
+   *  - 6.1.12
+   *
+   * @return void
+   */ 
   private function checkRequiredMDUIelementsSP() {
     $elementArray = array ('DisplayName' => false,
       'Description' => false,
@@ -399,7 +460,20 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  // 5.1.20, 5.2.x / 6.1.14, 6.2.x
+  /**
+   * Validate Certificates
+   *
+   * Validate Certificates
+   *  - Length of certs
+   *  - Validity of certs
+   *  - Required cert exists
+   *
+   * SWAMID Tech
+   *  - 5.1.20, 5.2.x
+   *  - 6.1.14, 6.2.x
+   *
+   * @return void
+   */
   private function checkRequiredSAMLcertificates($type) {
     $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false, 'AttributeAuthority' => false);
     $keyInfoHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
@@ -645,7 +719,20 @@ class ValidateSWAMID extends Validate {
     }
   }*/
 
-  // 5.1.22 / 6.1.21
+  /**
+   * Validate Required Organization Elements
+   *
+   * Validate Required Organization Elements
+   *  - OrganizationName
+   *  - OrganizationDisplayName
+   *  - OrganizationURL
+   *
+   * SWAMID Tech
+   *  - 5.1.22
+   *  - 6.1.21
+   *
+   * @return void
+   */
   private function checkRequiredOrganizationElements() {
     $elementArray = array('OrganizationName' => false, 'OrganizationDisplayName' => false, 'OrganizationURL' => false);
 
@@ -664,7 +751,17 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  // 5.1.23 -> 5.1.28 / 6.1.22 -> 6.1.26
+  /**
+   * Validate Required Contact Person Elements
+   *
+   * Validate Required Contact Person Elements
+   *
+   * SWAMID Tech
+   *  - 5.1.23 -> 5.1.28
+   *  - 6.1.22 -> 6.1.26
+   *
+   * @return void
+   */
   private function checkRequiredContactPersonElements() {
     $usedContactTypes = array();
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
