@@ -4,9 +4,5 @@
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-// deepcode ignore FileInclusion:
-require_once __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
-
-// deepcode ignore FileInclusion:
-$metadata = new Metadata();
-$metadata->checkOldURLS(30,true);
+$common = new \metadata\Common();
+$common->checkOldURLS(30,true);

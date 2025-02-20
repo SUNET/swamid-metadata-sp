@@ -1,608 +1,478 @@
 <?php
 namespace metadata;
 
+use PDO;
+use DOMDocument;
+
+/**
+ * Class to collect common functions for Validate and ParseXML
+ */
 class Common {
-  /**
-   * Class to collect common values
-   *
-   */
+  use SAMLTrait;
+
+  # Setup
+  protected $config;
+
+  protected $dbIdNr = 0;
+  protected $entityID = 'Unknown';
+  protected $entityExists = false;
+  protected $error = '';
+  protected $errorNB = '';
+  protected $isIdP = false;
+  protected $isSP = false;
+  protected $isAA = false;
+  protected $registrationInstant = '';
+  protected $result = '';
+  protected $warning = '';
+  protected $xml;
+  private $handleXML = true;
+
+  const BIND_COCOV1STATUS = ':Cocov1Status';
+  const BIND_ERRORS = ':Errors';
+  const BIND_ERRORSNB = ':ErrorsNB';
+  const BIND_HEIGHT = ':Height';
+  const BIND_ID = ':Id';
+  const BIND_NOSIZE = ':NoSize';
+  const BIND_REGISTRATIONINSTANT = ':RegistrationInstant';
+  const BIND_RESULT = ':Result';
+  const BIND_STATUS = ':Status';
+  const BIND_TYPE = ':Type';
+  const BIND_URL = ':URL';
+  const BIND_VALIDATIONOUTPUT = ':validationOutput';
+  const BIND_WARNINGS = ':Warnings';
+  const BIND_WIDTH = ':Width';
+  const BIND_XML = ':Xml';
 
   /**
-   * STANDARD_ATTRIBUTES
+   * Setup the class
    *
+   * @return void
    */
-  const STANDARD_ATTRIBUTES = array(
-    'assurance-certification' => array(
-      'http://www.swamid.se/policy/assurance/al1' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      ),
-      'http://www.swamid.se/policy/assurance/al2' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      ),
-      'http://www.swamid.se/policy/assurance/al3' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      ),
-      'https://refeds.org/sirtfi' => array(
-        'type' => 'IdP/SP', 'standard' => true
-      ),
-      'https://refeds.org/sirtfi2' => array(
-        'type' => 'IdP/SP', 'standard' => true
-      )
-    ),
-    'entity-category' => array(
-      'http://refeds.org/category/research-and-scholarship' => array( # NOSONAR Should be http://
-        'type' => 'SP', 'standard' => true
-      ),
-      'https://refeds.org/category/anonymous' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'https://refeds.org/category/pseudonymous' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'https://refeds.org/category/personalized' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
-        'type' => 'SP', 'standard' => true
-      ),
-      'https://refeds.org/category/code-of-conduct/v2' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'https://myacademicid.org/entity-categories/esi' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'http://refeds.org/category/hide-from-discovery' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      )
-    ),
+  public function __construct($id = 0, $xml = true) {
+    global $config;
+    $this->handleXML = $xml;
+    if (isset($config)) {
+      $this->config = $config;
+    } else {
+      $this->config = new Configuration();
+    }
+    if ($id > 0) {
+      $sql = 'SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `errors`, `errorsNB`, `warnings`,
+          `registrationInstant`, `validationOutput`';
+      $sql .= $this->handleXML ? ', `xml` ' : ' ';
+      $sql .= 'FROM `Entities` WHERE `id` = :Id';
+      $entityHandler = $this->config->getDb()->prepare($sql);
+      $entityHandler->execute(array(self::BIND_ID => $id));
+      if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+        $this->entityExists = true;
+        $this->dbIdNr = $entity['id'];
+        $this->entityID = $entity['entityID'];
+        $this->isIdP = $entity['isIdP'];
+        $this->isSP = $entity['isSP'];
+        $this->isAA = $entity['isAA'];
+        $this->warning = $entity['warnings'];
+        $this->error = $entity['errors'];
+        $this->errorNB = $entity['errorsNB'];
+        $this->result = $entity['validationOutput'];
+        $this->registrationInstant = $entity['registrationInstant'];
+        if ($this->handleXML) {
+          $this->xml = new DOMDocument;
+          $this->xml->preserveWhiteSpace = false;
+          $this->xml->formatOutput = true;
+          $this->xml->loadXML($entity['xml']);
+          $this->xml->encoding = 'UTF-8';
+        }
+      }
+    }
+  }
 
-    'entity-category-support' => array(
-      'https://refeds.org/category/anonymous' => array(
-        'type' => 'IdP', 'standard' => true
-      ),
-      'https://refeds.org/category/pseudonymous' => array(
-        'type' => 'IdP', 'standard' => true
-      ),
-      'https://refeds.org/category/personalized' => array(
-        'type' => 'IdP', 'standard' => true
-      ),
-      'http://refeds.org/category/research-and-scholarship' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      ),
-      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      ),
-      'https://myacademicid.org/entity-categories/esi' => array(
-        'type' => 'IdP', 'standard' => true
-      ),
-      'https://refeds.org/category/code-of-conduct/v2' => array(
-        'type' => 'IdP', 'standard' => true
-      )
-    ),
-    'subject-id:req' => array(
-      'subject-id' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'pairwise-id' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'none' => array(
-        'type' => 'SP', 'standard' => true
-      ),
-      'any' => array(
-        'type' => 'SP', 'standard' => true
-      )
-    )
-  );
-  const FRIENDLY_NAMES = array(
-    'urn:oid:2.5.4.6' => array(
-      'desc' => 'c', 'standard' => true
-    ),
-    'urn:oid:2.5.4.3' => array(
-      'desc' => 'cn', 'standard' => true
-    ),
-    'urn:oid:0.9.2342.19200300.100.1.43' => array(
-      'desc' => 'co', 'standard' => true
-    ),
-    'urn:oid:2.16.840.1.113730.3.1.241' => array(
-      'desc' => 'displayName', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.1' => array(
-      'desc' => 'eduPersonAffiliation', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.11' => array(
-      'desc' => 'eduPersonAssurance', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.7' => array(
-      'desc' => 'eduPersonEntitlement', 'standard' => false
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.16' => array(
-      'desc' => 'eduPersonOrcid', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.5' => array(
-      'desc' => 'eduPersonPrimaryAffiliation', 'standard' => false
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.6' => array(
-      'desc' => 'eduPersonPrincipalName', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.9' => array(
-      'desc' => 'eduPersonScopedAffiliation', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.10' => array(
-      'desc' => 'eduPersonTargetedID', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.5923.1.1.1.13' => array(
-      'desc' => 'eduPersonUniqueId', 'standard' => true
-    ),
-    'urn:oid:2.16.840.1.113730.3.1.4' => array(
-      'desc' => 'employeeType', 'standard' => false
-    ),
-    'urn:oid:2.16.840.1.113730.3.1.13' => array(
-      'desc' => 'mailLocalAddress', 'standard' => true
-    ),
-    'urn:oid:2.5.4.42' => array(
-      'desc' => 'givenName', 'standard' => true
-    ),
-    'urn:oid:0.9.2342.19200300.100.1.10' => array(
-      'desc' => 'manager', 'standard' => false
-    ),
-    'urn:oid:0.9.2342.19200300.100.1.3' => array(
-      'desc' => 'mail', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.2428.90.1.6' => array(
-      'desc' => 'norEduOrgAcronym', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.2428.90.1.10' => array(
-      'desc' => 'norEduPersonLegalName', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.2428.90.1.5' => array(
-      'desc' => 'norEduPersonNIN', 'standard' => true
-    ),
-    'urn:oid:2.5.4.10' => array(
-      'desc' => 'o', 'standard' => true
-    ),
-    'urn:oid:1.2.752.29.4.13' => array(
-      'desc' => 'personalIdentityNumber', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.25178.1.2.3' => array(
-      'desc' => 'schacDateOfBirth', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.25178.1.2.9' => array(
-      'desc' => 'schacHomeOrganization', 'standard' => true
-    ),
-    'urn:oid:1.3.6.1.4.1.25178.1.2.10' => array(
-      'desc' => 'schacHomeOrganizationType', 'standard' => true
-    ),
-    'urn:oid:2.5.4.4' => array(
-      'desc' => 'sn', 'standard' => true
-    ),
-    'urn:oid:0.9.2342.19200300.100.1.1' => array(
-      'desc' => 'uid', 'standard' => false
-    ),
+  /**
+   * Add URL to list for checking
+   *
+   * Add the URL to list of URL:s to check
+   *
+   * @param string $url URL that should be checked
+   *
+   * @param integer $type
+   *  - 1 Check reachable (OK If reachable)
+   *  - 2 Check reachable (NEED to be reachable)
+   *  - 3 Check CoCo privacy
+   *
+   * @return void
+   */
+  protected function addURL($url, $type) {
+    $urlHandler = $this->config->getDb()->prepare('SELECT `type` FROM `URLs` WHERE `URL` = :URL');
+    $urlHandler->bindValue(self::BIND_URL, $url);
+    $urlHandler->execute();
 
-    'urn:mace:dir:attribute-def:cn' => array(
-      'desc' => 'cn', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:displayName' => array(
-      'desc' => 'displayName', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:eduPersonPrincipalName' => array(
-      'desc' => 'eduPersonPrincipalName', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:eduPersonScopedAffiliation' => array(
-      'desc' => 'eduPersonScopedAffiliation', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:eduPersonTargetedID' => array(
-      'desc' => 'eduPersonTargetedID', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:givenName' => array(
-      'desc' => 'givenName', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:mail' => array(
-      'desc' => 'mail', 'standard' => false
-    ),
-    'urn:mace:dir:attribute-def:sn' => array(
-      'desc' => 'sn', 'standard' => false
-    ),
+    if ($currentType = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($currentType['type'] < $type) {
+        // Update type and lastSeen + force revalidate
+        $urlUpdateHandler = $this->config->getDb()->prepare("
+          UPDATE `URLs` SET `type` = :Type, `lastValidated` = '1972-01-01', `lastSeen` = NOW() WHERE `URL` = :URL;");
+        $urlUpdateHandler->bindParam(self::BIND_URL, $url);
+        $urlUpdateHandler->bindParam(self::BIND_TYPE, $type);
+        $urlUpdateHandler->execute();
+      } else {
+        // Update lastSeen
+        $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE `URLs` SET `lastSeen` = NOW() WHERE `URL` = :URL;");
+        $urlUpdateHandler->bindParam(self::BIND_URL, $url);
+        $urlUpdateHandler->execute();
+      }
+    } else {
+      $urlAddHandler = $this->config->getDb()->prepare("INSERT INTO `URLs`
+        (`URL`, `type`, `status`, `lastValidated`, `lastSeen`)
+        VALUES (:URL, :Type, 10, '1972-01-01', NOW());");
+      $urlAddHandler->bindParam(self::BIND_URL, $url);
+      $urlAddHandler->bindParam(self::BIND_TYPE, $type);
+      $urlAddHandler->execute();
+    }
+  }
 
-    'urn:oid:1.2.840.113549.1.9.1.1' => array(
-      'desc' => 'Wrong - email', 'standard' => false
-    )
-  );
-  const LANG_CODES = array(
-    'en'  =>  'English',
-    'sv'  =>  'Swedish',
-    'da'  =>  'Danish',
-    'no'  =>  'Norwegian',
-    'fi'  =>  'Finnish',
-    'is'  =>  'Icelandic',
-    'de'  =>  'German',
-    'fr'  =>  'French',
-    'es'  =>  'Spanish',
-    'se'  =>  'Northern Sami',
-    'nb'  =>  'Bokmål, Norwegian',
-    'nn'  =>  'Nynorsk, Norwegian',
-    'ab'  =>  'Abkhazian',
-    'aa'  =>  'Afar',
-    'af'  =>  'Afrikaans',
-    'ak'  =>  'Akan',
-    'sq'  =>  'Albanian',
-    'am'  =>  'Amharic',
-    'ar'  =>  'Arabic',
-    'an'  =>  'Aragonese',
-    'hy'  =>  'Armenian',
-    'as'  =>  'Assamese',
-    'av'  =>  'Avaric',
-    'ae'  =>  'Avestan',
-    'ay'  =>  'Aymara',
-    'az'  =>  'Azerbaijani',
-    'bm'  =>  'Bambara',
-    'ba'  =>  'Bashkir',
-    'eu'  =>  'Basque',
-    'be'  =>  'Belarusian',
-    'bn'  =>  'Bengali',
-    'bh'  =>  'Bihari languages',
-    'bi'  =>  'Bislama',
-    'bs'  =>  'Bosnian',
-    'br'  =>  'Breton',
-    'bg'  =>  'Bulgarian',
-    'my'  =>  'Burmese',
-    'ca'  =>  'Catalan',
-    'km'  =>  'Central Khmer',
-    'ch'  =>  'Chamorro',
-    'ce'  =>  'Chechen',
-    'zh'  =>  'Chinese',
-    'za'  =>  'Chuang',
-    'cv'  =>  'Chuvash',
-    'kw'  =>  'Cornish',
-    'co'  =>  'Corsican',
-    'cr'  =>  'Cree',
-    'hr'  =>  'Croatian',
-    'cs'  =>  'Czech',
-    'nl'  =>  'Dutch',
-    'dz'  =>  'Dzongkha',
-    'eo'  =>  'Esperanto',
-    'et'  =>  'Estonian',
-    'ee'  =>  'Ewe',
-    'fo'  =>  'Faroese',
-    'fj'  =>  'Fijian',
-    'ff'  =>  'Fulah',
-    'gl'  =>  'Galician',
-    'lg'  =>  'Ganda',
-    'ka'  =>  'Georgian',
-    'ki'  =>  'Gikuyu',
-    'el'  =>  'Greek, Modern (1453-)',
-    'kl'  =>  'Greenlandic',
-    'gn'  =>  'Guarani',
-    'gu'  =>  'Gujarati',
-    'ht'  =>  'Haitian Creole',
-    'ha'  =>  'Hausa',
-    'he'  =>  'Hebrew',
-    'hz'  =>  'Herero',
-    'hi'  =>  'Hindi',
-    'ho'  =>  'Hiri Motu',
-    'hu'  =>  'Hungarian',
-    'io'  =>  'Ido',
-    'ig'  =>  'Igbo',
-    'id'  =>  'Indonesian',
-    'ia'  =>  'Interlingua (IALA)',
-    'ie'  =>  'Interlingue, Occidental',
-    'iu'  =>  'Inuktitut',
-    'ik'  =>  'Inupiaq',
-    'ga'  =>  'Irish',
-    'it'  =>  'Italian',
-    'ja'  =>  'Japanese',
-    'jv'  =>  'Javanese',
-    'kn'  =>  'Kannada',
-    'kr'  =>  'Kanuri',
-    'ks'  =>  'Kashmiri',
-    'kk'  =>  'Kazakh',
-    'rw'  =>  'Kinyarwanda',
-    'kv'  =>  'Komi',
-    'kg'  =>  'Kongo',
-    'ko'  =>  'Korean',
-    'ku'  =>  'Kurdish',
-    'kj'  =>  'Kwanyama',
-    'ky'  =>  'Kyrgyz',
-    'lo'  =>  'Lao',
-    'la'  =>  'Latin',
-    'lv'  =>  'Latvian',
-    'li'  =>  'Limburgish',
-    'ln'  =>  'Lingala',
-    'lt'  =>  'Lithuanian',
-    'lu'  =>  'Luba-Katanga',
-    'lb'  =>  'Luxembourgish',
-    'mk'  =>  'Macedonian',
-    'mg'  =>  'Malagasy',
-    'ms'  =>  'Malay',
-    'ml'  =>  'Malayalam',
-    'dv'  =>  'Maldivian',
-    'mt'  =>  'Maltese',
-    'gv'  =>  'Manx',
-    'mi'  =>  'Maori',
-    'mr'  =>  'Marathi',
-    'mh'  =>  'Marshallese',
-    'ro'  =>  'Moldovan',
-    'mn'  =>  'Mongolian',
-    'na'  =>  'Nauru',
-    'nv'  =>  'Navaho',
-    'nd'  =>  'Ndebele, North',
-    'nr'  =>  'Ndebele, South',
-    'ng'  =>  'Ndonga',
-    'ne'  =>  'Nepali',
-    'ii'  =>  'Nuosu',
-    'ny'  =>  'Nyanja',
-    'oj'  =>  'Ojibwa',
-    'cu'  =>  'Old Church Slavonic',
-    'or'  =>  'Oriya',
-    'om'  =>  'Oromo',
-    'os'  =>  'Ossetic',
-    'pi'  =>  'Pali',
-    'pa'  =>  'Panjabi',
-    'fa'  =>  'Persian',
-    'pl'  =>  'Polish',
-    'pt'  =>  'Portuguese',
-    'oc'  =>  'Provençal',
-    'ps'  =>  'Pushto',
-    'qu'  =>  'Quechua',
-    'rm'  =>  'Romansh',
-    'rn'  =>  'Rundi',
-    'ru'  =>  'Russian',
-    'sm'  =>  'Samoan',
-    'sg'  =>  'Sango',
-    'sa'  =>  'Sanskrit',
-    'sc'  =>  'Sardinian',
-    'gd'  =>  'Scottish Gaelic',
-    'sr'  =>  'Serbian',
-    'sn'  =>  'Shona',
-    'sd'  =>  'Sindhi',
-    'si'  =>  'Sinhalese',
-    'sk'  =>  'Slovak',
-    'sl'  =>  'Slovenian',
-    'so'  =>  'Somali',
-    'st'  =>  'Sotho, Southern',
-    'su'  =>  'Sundanese',
-    'sw'  =>  'Swahili',
-    'ss'  =>  'Swati',
-    'tl'  =>  'Tagalog',
-    'ty'  =>  'Tahitian',
-    'tg'  =>  'Tajik',
-    'ta'  =>  'Tamil',
-    'tt'  =>  'Tatar',
-    'te'  =>  'Telugu',
-    'th'  =>  'Thai',
-    'bo'  =>  'Tibetan',
-    'ti'  =>  'Tigrinya',
-    'to'  =>  'Tonga (Tonga Islands)',
-    'ts'  =>  'Tsonga',
-    'tn'  =>  'Tswana',
-    'tr'  =>  'Turkish',
-    'tk'  =>  'Turkmen',
-    'tw'  =>  'Twi',
-    'uk'  =>  'Ukrainian',
-    'ur'  =>  'Urdu',
-    'ug'  =>  'Uyghur',
-    'uz'  =>  'Uzbek',
-    've'  =>  'Venda',
-    'vi'  =>  'Vietnamese',
-    'vo'  =>  'Volapük',
-    'wa'  =>  'Walloon',
-    'cy'  =>  'Welsh',
-    'fy'  =>  'Western Frisian',
-    'wo'  =>  'Wolof',
-    'xh'  =>  'Xhosa',
-    'yi'  =>  'Yiddish',
-    'yo'  =>  'Yoruba',
-    'zu'  =>  'Zulu',
-  );
+  /**
+   * Revalidates an URL
+   *
+   * @param string $url URL that should be revalidated
+   *
+   * @param boolean $verbose if we should be verbose during revalidation
+   *
+   * @return void
+   */
+  public function revalidateURL($url, $verbose = false) {
+    $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE `URLs` SET `lastValidated` = '1972-01-01' WHERE `URL` = :URL;");
+    $urlUpdateHandler->bindParam(self::BIND_URL, $url);
+    $urlUpdateHandler->execute();
+    $this->validateURLs(5, $verbose);
+  }
 
-  const DIGEST_METHODS  = array(
-    # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html
-    # The <alg:DigestMethod> element describes a Message Digest algorithm.
-    # 6.2 Message Digests
-    # https://www.w3.org/TR/xmldsig-core/#sec-MessageDigests
-    # 6.2.1 SHA-1
-    'http://www.w3.org/2000/09/xmldsig#sha1' => 'discouraged',
-    # 6.2.2 SHA-224
-    'http://www.w3.org/2001/04/xmldsig-more#sha224' => 'good',
-    # 6.2.3 SHA-256
-    'http://www.w3.org/2001/04/xmlenc#sha256' => 'good',
-    # 6.2.4 SHA-384
-    'http://www.w3.org/2001/04/xmldsig-more#sha384' => 'good',
-    # 6.2.5 SHA-512
-    'http://www.w3.org/2001/04/xmlenc#sha512' => 'good',
-    # RFC 9231 Additional XML Security Uniform Resource Identifiers (URIs)
-    # https://www.rfc-editor.org/rfc/rfc9231.html#section-2.1
-    # 2.1.1. MD5
-    'http://www.w3.org/2001/04/xmldsig-more#md5' => 'obsolete',
-    # 2.1.2. SHA-224
-    'http://www.w3.org/2001/04/xmldsig-more#sha224' => 'good',
-    # 2.1.3. SHA-384
-    'http://www.w3.org/2001/04/xmldsig-more#sha384' => 'good',
-    # 2.1.4. Whirlpool
-    'http://www.w3.org/2007/05/xmldsig-more#whirlpool' => 'good',
-    # 2.1.5. SHA-3 Algorithms
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-224' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-256' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-384' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-512' => 'good',
-    # https://www.w3.org/TR/xmlenc-core1/#sec-Alg-MessageDigest
-    # Message Digest
-    'http://www.w3.org/2001/04/xmlenc#sha384' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#ripemd160' => 'good',
-  );
-  const SIGNING_METHODS = array(
-    # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html
-    # The <alg:SigningMethod> element describes a Signature or Message Authentication Code algorithm.
-    # 6.3 Message Authentication Code
-    # https://www.w3.org/TR/xmldsig-core/#sec-MACs
-    'http://www.w3.org/2000/09/xmldsig#hmac-sha1' => 'discouraged',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha224' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha256' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha384' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha512' => 'good',
-    # 6.4 Signature Algorithms
-    # https://www.w3.org/TR/xmldsig-core/#sec-SignatureAlg
-    # 6.4.1 DSA
-    'http://www.w3.org/2000/09/xmldsig#dsa-sha1' => 'good',
-    'http://www.w3.org/2009/xmldsig11#dsa-sha256' => 'good',
-    # 6.4.2 RSA (PKCS#1 v1.5)
-    'http://www.w3.org/2000/09/xmldsig#rsa-sha1' => 'discouraged',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512' => 'good',
-    # 6.4.3 ECDSA
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha1' => 'discouraged',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha224' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512' => 'good',
-    # Obsolete
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-md5' => 'obsolete',
-    # RFC 9231 Additional XML Security Uniform Resource Identifiers (URIs)
-    # https://www.rfc-editor.org/rfc/rfc9231.html#section-2.2
-    # 2.2.1 HMAC-MD5
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-md5' => 'obsolete',
-    # 2.2.2. HMAC SHA Variations
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha224' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha256' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha384' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-sha512' => 'good',
-    # 2.2.3. HMAC-RIPEMD160
-    'http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160' => 'good',
-    # 2.2.4. Poly1305
-    'http://www.w3.org/2021/04/xmldsig-more#poly1305' => 'good',
-    # 2.2.5. SipHash-2-4
-    'http://www.w3.org/2021/04/xmldsig-more#siphash-2-4' => 'good',
-    # 2.2.6. XMSS and XMSSMT
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-10-192' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-10-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-10-512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-16-192' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-16-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-16-512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-20-192' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-20-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-sha2-20-512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake-10-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake-10-512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake-16-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake-16-512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake-20-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake-20-512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake256-10-192' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake256-10-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake256-16-192' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake256-16-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake256-20-192' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#xmss-shake256-20-256' => 'good',
-    # https://www.rfc-editor.org/rfc/rfc9231.html#section-2.3
-    # 2.3.1. RSA-MD5
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-md5' => 'obsolete',
-    # 2.3.2. RSA-SHA256
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256' => 'good',
-    # 2.3.3. RSA-SHA384
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384' => 'good',
-    # 2.3.4. RSA-SHA512
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512' => 'good',
-    # 2.3.5. RSA-RIPEMD160
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-ripemd160' => 'good',
-    # 2.3.6. ECDSA-SHA*, ECDSA-RIPEMD160, ECDSA-Whirlpool
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha1' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha224' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#ecdsa-sha3-224' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#ecdsa-sha3-256' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#ecdsa-sha3-384' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#ecdsa-sha3-512' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#ecdsa-ripemd160' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#ecdsa-whirlpool' => 'good',
-    # 2.3.7. ESIGN-SHA*
-    'http://www.w3.org/2001/04/xmldsig-more#esign-sha1' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#esign-sha224' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#esign-sha256' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#esign-sha384' => 'good',
-    'http://www.w3.org/2001/04/xmldsig-more#esign-sha512' => 'good',
-    # 2.3.8. RSA-Whirlpool
-    'http://www.w3.org/2007/05/xmldsig-more#rsa-whirlpool' => 'good',
-    # 2.3.9. RSASSA-PSS with Parameters
-    'http://www.w3.org/2007/05/xmldsig-more#rsa-pss' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#MGF1' => 'good',
-    # 2.3.10. RSASSA-PSS without Parameters
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-224-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-256-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-384-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha3-512-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#md2-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#md5-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha1-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha224-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha384-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#sha512-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#ripemd128-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#ripemd160-rsa-MGF1' => 'good',
-    'http://www.w3.org/2007/05/xmldsig-more#whirlpool-rsa-MGF1' => 'good',
-    # 2.3.11. RSA-SHA224
-    'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224' => 'good',
-    # 2.3.12. Edwards-Curve
-    'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed25519ph' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed25519ctx' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed25519' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed448' => 'good',
-    'http://www.w3.org/2021/04/xmldsig-more#eddsa-ed448ph' => 'good',
-  );
-  const ENCRYPTION_METHODS = array(
-    # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html#__RefHeading__5803_234507477
-    # Per [XMLEnc], the <md:EncryptionMethod> element MUST contain an Algorithm attribute containing the identifier for the algorithm defined for use with the specification
-    # 5.1.1 Table of Algorithms
-    # https://www.w3.org/TR/xmlenc-core1/#sec-Table-of-Algorithms
-    # Block Encryption
-    #'http://www.w3.org/2001/04/xmlenc#tripledes-cbc' => 'discouraged',
-    #'http://www.w3.org/2001/04/xmlenc#aes128-cbc' => 'discouraged',
-    #'http://www.w3.org/2001/04/xmlenc#aes256-cbc' => 'discouraged',
-    'http://www.w3.org/2001/04/xmlenc#tripledes-cbc' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#aes128-cbc' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#aes256-cbc' => 'good',
-    'http://www.w3.org/2009/xmlenc11#aes128-gcm' => 'good',
-    #'http://www.w3.org/2001/04/xmlenc#aes192-cbc' => 'discouraged',
-    'http://www.w3.org/2001/04/xmlenc#aes192-cbc' => 'good',
-    'http://www.w3.org/2009/xmlenc11#aes192-gcm' => 'good',
-    'http://www.w3.org/2009/xmlenc11#aes256-gcm' => 'good',
-    # Key Derivation
-    'http://www.w3.org/2009/xmlenc11#ConcatKDF' => 'good',
-    'http://www.w3.org/2009/xmlenc11#pbkdf2' => 'good',
-    # Key Transport
-    'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p' => 'good',
-    'http://www.w3.org/2009/xmlenc11#rsa-oaep' => 'good',
-    # 5.5.1
-    'http://www.w3.org/2001/04/xmlenc#rsa-1_5' => 'obsolete',
-    # Key Agreement
-    'http://www.w3.org/2009/xmlenc11#ECDH-ES' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#dh' => 'good',
-    'http://www.w3.org/2009/xmlenc11#dh-es' => 'good',
-    # Symmetric Key Wrap
-    'http://www.w3.org/2001/04/xmlenc#kw-tripledes' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#kw-aes128' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#kw-aes256' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#kw-aes192' => 'good',
-    # Message Digest
-    'http://www.w3.org/2000/09/xmldsig#sha1' => 'discouraged',
-    'http://www.w3.org/2001/04/xmlenc#sha256' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#sha384' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#sha512' => 'good',
-    'http://www.w3.org/2001/04/xmlenc#ripemd160' => 'good',
-    # Canonicalization
-    'http://www.w3.org/TR/2001/REC-xml-c14n-20010315' => 'good',
-    'http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments' => 'good',
-    'http://www.w3.org/2006/12/xml-c14n11' => 'good',
-    'http://www.w3.org/2006/12/xml-c14n11#WithComments' => 'good',
-    'http://www.w3.org/2001/10/xml-exc-c14n#' => 'good',
-    'http://www.w3.org/2001/10/xml-exc-c14n#WithComments' => 'good',
-    # Encoding + Transforms
-    'http://www.w3.org/2000/09/xmldsig#base64' => 'good',
-  );
+  /**
+   * validate an URL
+   *
+   * Run a curl agains the URL:s up for validation.
+   * Start by those with oldest lastValidated
+   *
+   * @param integer $limit Number of URL:s to validate
+   *
+   * @param boolean $verbose if we should be verbose during validation
+   *
+   * @return void
+   */
+  public function validateURLs($limit=10, $verbose = false){
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'https://metadata.swamid.se/validate');
+
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+
+    curl_setopt($ch, CURLINFO_HEADER_OUT, 0);
+
+    $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE `URLs`
+      SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status,
+        `height` = :Height, `width` = :Width, `nosize` = :NoSize, `validationOutput` = :Result
+      WHERE `URL` = :URL;");
+    if ($limit > 10) {
+      $sql = "SELECT `URL`, `type` FROM `URLs`
+        WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
+          OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-6:0:0'))
+        ORDER BY `lastValidated` LIMIT $limit;";
+    } else {
+      $sql = "SELECT `URL`, `type`
+        FROM `URLs`
+        WHERE `lastValidated` < ADDTIME(NOW(), '-20 0:0:0')
+          OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-8:0:0'))
+        ORDER BY `lastValidated` LIMIT $limit;";
+    }
+    $urlHandler = $this->config->getDb()->prepare($sql);
+    $urlHandler->execute();
+    $count = 0;
+    if ($verbose) {
+      printf ('    <table class="table table-striped table-bordered">%s', "\n");
+    }
+    while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+      $urlUpdateHandler->bindValue(self::BIND_URL, $url['URL']);
+
+      curl_setopt($ch, CURLOPT_URL, $url['URL']);
+      $height = 0;
+      $width = 0;
+      $nosize = 0;
+      $verboseInfo = sprintf('<tr><td>%s</td><td>', $url['URL']);
+      $output = curl_exec($ch);
+      if (curl_errno($ch)) {
+        $verboseInfo .= 'Curl error';
+        $urlUpdateHandler->bindValue(self::BIND_RESULT, curl_error($ch));
+        $urlUpdateHandler->bindValue(self::BIND_STATUS, 3);
+        $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+      } else {
+        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
+          case 200 :
+            $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+            if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
+              if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
+                $nosize = 1;
+              } else {
+                $size = getimagesizefromstring($output);
+                $width = $size[0];
+                $height = $size[1];
+              }
+            }
+            switch ($url['type']) {
+              case 1 :
+              case 2 :
+                $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Reachable');
+                $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
+                $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
+                break;
+              case 3 :
+                if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
+                  $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Policy OK');
+                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
+                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
+                } else {
+                  $urlUpdateHandler->bindValue(self::BIND_RESULT,
+                    'Policy missing link to ' . self::SAML_EC_COCOV1);
+                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
+                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+                }
+                break;
+              default :
+                break;
+            }
+            break;
+          case 403 :
+            $verboseInfo .= '403';
+            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Access denied. Can't check URL.");
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+            break;
+          case 404 :
+            $verboseInfo .= '404';
+            $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Page not found.');
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+            break;
+          case 503 :
+            $verboseInfo .= '503';
+            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Service Unavailable. Can't check URL.");
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+            break;
+          default :
+            $verboseInfo .= $http_code;
+            $urlUpdateHandler->bindValue(self::BIND_RESULT,
+              "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
+            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
+            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+        }
+      }
+      $this->checkURLStatus($url['URL'], $verbose);
+      $urlUpdateHandler->bindValue(self::BIND_HEIGHT, $height);
+      $urlUpdateHandler->bindValue(self::BIND_WIDTH, $width);
+      $urlUpdateHandler->bindValue(self::BIND_NOSIZE, $nosize);
+      $urlUpdateHandler->execute();
+      $count ++;
+      if ($verbose) {
+        printf ('      %s</td></tr>%s', $verboseInfo, "\n");
+      }
+    }
+    if ($verbose) {
+      printf ('    </table>%s', "\n");
+    }
+    curl_close($ch);
+    if ($limit > 10) {
+      printf ("Checked %d URL:s\n", $count);
+    }
+  }
+
+  /**
+   * Check old URL:s
+   *
+   * Checks URL:s not seen in age number of days.
+   * Run a curl agains the URL:s up for validation.
+   * Start by those with oldest lastValidated
+   *
+   * @param integer $limit Number of URL:s to validate
+   *
+   * @param boolean $verbose if we should be verbose during validation
+   *
+   * @return void
+   */
+  public function checkOldURLS($age = 30, $verbose = false) {
+    $sql = sprintf("SELECT `URL`, `lastSeen` from `URLs` where `lastSeen` < ADDTIME(NOW(), '-%d 0:0:0')", $age);
+    $urlHandler = $this->config->getDb()->prepare($sql);
+    $urlHandler->execute();
+    while ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($verbose) { printf ("Checking : %s last seen %s\n", $urlInfo['URL'], $urlInfo['lastSeen']); }
+      $this->checkURLStatus($urlInfo['URL'], $verbose);
+    }
+  }
+
+  /**
+   * Check URL:s status
+   *
+   * Checks URL:s not seen in age number of days.
+   * Run a curl agains the URL:s up for validation.
+   * Start by those with oldest lastValidated
+   *
+   * @param integer $limit Number of URL:s to validate
+   *
+   * @param boolean $verbose if we should be verbose during validation
+   *
+   * @return void
+   */
+  private function checkURLStatus($url, $verbose = false){
+    $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`
+      FROM `URLs` WHERE `URL` = :URL');
+    $urlHandler->bindValue(self::BIND_URL, $url);
+    $urlHandler->execute();
+    if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+      $missing = true;
+      $coCoV1 = false;
+      $logo = false;
+      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
+        FROM `EntityURLs`, `Entities` WHERE `entity_id` = `id` AND `URL` = :URL AND `status` < 4');
+      $entityHandler->bindValue(self::BIND_URL, $url);
+      $entityHandler->execute();
+      $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
+        FROM `Mdui`, `Entities` WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4');
+      $ssoUIIHandler->bindValue(self::BIND_URL, $url);
+      $ssoUIIHandler->execute();
+      $organizationHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
+        FROM `Organization`, `Entities` WHERE `entity_id` = `id` AND `data` = :URL AND `status`< 4');
+      $organizationHandler->bindValue(self::BIND_URL, $url);
+      $organizationHandler->execute();
+      $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
+        FROM `EntityAttributes` WHERE `entity_id` = :Id AND type = 'entity-category'");
+      if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
+        $missing = false;
+      }
+      while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
+        if ($entity['type'] == 'SPSSO' && $entity['element'] == 'PrivacyStatementURL') {
+          $entityAttributesHandler->bindParam(self::BIND_ID, $entity['entity_id']);
+          $entityAttributesHandler->execute();
+          while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($attribute['attribute'] == 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1') { # NOSONAR Should be http://
+              $coCoV1 = true;
+            }
+          }
+        }
+        switch ($entity['element']) {
+          case 'Logo' :
+            $logo = true;
+            $missing = false;
+            break;
+          case 'InformationURL' :
+          case 'PrivacyStatementURL' :
+            $missing = false;
+            break;
+          default :
+            break;
+        }
+      }
+      while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+        if ($entity['element'] == 'OrganizationURL') {
+          $missing = false;
+        }
+      }
+      if ($missing) {
+        $urlHandler = $this->config->getDb()->prepare('DELETE FROM `URLs` WHERE `URL` = :URL');
+        $urlHandler->bindValue(self::BIND_URL, $url);
+        $urlHandler->execute();
+        if ($verbose) { print "Removing URL. Not in use any more\n"; }
+      } elseif ($urlInfo['type'] > 2 && !$coCoV1 ) {
+        if ($logo) {
+          $urlHandler = $this->config->getDb()->prepare('UPDATE `URLs` SET `type` = 2 WHERE `URL` = :URL');
+        } else {
+          $urlHandler = $this->config->getDb()->prepare('UPDATE `URLs` SET `type` = 1 WHERE `URL` = :URL');
+        }
+        $urlHandler->bindValue(self::BIND_URL, $url);
+        $urlHandler->execute();
+        if ($verbose) { print "Not CoCo v1 any more. Removes that flag.\n"; }
+      }
+    }
+  }
+
+  /**
+   * Get Result
+   *
+   * @return string
+   */
+  public function getResult() {
+    return $this->result;
+  }
+
+  /**
+   * Clear Result
+   *
+   * @return void
+   */
+  public function clearResult() {
+    $this->result = '';
+  }
+
+  /**
+   * Get Warnings
+   *
+   * @return string
+   */
+  public function getWarning() {
+    return $this->warning;
+  }
+
+  /**
+   * Clear Warning
+   *
+   * @return void
+   */
+  public function clearWarning() {
+    $this->warning = '';
+  }
+
+  /**
+   * Get Errors
+   *
+   * @return string
+   */
+  public function getError() {
+    return $this->error . $this->errorNB;
+  }
+
+  /**
+   * Clear Error
+   *
+   * @return void
+   */
+  public function clearError() {
+    $this->error = '';
+    $this->errorNB = '';
+  }
+
+  /**
+   * Save Results
+   *
+   * @return void
+   */
+  protected function saveResults() {
+    $sql = 'UPDATE `Entities`
+      SET `validationOutput` = :validationOutput,
+        `warnings` = :Warnings,
+        `errors` = :Errors,
+        `errorsNB` = :ErrorsNB,
+        `lastValidated` = NOW(),
+        `registrationInstant` = :RegistrationInstant ';
+    $sql .= $this->handleXML ? ', `xml` = :Xml ' : ' ';
+    $sql .= 'WHERE `id` = :Id;';
+    $resultHandler = $this->config->getDb()->prepare($sql);
+    $resultHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $resultHandler->bindValue(self::BIND_VALIDATIONOUTPUT, $this->result);
+    $resultHandler->bindValue(self::BIND_WARNINGS, $this->warning);
+    $resultHandler->bindValue(self::BIND_ERRORS, $this->error);
+    $resultHandler->bindValue(self::BIND_ERRORSNB, $this->errorNB);
+    $resultHandler->bindValue(self::BIND_REGISTRATIONINSTANT, $this->registrationInstant);
+    if ($this->handleXML) {
+      $resultHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
+    }
+    $resultHandler->execute();
+  }
 }

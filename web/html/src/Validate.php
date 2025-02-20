@@ -2,80 +2,28 @@
 namespace metadata;
 
 use PDO;
-use PDOException;
-use DOMDocument;
 
-class Validate {
-  /**
-   * Class to Validate SAML information
-   */
-  use SAMLTrait;
+/**
+ * Class to Validate SAML information
+ */
+class Validate extends Common {
 
   # Setup
-  protected $config;
-
-  protected $entityID = 'Unknown';
-  protected $entityExists = false;
-  protected $isIdP = false;
-  protected $isSP = false;
-  protected $isAA = false;
-  protected $xml;
-  protected $dbIdNr = 0;
-  protected $result = '';
-  protected $warning = '';
-  protected $error = '';
-  protected $errorNB = '';
-
   protected $isSPandRandS = false;
   protected $isSPandCoCov1 = false;
   protected $isSPandCoCov2 = false;
   protected $isSIRTFI = false;
 
-  const BIND_ERRORS = ':Errors';
-  const BIND_ERRORSNB = ':ErrorsNB';
-  const BIND_ID = ':Id';
-  const BIND_TYPE = ':Type';
-  const BIND_URL = ':URL';
-  const BIND_VALIDATIONOUTPUT = ':validationOutput';
-  const BIND_WARNINGS = ':Warnings';
-
   const TEXT_COCOV2_REQ = 'GÉANT Data Protection Code of Conduct (v2) Require';
-
 
   /**
    * Setup the class
+   * Call parent but without $this->xml
    *
    * @return void
    */
   public function __construct($id) {
-    global $config;
-    if (isset($config)) {
-      $this->config = $config;
-    } else {
-      $this->config = new Configuration();
-    }
-    require __DIR__ . '/../include/common.php'; #NOSONAR
-
-    $entityHandler = $this->config->getDb()->prepare('
-      SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `errors`, `errorsNB`, `warnings`
-        FROM Entities WHERE `id` = :Id');
-    $entityHandler->execute(array(self::BIND_ID => $id));
-    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->entityExists = true;
-      $this->xml = new DOMDocument;
-      $this->xml->preserveWhiteSpace = false;
-      $this->xml->formatOutput = true;
-      $this->xml->loadXML($entity['xml']);
-      $this->xml->encoding = 'UTF-8';
-      $this->dbIdNr = $entity['id'];
-      $this->entityID = $entity['entityID'];
-      $this->isIdP = $entity['isIdP'];
-      $this->isSP = $entity['isSP'];
-      $this->isAA = $entity['isAA'];
-      $this->warning = $entity['warnings'];
-      $this->error = $entity['errors'];
-      $this->errorNB = $entity['errorsNB'];
-    }
+    parent::__construct($id, false);
   }
 
   /**
@@ -294,96 +242,5 @@ class Validate {
         $this->error .= " at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
       }
     }
-  }
-
-  /**
-   * Add URL to list for checking
-   *
-   * Add the URL to list of URL:s to check
-   *
-   * @param string $url URL that should be checked
-   *
-   * @param integer $type
-   *  - 1 Check reachable (OK If reachable)
-   *  - 2 Check reachable (NEED to be reachable)
-   *  - 3 Check CoCo privacy
-   *
-   * @return void
-   */
-  protected function addURL($url, $type) {
-    $urlHandler = $this->config->getDb()->prepare('SELECT `type` FROM URLs WHERE `URL` = :URL');
-    $urlHandler->bindValue(self::BIND_URL, $url);
-    $urlHandler->execute();
-
-    if ($currentType = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($currentType['type'] < $type) {
-        // Update type and lastSeen + force revalidate
-        $urlUpdateHandler = $this->config->getDb()->prepare("
-          UPDATE URLs SET `type` = :Type, `lastValidated` = '1972-01-01', `lastSeen` = NOW() WHERE `URL` = :URL;");
-        $urlUpdateHandler->bindParam(self::BIND_URL, $url);
-        $urlUpdateHandler->bindParam(self::BIND_TYPE, $type);
-        $urlUpdateHandler->execute();
-      } else {
-        // Update lastSeen
-        $urlUpdateHandler = $this->config->getDb()->prepare("UPDATE URLs SET `lastSeen` = NOW() WHERE `URL` = :URL;");
-        $urlUpdateHandler->bindParam(self::BIND_URL, $url);
-        $urlUpdateHandler->execute();
-      }
-    } else {
-      $urlAddHandler = $this->config->getDb()->prepare("INSERT INTO URLs
-        (`URL`, `type`, `status`, `lastValidated`, `lastSeen`)
-        VALUES (:URL, :Type, 10, '1972-01-01', NOW());");
-      $urlAddHandler->bindParam(self::BIND_URL, $url);
-      $urlAddHandler->bindParam(self::BIND_TYPE, $type);
-      $urlAddHandler->execute();
-    }
-  }
-
-  /**
-   * Get Result
-   *
-   * @return string
-   */
-  public function getResult() {
-    return $this->result;
-  }
-
-  /**
-   * Get Warnings
-   *
-   * @return string
-   */
-  public function getWarning() {
-    return $this->warning;
-  }
-
-  /**
-   * Get Errors
-   *
-   * @return string
-   */
-  public function getError() {
-    return $this->error . $this->errorNB;
-  }
-
-  /**
-   * Save Results
-   *
-   * @return void
-   */
-  protected function saveResults() {
-    $resultHandler = $this->config->getDb()->prepare("UPDATE Entities
-      SET `validationOutput` = :validationOutput,
-        `warnings` = :Warnings,
-        `errors` = :Errors,
-        `errorsNB` = :ErrorsNB,
-        `lastValidated` = NOW()
-      WHERE `id` = :Id;");
-    $resultHandler->bindValue(self::BIND_ID, $this->dbIdNr);
-    $resultHandler->bindValue(self::BIND_VALIDATIONOUTPUT, $this->result);
-    $resultHandler->bindValue(self::BIND_WARNINGS, $this->warning);
-    $resultHandler->bindValue(self::BIND_ERRORS, $this->error);
-    $resultHandler->bindValue(self::BIND_ERRORSNB, $this->errorNB);
-    $resultHandler->execute();
   }
 }
