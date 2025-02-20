@@ -6,7 +6,6 @@ include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 include __DIR__ . '/../html/include/NormalizeXML.php'; # NOSONAR
 
 $config = new metadata\Configuration();
-$samlValidator = 'metadata\\' . $config->getFederation()['validator'];
 
 $import = new NormalizeXML();
 $import->fromFile($argv[1]);
@@ -17,24 +16,34 @@ if ($import->getStatus()) {
   $metadata->importXML($import->getXML());
   $metadata->updateFeed($argv[2]);
 
-  if ($metadata->getResult() <> "Updated in db") {
-    printf ("Import -> %s\n" ,$metadata->getResult());
+  $xmlParser = class_exists('\metadata\ParseXML'.$config->getFederation()['extend']) ?
+    '\metadata\ParseXML'.$config->getFederation()['extend'] :
+    '\metadata\ParseXML';
+  $samlValidator = class_exists('\metadata\Validate'.$config->getFederation()['extend']) ?
+    '\metadata\Validate'.$config->getFederation()['extend'] :
+    '\metadata\Validate';
+
+  $parser = new $xmlParser($metadata->id());
+
+  if ($parser->getResult() <> "Updated in db") {
+    printf ("Import -> %s\n" ,$parser->getResult());
   }
-  $metadata->clearResult();
-  $metadata->clearWarning();
-  $metadata->clearError();
-  $metadata->validateXML();
-  $validator = new $samlValidator($entitiesId);
+
+  $parser->clearWarning();
+  $parser->clearError();
+  $parser->parseXML();
+  $validator = new $samlValidator($metadata->id());
   $validator->saml();
-  $metadata->validateURLs();
-  if ($metadata->getResult() <> "") {
-    printf ("\nValidate ->\n%s#\n" ,$metadata->getResult());
+  $validator->validateURLs();
+
+  if ($validator->getResult() <> "") {
+    printf ("\nValidate ->\n%s#\n" ,$validator->getResult());
   }
-  if ($metadata->getWarning() <> "") {
-    printf ("\nWarning ->\n%s\n" ,$metadata->getWarning());
+  if ($validator->getWarning() <> "") {
+    printf ("\nWarning ->\n%s\n" ,$validator->getWarning());
   }
-  if ($metadata->getError() <> "") {
-    printf ("\nError ->\n%s\n" ,$metadata->getError());
+  if ($validator->getError() <> "") {
+    printf ("\nError ->\n%s\n" ,$validator->getError());
   }
 } else {
   print $import->getError();

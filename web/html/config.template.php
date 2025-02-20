@@ -62,6 +62,9 @@ $federation = array(
   'logoURL' => '/swamid-logo-2-100x115.png',
   'logoWidth' => 55,
   'logoHeight' => 63,
+  # Optional if ypu want to extend Validate and ParseXML with an extended version
+  # See ValidateSWAMID and ParseXMLSWAMID for examples
+  #'extend' => 'SWAMID',
 );
 
 # Optional if you want to support IMPS:es
