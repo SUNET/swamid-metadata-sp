@@ -23,7 +23,6 @@ class Metadata {
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
   # From common.php
-  private $FriendlyNames = array();
   private $digestMethods = array();
   private $signingMethods = array();
   private $encryptionMethods = array();

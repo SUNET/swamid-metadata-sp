@@ -44,6 +44,9 @@ const HTML_TEXT_STPINFO_SP = '<ul>
         </ul>';
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
+const CLASS_PARSER = '\metadata\ParseXML';
+const CLASS_VALIDATOR = '\metadata\Validate';
+
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
 
@@ -1170,12 +1173,12 @@ function showMenu() {
 
 function validateEntity($entitiesId) {
   global $config;
-  $xmlParser = class_exists('\metadata\ParseXML'.$config->getFederation()['extend']) ?
-    '\metadata\ParseXML'.$config->getFederation()['extend'] :
-    '\metadata\ParseXML';
-  $samlValidator = class_exists('\metadata\Validate'.$config->getFederation()['extend']) ?
-    '\metadata\Validate'.$config->getFederation()['extend'] :
-    '\metadata\Validate';
+  $xmlParser = class_exists(CLASS_PARSER.$config->getFederation()['extend']) ?
+    CLASS_PARSER.$config->getFederation()['extend'] :
+    CLASS_PARSER;
+  $samlValidator = class_exists(CLASS_VALIDATOR.$config->getFederation()['extend']) ?
+    CLASS_VALIDATOR.$config->getFederation()['extend'] :
+    CLASS_VALIDATOR;
   $parser = new $xmlParser($entitiesId);
   $parser->clearWarning();
   $parser->clearError();

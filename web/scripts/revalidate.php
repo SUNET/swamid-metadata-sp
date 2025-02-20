@@ -1,4 +1,6 @@
 <?php
+const CLASS_PARSER = '\metadata\ParseXML';
+const CLASS_VALIDATOR = '\metadata\Validate';
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
@@ -16,12 +18,12 @@ if (! is_numeric($argv[2])) {
   exit;
 }
 
-$xmlParser = class_exists('\metadata\ParseXML'.$config->getFederation()['extend']) ?
-  '\metadata\ParseXML'.$config->getFederation()['extend'] :
-  '\metadata\ParseXML';
-$samlValidator = class_exists('\metadata\Validate'.$config->getFederation()['extend']) ?
-  '\metadata\Validate'.$config->getFederation()['extend'] :
-  '\metadata\Validate';
+$xmlParser = class_exists(CLASS_PARSER.$config->getFederation()['extend']) ?
+  CLASS_PARSER.$config->getFederation()['extend'] :
+  CLASS_PARSER;
+$samlValidator = class_exists(CLASS_VALIDATOR.$config->getFederation()['extend']) ?
+  CLASS_VALIDATOR.$config->getFederation()['extend'] :
+  CLASS_VALIDATOR;
 
 $entities = $config->getDb()->prepare(sprintf(
   'SELECT id, entityID FROM Entities

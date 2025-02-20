@@ -1,4 +1,7 @@
 <?php
+const CLASS_PARSER = '\metadata\ParseXML';
+const CLASS_VALIDATOR = '\metadata\Validate';
+
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
@@ -16,13 +19,12 @@ if ($import->getStatus()) {
   $metadata->importXML($import->getXML());
   $metadata->updateFeed($argv[2]);
 
-  $xmlParser = class_exists('\metadata\ParseXML'.$config->getFederation()['extend']) ?
-    '\metadata\ParseXML'.$config->getFederation()['extend'] :
-    '\metadata\ParseXML';
-  $samlValidator = class_exists('\metadata\Validate'.$config->getFederation()['extend']) ?
-    '\metadata\Validate'.$config->getFederation()['extend'] :
-    '\metadata\Validate';
-
+  $xmlParser = class_exists(CLASS_PARSER.$config->getFederation()['extend']) ?
+    CLASS_PARSER.$config->getFederation()['extend'] :
+    CLASS_PARSER;
+  $samlValidator = class_exists(CLASS_VALIDATOR.$config->getFederation()['extend']) ?
+    CLASS_VALIDATOR.$config->getFederation()['extend'] :
+    CLASS_VALIDATOR;
   $parser = new $xmlParser($metadata->id());
 
   if ($parser->getResult() <> "Updated in db") {

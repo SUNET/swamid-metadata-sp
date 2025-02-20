@@ -688,7 +688,7 @@ class ParseXML extends Common {
               isset(self::FRIENDLY_NAMES[$name]) &&
               self::FRIENDLY_NAMES[$name]['desc'] != $friendlyName) {
                 $this->warning .= sprintf(
-                  "SWAMID Tech 6.1.20: FriendlyName for %s %s %d is %s (recomended from SWAMID is %s).\n",
+                  "FriendlyName for %s %s %d is %s (recomended is %s).\n",
                   $name, 'in RequestedAttribute for index', $index, $friendlyName, self::FRIENDLY_NAMES[$name]['desc']);
             }
             if ($child->getAttribute('NameFormat')) {
@@ -728,12 +728,12 @@ class ParseXML extends Common {
     }
     if ( ! $serviceNameFound ) {
       $this->error .= sprintf(
-          "SWAMID Tech 6.1.17: ServiceName is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n",
+          "ServiceName is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n",
           $index);
     }
     if ( ! $requestedAttributeFound ) {
       $this->error .= sprintf(
-      "SWAMID Tech 6.1.19: RequestedAttribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n",
+      "RequestedAttribute is Required in SPSSODescriptor->AttributeConsumingService[index=%d].\n",
       $index);
     }
   }
@@ -756,7 +756,6 @@ class ParseXML extends Common {
         # 2.4.1
         #case 'Signature' :
         case self::SAML_MD_EXTENSIONS :
-          # Skippar då SWAMID inte använder denna del
           break;
         case self::SAML_MD_KEYDESCRIPTOR :
           $this->parseKeyDescriptor($child, 'AttributeAuthority', $keyOrder++);
@@ -773,7 +772,6 @@ class ParseXML extends Common {
           $this->checkSAMLEndpoint($child,'AttributeAuthority', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
-          # Skippar då SWAMID inte använder denna del
           break;
         #case self::SAML_MD_ATTRIBUTEPROFILE :
         #case self::SAML_MD_ATTRIBUTE :
@@ -1029,7 +1027,7 @@ class ParseXML extends Common {
           $this->parseKeyDescriptorKeyInfo($child, $type, $use, $order);
           break;
         case self::SAML_MD_ENCRYPTIONMETHOD :
-          $this->validateEncryptionMethod($child, $type);
+          $this->validateEncryptionMethod($child);
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
@@ -1277,7 +1275,7 @@ class ParseXML extends Common {
    *
    * @return void
    */
-  protected function validateEncryptionMethod($data, $type) {
+  protected function validateEncryptionMethod($data) {
     $algorithm = $data->getAttribute('Algorithm') ? $data->getAttribute('Algorithm') : 'Unknown';
     if (isset(self::ENCRYPTION_METHODS[$algorithm])) {
       switch (self::ENCRYPTION_METHODS[$algorithm]) {
