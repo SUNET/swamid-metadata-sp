@@ -17,7 +17,7 @@ $display = new MetadataDisplay();
 
 if (isset($_GET['showEntity'])) {
   showEntity($_GET['showEntity']);
-}elseif (isset($_GET['showEntityID'])) {
+} elseif (isset($_GET['showEntityID'])) {
   showEntity($_GET['showEntityID'],true);
 } elseif (isset($_GET['rawXML'])) {
   $display->showRawXML($_GET['rawXML']);
