@@ -62,8 +62,8 @@ class Configuration {
       }
     }
 
-    if (! isset($federation['validator'])) {
-      $federation['validator'] = 'Validate';
+    if (! isset($federation['extend'])) {
+      $federation['extend'] = '';
     }
 
     $this->mode =  $mode;

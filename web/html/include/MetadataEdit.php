@@ -3599,6 +3599,7 @@ class MetadataEdit {
             <div class="col-1">Value:</div>
             <div class="col"><input type="text" name="value" value="%s"></div>
           </div>
+          <div><i class="fas fa-exclamation-triangle"></i> Due to personal data protection all contact person information should be non-personal.</div><br>
           <button type="submit" name="action" value="Add">Add/Update</button>
         </form>
         <a href="./?validateEntity=%d"><button>Back</button></a>

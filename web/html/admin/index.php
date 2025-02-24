@@ -44,6 +44,9 @@ const HTML_TEXT_STPINFO_SP = '<ul>
         </ul>';
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
+const CLASS_PARSER = '\metadata\ParseXML';
+const CLASS_VALIDATOR = '\metadata\Validate';
+
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
 
@@ -51,8 +54,6 @@ $config = new metadata\Configuration();
 
 require_once '../include/Html.php'; #NOSONAR
 $html = new HTML();
-
-$samlValidator = 'metadata\\' . $config->getFederation()['validator'];
 
 /* BEGIN RAF Logging */
 $assuranceHandler = $config->getDb()->prepare(
@@ -282,10 +283,7 @@ if (isset($_FILES['XMLfile'])) {
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
-              $metadata->validateXML();
-              $validator = new $samlValidator($entitiesId);
-              $validator->saml();
-              $metadata->validateURLs();
+              validateEntity($newEntity_id);
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -308,12 +306,7 @@ if (isset($_FILES['XMLfile'])) {
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             $metadata->removeSaml1Support();
-            $metadata->clearWarning();
-            $metadata->clearError();
-            $metadata->validateXML();
-            $validator = new $samlValidator($entitiesId);
-            $validator->saml();
-            $metadata->validateURLs();
+            validateEntity($entitiesId);
             $menuActive = 'new';
             showEntity($entitiesId);
           } else {
@@ -327,12 +320,7 @@ if (isset($_FILES['XMLfile'])) {
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
               $metadata->removeSaml1Support();
-              $metadata->clearWarning();
-              $metadata->clearError();
-              $metadata->validateXML();
-              $validator = new $samlValidator($entitiesId);
-              $validator->saml();
-              $metadata->validateURLs();
+              validateEntity($newEntity_id);
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -346,12 +334,7 @@ if (isset($_FILES['XMLfile'])) {
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             $metadata->removeObsoleteAlgorithms();
-            $metadata->clearWarning();
-            $metadata->clearError();
-            $metadata->validateXML();
-            $validator = new $samlValidator($entitiesId);
-            $validator->saml();
-            $metadata->validateURLs();
+            validateEntity($entitiesId);
             showEntity($entitiesId);
           } else {
             # User have no access yet.
@@ -364,12 +347,7 @@ if (isset($_FILES['XMLfile'])) {
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
               $metadata->removeObsoleteAlgorithms();
-              $metadata->clearWarning();
-              $metadata->clearError();
-              $metadata->validateXML();
-              $validator = new $samlValidator($entitiesId);
-              $validator->saml();
-              $metadata->validateURLs();
+              validateEntity($newEntity_id);
               $menuActive = 'new';
               showEntity($newEntity_id);
             }
@@ -468,8 +446,8 @@ if (isset($_FILES['XMLfile'])) {
           showMenu();
           if (isset($_GET['URL'])) {
             if (isset($_GET['recheck'])) {
-              $metadata = new Metadata();
-              $metadata->revalidateURL($_GET['URL'], isset($_GET['verbose']));
+              $common = new \metadata\Common();
+              $common->revalidateURL($_GET['URL'], isset($_GET['verbose']));
             }
             $display->showURLStatus($_GET['URL']);
           }
@@ -481,8 +459,8 @@ if (isset($_FILES['XMLfile'])) {
             showMenu();
             if (isset($_GET['URL'])) {
               if (isset($_GET['recheck'])) {
-                $metadata = new Metadata();
-                $metadata->revalidateURL($_GET['URL'], isset($_GET['verbose']));
+                $common = new \metadata\Common();
+                $common->revalidateURL($_GET['URL'], isset($_GET['verbose']));
               }
               $display->showURLStatus($_GET['URL']);
             } else {
@@ -1094,7 +1072,6 @@ function showUpload() {
 function importXML(){
   global $html;
   global $EPPN,$mail, $fullName;
-  global $samlValidator;
 
   require_once '../include/NormalizeXML.php';
   require_once '../include/ValidateXML.php';
@@ -1109,11 +1086,7 @@ function importXML(){
       $metadata->importXML($import->cleanOutRegistrationInfo($import->getXML()));
       $metadata->getUser($EPPN, $mail, $fullName, true);
       $metadata->updateResponsible($EPPN);
-      $metadata->validateXML();
-      $validator = new $samlValidator($entitiesId);
-      $validator->saml();
-      $metadata->validateURLs();
-
+      validateEntity($metadata->id());
       $prodmetadata = new Metadata($entityID, 'Prod');
       if ($prodmetadata->entityExists()) {
         $editMetadata = new MetadataEdit($metadata->id(), $prodmetadata->id());
@@ -1199,32 +1172,32 @@ function showMenu() {
 }
 
 function validateEntity($entitiesId) {
-  global $samlValidator;
-  $metadata = new Metadata($entitiesId);
-  $metadata->clearWarning();
-  $metadata->clearError();
-  $metadata->validateXML();
+  global $config;
+  $xmlParser = class_exists(CLASS_PARSER.$config->getFederation()['extend']) ?
+    CLASS_PARSER.$config->getFederation()['extend'] :
+    CLASS_PARSER;
+  $samlValidator = class_exists(CLASS_VALIDATOR.$config->getFederation()['extend']) ?
+    CLASS_VALIDATOR.$config->getFederation()['extend'] :
+    CLASS_VALIDATOR;
+  $parser = new $xmlParser($entitiesId);
+  $parser->clearWarning();
+  $parser->clearError();
+  $parser->parseXML();
   $validator = new $samlValidator($entitiesId);
   $validator->saml();
-  $metadata->validateURLs();
+  $validator->validateURLs();
 }
 
 function move2Pending($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester, $config;
-  global $samlValidator;
   $federation = $config->getFederation();
 
   $draftMetadata = new Metadata($entitiesId);
 
   if ($draftMetadata->entityExists()) {
-    $draftMetadata->clearWarning();
-    $draftMetadata->clearError();
-    $draftMetadata->validateXML();
-    $validator = new $samlValidator($entitiesId);
-    $validator->saml();
-    $draftMetadata->validateURLs();
+    validateEntity($draftMetadata->id());
     if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
       $sections = HTML_TEXT_STP_BOTH ;
       $infoText = HTML_TEXT_STPINFO_BOTH;
@@ -1267,11 +1240,8 @@ function move2Pending($entitiesId) {
           $shadowMetadata = new Metadata($draftMetadata->entityID(), 'Shadow');
           $shadowMetadata->importXML($publishedMetadata->xml());
           $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
-          $shadowMetadata->validateXML();
-          $validator = new $samlValidator($entitiesId);
-          $validator->saml();
-          $shadowMetadata->validateURLs();
           $oldEntitiesId = $shadowMetadata->id();
+          validateEntity($oldEntitiesId);
         } else {
           $mailContacts->Subject  = 'Info : New SWAMID metadata for ' . $shortEntityid;
           $mailRequester->Subject = 'New SWAMID metadata for ' . $shortEntityid;
@@ -1843,7 +1813,6 @@ function setupMail() {
 
 function move2Draft($entitiesId) {
   global $config, $html, $display, $menuActive;
-  global $samlValidator;
   $entityHandler = $config->getDb()->prepare('SELECT `entityID`, `xml` FROM Entities WHERE `status` = 2 AND `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
@@ -1851,12 +1820,7 @@ function move2Draft($entitiesId) {
     if (isset($_GET['action'])) {
       $draftMetadata = new Metadata($entity['entityID'], 'New');
       $draftMetadata->importXML($entity['xml']);
-      $draftMetadata->clearWarning();
-      $draftMetadata->clearError();
-      $draftMetadata->validateXML();
-      $validator = new $samlValidator($entitiesId);
-      $validator->saml();
-      $draftMetadata->validateURLs();
+      validateEntity($draftMetadata->id());
       $menuActive = 'new';
       $draftMetadata->copyResponsible($entitiesId);
       showEntity($draftMetadata->id());

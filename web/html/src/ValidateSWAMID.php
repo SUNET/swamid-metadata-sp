@@ -3,8 +3,13 @@ namespace metadata;
 
 use PDO;
 
+/**
+ * Class to Validate SAML information
+ * SWAMID specific code
+ */
 class ValidateSWAMID extends Validate {
   use SAMLTrait;
+  use CommonTrait;
 
   # Setup
 
@@ -113,7 +118,7 @@ class ValidateSWAMID extends Validate {
       $type = $mdui['type'];
       $lang = $mdui['lang'];
       $element = $mdui['element'];
-      if (isset(Common::LANG_CODES[$lang])) {
+      if (isset(self::LANG_CODES[$lang])) {
         $usedLangArray[$lang] = $lang;
       } else {
         $usedLangArray[$lang] = $lang;
@@ -283,8 +288,8 @@ class ValidateSWAMID extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (isset(Common::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]) &&
-          ! Common::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]['standard']) {
+        if (isset(self::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]) &&
+          ! self::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]['standard']) {
             $this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n",
               $entityAttribute['attribute']);
         }
@@ -425,7 +430,7 @@ class ValidateSWAMID extends Validate {
    *  - 6.1.12
    *
    * @return void
-   */ 
+   */
   private function checkRequiredMDUIelementsSP() {
     $elementArray = array ('DisplayName' => false,
       'Description' => false,
