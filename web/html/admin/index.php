@@ -218,8 +218,6 @@ $html->setDisplayName($displayName);
 
 $display = new \metadata\MetadataDisplay();
 
-require_once '../include/Metadata.php'; #NOSONAR
-
 if (isset($_FILES['XMLfile'])) {
   importXML();
 } elseif (isset($_GET['edit'])) {

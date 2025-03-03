@@ -20,14 +20,12 @@ class Metadata extends Common {
   const BIND_PUBLISHEDID = ':PublishedId';
   const BIND_USER_ID = ':User_id';
 
-  public function __construct($id, $status = '') {
+  public function __construct($id = 0, $status = '') {
     $i = func_num_args();
     if ($i == 1) {
       parent::__construct($id);
     } elseif ($i == 2) {
       parent::__construct();
-
-      $this->entityID = $id;
 
       switch (strtolower($status)) {
         case 'prod' :
@@ -46,7 +44,7 @@ class Metadata extends Common {
       }
 
       $entityHandler = $this->config->getDb()->prepare('
-        SELECT `id`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
+        SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
           FROM Entities WHERE `entityID` = :Id AND `status` = :Status');
       $entityHandler->bindValue(self::BIND_ID, $id);
       $entityHandler->bindValue(self::BIND_STATUS, $this->status);
@@ -59,6 +57,7 @@ class Metadata extends Common {
         $this->xml->loadXML($entity['xml']);
         $this->xml->encoding = 'UTF-8';
         $this->dbIdNr = $entity['id'];
+        $this->entityID = $entity['entityID'];
         $this->isIdP = $entity['isIdP'];
         $this->isSP = $entity['isSP'];
         $this->isAA = $entity['isAA'];
@@ -305,6 +304,7 @@ class Metadata extends Common {
   }
   private function removeObsoleteAlgorithmsSSODescriptor($data) {
     $child = $data->firstChild;
+    $remChild = false;
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :
@@ -316,15 +316,14 @@ class Metadata extends Common {
             if ($childKeyDescriptor->nodeName == self::SAML_MD_ENCRYPTIONMETHOD) {
               $algorithm = $childKeyDescriptor->getAttribute('Algorithm') ? $childKeyDescriptor->getAttribute('Algorithm') : 'Unknown';
               if (isset(self::ENCRYPTION_METHODS[$algorithm]) && self::ENCRYPTION_METHODS[$algorithm] == 'obsolete' ) {
-                $this->result .= sprintf ('Removing %s[%s] in %s->%s<br>', $childKeyDescriptor->nodeName, $algorithm, $data->nodeName, $child->nodeName);
                 $remChild = $childKeyDescriptor;
-                $childKeyDescriptor = $childKeyDescriptor->nextSibling;
-                $child->removeChild($remChild);
-              } else {
-                $childKeyDescriptor = $childKeyDescriptor->nextSibling;
               }
-            } else {
-              $childKeyDescriptor = $childKeyDescriptor->nextSibling;
+            }
+            $childKeyDescriptor = $childKeyDescriptor->nextSibling;
+            if ($remChild) {
+              $this->result .= sprintf ('Removing %s[%s] in %s->%s<br>', $remChild->nodeName, $algorithm, $data->nodeName, $child->nodeName);
+              $child->removeChild($remChild);
+              $remChild = false;
             }
           }
           break;
@@ -473,20 +472,9 @@ class Metadata extends Common {
         $pendingXML = $normalize->getXML();
         $publishedHandler->execute();
         if ($publishedEntity = $publishedHandler->fetch(PDO::FETCH_ASSOC)) {
-          if ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) {
-            if ($pendingXML == $publishedEntity['xml']) {
-              return true;
-            }
-          } else {
-            // For new Entities remove RegistrationInfo and compare
-            $noRegistrationInfo = $normalize->cleanOutRegistrationInfo($publishedEntity['xml']);
-            $normalize->fromString($noRegistrationInfo);
-            if ($normalize->getStatus() && $normalize->getEntityID() == $entityID) {
-              $publishedXML = $normalize->getXML();
-              if ($pendingXML == $publishedXML) {
-                return true;
-              }
-            }
+          if ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated'] &&
+            $pendingXML == $publishedEntity['xml']) {
+            return true;
           }
         }
       }
@@ -656,9 +644,8 @@ class Metadata extends Common {
     while ($child && ! $registrationInfo) {
       if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONINFO) {
         $registrationInfo = $child;
-      } else {
-        $child = $child->nextSibling;
       }
+      $child = $child->nextSibling;
     }
     if (! $registrationInfo) {
       # Add if missing
@@ -677,9 +664,8 @@ class Metadata extends Common {
     while ($child && ! $registrationPolicy) {
       if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute('xml:lang') == 'en') {
         $registrationPolicy = $child;
-      } else {
-        $child = $child->nextSibling;
       }
+      $child = $child->nextSibling;
     }
     if (!$registrationPolicy) {
       $registrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
@@ -924,48 +910,6 @@ class Metadata extends Common {
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityUserHandler->execute();
-  }
-
-  public function saveStatus($date = '') {
-    if ($date == '') {
-      $date = gmdate('Y-m-d');
-    }
-    $errorsTotal = 0;
-    $errorsSPs = 0;
-    $errorsIdPs = 0;
-    $nrOfEntities = 0;
-    $nrOfSPs = 0;
-    $nrOfIdPs = 0;
-    $changed = 0;
-    $entitys = $this->config->getDb()->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `lastUpdated`, `errors`
-      FROM Entities WHERE status = 1 AND publishIn > 1");
-    $entitys->execute();
-    while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
-      switch ($row['publishIn']) {
-        case 1 :
-          break;
-        case 2 :
-        case 3 :
-        case 6 :
-        case 7 :
-          $nrOfEntities ++;
-          if ($row['isIdP']) { $nrOfIdPs ++; }
-          if ($row['isSP']) { $nrOfSPs ++; }
-          if ( $row['errors'] <> '' ) {
-            $errorsTotal ++;
-            if ($row['isIdP']) { $errorsIdPs ++; }
-            if ($row['isSP']) { $errorsSPs ++; }
-          }
-          if ($row['lastUpdated'] > '2021-12-31') { $changed ++; }
-          break;
-        default :
-          printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
-      }
-    }
-    $statsUpdate = $this->config->getDb()->prepare("INSERT INTO EntitiesStatus
-      (`date`, `ErrorsTotal`, `ErrorsSPs`, `ErrorsIdPs`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`, `Changed`)
-      VALUES ('$date', $errorsTotal, $errorsSPs, $errorsIdPs, $nrOfEntities, $nrOfSPs, $nrOfIdPs, '$changed')");
-    $statsUpdate->execute();
   }
 
   public function saveEntitiesStatistics($date = '') {

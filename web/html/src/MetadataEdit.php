@@ -36,6 +36,7 @@ class MetadataEdit extends Common {
   const TEXT_BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
   const TEXT_END_CERT = "-----END CERTIFICATE-----\n";
   const TEXT_ENC_SIGN = 'encryption & signing';
+  const TEXT_MAILTO = 'mailto:';
 
   public function __construct($id, $oldID = 0) {
     parent::__construct($id);
@@ -62,7 +63,7 @@ class MetadataEdit extends Common {
       $entityHandler = $this->config->getDb()->prepare('SELECT entityID, isIdP, isSP, status, xml FROM Entities WHERE id = :Id;');
       $entityHandler->bindValue(self::BIND_ID, $oldID);
       $entityHandler->execute();
-      if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
         $this->oldExists = true;
       }
     }
@@ -1641,15 +1642,15 @@ class MetadataEdit extends Common {
             $ssoDescriptor->appendChild($keyDescriptor);
           }
 
-          $KeyInfo = $this->xml->createElement('ds:KeyInfo');
-          $keyDescriptor->appendChild($KeyInfo);
+          $keyInfo = $this->xml->createElement('ds:KeyInfo');
+          $keyDescriptor->appendChild($keyInfo);
 
-          $X509Data = $this->xml->createElement(self::SAML_DS_X509DATA);
-          $KeyInfo->appendChild($X509Data);
+          $x509Data = $this->xml->createElement(self::SAML_DS_X509DATA);
+          $keyInfo->appendChild($x509Data);
 
-          $X509Certificate = $this->xml->createElement(self::SAML_DS_X509CERTIFICATE);
-          $X509Certificate->nodeValue = $certificate;
-          $X509Data->appendChild($X509Certificate);
+          $x509Certificate = $this->xml->createElement(self::SAML_DS_X509CERTIFICATE);
+          $x509Certificate->nodeValue = $certificate;
+          $x509Data->appendChild($x509Certificate);
 
           $this->saveXML();
 
@@ -1658,22 +1659,22 @@ class MetadataEdit extends Common {
           $reorderKeyOrderHandler->bindParam(self::BIND_ID, $this->dbIdNr);
           $reorderKeyOrderHandler->execute();
 
-          $KeyInfoHandler = $this->config->getDb()->prepare(
+          $keyInfoHandler = $this->config->getDb()->prepare(
             'INSERT INTO KeyInfo
             (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`,
               `subject`, `issuer`, `bits`, `key_type`, `serialNumber`)
             VALUES (:Id, :Type, :Use, 0, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :SerialNumber);');
-          $KeyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
-          $KeyInfoHandler->bindValue(self::BIND_TYPE, $type);
-          $KeyInfoHandler->bindValue(self::BIND_USE, $use);
-          $KeyInfoHandler->bindValue(self::BIND_NAME, '');
-          $KeyInfoHandler->bindValue(self::BIND_NOTVALIDAFTER, date('Y-m-d H:i:s', $certInfo['validTo_time_t']));
-          $KeyInfoHandler->bindParam(self::BIND_SUBJECT, $subject);
-          $KeyInfoHandler->bindParam(self::BIND_ISSUER, $issuer);
-          $KeyInfoHandler->bindParam(self::BIND_BITS, $key_info['bits']);
-          $KeyInfoHandler->bindParam(self::BIND_KEY_TYPE, $keyType);
-          $KeyInfoHandler->bindParam(self::BIND_SERIALNUMBER, $certInfo['serialNumber']);
-          $added = $KeyInfoHandler->execute();
+          $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+          $keyInfoHandler->bindValue(self::BIND_TYPE, $type);
+          $keyInfoHandler->bindValue(self::BIND_USE, $use);
+          $keyInfoHandler->bindValue(self::BIND_NAME, '');
+          $keyInfoHandler->bindValue(self::BIND_NOTVALIDAFTER, date('Y-m-d H:i:s', $certInfo['validTo_time_t']));
+          $keyInfoHandler->bindParam(self::BIND_SUBJECT, $subject);
+          $keyInfoHandler->bindParam(self::BIND_ISSUER, $issuer);
+          $keyInfoHandler->bindParam(self::BIND_BITS, $key_info['bits']);
+          $keyInfoHandler->bindParam(self::BIND_KEY_TYPE, $keyType);
+          $keyInfoHandler->bindParam(self::BIND_SERIALNUMBER, $certInfo['serialNumber']);
+          $added = $keyInfoHandler->execute();
         }
       } else {
         print '<div class="row alert alert-danger" role="alert">Error: Invalid Certificate</div>';
@@ -3225,8 +3226,8 @@ class MetadataEdit extends Common {
         exit();
       }
 
-      $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:')
-        ? 'mailto:'.trim($_GET['value'])
+      $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO)
+        ? self::TEXT_MAILTO.trim($_GET['value'])
         : trim($_GET['value']);
 
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
@@ -3237,29 +3238,26 @@ class MetadataEdit extends Common {
 
       switch ($_GET['action']) {
         case 'Add' :
-          $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:') ? 'mailto:'.trim($_GET['value']) : trim($_GET['value']);
+          $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO) ? self::TEXT_MAILTO.trim($_GET['value']) : trim($_GET['value']);
           while ($child && ! $contactPerson) {
-            switch ($child->nodeName) {
-              case self::SAML_MD_CONTACTPERSON :
-                if ($child->getAttribute('contactType') == $type) {
-                  if ($subType) {
-                    if ($child->getAttribute('remd:contactType') == $subType) {
-                      $contactPerson = $child;
-                    }
-                  } else {
+            if ($child->nodeName == self::SAML_MD_CONTACTPERSON) {
+              if ($child->getAttribute('contactType') == $type) {
+                if ($subType) {
+                  if ($child->getAttribute(self::SAML_ATTRIBUTE_REMD) == $subType) {
                     $contactPerson = $child;
                   }
+                } else {
+                  $contactPerson = $child;
                 }
-                break;
-              case self::SAML_MD_ADDITIONALMETADATALOCATION :
+              } elseif ($child->nodeName == self::SAML_MD_ADDITIONALMETADATALOCATION) {
                 $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
                 $contactPerson->setAttribute('contactType', $type);
                 if ($subType) {
                   $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
-                  $contactPerson->setAttribute('remd:contactType', $subType);
+                  $contactPerson->setAttribute(self::SAML_ATTRIBUTE_REMD, $subType);
                 }
                 $entityDescriptor->insertBefore($contactPerson, $child);
-                break;
+              }
             }
             $child = $child->nextSibling;
           }
@@ -3269,7 +3267,7 @@ class MetadataEdit extends Common {
             $contactPerson->setAttribute('contactType', $type);
             if ($subType) {
               $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
-              $contactPerson->setAttribute('remd:contactType', $subType);
+              $contactPerson->setAttribute(self::SAML_ATTRIBUTE_REMD, $subType);
             }
             $entityDescriptor->appendChild($contactPerson);
 
@@ -3317,7 +3315,7 @@ class MetadataEdit extends Common {
           while ($child && ! $contactPerson) {
             if ($child->nodeName == self::SAML_MD_CONTACTPERSON && $child->getAttribute('contactType') == $type) {
               if ($subType) {
-                if ($child->getAttribute('remd:contactType') == $subType) {
+                if ($child->getAttribute(self::SAML_ATTRIBUTE_REMD) == $subType) {
                   $contactPerson = $child;
                 }
               } else {
@@ -3555,10 +3553,8 @@ class MetadataEdit extends Common {
   private function showLangSelector($langValue) {
     print "\n".'              <select name="lang">';
     foreach (self::LANG_CODES as $lang => $descr) {
-      if ($lang == $langValue)
-        printf('%s                <option value="%s" selected>%s</option>', "\n",  $lang, $descr);
-      else
-        printf('%s                <option value="%s">%s</option>', "\n",  $lang, $descr);
+      printf('%s                <option value="%s"%s>%s</option>', "\n",
+        $lang, $lang == $langValue ? self ::HTML_SELECTED : '', $descr);
     }
     print "\n              </select>\n";
   }

@@ -32,6 +32,9 @@ class MetadataDisplay extends Common {
   const HTML_TABLE_END = "    </table>\n";
   const HTML_SELECTED = ' selected';
   const HTML_SHOW = ' show';
+  const HTML_TRUE = 'true';
+
+  const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
 
 
   ####
@@ -682,7 +685,7 @@ class MetadataDisplay extends Common {
         $state = 'dark';
       }
       printf ('                <li><span class="text-%s">%s (regexp="%s")</span></li>%s',
-        $state, $scope['scope'], $scope['regexp'] ? 'true' : 'false', "\n");
+        $state, $scope['scope'], $scope['regexp'] ? self::HTML_TRUE : 'false', "\n");
     }
     print '              </ul>';
   }
@@ -756,18 +759,18 @@ class MetadataDisplay extends Common {
         case 'Logo' :
           $urlHandler->execute(array(self::BIND_URL => $data));
           $statusText = '';
-          if ($URLInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-            if ($URLInfo['height'] == $mdui['height'] || $URLInfo['nosize'] == 1) {
+          if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($urlInfo['height'] == $mdui['height'] || $urlInfo['nosize'] == 1) {
               $statusIcon = '';
             } else {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
               $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
-                $mdui['height'], $URLInfo['height']);
+                $mdui['height'], $urlInfo['height']);
             }
-            if ($URLInfo['width'] != $mdui['width'] && $URLInfo['nosize'] == 0) {
+            if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0) {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
               $statusText .= sprintf('<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
-                $mdui['width'], $URLInfo['width']);
+                $mdui['width'], $urlInfo['width']);
             }
           } else {
             $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
@@ -1392,6 +1395,7 @@ class MetadataDisplay extends Common {
               substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
             break;
           default :
+            # Skip other elements
         }
       }
       while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1515,28 +1519,24 @@ class MetadataDisplay extends Common {
         switch ($_GET["tab"]) {
           case 'reminders' :
             $remindersActive = self::HTML_ACTIVE;
-            $remindersSelected ='true';
+            $remindersSelected = self::HTML_TRUE;
             $remindersShow = self::HTML_SHOW;
-            break;
-          case 'reminders-urgent' :
-            $remindersUrgentActive = self::HTML_ACTIVE;
-            $remindersUrgentSelected='true';
-            $remindersUrgentShow = self::HTML_SHOW;
             break;
           case 'IdPs' :
             $idPsActive = self::HTML_ACTIVE;
-            $idPsSelected = 'true';
+            $idPsSelected = self::HTML_TRUE;
             $idPsShow = self::HTML_SHOW;
             $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
             break;
+          case 'reminders-urgent' :
           default :
-          $remindersUrgentActive = self::HTML_ACTIVE;
-          $remindersUrgentSelected='true';
-          $remindersUrgentShow = self::HTML_SHOW;
+            $remindersUrgentActive = self::HTML_ACTIVE;
+            $remindersUrgentSelected = self::HTML_TRUE;
+            $remindersUrgentShow = self::HTML_SHOW;
           }
       } else {
         $remindersUrgentActive = self::HTML_ACTIVE;
-        $remindersUrgentSelected='true';
+        $remindersUrgentSelected = self::HTML_TRUE;
         $remindersUrgentShow = self::HTML_SHOW;
       }
 
@@ -1765,13 +1765,13 @@ class MetadataDisplay extends Common {
           // Old IMPS:es
           switch ($entity['level']) {
             case 1 :
-              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['warn1']);
+              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['warn1']);
               break;
             case 2 :
-              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['warn2']);
+              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['warn2']);
               break;
             case 3 :
-              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['error']);
+              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['error']);
               $showUrgent = true;
               break;
             case 4 :
@@ -2582,25 +2582,26 @@ class MetadataDisplay extends Common {
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
         case 'organizations' :
-          $organizationsActive = ' active';
-          $organizationsSelected = 'true';
-          $organizationsShow = ' show';
+          $organizationsActive = self::HTML_ACTIVE;
+          $organizationsSelected = self::HTML_TRUE;
+          $organizationsShow = self::HTML_SHOW;
           $orgId = isset($_GET['id']) ? $_GET['id'] : 0;
           break;
         case 'scopes' :
-          $scopesActive=self::HTML_ACTIVE;
-          $scopesSelected='true';
-          $scopesShow=self::HTML_SHOW;
+          $scopesActive = self::HTML_ACTIVE;
+          $scopesSelected = self::HTML_TRUE;
+          $scopesShow = self::HTML_SHOW;
+          break;
         default :
-          $impsActive = ' active';
-          $impsSelected = 'true';
-          $impsShow = ' show';
+          $impsActive = self::HTML_ACTIVE;
+          $impsSelected = self::HTML_TRUE;
+          $impsShow = self::HTML_SHOW;
           $impsId = isset($_GET['id']) ? $_GET['id'] : 0;
       }
     } else {
-      $impsActive = ' active';
-      $impsSelected = 'true';
-      $impsShow = ' show';
+      $impsActive = self::HTML_ACTIVE;
+      $impsSelected = self::HTML_TRUE;
+      $impsShow = self::HTML_SHOW;
     }
 
     printf('    <div class="row">
