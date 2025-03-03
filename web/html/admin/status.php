@@ -6,10 +6,9 @@ const HTML_TABLE_END = "        </table>\n";
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
-require_once '../include/Html.php';
-$html = new HTML();
+$html = new \metadata\HTML();
 
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];

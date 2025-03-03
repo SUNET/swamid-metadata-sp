@@ -1,5 +1,6 @@
 <?php
-include __DIR__ . '/../html/include/Metadata.php'; #NOSONAR
+//Load composer's autoloader
+require_once __DIR__ . '/../html/vendor/autoload.php';
 
-$metadata = new Metadata();
+$metadata = new \metadata\Metadata();
 $metadata->saveStatus();

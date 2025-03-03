@@ -50,10 +50,9 @@ const CLASS_VALIDATOR = '\metadata\Validate';
 //Load composer's autoloader
 require_once '../vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
-require_once '../include/Html.php'; #NOSONAR
-$html = new HTML();
+$html = new \metadata\HTML();
 
 /* BEGIN RAF Logging */
 $assuranceHandler = $config->getDb()->prepare(
@@ -217,8 +216,7 @@ $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>
 $html->setDisplayName($displayName);
 
 
-require_once '../include/MetadataDisplay.php'; #NOSONAR
-$display = new MetadataDisplay();
+$display = new \metadata\MetadataDisplay();
 
 require_once '../include/Metadata.php'; #NOSONAR
 
@@ -226,8 +224,7 @@ if (isset($_FILES['XMLfile'])) {
   importXML();
 } elseif (isset($_GET['edit'])) {
   if (isset($_GET['Entity']) && (isset($_GET['oldEntity']))) {
-    require_once '../include/MetadataEdit.php'; #NOSONAR
-    $editMeta = new MetadataEdit($_GET['Entity'], $_GET['oldEntity']);
+    $editMeta = new \metadata\MetadataEdit($_GET['Entity'], $_GET['oldEntity']);
     $editMeta->updateUser($EPPN, $mail, $fullName);
     if (checkAccess($_GET['Entity'], $EPPN, $userLevel, 10, true)) {
       $html->showHeaders('Edit - '.$_GET['edit']);
@@ -279,7 +276,7 @@ if (isset($_FILES['XMLfile'])) {
       switch($_GET['action']) {
         case 'createDraft' :
           $menuActive = 'new';
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
@@ -302,7 +299,7 @@ if (isset($_FILES['XMLfile'])) {
           requestAccess($entitiesId);
           break;
         case 'removeSaml1' :
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             $metadata->removeSaml1Support();
@@ -315,7 +312,7 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'draftRemoveSaml1' :
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
@@ -330,7 +327,7 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'removeObsoleteAlgorithms' :
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             $metadata->removeObsoleteAlgorithms();
@@ -342,7 +339,7 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'draftRemoveObsoleteAlgorithms' :
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           $metadata->getUserId($EPPN);
           if ($metadata->isResponsible()) {
             if ($newEntity_id = $metadata->createDraft()) {
@@ -357,7 +354,7 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'forceAccess' :
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           if ($userLevel > 19) {
             $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
           }
@@ -365,21 +362,21 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'AddImps2IdP' :
           if ($userLevel > 19 && isset($_GET['ImpsId'])) {
-            $imps = new metadata\IMPS();
+            $imps = new \metadata\IMPS();
             $imps->BindIdP2IMPS($entitiesId, $_GET['ImpsId']);
           }
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           showEntity($entitiesId);
           break;
         case 'Confirm IMPS' :
-          $metadata = new Metadata($entitiesId);
+          $metadata = new \metadata\Metadata($entitiesId);
           if ($metadata->status() == 1) {
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
               $html->showHeaders($metadata->entityID());
               $menuActive = 'publ';
               showMenu();
-              $imps = new metadata\IMPS();
+              $imps = new \metadata\IMPS();
               if ($imps->validateIMPS($entitiesId, $_GET['ImpsId'], $metadata->getUserId($EPPN))) {
                 showEntity($entitiesId, false);
               }
@@ -513,7 +510,7 @@ if (isset($_FILES['XMLfile'])) {
           $html->showHeaders('Show Member Information');
           showMenu();
           if (isset($_GET['subAction']) && isset($_GET['id'])) {
-            $imps = new metadata\IMPS();
+            $imps = new \metadata\IMPS();
             switch ($_GET['subAction']) {
               case 'editImps' :
                 $imps->editIMPS($_GET['id']);
@@ -767,7 +764,7 @@ function showEntity($entitiesId, $showHeader = true)  {
     print "\n" . '    <div class="row">';
     switch ($entity['status']) {
       case 1:
-        $metadata = new Metadata($entitiesId);
+        $metadata = new \metadata\Metadata($entitiesId);
         $metadata->getUserId($EPPN);
         if ($metadata->isResponsible()) {
           printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
@@ -1073,25 +1070,22 @@ function importXML(){
   global $html;
   global $EPPN,$mail, $fullName;
 
-  require_once '../include/NormalizeXML.php';
-  require_once '../include/ValidateXML.php';
-  require_once '../include/MetadataEdit.php';
-  $import = new NormalizeXML();
+  $import = new \metadata\NormalizeXML();
   $import->fromFile($_FILES['XMLfile']['tmp_name']);
   if ($import->getStatus()) {
     $entityID = $import->getEntityID();
-    $validate = new ValidateXML($import->getXML());
+    $validate = new \metadata\ValidateXMLSchema($import->getXML());
     if ($validate->validateSchema('../../schemas/schema.xsd')) {
-      $metadata = new Metadata($entityID, 'New');
+      $metadata = new \metadata\Metadata($entityID, 'New');
       $metadata->importXML($import->cleanOutRegistrationInfo($import->getXML()));
       $metadata->getUser($EPPN, $mail, $fullName, true);
       $metadata->updateResponsible($EPPN);
       validateEntity($metadata->id());
-      $prodmetadata = new Metadata($entityID, 'Prod');
+      $prodmetadata = new \metadata\Metadata($entityID, 'Prod');
       if ($prodmetadata->entityExists()) {
-        $editMetadata = new MetadataEdit($metadata->id(), $prodmetadata->id());
-        $editMetadata->mergeRegistrationInfo();
-        $editMetadata->saveXML();
+        $mergeMetadata = new \metadata\MetadataMerge($metadata->id(), $prodmetadata->id());
+        $mergeMetadata->mergeRegistrationInfo();
+        $mergeMetadata->saveResults();
       }
       showEntity($metadata->id());
     } else {
@@ -1118,8 +1112,7 @@ function importXML(){
 # Remove an IDPSSO / SPSSO Decriptor that isn't used
 ####
 function removeSSO($entitiesId, $type) {
-  require_once '../include/MetadataEdit.php';
-  $metadata = new MetadataEdit($entitiesId);
+  $metadata = new \metadata\MetadataEdit($entitiesId);
   $metadata->removeSSO($type);
   validateEntity($entitiesId);
   showEntity($entitiesId);
@@ -1194,7 +1187,7 @@ function move2Pending($entitiesId) {
   global $mailContacts, $mailRequester, $config;
   $federation = $config->getFederation();
 
-  $draftMetadata = new Metadata($entitiesId);
+  $draftMetadata = new \metadata\Metadata($entitiesId);
 
   if ($draftMetadata->entityExists()) {
     validateEntity($draftMetadata->id());
@@ -1232,12 +1225,12 @@ function move2Pending($entitiesId) {
         setupMail();
 
         $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $draftMetadata->entityID());
-        $publishedMetadata = new Metadata($draftMetadata->entityID(), 'prod');
+        $publishedMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'prod');
 
         if ($publishedMetadata->entityExists()) {
           $mailContacts->Subject  = 'Info : Updated SWAMID metadata for ' . $shortEntityid;
           $mailRequester->Subject = 'Updated SWAMID metadata for ' . $shortEntityid;
-          $shadowMetadata = new Metadata($draftMetadata->entityID(), 'Shadow');
+          $shadowMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'Shadow');
           $shadowMetadata->importXML($publishedMetadata->xml());
           $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
           $oldEntitiesId = $shadowMetadata->id();
@@ -1367,7 +1360,7 @@ function move2Pending($entitiesId) {
            "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
         }
         printf('%s    <p>You are about to request publication of <b>%s</b></p>', "\n", $draftMetadata->entityID());
-        $publishedMetadata = new Metadata($draftMetadata->entityID(), 'prod');
+        $publishedMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'prod');
 
         $publishArrayOld = array();
         if ($publishedMetadata->entityExists()) {
@@ -1436,7 +1429,7 @@ function annualConfirmation($entitiesId){
   global $html, $menuActive;
   global $EPPN, $mail, $fullName, $userLevel;
 
-  $metadata = new Metadata($entitiesId);
+  $metadata = new \metadata\Metadata($entitiesId);
   if ($metadata->status() == 1) {
     $confirm = false;
     # Entity is Published
@@ -1544,7 +1537,7 @@ function annualConfirmationList($list){
   foreach ($list as $postString => $on) {
     $postArray = explode('_', $postString);
     if ($postArray[0] == 'validate') {
-      $metadata = new Metadata($postArray[1]);
+      $metadata = new \metadata\Metadata($postArray[1]);
       if ($metadata->status() == 1) {
         # Entity is Published
         $metadata->getUserId($EPPN);
@@ -1578,7 +1571,7 @@ function annualConfirmationList($list){
       $metadata->updateUser($EPPN, $mail, $fullName, true);
       $user_id = $metadata->getUserId($EPPN);
       foreach ($entityList as $id => $entityID) {
-        $metadata = new Metadata($id);
+        $metadata = new \metadata\Metadata($id);
         $metadata->confirmEntity($user_id);
       }
       $menuActive = 'myEntities';
@@ -1627,7 +1620,7 @@ function requestRemoval($entitiesId) {
   global $EPPN, $mail, $fullName;
   global $mailContacts, $mailRequester;
   $federation = $config->getFederation();
-  $metadata = new Metadata($entitiesId);
+  $metadata = new \metadata\Metadata($entitiesId);
   if ($metadata->status() == 1) {
     $userID = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
@@ -1818,13 +1811,13 @@ function move2Draft($entitiesId) {
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     if (isset($_GET['action'])) {
-      $draftMetadata = new Metadata($entity['entityID'], 'New');
+      $draftMetadata = new \metadata\Metadata($entity['entityID'], 'New');
       $draftMetadata->importXML($entity['xml']);
       validateEntity($draftMetadata->id());
       $menuActive = 'new';
       $draftMetadata->copyResponsible($entitiesId);
       showEntity($draftMetadata->id());
-      $oldMetadata = new Metadata($entitiesId);
+      $oldMetadata = new \metadata\Metadata($entitiesId);
       $oldMetadata->removeEntity();
     } else {
       $html->showHeaders($entity['entityID']);
@@ -1847,8 +1840,7 @@ function move2Draft($entitiesId) {
 }
 
 function mergeEntity($entitiesId, $oldEntitiesId) {
-  require_once '../include/MetadataEdit.php';
-  $metadata = new MetadataEdit($entitiesId, $oldEntitiesId);
+  $metadata = new \metadata\MetadataMerge($entitiesId, $oldEntitiesId);
   $metadata->mergeFrom();
 }
 
@@ -1885,7 +1877,7 @@ function removeEntity($entitiesId) {
     showMenu();
     if ($ok2Remove) {
       if (isset($_GET['action']) && $_GET['action'] == $button ) {
-        $metadata = new Metadata($entitiesId);
+        $metadata = new \metadata\Metadata($entitiesId);
         $metadata->removeEntity();
         printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
       } else {
@@ -1908,7 +1900,7 @@ function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=fal
   if ($userLevel >= $minLevel) {
     return true;
   }
-  $metadata = new Metadata($entitiesId);
+  $metadata = new \metadata\Metadata($entitiesId);
   $metadata->getUser($userID);
   if ($metadata->isResponsible()) {
     return true;
@@ -1928,7 +1920,7 @@ function requestAccess($entitiesId) {
   global $EPPN, $mail, $fullName, $userLevel;
   global $mailContacts, $mailRequester, $config;
 
-  $metadata = new Metadata($entitiesId);
+  $metadata = new \metadata\Metadata($entitiesId);
   if ($metadata->entityExists()) {
     $user_id = $metadata->getUserId($EPPN);
     if ($metadata->isResponsible()) {
@@ -2073,7 +2065,7 @@ function approveAccessRequest($code) {
   global $EPPN, $config;
   $codeArray = explode(':', base64_decode($code));
   if (isset($codeArray[2])) {
-    $metadata = new Metadata($codeArray[0]);
+    $metadata = new \metadata\Metadata($codeArray[0]);
     if ($metadata->entityExists()) {
       $result = $metadata->validateCode($codeArray[1], $codeArray[2], $EPPN);
       if ($result['returnCode'] < 10) {

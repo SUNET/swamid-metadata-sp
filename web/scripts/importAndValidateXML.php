@@ -5,17 +5,14 @@ const CLASS_VALIDATOR = '\metadata\Validate';
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
-include __DIR__ . '/../html/include/NormalizeXML.php'; # NOSONAR
+$config = new \metadata\Configuration();
 
-$config = new metadata\Configuration();
-
-$import = new NormalizeXML();
+$import = new \metadata\NormalizeXML();
 $import->fromFile($argv[1]);
 if ($import->getStatus()) {
   $entityID=$import->getEntityID();
   printf ("%s\n",$entityID);
-  $metadata = new Metadata($import->getEntityID(),'Prod');
+  $metadata = new \metadata\Metadata($import->getEntityID(),'Prod');
   $metadata->importXML($import->getXML());
   $metadata->updateFeed($argv[2]);
 

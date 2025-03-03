@@ -20,7 +20,7 @@ class Configuration {
    *
    * Return an array with the smtp configuration
    *
-   * @param boolean $startDB If we should start the database connection or not.
+   * @param bool $startDB If we should start the database connection or not.
    *
    * @return void
    */

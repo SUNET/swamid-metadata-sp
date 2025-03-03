@@ -8,14 +8,9 @@ use PDO;
  * SWAMID specific code
  */
 class ValidateSWAMID extends Validate {
-  use SAMLTrait;
   use CommonTrait;
 
   # Setup
-
-  const BIND_DATA = ':Data';
-  const BIND_ENTITYID = ':EntityID';
-  const BIND_LANG = ':Lang';
 
   const TEXT_HTTP = 'http://';
   const TEXT_HTTPS = 'https://';

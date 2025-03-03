@@ -18,7 +18,7 @@ if (is_numeric($argv[1])) {
 
 include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
 
-$metadata = new Metadata($id);
+$metadata = new \metadata\Metadata($id);
 $metadata->movePublishedPending();
 
 function usage($scriptname) {

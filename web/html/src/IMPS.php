@@ -2,7 +2,6 @@
 namespace metadata;
 
 use PDO;
-use PDOException;
 
 class IMPS {
   const BIND_ID = ':Id';

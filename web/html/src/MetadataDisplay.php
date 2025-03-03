@@ -1,24 +1,19 @@
 <?php
+namespace metadata;
+
 use Jfcherng\Diff\Differ;
 use Jfcherng\Diff\Factory\RendererFactory;
 use Jfcherng\Diff\Renderer\RendererConstant;
+use PDO;
 
-class MetadataDisplay {
+/**
+ * Class to display Metadata
+ */
+class MetadataDisplay extends Common {
+  use CommonTrait;
+
   # Setup
-  private $config;
-  private $collapseIcons = false;
-  private $mode = '';
-  # From common.php
-  private $standardAttributes = array();
-  private $langCodes = array();
-  private $FriendlyNames = array();
-
-  const BIND_APPROVEDBY = ':ApprovedBy';
-  const BIND_ENTITYID = ':EntityID';
-  const BIND_ID = ':Id';
-  const BIND_INDEX = ':Index';
-  const BIND_TYPE = ':Type';
-  const BIND_URL = ':URL';
+  private array $collapseIcons = array();
 
   const SAML_EC_ANONYMOUS = 'https://refeds.org/category/anonymous';
   const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
@@ -38,18 +33,6 @@ class MetadataDisplay {
   const HTML_SELECTED = ' selected';
   const HTML_SHOW = ' show';
 
-  public function __construct() {
-    global $config;
-    if (isset($config)) {
-      $this->config = $config;
-    } else {
-      $this->config = new metadata\Configuration();
-    }
-    require __DIR__ . '/common.php'; #NOSONAR
-
-    $this->collapseIcons = array();
-    $this->mode = $config->getMode();
-  }
 
   ####
   # Shows menu row
@@ -192,7 +175,7 @@ class MetadataDisplay {
           if (! $ecsTested[$tag]) {
             $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
             $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
-              $tag, $this->mode == 'QA' ? 'qa.' : '', "\n");
+              $tag, $this->config->getMode() == 'QA' ? 'qa.' : '', "\n");
           }
         }
         // Error URLs
@@ -493,12 +476,8 @@ class MetadataDisplay {
         $state = 'dark';
       }
       $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
-      if (isset($this->standardAttributes[$type])) {
-        foreach ($this->standardAttributes[$type] as $data) {
-          if ($data['value'] == $value) {
-            $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
-          }
-        }
+      if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
+        $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
       }
       ?>
 
@@ -516,12 +495,8 @@ class MetadataDisplay {
           $state = 'dark';
         }
         $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
-        if (isset($this->standardAttributes[$type])) {
-          foreach ($this->standardAttributes[$type] as $data) {
-            if ($data['value'] == $value) {
-              $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
-            }
-          }
+        if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
+          $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
         }
         if ($oldType != $type) {
           print "\n          </ul>";
@@ -746,8 +721,8 @@ class MetadataDisplay {
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($oldLang != $mdui['lang']) {
         $lang = $mdui['lang'];
-        if (isset($this->langCodes[$lang])) {
-          $fullLang = $this->langCodes[$lang];
+        if (isset(self::LANG_CODES[$lang])) {
+          $fullLang = self::LANG_CODES[$lang];
         } elseif ($lang == "") {
           $fullLang = "(NOT ALLOWED - switch to en/sv)";
         } else {
@@ -1046,9 +1021,9 @@ class MetadataDisplay {
         }
         $error = '';
         if ($requestedAttribute['FriendlyName'] == '') {
-          if (isset($this->FriendlyNames[$requestedAttribute['Name']])) {
-            $friendlyNameDisplay = sprintf('(%s)', $this->FriendlyNames[$requestedAttribute['Name']]['desc']);
-            if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+          if (isset(self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
+            $friendlyNameDisplay = sprintf('(%s)', self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']);
+            if (! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -1057,9 +1032,9 @@ class MetadataDisplay {
           }
         } else {
           $friendlyNameDisplay = $requestedAttribute['FriendlyName'];
-          if (isset ($this->FriendlyNames[$requestedAttribute['Name']])) {
-            if ($requestedAttribute['FriendlyName'] != $this->FriendlyNames[$requestedAttribute['Name']]['desc']
-              || ! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+          if (isset (self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
+            if ($requestedAttribute['FriendlyName'] != self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']
+              || ! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
                 $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -1865,12 +1840,9 @@ class MetadataDisplay {
       $entityHandler->bindValue(self::BIND_ID, $entityId2);
       $entityHandler->execute();
       if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (! class_exists('NormalizeXML')) {
-          require_once __DIR__ . '/NormalizeXML.php';
-        }
-        $normalize1 = new NormalizeXML();
+        $normalize1 = new \metadata\NormalizeXML();
         $normalize1->fromString($entity1['xml']);
-        $normalize2 = new NormalizeXML();
+        $normalize2 = new \metadata\NormalizeXML();
         $normalize2->fromString($entity2['xml']);
         if ($normalize1->getStatus() && $normalize2->getStatus()) {
           printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
@@ -1964,10 +1936,7 @@ class MetadataDisplay {
     $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $entitiesHandler->execute();
 
-    if (! class_exists('NormalizeXML')) {
-      require_once __DIR__ . '/NormalizeXML.php';
-    }
-    $normalize = new NormalizeXML();
+    $normalize = new \metadata\NormalizeXML();
 
     printf ('    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Updater</th><th>Time</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", );

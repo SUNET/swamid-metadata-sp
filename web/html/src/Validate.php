@@ -33,7 +33,7 @@ class Validate extends Common {
    *  - Correct EC:s
    *  - ....
    *
-   * @param integer $entityId Id of Entity in database.
+   * @param int $entityId Id of Entity in database.
    *
    * @return void
    */

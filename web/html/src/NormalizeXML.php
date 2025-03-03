@@ -1,38 +1,61 @@
 <?php
+namespace metadata;
+use DOMDocument;
+
+/**
+ * Class to Normalize XML into know namespaces
+ */
 class NormalizeXML {
   # Setup
+  private $nsList = array();
+  private $knownList = array(
+    'urn:oasis:names:tc:SAML:2.0:metadata' => 'md',
+    'urn:oasis:names:tc:SAML:metadata:rpi' => 'mdrpi',
+    'urn:oasis:names:tc:SAML:metadata:attribute' => 'mdattr',
+    'urn:oasis:names:tc:SAML:2.0:assertion' => 'samla',
+    'urn:oasis:names:tc:SAML:profiles:SSO:request-init' => 'init',
+    'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol' => 'idpdisc',
+    'urn:oasis:names:tc:SAML:metadata:ui' => 'mdui',
+    'urn:mace:shibboleth:metadata:1.0' => 'shibmd',
+    'http://refeds.org/metadata' => 'remd', # NOSONAR Should be http://
+    'http://www.w3.org/2000/09/xmldsig#' => 'ds', # NOSONAR Should be http://
+    'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
+    'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
+    'urn:oasis:names:tc:SAML:metadata:algsupport' => 'alg',
+    'http://id.swedenconnect.se/authn/1.0/principal-selection/ns' => 'psc', # NOSONAR Should be http://
+    #ADFS / M$
+    'http://docs.oasis-open.org/wsfed/federation/200706' => 'fed', # NOSONAR Should be http://
+    'http://docs.oasis-open.org/wsfed/authorization/200706' => 'auth'); # NOSONAR Should be http://
+  private $error = 'No XML loaded';
+  private $status = false;
+  private $nextNS = 1;
+  private $entityID = false;
+  private $newDoc;
+
   const SAML_MD_ENTITYDESCRIPTOR = 'md:EntityDescriptor';
 
+  /**
+   * Setup the class
+   *
+   * @return void
+   */
   public function __construct() {
-    $this->nsList = array();
-    $this->knownList = array(
-      'urn:oasis:names:tc:SAML:2.0:metadata' => 'md',
-      'urn:oasis:names:tc:SAML:metadata:rpi' => 'mdrpi',
-      'urn:oasis:names:tc:SAML:metadata:attribute' => 'mdattr',
-      'urn:oasis:names:tc:SAML:2.0:assertion' => 'samla',
-      'urn:oasis:names:tc:SAML:profiles:SSO:request-init' => 'init',
-      'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol' => 'idpdisc',
-      'urn:oasis:names:tc:SAML:metadata:ui' => 'mdui',
-      'urn:mace:shibboleth:metadata:1.0' => 'shibmd',
-      'http://refeds.org/metadata' => 'remd', # NOSONAR Should be http://
-      'http://www.w3.org/2000/09/xmldsig#' => 'ds', # NOSONAR Should be http://
-      'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
-      'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
-      'urn:oasis:names:tc:SAML:metadata:algsupport' => 'alg',
-      'http://id.swedenconnect.se/authn/1.0/principal-selection/ns' => 'psc', # NOSONAR Should be http://
-      #ADFS / M$
-      'http://docs.oasis-open.org/wsfed/federation/200706' => 'fed', # NOSONAR Should be http://
-      'http://docs.oasis-open.org/wsfed/authorization/200706' => 'auth'); # NOSONAR Should be http://
-
-    $this->error = 'No XML loaded';
-    $this->status = false;
-    $this->nextNS = 1;
-    $this->entityID = false;
     $this->newDoc = new DOMDocument('1.0', 'UTF-8');
     $this->newDoc->formatOutput = true;
+
   }
 
-  # Check Node and sub-nodes
+  /**
+   * Check Node and sub-nodes
+   *
+   * @param DOMNode &$new New DOMNode to save into
+   *
+   * @param DOMNode &$data Node to Normalize
+   *
+   * @param DOMNode &$doc Root Node where to add NS
+   *
+   * @return void
+   */
   private function checkNode(&$new, &$data, &$doc) {
     foreach ($data->childNodes as $child) {
       # Remove Signature
@@ -76,7 +99,16 @@ class NormalizeXML {
     }
   }
 
-  # CHeck if a Node has a child
+  /**
+   * Check if a Node has a child
+   *
+   * Check if Node has a Child that is of type XML_ELEMENT_NODE.
+   * This to avoid copying Comments from Node:s
+   *
+   * @param DOMNode $node Node to check
+   *
+   * @return bool
+   */
   private function hasChild($node) {
     if ($node->hasChildNodes()) {
       foreach ($node->childNodes as $child) {
@@ -88,7 +120,15 @@ class NormalizeXML {
     return false;
   }
 
-  # Check Attribute
+  /**
+   * Copies Attributes into new Node
+   *
+   * @param DOMNode &$child Node to copy from
+   *
+   * @param DOMNode &$newChild Node to copy into
+   *
+   * @return void
+   */
   private function checkAttributes(&$child, &$newChild) {
     if ($child->hasAttributes() )  {
       $nrOfAttribues = $child->attributes->count();
@@ -112,7 +152,18 @@ class NormalizeXML {
     }
   }
 
-  # Check Namespace of node and add to list if missing. Also normalize Namespace
+  /**
+   * Check NameSpace of Node
+   *
+   * Check if NameSpace already is known.
+   * If not
+   *  - normalize
+   *  - add to list.
+   *
+   * @param DOMNode &$node DOMNode to check
+   *
+   * @return string NameSpace:NodeName
+   */
   private function checkNameSpaceNode(&$node) {
     $suggestedNS = $node->prefix;
     $name = $node->localName;
@@ -138,7 +189,18 @@ class NormalizeXML {
     return $ns . ':' . $name;
   }
 
-  # Check Namespace of Attribute and add to list if missing. Also normalize Namespace
+  /**
+   * Check NameSpace of Attribute
+   *
+   * Check if NameSpace already is known.
+   * If not
+   *  - normalize
+   *  - add to list.
+   *
+   * @param DOMNode &$attribute DOMNode to check
+   *
+   * @return string NameSpace:AttributeName
+   */
   private function checkNameSpaceAttribute(&$attribute) {
     $uri = $attribute->namespaceURI;
     if ($uri == 'http://www.w3.org/XML/1998/namespace') { # NOSONAR Should be http://
@@ -158,7 +220,15 @@ class NormalizeXML {
     return $ns;
   }
 
-  # error-handler to catch errors while loading XML
+  /**
+   * error-handler to catch errors while loading XML
+   *
+   * @param int $number numeric error-code not used in this function.
+   *
+   * @param string $error Error as a string
+   *
+   * @return void
+   */
   public function checkDOMError ($number, $error){ #NOSONAR $number is in call!!!
     $errorParts = explode(' ', $error);
     if ($errorParts[0] == 'DOMDocument::load():') {
@@ -170,7 +240,13 @@ class NormalizeXML {
     }
   }
 
-  # Load XML from file and parse into $this->newDoc
+  /**
+   * Normalize XML from file
+   *
+   * @param string $filename Name of XML-file to Normalize
+   *
+   * @return void
+   */
   public function fromFile($filename) {
     $this->nsList = array();
     if (file_exists($filename)) {
@@ -192,7 +268,13 @@ class NormalizeXML {
     }
   }
 
-  # Load XML from string and parse into $this->newDoc
+  /**
+   * Normalize XML from string
+   *
+   * @param string $xml String of XML to Normalize
+   *
+   * @return void
+   */
   public function fromString($xml) {
     $this->nsList = array();
     $doc = new DOMDocument('1.0', 'UTF-8');
@@ -203,7 +285,13 @@ class NormalizeXML {
     restore_error_handler();
   }
 
-  # Parse XML info $this->newDoc
+  /**
+   * Normalize XML from string
+   *
+   * @param DOMDocument $doc XML to Normalize
+   *
+   * @return void
+   */
   private function parseXML($doc) {
     $this->checkNode($this->newDoc, $doc, $this->newDoc);
     if ($this->entityID) {
@@ -215,7 +303,20 @@ class NormalizeXML {
     }
   }
 
-  # Updates EntityDescriptor with all Namespaces found in XML
+  /**
+   * Handles EntityDescriptor node
+   *
+   * Updates EntityDescriptor in dom with all NameSpaces found
+   *
+   * Removes some attributes that should not be there
+   * - validUntil if exists Metadata will be invalid after a while
+   * - cacheDuration this should be handled by aggregator
+   * - ID
+   *
+   * @param DOMNode &$dom EntityDescriptor node ty update
+   *
+   * @return void
+   */
   private function updateEntityDescriptor(&$dom){
     if (isset($this->nsList['xsi']) && ! isset($this->nsList['xs'])) {
       $this->nsList['xs'] = array('uri' =>'http://www.w3.org/2001/XMLSchema'); # NOSONAR Should be http://
@@ -231,7 +332,11 @@ class NormalizeXML {
     if ($dom->hasAttribute('ID')) { $dom->removeAttribute('ID'); }
   }
 
-  # Return parsed XML
+  /**
+   * Return parsed XML
+   *
+   * @return bool|string XML
+   */
   public function getXML() {
     if ($this->status) {
       return $this->newDoc->saveXML();
@@ -240,7 +345,11 @@ class NormalizeXML {
     }
   }
 
-  #Return entityID of parsed XML
+  /**
+   * Return entityID of parsed XML
+   *
+   * @return bool|string XML
+   */
   public function getEntityID() {
     if ($this->status) {
       return $this->entityID;
@@ -250,16 +359,31 @@ class NormalizeXML {
   }
 
   # Return status of parsing
+  /**
+   * Return status of parsing
+   *
+   * @return bool
+   */
   public function getStatus() {
     return $this->status;
   }
 
-  # Return errors from parsing
+  /**
+   * Return errors from parsing
+   *
+   * @return string Parsing error(s)
+   */
   public function getError() {
     return $this->error;
   }
 
-  # Loads an XML and return the same but without RegistrationInfo
+  /**
+   * Loads an XML and return the same but without RegistrationInfo
+   *
+   * @param string $xml2clean XML to clean out RegistrationInfo from
+   *
+   * @return string XML
+   */
   public function cleanOutRegistrationInfo($xml2clean) {
     $continue = true;
     $xml = new DOMDocument;

@@ -7,10 +7,7 @@
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-$config = new metadata\Configuration();
-
-// file deepcode ignore FileInclusion:
-include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
+$config = new \metadata\Configuration();
 
 const BIND_STATUS = ':Status';
 const BIND_REMOVEDATE = ':RemoveDate';
@@ -43,7 +40,7 @@ printf ("SoftDeleted Entities before %s\n", $removeDate);
 $entitiesUpdatedHandler->bindValue(BIND_STATUS, 4);
 $entitiesUpdatedHandler->execute();
 while ($entity = $entitiesUpdatedHandler->fetch(PDO::FETCH_ASSOC)) {
-  $metadata = new Metadata($entity['id']);
+  $metadata = new \metadata\Metadata($entity['id']);
   $metadata->removeEntity();
   printf (" -> %s %s\n", $entity['entityID'], $entity['lastUpdated']);
 }
@@ -54,7 +51,7 @@ printf ("PendingPublished Entities before %s\n", $removeDate);
 $entitiesUpdatedHandler->bindValue(BIND_STATUS, 5);
 $entitiesUpdatedHandler->execute();
 while ($entity = $entitiesUpdatedHandler->fetch(PDO::FETCH_ASSOC)) {
-  $metadata = new Metadata($entity['id']);
+  $metadata = new \metadata\Metadata($entity['id']);
   $metadata->removeEntity();
   printf (" -> %s %s\n", $entity['entityID'], $entity['lastUpdated']);
 }
@@ -66,7 +63,7 @@ $entitiesUpdatedHandler->bindValue(BIND_REMOVEDATE, $removeDateShadow);
 $entitiesUpdatedHandler->bindValue(BIND_STATUS, 6);
 $entitiesUpdatedHandler->execute();
 while ($entity = $entitiesUpdatedHandler->fetch(PDO::FETCH_ASSOC)) {
-  $metadata = new Metadata($entity['id']);
+  $metadata = new \metadata\Metadata($entity['id']);
   $metadata->removeEntity();
   printf (" -> Shadow %s %s\n", $entity['entityID'], $entity['lastUpdated']);
 }
@@ -78,7 +75,7 @@ $entitiesValidatedHandler->bindValue(BIND_REMOVEDATE, $removePending);
 $entitiesValidatedHandler->bindValue(BIND_STATUS, 2);
 $entitiesValidatedHandler->execute();
 while ($entity = $entitiesValidatedHandler->fetch(PDO::FETCH_ASSOC)) {
-  $metadata = new Metadata($entity['id']);
+  $metadata = new \metadata\Metadata($entity['id']);
   $metadata->removeEntity();
   printf (" -> Pending %s %s\n", $entity['entityID'], $entity['lastValidated']);
 }
@@ -89,7 +86,7 @@ $entitiesValidatedHandler->bindValue(BIND_REMOVEDATE, $removeDraft);
 $entitiesValidatedHandler->bindValue(BIND_STATUS, 3);
 $entitiesValidatedHandler->execute();
 while ($entity = $entitiesValidatedHandler->fetch(PDO::FETCH_ASSOC)) {
-  $metadata = new Metadata($entity['id']);
+  $metadata = new \metadata\Metadata($entity['id']);
   $metadata->removeEntity();
   printf (" -> Pending %s %s\n", $entity['entityID'], $entity['lastValidated']);
 }

@@ -4,7 +4,7 @@ const CLASS_VALIDATOR = '\metadata\Validate';
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
 include __DIR__ . '/../html/include/Metadata.php'; #NOSONAR
 

@@ -1,240 +1,69 @@
 <?php
-class Metadata {
+namespace metadata;
+use DOMDocument;
+use PDO;
+
+class Metadata extends Common {
+  use CommonTrait;
+
   # Setup
-  private $config;
-  private $result = '';
-  private $warning = '';
-  private $error = '';
-  private $errorNB = '';
-
-  private $isIdP = false;
-  private $isSP = false;
-  private $isAA = false;
-  private $feedValue = 0;
-  private $registrationInstant = '';
-
-  private $entityID = 'Unknown';
-  private $entityExists = false;
-  private $entityDisplayName = false;
-  private $dbIdNr = 0;
-  private $status = 0;
-  private $xml;
-
+  private string $entityDisplayName = '';
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
-  # From common.php
-  private $digestMethods = array();
-  private $signingMethods = array();
-  private $encryptionMethods = array();
-
   const BIND_APPROVEDBY = ':ApprovedBy';
-  const BIND_BITS = ':Bits';
-  const BIND_COCOV1STATUS = ':Cocov1Status';
-  const BIND_COMPANY = ':Company';
-  const BIND_CONTACTTYPE = ':ContactType';
-  const BIND_DATA = ':Data';
-  const BIND_DATE = ':Date';
-  const BIND_DEFAULT = ':Default';
-  const BIND_ELEMENT = ':Element';
-  const BIND_EMAIL = ':Email';
-  const BIND_EMAILADDRESS = ':EmailAddress';
-  const BIND_ENTITYID = ':EntityID';
   const BIND_ENTITY_ID = ':Entity_id';
-  const BIND_ERRORS = ':Errors';
-  const BIND_ERRORSNB = ':ErrorsNB';
-  const BIND_EXTENSIONS = ':Extensions';
-  const BIND_FRIENDLYNAME = ':FriendlyName';
-  const BIND_FULLNAME = ':FullName';
-  const BIND_GIVENNAME = ':GivenName';
   const BIND_HASHVALUE = ':Hashvalue';
-  const BIND_HEIGHT = ':Height';
-  const BIND_ID = ':Id';
-  const BIND_INDEX = ':Index';
-  const BIND_ISREQUIRED = ':IsRequired';
-  const BIND_ISSUER = ':Issuer';
-  const BIND_KEY_TYPE = ':Key_type';
-  const BIND_LANG = ':Lang';
   const BIND_LASTCHANGED = ':LastChanged';
   const BIND_LASTCONFIRMED = ':LastConfirmed';
-  const BIND_NAME = ':Name';
-  const BIND_NAMEFORMAT = ':NameFormat';
-  const BIND_NOSIZE = ':NoSize';
-  const BIND_NOTVALIDAFTER = ':NotValidAfter';
-  const BIND_ORDER = ':Order';
   const BIND_OTHERENTITY_ID = ':OtherEntity_Id';
   const BIND_PUBLISHIN = ':PublishIn';
   const BIND_PUBLISHEDID = ':PublishedId';
-  const BIND_REGEXP = ':Regexp';
-  const BIND_REGISTRATIONINSTANT = ':RegistrationInstant';
-  const BIND_RESULT = ':Result';
-  const BIND_SCOPE = ':Scope';
-  const BIND_SERIALNUMBER = ':SerialNumber';
-  const BIND_STATUS = ':Status';
-  const BIND_SUBCONTACTTYPE = ':SubcontactType';
-  const BIND_SUBJECT = ':Subject';
-  const BIND_SURNAME = ':SurName';
-  const BIND_TELEPHONENUMBER = ':TelephoneNumber';
-  const BIND_TYPE = ':Type';
-  const BIND_URL = ':URL';
-  const BIND_USE = ':Use';
   const BIND_USER_ID = ':User_id';
-  const BIND_VALIDATIONOUTPUT = ':validationOutput';
-  const BIND_VALUE = ':Value';
-  const BIND_WARNINGS = ':Warnings';
-  const BIND_WIDTH = ':Width';
-  const BIND_XML = ':Xml';
 
-  const SAML_IDPDISC_DISCOVERYRESPONSE = 'idpdisc:DiscoveryResponse';
-  const SAML_ALG_DIGESTMETHOD = 'alg:DigestMethod';
-  const SAML_ALG_SIGNATUREMETHOD = 'alg:SignatureMethod';
-  const SAML_ALG_SIGNINGMETHOD = 'alg:SigningMethod';
-  const SAML_ATTRIBUTE_REMD = 'remd:contactType';
-  const SAML_BINDING_HTTP_REDIRECT = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect';
-  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
-  const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
-  const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
-  const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
-  const SAML_MD_ASSERTIONCONSUMERSERVICE = 'md:AssertionConsumerService';
-  const SAML_MD_ASSERTIONIDREQUESTSERVICE = 'md:AssertionIDRequestService';
-  const SAML_MD_ATTRIBUTE = 'md:Attribute';
-  const SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR = 'md:AttributeAuthorityDescriptor';
-  const SAML_MD_ATTRIBUTECONSUMINGSERVICE = 'md:AttributeConsumingService';
-  const SAML_MD_ATTRIBUTEPROFILE = 'md:AttributeProfile';
-  const SAML_MD_ATTRIBUTESERVICE = 'md:AttributeService';
-  const SAML_MD_AUTHNAUTHORITYDESCRIPTOR = 'md:AuthnAuthorityDescriptor';
-  const SAML_MD_COMPANY = 'md:Company';
-  const SAML_MD_CONTACTPERSON = 'md:ContactPerson';
-  const SAML_MD_EMAILADDRESS = 'md:EmailAddress';
-  const SAML_MD_ENCRYPTIONMETHOD = 'md:EncryptionMethod';
-  const SAML_MD_ENTITYDESCRIPTOR = 'md:EntityDescriptor';
-  const SAML_MD_EXTENSIONS = 'md:Extensions';
-  const SAML_MD_GIVENNAME = 'md:GivenName';
-  const SAML_MD_IDPSSODESCRIPTOR = 'md:IDPSSODescriptor';
-  const SAML_MD_KEYDESCRIPTOR = 'md:KeyDescriptor';
-  const SAML_MD_MANAGENAMEIDSERVICE = 'md:ManageNameIDService';
-  const SAML_MD_NAMEIDFORMAT = 'md:NameIDFormat';
-  const SAML_MD_NAMEIDMAPPINGSERVICE = 'md:NameIDMappingService';
-  const SAML_MD_ORGANIZATION = 'md:Organization';
-  const SAML_MD_ORGANIZATIONDISPLAYNAME = 'md:OrganizationDisplayName';
-  const SAML_MD_ORGANIZATIONNAME = 'md:OrganizationName';
-  const SAML_MD_ORGANIZATIONURL = 'md:OrganizationURL';
-  const SAML_MD_PDPDESCRIPTOR = 'md:PDPDescriptor';
-  const SAML_MD_REQUESTEDATTRIBUTE = 'md:RequestedAttribute';
-  const SAML_MD_SERVICEDESCRIPTION = 'md:ServiceDescription';
-  const SAML_MD_SERVICENAME = 'md:ServiceName';
-  const SAML_MD_SINGLELOGOUTSERVICE = 'md:SingleLogoutService';
-  const SAML_MD_SINGLESIGNONSERVICE = 'md:SingleSignOnService';
-  const SAML_MD_SPSSODESCRIPTOR = 'md:SPSSODescriptor';
-  const SAML_MD_SURNAME = 'md:SurName';
-  const SAML_MD_TELEPHONENUMBER = 'md:TelephoneNumber';
-  const SAML_MDATTR_ENTITYATTRIBUTES = 'mdattr:EntityAttributes';
-  const SAML_MDRPI_REGISTRATIONINFO = 'mdrpi:RegistrationInfo';
-  const SAML_MDUI_DESCRIPTION = 'mdui:Description';
-  const SAML_MDUI_DISCOHINTS = 'mdui:DiscoHints';
-  const SAML_MDUI_DISPLAYNAME = 'mdui:DisplayName';
-  const SAML_MDUI_DOMAINHINT = 'mdui:DomainHint';
-  const SAML_MDUI_GEOLOCATIONHINT = 'mdui:GeolocationHint';
-  const SAML_MDUI_IPHINT = 'mdui:IPHint';
-  const SAML_MDUI_INFORMATIONURL = 'mdui:InformationURL';
-  const SAML_MDUI_KEYWORDS = 'mdui:Keywords';
-  const SAML_MDUI_LOGO = 'mdui:Logo';
-  const SAML_MDUI_PRIVACYSTATEMENTURL = 'mdui:PrivacyStatementURL';
-  const SAML_MDUI_UIINFO = 'mdui:UIInfo';
-  const SAML_PROTOCOL_SAML1 = 'urn:oasis:names:tc:SAML:1.0:protocol';
-  const SAML_PROTOCOL_SAML11 = 'urn:oasis:names:tc:SAML:1.1:protocol';
-  const SAML_PROTOCOL_SAML2 = 'urn:oasis:names:tc:SAML:2.0:protocol';
-  const SAML_PROTOCOL_SHIB = 'urn:mace:shibboleth:1.0';
-  const SAML_PSC_REQUESTEDPRINCIPALSELECTION = 'psc:RequestedPrincipalSelection';
-  const SAML_SHIBMD_SCOPE = 'shibmd:Scope';
-  const SAML_SAMLA_ATTRIBUTE = 'samla:Attribute';
-  const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
-
-  const SAMLNF_URI = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
-
-  const TEXT_HTTP = 'http://';
-  const TEXT_HTTPS = 'https://';
-  const TEXT_521 = '5.2.1';
-  const TEXT_621 = '6.2.1';
-  const TEXT_COCOV2_REQ = 'GÉANT Data Protection Code of Conduct (v2) Require';
-
-  public function __construct() {
-    global $config;
-    $a = func_get_args();
+  public function __construct($id, $status = '') {
     $i = func_num_args();
-    if (isset($config)) {
-      $this->config = $config;
-    } else {
-      $this->config = new metadata\Configuration();
-    }
-    require __DIR__ . '/common.php'; #NOSONAR
-    if (method_exists($this,$f='construct'.$i)) {
-        call_user_func_array(array($this,$f),$a);
-    }
-  }
+    if ($i == 1) {
+      parent::__construct($id);
+    } elseif ($i == 2) {
+      parent::__construct();
 
-  private function construct1($id) { #NOSONAR is called from construct above
-    $entityHandler = $this->config->getDb()->prepare('
-      SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `errors`, `errorsNB`, `warnings`
-        FROM Entities WHERE `id` = :Id');
-    $entityHandler->bindValue(self::BIND_ID, $id);
-    $entityHandler->execute();
-    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->entityExists = true;
-      $this->xml = new DOMDocument;
-      $this->xml->preserveWhiteSpace = false;
-      $this->xml->formatOutput = true;
-      $this->xml->loadXML($entity['xml']);
-      $this->xml->encoding = 'UTF-8';
-      $this->dbIdNr = $entity['id'];
-      $this->status = $entity['status'];
-      $this->entityID = $entity['entityID'];
-      $this->isIdP = $entity['isIdP'];
-      $this->isSP = $entity['isSP'];
-      $this->isAA = $entity['isAA'];
-      $this->feedValue = $entity['publishIn'];
-      $this->warning = $entity['warnings'];
-      $this->error = $entity['errors'];
-      $this->errorNB = $entity['errorsNB'];
-    }
-  }
+      $this->entityID = $id;
 
-  private function construct2($entityID = '', $entityStatus = '') { #NOSONAR is called from construct above
-    $this->entityID = $entityID;
+      switch (strtolower($status)) {
+        case 'prod' :
+          # In production metadata
+          $this->status = 1;
+          break;
+        case 'shadow' :
+          # Request sent to OPS to be added.
+          # Create a shadow entity
+          $this->status = 6;
+          break;
+        case 'new' :
+        default :
+          # New entity/updated entity
+          $this->status = 3;
+      }
 
-    switch (strtolower($entityStatus)) {
-      case 'prod' :
-        # In production metadata
-        $this->status = 1;
-        break;
-      case 'shadow' :
-        # Request sent to OPS to be added.
-        # Create a shadow entity
-        $this->status = 6;
-        break;
-      case 'new' :
-      default :
-        # New entity/updated entity
-        $this->status = 3;
-    }
-
-    $entityHandler = $this->config->getDb()->prepare('
-      SELECT `id`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
-        FROM Entities WHERE `entityID` = :Id AND `status` = :Status');
-    $entityHandler->bindValue(self::BIND_ID, $entityID);
-    $entityHandler->bindValue(self::BIND_STATUS, $this->status);
-    $entityHandler->execute();
-    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->entityExists = true;
-      $this->xml = new DOMDocument;
-      $this->xml->preserveWhiteSpace = false;
-      $this->xml->formatOutput = true;
-      $this->xml->loadXML($entity['xml']);
-      $this->xml->encoding = 'UTF-8';
-      $this->dbIdNr = $entity['id'];
-      $this->isIdP = $entity['isIdP'];
-      $this->isSP = $entity['isSP'];
-      $this->isAA = $entity['isAA'];
-      $this->feedValue = $entity['publishIn'];
+      $entityHandler = $this->config->getDb()->prepare('
+        SELECT `id`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
+          FROM Entities WHERE `entityID` = :Id AND `status` = :Status');
+      $entityHandler->bindValue(self::BIND_ID, $id);
+      $entityHandler->bindValue(self::BIND_STATUS, $this->status);
+      $entityHandler->execute();
+      if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+        $this->entityExists = true;
+        $this->xml = new DOMDocument;
+        $this->xml->preserveWhiteSpace = false;
+        $this->xml->formatOutput = true;
+        $this->xml->loadXML($entity['xml']);
+        $this->xml->encoding = 'UTF-8';
+        $this->dbIdNr = $entity['id'];
+        $this->isIdP = $entity['isIdP'];
+        $this->isSP = $entity['isSP'];
+        $this->isAA = $entity['isAA'];
+        $this->feedValue = $entity['publishIn'];
+      }
     }
   }
 
@@ -257,9 +86,10 @@ class Metadata {
       $entityHandlerUpdate->execute();
     } else {
       # Add new entity into database
-      $entityHandlerInsert = $this->config->getDb()->prepare('INSERT INTO Entities
-        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`)
-        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW())');
+      $entityHandlerInsert = $this->config->getDb()->prepare("INSERT INTO Entities
+        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`,
+        `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
+        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '')");
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
@@ -294,21 +124,6 @@ class Metadata {
     } else {
       return false;
     }
-  }
-
-  private function saveResults() {
-    $resultHandler = $this->config->getDb()->prepare("UPDATE Entities
-      SET `registrationInstant` = :RegistrationInstant, `validationOutput` = :validationOutput,
-        `warnings` = :Warnings, `errors` = :Errors, `errorsNB` = :ErrorsNB, `xml` = :Xml, `lastValidated` = NOW()
-      WHERE `id` = :Id;");
-    $resultHandler->bindValue(self::BIND_ID, $this->dbIdNr);
-    $resultHandler->bindValue(self::BIND_REGISTRATIONINSTANT, $this->registrationInstant);
-    $resultHandler->bindValue(self::BIND_VALIDATIONOUTPUT, $this->result);
-    $resultHandler->bindValue(self::BIND_WARNINGS, $this->warning);
-    $resultHandler->bindValue(self::BIND_ERRORS, $this->error);
-    $resultHandler->bindValue(self::BIND_ERRORSNB, $this->errorNB);
-    $resultHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
-    $resultHandler->execute();
   }
 
   #############
@@ -463,7 +278,7 @@ class Metadata {
       switch ($child->nodeName) {
         case self::SAML_ALG_DIGESTMETHOD :
           $algorithm = $child->getAttribute('Algorithm') ? $child->getAttribute('Algorithm') : 'Unknown';
-          if (isset($this->digestMethods[$algorithm]) && $this->digestMethods[$algorithm] == 'obsolete' ) {
+          if (isset(self::DIGEST_METHODS[$algorithm]) && self::DIGEST_METHODS[$algorithm] == 'obsolete' ) {
             $this->result .= sprintf ('Removing %s[%s] in %s<br>', $child->nodeName, $algorithm, $data->nodeName);
             $remChild = $child;
             $child = $child->nextSibling;
@@ -474,7 +289,7 @@ class Metadata {
           break;
         case self::SAML_ALG_SIGNINGMETHOD :
           $algorithm = $child->getAttribute('Algorithm') ? $child->getAttribute('Algorithm') : 'Unknown';
-          if (isset($this->signingMethods[$algorithm]) && $this->signingMethods[$algorithm] == 'obsolete' ) {
+          if (isset(self::SIGNING_METHODS[$algorithm]) && self::SIGNING_METHODS[$algorithm] == 'obsolete' ) {
             $this->result .= sprintf ('Removing %s[%s] in %s<br>', $child->nodeName, $algorithm, $data->nodeName);
             $remChild = $child;
             $child = $child->nextSibling;
@@ -500,7 +315,7 @@ class Metadata {
           while ($childKeyDescriptor) {
             if ($childKeyDescriptor->nodeName == self::SAML_MD_ENCRYPTIONMETHOD) {
               $algorithm = $childKeyDescriptor->getAttribute('Algorithm') ? $childKeyDescriptor->getAttribute('Algorithm') : 'Unknown';
-              if (isset($this->encryptionMethods[$algorithm]) && $this->encryptionMethods[$algorithm] == 'obsolete' ) {
+              if (isset(self::ENCRYPTION_METHODS[$algorithm]) && self::ENCRYPTION_METHODS[$algorithm] == 'obsolete' ) {
                 $this->result .= sprintf ('Removing %s[%s] in %s->%s<br>', $childKeyDescriptor->nodeName, $algorithm, $data->nodeName, $child->nodeName);
                 $remChild = $childKeyDescriptor;
                 $childKeyDescriptor = $childKeyDescriptor->nextSibling;
@@ -648,8 +463,7 @@ class Metadata {
       FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
     $publishedHandler->bindParam(self::BIND_ENTITYID, $entityID);
 
-    require_once __DIR__  . '/NormalizeXML.php';
-    $normalize = new NormalizeXML();
+    $normalize = new \metadata\NormalizeXML();
 
     if ($pendingEntity = $pendingHandler->fetch(PDO::FETCH_ASSOC)) {
       $entityID = $pendingEntity['entityID'];
@@ -760,17 +574,6 @@ class Metadata {
   #############
   public function getError() {
     return $this->error . $this->errorNB;
-  }
-
-  private function getEntityDescriptor($xml) {
-    $child = $xml->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
-        return $child;
-      }
-      $child = $child->nextSibling;
-    }
-    return false;
   }
 
   #############
@@ -915,7 +718,7 @@ class Metadata {
   }
 
   public function entityDisplayName() {
-    if (! $this->entityDisplayName ) {
+    if ($this->entityDisplayName == '' ) {
       $displayHandler = $this->config->getDb()->prepare(
         "SELECT `data` AS DisplayName
         FROM Mdui WHERE entity_id = :Entity_id AND `element` = 'DisplayName' AND `lang` = 'en'");
@@ -926,8 +729,8 @@ class Metadata {
       } else {
         $this->entityDisplayName = 'Display name missing';
       }
-      return $this->entityDisplayName;
     }
+    return $this->entityDisplayName;
   }
 
   public function getTechnicalAndAdministrativeContacts() {
@@ -1198,4 +1001,3 @@ class Metadata {
     $statsUpdate->execute();
   }
 }
-# vim:set ts=2

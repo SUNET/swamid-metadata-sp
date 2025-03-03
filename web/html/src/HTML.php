@@ -1,15 +1,25 @@
 <?php
+namespace metadata;
+
+/**
+ * Class to handle printing of Header and Footer of web-pages
+ */
 class HTML {
   # Setup
-  private $displayName = '';
-  private $destination = '';
-  private $loggedIn = false;
-  private $tableToSort = array();
-  private $showDownload = true;
-  private $mode = '';
-  private $config;
-  private $federation = array();
+  private string $displayName = '';
+  private string $destination = '';
+  private bool $loggedIn = false;
+  private array $tableToSort = array();
+  private bool $showDownload = true;
+  private string $mode = '';
+  private Configuration $config;
+  private array $federation = array();
 
+  /**
+   * Setup the class
+   *
+   * @return void
+   */
   public function __construct() {
     global $config;
     $this->displayName = '<div class="d-flex sa-button" role="button">
@@ -23,15 +33,19 @@ class HTML {
     if (isset($config)) {
       $this->config = $config;
     } else {
-      $this->config = new metadata\Configuration();
+      $this->config = new Configuration();
     }
     $this->mode = $this->config->getMode();
     $this->federation = $this->config->getFederation();
   }
 
-  ###
-  # Print start of webpage
-  ###
+  /**
+   * Print start of webpage
+   *
+   * @param string $title_part String to be added in title
+   *
+   * @return void
+   */
   public function showHeaders($title_part = "") { ?>
 <!DOCTYPE html>
 <html lang="en" xml:lang="en">
@@ -148,9 +162,13 @@ class HTML {
       <a href="/admin/<?=$this->destination?>"><?=$this->displayName?></a>
     </div>
 <?php }
-  ###
-  # Print footer on webpage
-  ###
+  /**
+   * Print footer of webpage
+   *
+   * @param array $collapseIcons Array of icons to add script for (un)collapse in footer
+   *
+   * @return void
+   */
   public function showFooter($collapseIcons = array()) {
     print "\n  </div>";
     printf('%s  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -208,25 +226,52 @@ class HTML {
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
     });<?php
       print "\n  </script>\n";
-    } ?>
-</body>
-</html>
-<?php
+    }
+    print "</body>\n</html>";
   }
 
+  /**
+   * Set/change DisplayName
+   *
+   * @param string $name Info to show instead of login button
+   *
+   * @return void
+   */
   public function setDisplayName($name) {
     $this->displayName = $name;
     $this->loggedIn = true;
   }
+
+  /**
+   * Set/change Destination
+   *
+   * @param string $destination Destination after login
+   *
+   * @return void
+   */
   public function setDestination($destination) {
     $this->destination = $destination;
   }
 
+  /**
+   * Add table that should be sorted
+   *
+   * Added as script/DataTable when footer is generated.
+   *
+   * @return void
+   */
   public function addTableSort($tableId) {
     $this->tableToSort[] = $tableId;
   }
 
-  public function getPageTitle($title_part) {
+  /**
+   * Creates the title
+   *
+   * @param string $title_part String to add in title
+   *
+   * @return string
+   */
+  private function getPageTitle($title_part) {
     return 'Metadata ' . $this->federation['displayName'] . ( $title_part ? ' - ' . $title_part : '');
   }
 }

@@ -2,7 +2,7 @@
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
 const MD_EXTENSIONS = 'md:Extensions';
 const SAML_ATTRIBUTEVALUE = 'saml:AttributeValue';
