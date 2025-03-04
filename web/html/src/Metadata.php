@@ -62,6 +62,8 @@ class Metadata extends Common {
         $this->isSP = $entity['isSP'];
         $this->isAA = $entity['isAA'];
         $this->feedValue = $entity['publishIn'];
+      } else {
+        $this->entityID = $id;
       }
     }
   }
