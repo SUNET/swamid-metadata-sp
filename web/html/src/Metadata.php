@@ -86,9 +86,9 @@ class Metadata extends Common {
     } else {
       # Add new entity into database
       $entityHandlerInsert = $this->config->getDb()->prepare("INSERT INTO Entities
-        (`entityID`, `isIdP`, `isSP`, `publishIn`, `status`, `xml`, `lastUpdated`,
+        (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
         `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
-        VALUES(:Id, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '')");
+        VALUES(:Id, 0, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '')");
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
@@ -105,9 +105,10 @@ class Metadata extends Common {
   public function createDraft() {
     if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
       # Add new entity into database
-      $entityHandlerInsert = $this->config->getDb()->prepare('
-        INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`)
-          VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW())');
+      $entityHandlerInsert = $this->config->getDb()->prepare(
+        "INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
+        `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
+        VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW(), '', '', '', '', '')");
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
