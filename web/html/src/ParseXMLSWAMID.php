@@ -6,14 +6,7 @@ namespace metadata;
  * SWAMID specific code
  */
 class ParseXMLSWAMID extends ParseXML {
-  use SAMLTrait;
 
-  # Setup
-
-  #############
-  # IDPSSODescriptor
-  # SWAMID
-  #############
   /**
    * Parse IDPSSODescriptor
    *
@@ -78,9 +71,9 @@ class ParseXMLSWAMID extends ParseXML {
    *  - IDPSSO
    *  - SPSSO
    *
-   * @param boolean $saml2 If SSODescriptor is of type SAML2
+   * @param bool $saml2 If SSODescriptor is of type SAML2
    *
-   * @param boolean $saml1 If SSODescriptor is of type SAML1
+   * @param bool $saml1 If SSODescriptor is of type SAML1
    *
    * @return void
    */

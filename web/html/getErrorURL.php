@@ -5,7 +5,7 @@
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
 print "<?php\n\n\$helpdesks = array(\n";
 

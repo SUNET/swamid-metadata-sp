@@ -1,24 +1,19 @@
 <?php
+namespace metadata;
+
 use Jfcherng\Diff\Differ;
 use Jfcherng\Diff\Factory\RendererFactory;
 use Jfcherng\Diff\Renderer\RendererConstant;
+use PDO;
 
-class MetadataDisplay {
+/**
+ * Class to display Metadata
+ */
+class MetadataDisplay extends Common {
+  use CommonTrait;
+
   # Setup
-  private $config;
-  private $collapseIcons = false;
-  private $mode = '';
-  # From common.php
-  private $standardAttributes = array();
-  private $langCodes = array();
-  private $FriendlyNames = array();
-
-  const BIND_APPROVEDBY = ':ApprovedBy';
-  const BIND_ENTITYID = ':EntityID';
-  const BIND_ID = ':Id';
-  const BIND_INDEX = ':Index';
-  const BIND_TYPE = ':Type';
-  const BIND_URL = ':URL';
+  private array $collapseIcons = array();
 
   const SAML_EC_ANONYMOUS = 'https://refeds.org/category/anonymous';
   const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
@@ -37,19 +32,10 @@ class MetadataDisplay {
   const HTML_TABLE_END = "    </table>\n";
   const HTML_SELECTED = ' selected';
   const HTML_SHOW = ' show';
+  const HTML_TRUE = 'true';
 
-  public function __construct() {
-    global $config;
-    if (isset($config)) {
-      $this->config = $config;
-    } else {
-      $this->config = new metadata\Configuration();
-    }
-    require __DIR__ . '/common.php'; #NOSONAR
+  const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
 
-    $this->collapseIcons = array();
-    $this->mode = $config->getMode();
-  }
 
   ####
   # Shows menu row
@@ -192,7 +178,7 @@ class MetadataDisplay {
           if (! $ecsTested[$tag]) {
             $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
             $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
-              $tag, $this->mode == 'QA' ? 'qa.' : '', "\n");
+              $tag, $this->config->getMode() == 'QA' ? 'qa.' : '', "\n");
           }
         }
         // Error URLs
@@ -493,12 +479,8 @@ class MetadataDisplay {
         $state = 'dark';
       }
       $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
-      if (isset($this->standardAttributes[$type])) {
-        foreach ($this->standardAttributes[$type] as $data) {
-          if ($data['value'] == $value) {
-            $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
-          }
-        }
+      if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
+        $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
       }
       ?>
 
@@ -516,12 +498,8 @@ class MetadataDisplay {
           $state = 'dark';
         }
         $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
-        if (isset($this->standardAttributes[$type])) {
-          foreach ($this->standardAttributes[$type] as $data) {
-            if ($data['value'] == $value) {
-              $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
-            }
-          }
+        if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
+          $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
         }
         if ($oldType != $type) {
           print "\n          </ul>";
@@ -707,7 +685,7 @@ class MetadataDisplay {
         $state = 'dark';
       }
       printf ('                <li><span class="text-%s">%s (regexp="%s")</span></li>%s',
-        $state, $scope['scope'], $scope['regexp'] ? 'true' : 'false', "\n");
+        $state, $scope['scope'], $scope['regexp'] ? self::HTML_TRUE : 'false', "\n");
     }
     print '              </ul>';
   }
@@ -746,8 +724,8 @@ class MetadataDisplay {
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($oldLang != $mdui['lang']) {
         $lang = $mdui['lang'];
-        if (isset($this->langCodes[$lang])) {
-          $fullLang = $this->langCodes[$lang];
+        if (isset(self::LANG_CODES[$lang])) {
+          $fullLang = self::LANG_CODES[$lang];
         } elseif ($lang == "") {
           $fullLang = "(NOT ALLOWED - switch to en/sv)";
         } else {
@@ -781,18 +759,18 @@ class MetadataDisplay {
         case 'Logo' :
           $urlHandler->execute(array(self::BIND_URL => $data));
           $statusText = '';
-          if ($URLInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-            if ($URLInfo['height'] == $mdui['height'] || $URLInfo['nosize'] == 1) {
+          if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($urlInfo['height'] == $mdui['height'] || $urlInfo['nosize'] == 1) {
               $statusIcon = '';
             } else {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
               $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
-                $mdui['height'], $URLInfo['height']);
+                $mdui['height'], $urlInfo['height']);
             }
-            if ($URLInfo['width'] != $mdui['width'] && $URLInfo['nosize'] == 0) {
+            if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0) {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
               $statusText .= sprintf('<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
-                $mdui['width'], $URLInfo['width']);
+                $mdui['width'], $urlInfo['width']);
             }
           } else {
             $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
@@ -1046,9 +1024,9 @@ class MetadataDisplay {
         }
         $error = '';
         if ($requestedAttribute['FriendlyName'] == '') {
-          if (isset($this->FriendlyNames[$requestedAttribute['Name']])) {
-            $friendlyNameDisplay = sprintf('(%s)', $this->FriendlyNames[$requestedAttribute['Name']]['desc']);
-            if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+          if (isset(self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
+            $friendlyNameDisplay = sprintf('(%s)', self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']);
+            if (! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -1057,9 +1035,9 @@ class MetadataDisplay {
           }
         } else {
           $friendlyNameDisplay = $requestedAttribute['FriendlyName'];
-          if (isset ($this->FriendlyNames[$requestedAttribute['Name']])) {
-            if ($requestedAttribute['FriendlyName'] != $this->FriendlyNames[$requestedAttribute['Name']]['desc']
-              || ! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+          if (isset (self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
+            if ($requestedAttribute['FriendlyName'] != self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']
+              || ! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
                 $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -1417,6 +1395,7 @@ class MetadataDisplay {
               substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
             break;
           default :
+            # Skip other elements
         }
       }
       while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1540,28 +1519,24 @@ class MetadataDisplay {
         switch ($_GET["tab"]) {
           case 'reminders' :
             $remindersActive = self::HTML_ACTIVE;
-            $remindersSelected ='true';
+            $remindersSelected = self::HTML_TRUE;
             $remindersShow = self::HTML_SHOW;
-            break;
-          case 'reminders-urgent' :
-            $remindersUrgentActive = self::HTML_ACTIVE;
-            $remindersUrgentSelected='true';
-            $remindersUrgentShow = self::HTML_SHOW;
             break;
           case 'IdPs' :
             $idPsActive = self::HTML_ACTIVE;
-            $idPsSelected = 'true';
+            $idPsSelected = self::HTML_TRUE;
             $idPsShow = self::HTML_SHOW;
             $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
             break;
+          case 'reminders-urgent' :
           default :
-          $remindersUrgentActive = self::HTML_ACTIVE;
-          $remindersUrgentSelected='true';
-          $remindersUrgentShow = self::HTML_SHOW;
+            $remindersUrgentActive = self::HTML_ACTIVE;
+            $remindersUrgentSelected = self::HTML_TRUE;
+            $remindersUrgentShow = self::HTML_SHOW;
           }
       } else {
         $remindersUrgentActive = self::HTML_ACTIVE;
-        $remindersUrgentSelected='true';
+        $remindersUrgentSelected = self::HTML_TRUE;
         $remindersUrgentShow = self::HTML_SHOW;
       }
 
@@ -1790,13 +1765,13 @@ class MetadataDisplay {
           // Old IMPS:es
           switch ($entity['level']) {
             case 1 :
-              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['warn1']);
+              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['warn1']);
               break;
             case 2 :
-              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['warn2']);
+              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['warn2']);
               break;
             case 3 :
-              $reason = sprintf ('IMPS has not been validated for %d months', $impsDates['error']);
+              $reason = sprintf (self::TEXT_IHNBVF, $impsDates['error']);
               $showUrgent = true;
               break;
             case 4 :
@@ -1865,12 +1840,9 @@ class MetadataDisplay {
       $entityHandler->bindValue(self::BIND_ID, $entityId2);
       $entityHandler->execute();
       if ($entity2 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (! class_exists('NormalizeXML')) {
-          require_once __DIR__ . '/NormalizeXML.php';
-        }
-        $normalize1 = new NormalizeXML();
+        $normalize1 = new \metadata\NormalizeXML();
         $normalize1->fromString($entity1['xml']);
-        $normalize2 = new NormalizeXML();
+        $normalize2 = new \metadata\NormalizeXML();
         $normalize2->fromString($entity2['xml']);
         if ($normalize1->getStatus() && $normalize2->getStatus()) {
           printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
@@ -1964,10 +1936,7 @@ class MetadataDisplay {
     $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $entitiesHandler->execute();
 
-    if (! class_exists('NormalizeXML')) {
-      require_once __DIR__ . '/NormalizeXML.php';
-    }
-    $normalize = new NormalizeXML();
+    $normalize = new \metadata\NormalizeXML();
 
     printf ('    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Updater</th><th>Time</th><th>TimeOK</th><th>XML</th></tr>%s', "\n", );
@@ -2613,25 +2582,26 @@ class MetadataDisplay {
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
         case 'organizations' :
-          $organizationsActive = ' active';
-          $organizationsSelected = 'true';
-          $organizationsShow = ' show';
+          $organizationsActive = self::HTML_ACTIVE;
+          $organizationsSelected = self::HTML_TRUE;
+          $organizationsShow = self::HTML_SHOW;
           $orgId = isset($_GET['id']) ? $_GET['id'] : 0;
           break;
         case 'scopes' :
-          $scopesActive=self::HTML_ACTIVE;
-          $scopesSelected='true';
-          $scopesShow=self::HTML_SHOW;
+          $scopesActive = self::HTML_ACTIVE;
+          $scopesSelected = self::HTML_TRUE;
+          $scopesShow = self::HTML_SHOW;
+          break;
         default :
-          $impsActive = ' active';
-          $impsSelected = 'true';
-          $impsShow = ' show';
+          $impsActive = self::HTML_ACTIVE;
+          $impsSelected = self::HTML_TRUE;
+          $impsShow = self::HTML_SHOW;
           $impsId = isset($_GET['id']) ? $_GET['id'] : 0;
       }
     } else {
-      $impsActive = ' active';
-      $impsSelected = 'true';
-      $impsShow = ' show';
+      $impsActive = self::HTML_ACTIVE;
+      $impsSelected = self::HTML_TRUE;
+      $impsShow = self::HTML_SHOW;
     }
 
     printf('    <div class="row">

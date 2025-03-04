@@ -2,7 +2,7 @@
 //Load composer's autoloader
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
 header('Content-type: application/json');
 

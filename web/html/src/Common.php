@@ -11,40 +11,70 @@ class Common {
   use SAMLTrait;
 
   # Setup
-  protected $config;
+  protected Configuration $config;
 
-  protected $dbIdNr = 0;
-  protected $entityID = 'Unknown';
-  protected $entityExists = false;
-  protected $error = '';
-  protected $errorNB = '';
-  protected $isIdP = false;
-  protected $isSP = false;
-  protected $isAA = false;
-  protected $registrationInstant = '';
-  protected $result = '';
-  protected $warning = '';
-  protected $xml;
-  private $handleXML = true;
+  protected int $dbIdNr = 0;
+  protected string $entityID = 'Unknown';
+  protected bool $entityExists = false;
+  protected string $error = '';
+  protected string $errorNB = '';
+  protected bool $isIdP = false;
+  protected bool $isSP = false;
+  protected bool $isAA = false;
+  protected int $feedValue = 0;
+  protected string $registrationInstant = '';
+  protected string $result = '';
+  protected string $warning = '';
+  protected int $status = 0;
 
+  protected DOMDocument $xml;
+  private bool $handleXML = true;
+
+  const BIND_BITS = ':Bits';
   const BIND_COCOV1STATUS = ':Cocov1Status';
+  const BIND_CONTACTTYPE = ':ContactType';
+  const BIND_DATA = ':Data';
+  const BIND_ELEMENT = ':Element';
+  const BIND_EMAIL = ':Email';
+  const BIND_ENTITYID = ':EntityID';
   const BIND_ERRORS = ':Errors';
   const BIND_ERRORSNB = ':ErrorsNB';
+  const BIND_FRIENDLYNAME = ':FriendlyName';
+  const BIND_FULLNAME = ':FullName';
   const BIND_HEIGHT = ':Height';
   const BIND_ID = ':Id';
+  const BIND_INDEX = ':Index';
+  const BIND_ISREQUIRED = ':IsRequired';
+  const BIND_ISSUER = ':Issuer';
+  const BIND_KEY_TYPE = ':Key_type';
+  const BIND_LANG = ':Lang';
+  const BIND_NAME = ':Name';
+  const BIND_NAMEFORMAT = ':NameFormat';
   const BIND_NOSIZE = ':NoSize';
+  const BIND_NOTVALIDAFTER = ':NotValidAfter';
+  const BIND_ORDER = ':Order';
+  const BIND_REGEXP = ':Regexp';
   const BIND_REGISTRATIONINSTANT = ':RegistrationInstant';
   const BIND_RESULT = ':Result';
+  const BIND_SCOPE = ':Scope';
+  const BIND_SERIALNUMBER = ':SerialNumber';
   const BIND_STATUS = ':Status';
+  const BIND_SUBJECT = ':Subject';
   const BIND_TYPE = ':Type';
   const BIND_URL = ':URL';
+  const BIND_USE = ':Use';
   const BIND_VALIDATIONOUTPUT = ':validationOutput';
+  const BIND_VALUE = ':Value';
   const BIND_WARNINGS = ':Warnings';
   const BIND_WIDTH = ':Width';
   const BIND_XML = ':Xml';
 
   /**
    * Setup the class
+   *
+   * @param int $id id in database for entity
+   *
+   * @param bool $xml if we should setup xml handling
    *
    * @return void
    */
@@ -66,10 +96,12 @@ class Common {
       if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         $this->entityExists = true;
         $this->dbIdNr = $entity['id'];
+        $this->status = $entity['status'];
         $this->entityID = $entity['entityID'];
-        $this->isIdP = $entity['isIdP'];
-        $this->isSP = $entity['isSP'];
-        $this->isAA = $entity['isAA'];
+        $this->isIdP = $entity['isIdP'] == 1;
+        $this->isSP = $entity['isSP'] == 1;
+        $this->isAA = $entity['isAA'] == 1;
+        $this->feedValue = $entity['publishIn'];
         $this->warning = $entity['warnings'];
         $this->error = $entity['errors'];
         $this->errorNB = $entity['errorsNB'];
@@ -93,7 +125,7 @@ class Common {
    *
    * @param string $url URL that should be checked
    *
-   * @param integer $type
+   * @param int $type
    *  - 1 Check reachable (OK If reachable)
    *  - 2 Check reachable (NEED to be reachable)
    *  - 3 Check CoCo privacy
@@ -134,7 +166,7 @@ class Common {
    *
    * @param string $url URL that should be revalidated
    *
-   * @param boolean $verbose if we should be verbose during revalidation
+   * @param bool $verbose if we should be verbose during revalidation
    *
    * @return void
    */
@@ -151,9 +183,9 @@ class Common {
    * Run a curl agains the URL:s up for validation.
    * Start by those with oldest lastValidated
    *
-   * @param integer $limit Number of URL:s to validate
+   * @param int $limit Number of URL:s to validate
    *
-   * @param boolean $verbose if we should be verbose during validation
+   * @param bool $verbose if we should be verbose during validation
    *
    * @return void
    */
@@ -292,9 +324,9 @@ class Common {
    * Run a curl agains the URL:s up for validation.
    * Start by those with oldest lastValidated
    *
-   * @param integer $limit Number of URL:s to validate
+   * @param int $limit Number of URL:s to validate
    *
-   * @param boolean $verbose if we should be verbose during validation
+   * @param bool $verbose if we should be verbose during validation
    *
    * @return void
    */
@@ -315,9 +347,9 @@ class Common {
    * Run a curl agains the URL:s up for validation.
    * Start by those with oldest lastValidated
    *
-   * @param integer $limit Number of URL:s to validate
+   * @param int $limit Number of URL:s to validate
    *
-   * @param boolean $verbose if we should be verbose during validation
+   * @param bool $verbose if we should be verbose during validation
    *
    * @return void
    */
@@ -453,7 +485,7 @@ class Common {
    *
    * @return void
    */
-  protected function saveResults() {
+  public function saveResults() {
     $sql = 'UPDATE `Entities`
       SET `validationOutput` = :validationOutput,
         `warnings` = :Warnings,
@@ -474,5 +506,25 @@ class Common {
       $resultHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
     }
     $resultHandler->execute();
+  }
+
+  /**
+   * Find EntityDescriptor
+   *
+   * Find EntityDescriptor in $xml and return DOMNode of EntityDescriptor
+   *
+   * @param DOMNode $xml DOMNode in a XML object
+   *
+   * @return DOMNode
+   */
+  protected function getEntityDescriptor($xml) {
+    $child = $xml->firstChild;
+    while ($child) {
+      if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
+        return $child;
+      }
+      $child = $child->nextSibling;
+    }
+    return false;
   }
 }

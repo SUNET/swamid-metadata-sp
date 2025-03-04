@@ -8,7 +8,6 @@ use PDOException;
  * Class to Parse XML for an Entity into Database
  */
 class ParseXML extends Common {
-  use SAMLTrait;
   use CommonTrait;
 
   # Setup
@@ -19,35 +18,13 @@ class ParseXML extends Common {
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
 
-  const BIND_BITS = ':Bits';
   const BIND_COMPANY = ':Company';
-  const BIND_CONTACTTYPE = ':ContactType';
-  const BIND_DATA = ':Data';
   const BIND_DEFAULT = ':Default';
-  const BIND_ELEMENT = ':Element';
-  const BIND_EMAIL = ':Email';
   const BIND_EXTENSIONS = ':Extensions';
-  const BIND_FRIENDLYNAME = ':FriendlyName';
   const BIND_GIVENNAME = ':GivenName';
-  const BIND_ID = ':Id';
-  const BIND_INDEX = ':Index';
-  const BIND_ISREQUIRED = ':IsRequired';
-  const BIND_ISSUER = ':Issuer';
-  const BIND_KEY_TYPE = ':Key_type';
-  const BIND_LANG = ':Lang';
-  const BIND_NAME = ':Name';
-  const BIND_NAMEFORMAT = ':NameFormat';
-  const BIND_NOTVALIDAFTER = ':NotValidAfter';
-  const BIND_ORDER = ':Order';
-  const BIND_REGEXP = ':Regexp';
-  const BIND_SCOPE = ':Scope';
-  const BIND_SERIALNUMBER = ':SerialNumber';
   const BIND_SUBCONTACTTYPE = ':SubcontactType';
-  const BIND_SUBJECT = ':Subject';
   const BIND_SURNAME = ':SurName';
   const BIND_TELEPHONENUMBER = ':TelephoneNumber';
-  const BIND_USE = ':Use';
-  const BIND_VALUE = ':Value';
 
   const TEXT_HTTPS = 'https://';
 
@@ -136,31 +113,11 @@ class ParseXML extends Common {
   }
 
   /**
-   * Find EntityDescriptor
-   *
-   * Find EntityDescriptor in $xml and return DOMNode of EntityDescriptor
-   *
-   * @param $xml DOMNode an XML object
-   *
-   * @return DOMNode
-   */
-  protected function getEntityDescriptor($xml) {
-    $child = $xml->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
-        return $child;
-      }
-      $child = $child->nextSibling;
-    }
-    return false;
-  }
-
-  /**
    * Add an URL to EntityURLs
    *
    * Adds an URL to EntityURLs + to DB for URL-checking
    *
-   * @param integer $type Type of URL
+   * @param int $type Type of URL
    *
    * @param string $url  URL to add
    *
@@ -1013,7 +970,7 @@ class ParseXML extends Common {
    *  - IDPSSO
    *  - SPSSO
    *
-   * @param integer $order Key number in XML
+   * @param int $order Key number in XML
    *
    * @return void
    */
@@ -1054,7 +1011,7 @@ class ParseXML extends Common {
    *  - encr
    *  - both
    *
-   * @param integer $order Key number in XML
+   * @param int $order Key number in XML
    *
    * @return void
    */
@@ -1095,7 +1052,7 @@ class ParseXML extends Common {
    *  - encr
    *  - both
    *
-   * @param integer $order Key number in XML
+   * @param int $order Key number in XML
    *
    * @param string $name Name of key
    *
@@ -1307,9 +1264,9 @@ class ParseXML extends Common {
    *  - IDPSSO
    *  - SPSSO
    *
-   * @param boolean $saml2 If SSODescriptor is of type SAML2
+   * @param bool $saml2 If SSODescriptor is of type SAML2
    *
-   * @param boolean $saml1 If SSODescriptor is of type SAML1
+   * @param bool $saml1 If SSODescriptor is of type SAML1
    *
    * @return void
    */

@@ -1,19 +1,13 @@
 <?php
-// Import PHPMailer classes into the global namespace
-// These must be at the top of your script, not inside a function
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
-require_once 'include/Html.php'; #NOSONAR
-$html = new HTML();
+$html = new \metadata\HTML();
 
-require_once 'include/MetadataDisplay.php'; #NOSONAR
-$display = new MetadataDisplay();
+$display = new \metadata\MetadataDisplay();
 
 if (isset($_GET['showEntity'])) {
   showEntity($_GET['showEntity']);

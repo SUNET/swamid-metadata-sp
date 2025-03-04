@@ -1,112 +1,26 @@
 <?php
-class MetadataEdit {
+namespace metadata;
+
+use PDO;
+
+class MetadataEdit extends Common {
+  use CommonTrait;
+
   # Setup
-  private $config;
-  private $dbIdNr = 0;
-  private $dbOldIdNr = 0;
-  private $entityExists = false;
-  private $oldExists = false;
-  private $entityID = false;
-  private $oldentityID = false;
-  private $isIdP = false;
-  private $isSP = false;
-  private $newXml;
-  private $oldXml;
-  private $orderAttributeRequestingService = array();
-  private $orderOrganization = array();
-  private $orderContactPerson = array();
-  # From common.php
-  private $standardAttributes = array();
-  private $langCodes = array();
-  private $FriendlyNames = array();
+  private int $dbOldIdNr = 0;
+  private bool $oldExists = false;
 
-  const SAML_DS_KEYINFO = 'ds:KeyInfo';
-  const SAML_DS_X509DATA = 'ds:X509Data';
-  const SAML_DS_X509CERTIFICATE = 'ds:X509Certificate';
-  const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
-  const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
-  const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
-  const SAML_MD_ASSERTIONCONSUMERSERVICE = 'md:AssertionConsumerService';
-  const SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR = 'md:AttributeAuthorityDescriptor';
-  const SAML_MD_ATTRIBUTECONSUMINGSERVICE = 'md:AttributeConsumingService';
-  const SAML_MD_AUTHNAUTHORITYDESCRIPTOR = 'md:AuthnAuthorityDescriptor';
-  const SAML_MD_COMPANY = 'md:Company';
-  const SAML_MD_CONTACTPERSON = 'md:ContactPerson';
-  const SAML_MD_EMAILADDRESS = 'md:EmailAddress';
-  const SAML_MD_EXTENSIONS = 'md:Extensions';
-  const SAML_MD_GIVENNAME = 'md:GivenName';
-  const SAML_MD_IDPSSODESCRIPTOR = 'md:IDPSSODescriptor';
-  const SAML_MD_KEYDESCRIPTOR = 'md:KeyDescriptor';
-  const SAML_MD_MANAGENAMEIDSERVICE = 'md:ManageNameIDService';
-  const SAML_MD_NAMEIDFORMAT = 'md:NameIDFormat';
-  const SAML_MD_ORGANIZATION = 'md:Organization';
-  const SAML_MD_ORGANIZATIONDISPLAYNAME = 'md:OrganizationDisplayName';
-  const SAML_MD_ORGANIZATIONNAME = 'md:OrganizationName';
-  const SAML_MD_ORGANIZATIONURL = 'md:OrganizationURL';
-  const SAML_MD_PDPDESCRIPTOR = 'md:PDPDescriptor';
-  const SAML_MD_REQUESTEDATTRIBUTE = 'md:RequestedAttribute';
-  const SAML_MD_SERVICEDESCRIPTION = 'md:ServiceDescription';
-  const SAML_MD_SERVICENAME = 'md:ServiceName';
-  const SAML_MD_SINGLELOGOUTSERVICE = 'md:SingleLogoutService';
-  const SAML_MD_SPSSODESCRIPTOR = 'md:SPSSODescriptor';
-  const SAML_MD_SURNAME = 'md:SurName';
-  const SAML_MD_TELEPHONENUMBER = 'md:TelephoneNumber';
-  const SAML_MDATTR_ENTITYATTRIBUTES = 'mdattr:EntityAttributes';
-  const SAML_MDRPI_REGISTRATIONINFO = 'mdrpi:RegistrationInfo';
-  const SAML_MDUI = 'mdui:';
-  const SAML_MDUI_DISCOHINTS = 'mdui:DiscoHints';
-  const SAML_MDUI_DOMAINHINT = 'mdui:DomainHint';
-  const SAML_MDUI_INFORMATIONURL = 'mdui:InformationURL';
-  const SAML_MDUI_LOGO = 'mdui:Logo';
-  const SAML_MDUI_PRIVACYSTATEMENTURL = 'mdui:PrivacyStatementURL';
-  const SAML_MDUI_UIINFO = 'mdui:UIInfo';
-  const SAML_SHIBMD_SCOPE = 'shibmd:Scope';
-  const SAML_SAMLA_ATTRIBUTE = 'samla:Attribute';
-  const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
-
-  const SAMLNF_URI = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
-  const SAMLXML_LANG = 'xml:lang';
-  const SAMLXMLNS_URI = 'http://www.w3.org/2000/xmlns/';
-  const SAMLXMLNS_DS = 'xmlns:ds';
-  const SAMLXMLNS_DS_URL = 'http://www.w3.org/2000/09/xmldsig#';
-  const SAMLXMLNS_MDUI = 'xmlns:mdui';
-  const SAMLXMLNS_MDUI_URL = 'urn:oasis:names:tc:SAML:metadata:ui';
+  private array $orderAttributeRequestingService = array();
+  private array $orderOrganization = array();
+  private array $orderContactPerson = array();
 
   const BIND_ATTRIBUTE = ':Attribute';
-  const BIND_BITS = ':Bits';
-  const BIND_CONTACTTYPE = ':ContactType';
-  const BIND_DATA = ':Data';
-  const BIND_ELEMENT = ':Element';
-  const BIND_EMAIL = ':Email';
-  const BIND_FRIENDLYNAME = ':FriendlyName';
-  const BIND_FULLNAME = ':FullName';
-  const BIND_HEIGHT = ':Height';
-  const BIND_ID = ':Id';
-  const BIND_INDEX = ':Index';
-  const BIND_ISREQUIRED = ':IsRequired';
-  const BIND_ISSUER = ':Issuer';
-  const BIND_KEY_TYPE = ':Key_type';
-  const BIND_LANG = ':Lang';
-  const BIND_NAME = ':Name';
-  const BIND_NAMEFORMAT = ':NameFormat';
   const BIND_NEWORDER = ':NewOrder';
   const BIND_NEWUSE = ':NewUse';
-  const BIND_NOTVALIDAFTER = ':NotValidAfter';
   const BIND_OLDORDER = ':OldOrder';
-  const BIND_ORDER = ':Order';
-  const BIND_REGEXP = ':Regexp';
-  const BIND_SCOPE = ':Scope';
-  const BIND_SERIALNUMBER = ':SerialNumber';
-  const BIND_SUBJECT = ':Subject';
-  const BIND_TYPE = ':Type';
-  const BIND_URL = ':URL';
-  const BIND_USE = ':Use';
-  const BIND_VALUE = ':Value';
-  const BIND_WIDTH = ':Width';
-  const BIND_XML = ':Xml';
 
-  const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
+  const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_COPY = 'Copy"><i class="fas fa-pencil-alt"></i></a> ';
   const HTML_DELETE = 'Delete"><i class="fas fa-trash"></i></a> ';
   const HTML_DIV_CLASS_ALERT_DANGER = '<div class="row alert alert-danger" role="alert">Error:%s</div>';
@@ -122,16 +36,10 @@ class MetadataEdit {
   const TEXT_BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
   const TEXT_END_CERT = "-----END CERTIFICATE-----\n";
   const TEXT_ENC_SIGN = 'encryption & signing';
+  const TEXT_MAILTO = 'mailto:';
 
-  public function __construct($newID, $oldID = 0) {
-    global $config;
-    if (isset($config)) {
-      $this->config = $config;
-    } else {
-      $this->config = new metadata\Configuration();
-    }
-    require __DIR__ . '/common.php'; #NOSONAR
-    $this->dbIdNr = is_numeric($newID) ? $newID : 0;
+  public function __construct($id, $oldID = 0) {
+    parent::__construct($id);
     $this->dbOldIdNr = is_numeric($oldID) ? $oldID : 0;
     $this->oldExists = false;
 
@@ -151,32 +59,11 @@ class MetadataEdit {
       self::SAML_MD_TELEPHONENUMBER => 5,
       self::SAML_MD_EXTENSIONS => 6);
 
-    $entityHandler = $this->config->getDb()->prepare('SELECT entityID, isIdP, isSP, status, xml FROM Entities WHERE id = :Id;');
-    $entityHandler->bindValue(self::BIND_ID, $newID);
-    $entityHandler->execute();
-    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->entityExists = true;
-      $this->newXml = new DOMDocument;
-      $this->newXml->preserveWhiteSpace = false;
-      $this->newXml->formatOutput = true;
-      $this->newXml->loadXML($entity['xml']);
-      $this->newXml->encoding = 'UTF-8';
-      $this->entityID = $entity['entityID'];
-      $this->isIdP = $entity['isIdP'];
-      $this->isSP = $entity['isSP'];
-    } else {
-      $this->entityExists = false;
-      $this->entityID = 'Unknown';
-      $this->isIdP = false;
-      $this->isSP = false;
-    }
     if ($this->entityExists && $oldID > 0) {
+      $entityHandler = $this->config->getDb()->prepare('SELECT entityID, isIdP, isSP, status, xml FROM Entities WHERE id = :Id;');
       $entityHandler->bindValue(self::BIND_ID, $oldID);
       $entityHandler->execute();
-      if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        $this->oldXml = new DOMDocument;
-        $this->oldXml->loadXML($entity['xml']);
-        $this->oldentityID = $entity['entityID'];
+      if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
         $this->oldExists = true;
       }
     }
@@ -275,7 +162,7 @@ class MetadataEdit {
           printf ('Missing type (%s)', urlencode($_GET['type']));
           exit;
       }
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+      $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
       # Find md:Extensions in XML
       $child = $entityDescriptor->firstChild;
@@ -295,7 +182,7 @@ class MetadataEdit {
           case self::SAML_MD_CONTACTPERSON :
           case self::SAML_MD_ADDITIONALMETADATALOCATION :
           default :
-            $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
             $entityDescriptor->insertBefore($extensions, $child);
             break;
         }
@@ -307,7 +194,7 @@ class MetadataEdit {
           $update = true;
           if (! $extensions) {
             # Add if missing
-            $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
             $entityDescriptor->appendChild($extensions);
           }
 
@@ -325,7 +212,7 @@ class MetadataEdit {
             # Add if missing
             $entityDescriptor->setAttributeNS(
               self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
-            $entityAttributes = $this->newXml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
+            $entityAttributes = $this->xml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
             $extensions->appendChild($entityAttributes);
           }
 
@@ -343,7 +230,7 @@ class MetadataEdit {
             # Add if missing
             $entityDescriptor->setAttributeNS(
               self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
-            $attribute = $this->newXml->createElement(self::SAML_SAMLA_ATTRIBUTE);
+            $attribute = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTE);
             $attribute->setAttribute('Name', $attributeType);
             $attribute->setAttribute('NameFormat', self::SAMLNF_URI);
             $entityAttributes->appendChild($attribute);
@@ -377,7 +264,7 @@ class MetadataEdit {
           }
           if (! $attributeValue) {
             # Add if missing
-            $attributeValue = $this->newXml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
+            $attributeValue = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
             if ($_GET['type'] == 'entity-selection-profile') {
               if (isset($this->config->entitySelectionProfiles()[trim($_GET['attribute'])])) {
                 # Update with new value
@@ -491,13 +378,9 @@ class MetadataEdit {
         $error = self::HTML_CLASS_ALERT_WARNING;
         $entityType = '?';
       }
-      if (isset($this->standardAttributes[$type])) {
-        foreach ($this->standardAttributes[$type] as $data) {
-          if ($data['value'] == $value) {
-            $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
-            $entityType = $data['type'];
-          }
-        }
+      if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
+        $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
+        $entityType = $type;
       }
       printf('
         <b>%s</b>
@@ -529,13 +412,9 @@ class MetadataEdit {
           $error = self::HTML_CLASS_ALERT_WARNING;
           $entityType = '?';
         }
-        if (isset($this->standardAttributes[$type])) {
-          foreach ($this->standardAttributes[$type] as $data) {
-            if ($data['value'] == $value) {
-              $error = ($data['swamidStd']) ? '' : self::HTML_CLASS_ALERT_DANGER;
-              $entityType = $data['type'];
-            }
-          }
+        if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
+          $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
+          $entityType = $type;
         }
         if ($oldType != $type) {
           printf ("\n%s\n        <b>%s</b>\n        <ul>", self::HTML_END_UL, $type);
@@ -562,14 +441,13 @@ class MetadataEdit {
     print '        <hr>
         Quick-links
         <ul>';
-    foreach ($this->standardAttributes as $type => $values) {
+    foreach (self::STANDARD_ATTRIBUTES as $type => $values) {
       printf ('%s          <li>%s</li><ul>', "\n", $type);
-      foreach ($values as $data) {
+      foreach ($values as $value => $data) {
         $entityType = $data['type'];
         if (
           ($entityType == 'IdP/SP' || ($entityType == 'IdP' && $this->isIdP) || ($entityType == 'SP' && $this->isSP))
-          && $data['swamidStd']) {
-          $value = $data['value'];
+          && $data['standard']) {
           if (isset($existingAttributeValues[$type]) && isset($existingAttributeValues[$type][$value])) {
             printf ('%s            <li>%s</li>', "\n", $value);
           } else {
@@ -663,7 +541,7 @@ class MetadataEdit {
   }
   private function editIdPErrorURL() {
     if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+      $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $errorURLValue = trim(urldecode($_GET['errorURL']));
 
       # Find md:IDPSSODescriptor in XML
@@ -779,7 +657,7 @@ class MetadataEdit {
   private function editIdPScopes() {
     if (isset($_GET['action']) && isset($_GET['value']) && trim($_GET['value']) != '') {
       $changed = false;
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+      $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $scopeValue = trim($_GET['value']);
 
       # Find md:IDPSSODescriptor in XML
@@ -801,13 +679,13 @@ class MetadataEdit {
               if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
                 $extensions = $child;
               } else {
-                $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
                 $idpSSODescriptor->insertBefore($extensions, $child);
               }
               $child = $child->nextSibling;
             }
             if (! $extensions) {
-              $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
               $idpSSODescriptor->appendChild($extensions);
             }
 
@@ -832,7 +710,7 @@ class MetadataEdit {
               $child = $child->nextSibling;
             }
             if (! $scope ) {
-              $scope = $this->newXml->createElement(self::SAML_SHIBMD_SCOPE, $scopeValue);
+              $scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, $scopeValue);
               $scope->setAttribute('regexp', 'false');
               if ($beforeChild) {
                 $extensions->insertBefore($scope, $beforeChild);
@@ -1001,7 +879,7 @@ class MetadataEdit {
         printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
       } else {
         $changed = false;
-        $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
         # Find md:IDPSSODescriptor in XML
         $child = $entityDescriptor->firstChild;
@@ -1022,12 +900,12 @@ class MetadataEdit {
                 if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
                   $extensions = $child;
                 } else {
-                  $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
                   $ssoDescriptor->insertBefore($extensions, $child);
                 }
               }
               if (! $extensions) {
-                $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
                 $ssoDescriptor->appendChild($extensions);
               }
               $child = $extensions->firstChild;
@@ -1049,7 +927,7 @@ class MetadataEdit {
                 $child = $child->nextSibling;
               }
               if (! $uuInfo ) {
-                $uuInfo = $this->newXml->createElement(self::SAML_MDUI_UIINFO);
+                $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
                 if ($beforeChild) {
                   $extensions->insertBefore($uuInfo, $beforeChild);
                 } else {
@@ -1109,7 +987,7 @@ class MetadataEdit {
                 $mduiUpdateHandler->execute();
               } else {
                 # Add if missing
-                $mduiElement = $this->newXml->createElement($elementmd, htmlspecialchars($value));
+                $mduiElement = $this->xml->createElement($elementmd, htmlspecialchars($value));
                 $mduiElement->setAttribute(self::SAMLXML_LANG, $langvalue);
                 if ($elementmd == self::SAML_MDUI_LOGO) {
                   $mduiElement->setAttribute('height', $heightValue);
@@ -1260,8 +1138,8 @@ class MetadataEdit {
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($oldLang != $mdui['lang']) {
         $lang = $mdui['lang'];
-        if (isset($this->langCodes[$lang])) {
-          $fullLang = $this->langCodes[$lang];
+        if (isset(self::LANG_CODES[$lang])) {
+          $fullLang = self::LANG_CODES[$lang];
         } elseif ($lang == "") {
           $fullLang = "(NOT ALLOWED - switch to en/sv)";
         } else {
@@ -1428,7 +1306,7 @@ class MetadataEdit {
         printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
       } else {
         $changed = false;
-        $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
         # Find md:IDPSSODescriptor in XML
         $child = $entityDescriptor->firstChild;
@@ -1449,12 +1327,12 @@ class MetadataEdit {
                 if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
                   $extensions = $child;
                 } else {
-                  $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
                   $ssoDescriptor->insertBefore($extensions, $child);
                 }
               }
               if (! $extensions) {
-                $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
+                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
                 $ssoDescriptor->appendChild($extensions);
               }
               $child = $extensions->firstChild;
@@ -1474,7 +1352,7 @@ class MetadataEdit {
                 $child = $child->nextSibling;
               }
               if (! $discoHints ) {
-                $discoHints = $this->newXml->createElement(self::SAML_MDUI_DISCOHINTS);
+                $discoHints = $this->xml->createElement(self::SAML_MDUI_DISCOHINTS);
                 $extensions->appendChild($discoHints);
               }
               if (! $mduiFound) {
@@ -1491,7 +1369,7 @@ class MetadataEdit {
               }
               if (! $mduiElement) {
                 # Add if missing
-                $mduiElement = $this->newXml->createElement($elementmd, $value);
+                $mduiElement = $this->xml->createElement($elementmd, $value);
                 $discoHints->appendChild($mduiElement);
                 $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO Mdui (entity_id, type, element, data)
                   VALUES (:Id, 'IDPDisco', :Element, :Data);");
@@ -1726,7 +1604,7 @@ class MetadataEdit {
         }
 
         $descriptor = 'md:'.$type.'Descriptor';
-        $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
         # Find md:SSODescriptor in XML
         $child = $entityDescriptor->firstChild;
@@ -1753,7 +1631,7 @@ class MetadataEdit {
             $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_DS, self::SAMLXMLNS_DS_URL);
           }
 
-          $keyDescriptor = $this->newXml->createElement(self::SAML_MD_KEYDESCRIPTOR);
+          $keyDescriptor = $this->xml->createElement(self::SAML_MD_KEYDESCRIPTOR);
           if ($use <> "both") {
             $keyDescriptor->setAttribute('use', $use);
           }
@@ -1764,15 +1642,15 @@ class MetadataEdit {
             $ssoDescriptor->appendChild($keyDescriptor);
           }
 
-          $KeyInfo = $this->newXml->createElement('ds:KeyInfo');
-          $keyDescriptor->appendChild($KeyInfo);
+          $keyInfo = $this->xml->createElement('ds:KeyInfo');
+          $keyDescriptor->appendChild($keyInfo);
 
-          $X509Data = $this->newXml->createElement(self::SAML_DS_X509DATA);
-          $KeyInfo->appendChild($X509Data);
+          $x509Data = $this->xml->createElement(self::SAML_DS_X509DATA);
+          $keyInfo->appendChild($x509Data);
 
-          $X509Certificate = $this->newXml->createElement(self::SAML_DS_X509CERTIFICATE);
-          $X509Certificate->nodeValue = $certificate;
-          $X509Data->appendChild($X509Certificate);
+          $x509Certificate = $this->xml->createElement(self::SAML_DS_X509CERTIFICATE);
+          $x509Certificate->nodeValue = $certificate;
+          $x509Data->appendChild($x509Certificate);
 
           $this->saveXML();
 
@@ -1781,22 +1659,22 @@ class MetadataEdit {
           $reorderKeyOrderHandler->bindParam(self::BIND_ID, $this->dbIdNr);
           $reorderKeyOrderHandler->execute();
 
-          $KeyInfoHandler = $this->config->getDb()->prepare(
+          $keyInfoHandler = $this->config->getDb()->prepare(
             'INSERT INTO KeyInfo
             (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`,
               `subject`, `issuer`, `bits`, `key_type`, `serialNumber`)
             VALUES (:Id, :Type, :Use, 0, :Name, :NotValidAfter, :Subject, :Issuer, :Bits, :Key_type, :SerialNumber);');
-          $KeyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
-          $KeyInfoHandler->bindValue(self::BIND_TYPE, $type);
-          $KeyInfoHandler->bindValue(self::BIND_USE, $use);
-          $KeyInfoHandler->bindValue(self::BIND_NAME, '');
-          $KeyInfoHandler->bindValue(self::BIND_NOTVALIDAFTER, date('Y-m-d H:i:s', $certInfo['validTo_time_t']));
-          $KeyInfoHandler->bindParam(self::BIND_SUBJECT, $subject);
-          $KeyInfoHandler->bindParam(self::BIND_ISSUER, $issuer);
-          $KeyInfoHandler->bindParam(self::BIND_BITS, $key_info['bits']);
-          $KeyInfoHandler->bindParam(self::BIND_KEY_TYPE, $keyType);
-          $KeyInfoHandler->bindParam(self::BIND_SERIALNUMBER, $certInfo['serialNumber']);
-          $added = $KeyInfoHandler->execute();
+          $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+          $keyInfoHandler->bindValue(self::BIND_TYPE, $type);
+          $keyInfoHandler->bindValue(self::BIND_USE, $use);
+          $keyInfoHandler->bindValue(self::BIND_NAME, '');
+          $keyInfoHandler->bindValue(self::BIND_NOTVALIDAFTER, date('Y-m-d H:i:s', $certInfo['validTo_time_t']));
+          $keyInfoHandler->bindParam(self::BIND_SUBJECT, $subject);
+          $keyInfoHandler->bindParam(self::BIND_ISSUER, $issuer);
+          $keyInfoHandler->bindParam(self::BIND_BITS, $key_info['bits']);
+          $keyInfoHandler->bindParam(self::BIND_KEY_TYPE, $keyType);
+          $keyInfoHandler->bindParam(self::BIND_SERIALNUMBER, $certInfo['serialNumber']);
+          $added = $keyInfoHandler->execute();
         }
       } else {
         print '<div class="row alert alert-danger" role="alert">Error: Invalid Certificate</div>';
@@ -1887,7 +1765,7 @@ class MetadataEdit {
       } else {
         $changed = false;
         $descriptor = 'md:'.$type.'Descriptor';
-        $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
         # Find md:SSODescriptor in XML
         $child = $entityDescriptor->firstChild;
@@ -2452,8 +2330,8 @@ class MetadataEdit {
           if (isset($_GET['friendlyName']) && trim($_GET['friendlyName']) != '') {
             $friendlyName = trim($_GET['friendlyName']);
           } else {
-            if (isset($this->FriendlyNames[$name])) {
-              $friendlyName = $this->FriendlyNames[$name]['desc'];
+            if (isset(self::FRIENDLY_NAMES[$name])) {
+              $friendlyName = self::FRIENDLY_NAMES[$name]['desc'];
             }
           }
           if (isset($_GET['NameFormat']) && trim($_GET['NameFormat']) != '') {
@@ -2471,7 +2349,7 @@ class MetadataEdit {
         printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
       } else {
         $changed = false;
-        $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
         # Find md:IDPSSODescriptor in XML
         $child = $entityDescriptor->firstChild;
@@ -2508,7 +2386,7 @@ class MetadataEdit {
                 $child = $child->nextSibling;
               }
               if (! $attributeConsumingService) {
-                $attributeConsumingService = $this->newXml->createElement(self::SAML_MD_ATTRIBUTECONSUMINGSERVICE);
+                $attributeConsumingService = $this->xml->createElement(self::SAML_MD_ATTRIBUTECONSUMINGSERVICE);
                 $attributeConsumingService->setAttribute('index', $indexValue);
                 $ssoDescriptor->appendChild($attributeConsumingService);
 
@@ -2534,7 +2412,7 @@ class MetadataEdit {
                 $mduiHandler->bindParam(self::BIND_ID, $this->dbIdNr);
                 $mduiHandler->execute();
                 while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-                  $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME,
+                  $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME,
                     $mdui['data']);
                   $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $mdui['lang']);
                   $attributeConsumingService->appendChild($attributeConsumingServiceElement);
@@ -2605,7 +2483,7 @@ class MetadataEdit {
                 $child = $child->nextSibling;
               }
               if (! $attributeConsumingService) {
-                $attributeConsumingService = $this->newXml->createElement(self::SAML_MD_ATTRIBUTECONSUMINGSERVICE);
+                $attributeConsumingService = $this->xml->createElement(self::SAML_MD_ATTRIBUTECONSUMINGSERVICE);
                 $attributeConsumingService->setAttribute('index', $indexValue);
                 $ssoDescriptor->appendChild($attributeConsumingService);
                 $addServiceIndexHandler = $this->config->getDb()->prepare(
@@ -2630,18 +2508,18 @@ class MetadataEdit {
                   $child = $child->nextSibling;
                 } else {
                   if ($placement < 3 ) {
-                    $attributeConsumingServiceElement = $this->newXml->createElement($elementmd, $value);
+                    $attributeConsumingServiceElement = $this->xml->createElement($elementmd, $value);
                   } else {
-                    $attributeConsumingServiceElement = $this->newXml->createElement($elementmd);
+                    $attributeConsumingServiceElement = $this->xml->createElement($elementmd);
                   }
                   $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $child);
                 }
               }
               if (!$attributeConsumingServiceElement) {
                 if ($placement < 3 ) {
-                  $attributeConsumingServiceElement = $this->newXml->createElement($elementmd, $value);
+                  $attributeConsumingServiceElement = $this->xml->createElement($elementmd, $value);
                 } else {
-                  $attributeConsumingServiceElement = $this->newXml->createElement($elementmd);
+                  $attributeConsumingServiceElement = $this->xml->createElement($elementmd);
                 }
                 $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               }
@@ -2914,9 +2792,9 @@ class MetadataEdit {
       while ($requestedAttribute = $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
         $error = '';
         if ($requestedAttribute['FriendlyName'] == '') {
-          if (isset($this->FriendlyNames[$requestedAttribute['Name']])) {
-            $friendlyNameDisplay = sprintf('(%s)', $this->FriendlyNames[$requestedAttribute['Name']]['desc']);
-            if (! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+          if (isset(self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
+            $friendlyNameDisplay = sprintf('(%s)', self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']);
+            if (! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -2925,9 +2803,9 @@ class MetadataEdit {
           }
         } else {
           $friendlyNameDisplay = $requestedAttribute['FriendlyName'];
-          if (isset ($this->FriendlyNames[$requestedAttribute['Name']])) {
-            if ($requestedAttribute['FriendlyName'] != $this->FriendlyNames[$requestedAttribute['Name']]['desc']
-              || ! $this->FriendlyNames[$requestedAttribute['Name']]['swamidStd']) {
+          if (isset (self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
+            if ($requestedAttribute['FriendlyName'] != self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']
+              || ! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -2954,8 +2832,8 @@ class MetadataEdit {
 
       if ($indexValue == $index) {
         print "<h5>Available attributes:</h5>";
-        foreach ($this->FriendlyNames as $nameL => $data) {
-          if ($data['swamidStd']) {
+        foreach (self::FRIENDLY_NAMES as $nameL => $data) {
+          if ($data['standard']) {
             if (isset($existingRequestedAttribute[$nameL])) {
               printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
             } else {
@@ -2965,8 +2843,8 @@ class MetadataEdit {
           }
         }
         print '<br><h5>Not recommended attributes:</h5>';
-        foreach ($this->FriendlyNames as $nameL => $data) {
-          if (! $data['swamidStd']) {
+        foreach (self::FRIENDLY_NAMES as $nameL => $data) {
+          if (! $data['standard']) {
             if (substr($nameL, 0, 27) == 'urn:mace:dir:attribute-def:') {
               $samlVer = ' (SAML1)';
               $nf = 'urn:mace:shibboleth:1.0:attributeNamespace:uri';
@@ -3063,7 +2941,7 @@ class MetadataEdit {
           }
           printf('%s            <li>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
             "\n", $copy, $state,
-            $data['friendlyName'] == '' ? '(' . $this->FriendlyNames[$name]['desc'] .')' : $data['friendlyName'],
+            $data['friendlyName'] == '' ? '(' . self::FRIENDLY_NAMES[$name]['desc'] .')' : $data['friendlyName'],
             htmlspecialchars($name), $data['isRequired'] == '1' ? ' (Required)' : '');
         }
         printf("\n  %s</li>\n%s", self::HTML_END_UL, self::HTML_END_UL);
@@ -3103,7 +2981,7 @@ class MetadataEdit {
       if ($error) {
         printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
       } else {
-        $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
         # Find md:Extensions in XML
         $child = $entityDescriptor->firstChild;
@@ -3115,7 +2993,7 @@ class MetadataEdit {
               break;
             case self::SAML_MD_CONTACTPERSON :
             case self::SAML_MD_ADDITIONALMETADATALOCATION :
-              $organization = $this->newXml->createElement(self::SAML_MD_ORGANIZATION);
+              $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
               $entityDescriptor->insertBefore($organization, $child);
               break;
             default :
@@ -3128,7 +3006,7 @@ class MetadataEdit {
           case 'Add' :
             if (! $organization) {
               # Add if missing
-              $organization = $this->newXml->createElement(self::SAML_MD_ORGANIZATION);
+              $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
               $entityDescriptor->appendChild($organization);
             }
 
@@ -3147,14 +3025,14 @@ class MetadataEdit {
                 && $this->orderOrganization[$child->nodeName] <= $placement) {
                 $child = $child->nextSibling;
               } else {
-                $organizationElement = $this->newXml->createElement($elementmd, $value);
+                $organizationElement = $this->xml->createElement($elementmd, $value);
                 $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
                 $organization->insertBefore($organizationElement, $child);
               }
             }
             if (! $organizationElement) {
               # Add if missing
-              $organizationElement = $this->newXml->createElement($elementmd, $value);
+              $organizationElement = $this->xml->createElement($elementmd, $value);
               $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
               $organization->appendChild($organizationElement);
             }
@@ -3348,11 +3226,11 @@ class MetadataEdit {
         exit();
       }
 
-      $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:')
-        ? 'mailto:'.trim($_GET['value'])
+      $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO)
+        ? self::TEXT_MAILTO.trim($_GET['value'])
         : trim($_GET['value']);
 
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+      $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
       # Find md:Extensions in XML
       $child = $entityDescriptor->firstChild;
@@ -3360,39 +3238,36 @@ class MetadataEdit {
 
       switch ($_GET['action']) {
         case 'Add' :
-          $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> 'mailto:') ? 'mailto:'.trim($_GET['value']) : trim($_GET['value']);
+          $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO) ? self::TEXT_MAILTO.trim($_GET['value']) : trim($_GET['value']);
           while ($child && ! $contactPerson) {
-            switch ($child->nodeName) {
-              case self::SAML_MD_CONTACTPERSON :
-                if ($child->getAttribute('contactType') == $type) {
-                  if ($subType) {
-                    if ($child->getAttribute('remd:contactType') == $subType) {
-                      $contactPerson = $child;
-                    }
-                  } else {
+            if ($child->nodeName == self::SAML_MD_CONTACTPERSON) {
+              if ($child->getAttribute('contactType') == $type) {
+                if ($subType) {
+                  if ($child->getAttribute(self::SAML_ATTRIBUTE_REMD) == $subType) {
                     $contactPerson = $child;
                   }
+                } else {
+                  $contactPerson = $child;
                 }
-                break;
-              case self::SAML_MD_ADDITIONALMETADATALOCATION :
-                $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
+              } elseif ($child->nodeName == self::SAML_MD_ADDITIONALMETADATALOCATION) {
+                $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
                 $contactPerson->setAttribute('contactType', $type);
                 if ($subType) {
                   $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
-                  $contactPerson->setAttribute('remd:contactType', $subType);
+                  $contactPerson->setAttribute(self::SAML_ATTRIBUTE_REMD, $subType);
                 }
                 $entityDescriptor->insertBefore($contactPerson, $child);
-                break;
+              }
             }
             $child = $child->nextSibling;
           }
           if (! $contactPerson) {
             # Add if missing
-            $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
+            $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
             $contactPerson->setAttribute('contactType', $type);
             if ($subType) {
               $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
-              $contactPerson->setAttribute('remd:contactType', $subType);
+              $contactPerson->setAttribute(self::SAML_ATTRIBUTE_REMD, $subType);
             }
             $entityDescriptor->appendChild($contactPerson);
 
@@ -3410,14 +3285,14 @@ class MetadataEdit {
             } elseif (isset ($this->orderContactPerson[$child->nodeName]) && $this->orderContactPerson[$child->nodeName] < $placement) {
               $child = $child->nextSibling;
             } else {
-              $contactPersonElement = $this->newXml->createElement($partmd);
+              $contactPersonElement = $this->xml->createElement($partmd);
               $contactPerson->insertBefore($contactPersonElement, $child);
             }
           }
           $changed = false;
           if (! $contactPersonElement) {
             # Add if missing
-            $contactPersonElement = $this->newXml->createElement($partmd);
+            $contactPersonElement = $this->xml->createElement($partmd);
             $contactPerson->appendChild($contactPersonElement);
           }
           if ($contactPersonElement->nodeValue != $value) {
@@ -3440,7 +3315,7 @@ class MetadataEdit {
           while ($child && ! $contactPerson) {
             if ($child->nodeName == self::SAML_MD_CONTACTPERSON && $child->getAttribute('contactType') == $type) {
               if ($subType) {
-                if ($child->getAttribute('remd:contactType') == $subType) {
+                if ($child->getAttribute(self::SAML_ATTRIBUTE_REMD) == $subType) {
                   $contactPerson = $child;
                 }
               } else {
@@ -3640,944 +3515,6 @@ class MetadataEdit {
     }
   }
 
-  public function mergeFrom() {
-    if ( !$this->oldExists)
-      return;
-    $this->mergeRegistrationInfo();
-    $this->mergeEntityAttributes();
-    if ($this->isIdP) {
-      $this->mergeIdpErrorURL();
-      $this->mergeIdPScopes();
-      $this->mergeUIInfo('IDPSSO');
-      $this->mergeDiscoHints();
-    }
-    if ($this->isSP) {
-      $this->mergeUIInfo('SPSSO');
-      $this->mergeAttributeConsumingService();
-    }
-    $this->mergeOrganization();
-    $this->mergeContactPersons();
-    $this->saveXML();
-  }
-  public function mergeRegistrationInfo() {
-    # Skip if not same entityID. Only migrate if same!!!!
-    if ( !$this->oldExists || $this->entityID <> $this->oldentityID ) {
-      return;
-    }
-
-    $registrationInstantHandler = $this->config->getDb()->prepare(
-      'SELECT registrationInstant AS ts FROM Entities WHERE id = :Id;');
-    $registrationInstantHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $registrationInstantHandler->execute();
-    if ($instant = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
-      if (! $extensions) {
-        # Add if missing
-        $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-        $entityDescriptor->appendChild($extensions);
-      }
-      # Find mdattr:EntityAttributes in XML
-      $child = $extensions->firstChild;
-      $registrationInfo = false;
-      while ($child && ! $registrationInfo) {
-        if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONINFO) {
-          $registrationInfo = $child;
-        } else
-          $child = $child->nextSibling;
-      }
-      if (! $registrationInfo) {
-        # Add if missing
-        $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
-        $registrationInfo = $this->newXml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
-        $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
-        $registrationInfo->setAttribute('registrationInstant', $instant['ts']);
-        $extensions->appendChild($registrationInfo);
-      }
-
-      # Find samla:Attribute in XML
-      $child = $registrationInfo->firstChild;
-      $registrationPolicy = false;
-      while ($child && ! $registrationPolicy) {
-        if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
-          $registrationPolicy = $child;
-        } else {
-          $child = $child->nextSibling;
-        }
-      }
-      if (!$registrationPolicy) {
-        $registrationPolicy = $this->newXml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
-        $registrationPolicy->setAttribute(self::SAMLXML_LANG, 'en');
-        $registrationInfo->appendChild($registrationPolicy);
-      }
-    }
-  }
-  private function mergeEntityAttributes() {
-    if ( !$this->oldExists) {
-      return;
-    }
-    $entityAttributesHandler = $this->config->getDb()->prepare(
-      'SELECT type, attribute FROM EntityAttributes WHERE entity_id = :Id ORDER BY type, attribute;');
-    $entityAttributesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $entityAttributesHandler->execute();
-    while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-      switch ($attribute['type']) {
-        case 'assurance-certification' :
-          $attributeType = 'urn:oasis:names:tc:SAML:attribute:assurance-certification';
-          break;
-        case 'entity-category' :
-          $attributeType = 'http://macedir.org/entity-category'; # NOSONAR Should be http://
-          break;
-        case 'entity-category-support' :
-          $attributeType = 'http://macedir.org/entity-category-support'; # NOSONAR Should be http://
-          break;
-        case 'subject-id:req' :
-          $attributeType = 'urn:oasis:names:tc:SAML:profiles:subject-id:req';
-          break;
-        case 'entity-selection-profile' :
-          $attributeType = 'https://refeds.org/entity-selection-profile';
-          if (isset($this->config->entitySelectionProfiles()[$attribute['attribute']])) {
-            # Update with new value
-            $attribute['attribute'] = $this->config->entitySelectionProfiles()[$attribute['attribute']]["base64"];
-          }
-          break;
-        default :
-          printf ('Merge EntityAttributes : unknown type %s', $attribute['type']);
-          exit;
-      }
-      if (! isset($oldAttributeValues[$attributeType]) ) {
-        $oldAttributeValues[$attributeType] = array();
-      }
-      $oldAttributeValues[$attributeType][$attribute['attribute']] = $attribute['attribute'];
-    }
-    if(isset($oldAttributeValues)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
-      if (! $extensions) {
-        # Add if missing
-        $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-        $entityDescriptor->appendChild($extensions);
-      }
-
-      # Find mdattr:EntityAttributes in XML
-      $child = $extensions->firstChild;
-      $entityAttributes = false;
-      while ($child && ! $entityAttributes) {
-        if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTES) {
-          $entityAttributes = $child;
-        } else
-          $child = $child->nextSibling;
-      }
-      if (! $entityAttributes) {
-        # Add if missing
-        $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
-        $entityAttributes = $this->newXml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
-        $extensions->appendChild($entityAttributes);
-      }
-
-      # Find samla:Attribute in XML
-      $attribute = $entityAttributes->firstChild;
-      while ($attribute) {
-        $attributeValue = $attribute->firstChild;
-        $type = $attribute->getAttribute('Name');
-        while($attributeValue) {
-          $value = $attributeValue->textContent;
-          if (isset($oldAttributeValues[$type][$value]))
-            unset($oldAttributeValues[$type][$value]);
-          $attributeValue = $attributeValue->nextSibling;
-        }
-        foreach ($oldAttributeValues[$type] as $value) {
-          $attributeValue = $this->newXml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-          $attributeValue->nodeValue = $value;
-          $attribute->appendChild($attributeValue);
-          unset($oldAttributeValues[$type][$value]);
-        }
-        $attribute = $attribute->nextSibling;
-      }
-      foreach ($oldAttributeValues as $type => $values) {
-        if (! empty($values)) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
-          $attribute = $this->newXml->createElement(self::SAML_SAMLA_ATTRIBUTE);
-          $attribute->setAttribute('Name', $type);
-          $attribute->setAttribute('NameFormat', self::SAMLNF_URI);
-          $entityAttributes->appendChild($attribute);
-        }
-        foreach ($values as $value) {
-          $attributeValue = $this->newXml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-          $attributeValue->nodeValue = $value;
-          $attribute->appendChild($attributeValue);
-        }
-      }
-    }
-  }
-  private function mergeIdpErrorURL () {
-    if ( !$this->oldExists)
-      return;
-    $errorURLHandler = $this->config->getDb()->prepare(
-      "SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
-    $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $errorURLHandler->execute();
-    if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $idpSSODescriptor = $child;
-        $child = $child->nextSibling;
-      }
-
-      if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
-        $idpSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
-        $errorURLUpdateHandler = $this->config->getDb()->prepare(
-          "INSERT INTO EntityURLs (`entity_id`, `URL`, `type` )
-          VALUES (:Id, :URL, 'error')
-          ON DUPLICATE KEY UPDATE `URL`= :URL;");
-        $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-        $errorURLUpdateHandler->bindParam(self::BIND_URL, $errorURL['URL']);
-        $errorURLUpdateHandler->execute();
-      }
-    }
-  }
-  private function mergeIdPScopes() {
-    if ( !$this->oldExists)
-      return;
-    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
-    $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $scopesHandler->execute();
-    $scopesInsertHandler = $this->config->getDb()->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
-    $scopesInsertHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-    while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
-      $oldScopes[$scope['scope']] = $scope['regexp'];
-    }
-    if ($oldScopes) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $idpSSODescriptor = $child;
-        $child = $child->nextSibling;
-      }
-
-      if ($idpSSODescriptor) {
-        $child = $idpSSODescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-              $idpSSODescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-          $idpSSODescriptor->appendChild($extensions);
-        }
-        $child = $extensions->firstChild;
-        $beforeChild = false;
-        $Scope = false;
-        $shibmdFound = false;
-        while ($child && ! $Scope) {
-          switch ($child->nodeName) {
-            case self::SAML_SHIBMD_SCOPE :
-              $shibmdFound = true;
-              if (isset ($oldScopes[$child->textContent]))
-                unset ($oldScopes[$child->textContent]);
-              break;
-            case self::SAML_MDUI_UIINFO :
-            case self::SAML_MDUI_DISCOHINTS :
-              $beforeChild = $beforeChild ? $beforeChild : $child;
-              break;
-          }
-          $child = $child->nextSibling;
-        }
-        foreach ($oldScopes as $scopevalue => $value) {
-          $Scope = $this->newXml->createElement(self::SAML_SHIBMD_SCOPE, $scopevalue);
-          $Scope->setAttribute('regexp', $value);
-          if ($beforeChild)
-            $extensions->insertBefore($Scope, $beforeChild);
-          else
-            $extensions->appendChild($Scope);
-          $scopesInsertHandler->bindParam(self::BIND_SCOPE, $scopevalue);
-          $scopesInsertHandler->bindParam(self::BIND_REGEXP, $value);
-          $scopesInsertHandler->execute();
-        }
-
-        if (! $shibmdFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
-        }
-      }
-    }
-  }
-  private function mergeUIInfo($type) {
-    if ( !$this->oldExists)
-      return;
-    $mduiHandler = $this->config->getDb()->prepare('SELECT element, lang, height, width, data FROM Mdui WHERE entity_id = :Id AND type = :Type ORDER BY element, lang;');
-    $mduiHandler->bindParam(self::BIND_TYPE, $type);
-    $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $mduiHandler->execute();
-    while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $mdelement = self::SAML_MDUI.$mdui['element'];
-      $size = $mdui['height'].'x'.$mdui['width'];
-      $lang = $mdui['lang'];
-      if (! isset($oldMDUIElements[$mdelement]) )
-        $oldMDUIElements[$mdelement] = array();
-      if (! isset($oldMDUIElements[$mdelement][$lang]) )
-        $oldMDUIElements[$mdelement][$lang] = array();
-      $oldMDUIElements[$mdelement][$lang][$size] = array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width']);
-    }
-    if (isset($oldMDUIElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $ssoDescriptor = false;
-      while ($child && ! $ssoDescriptor) {
-        if ($child->nodeName == 'md:'.$type.'Descriptor')
-          $ssoDescriptor = $child;
-        $child = $child->nextSibling;
-      }
-      if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
-        $child = $extensions->firstChild;
-        $beforeChild = false;
-        $uuInfo = false;
-        $mduiFound = false;
-        while ($child && ! $uuInfo) {
-          switch ($child->nodeName) {
-            case self::SAML_MDUI_UIINFO :
-              $mduiFound = true;
-              $uuInfo = $child;
-              break;
-            case self::SAML_MDUI_DISCOHINTS :
-              $beforeChild = $beforeChild ? $beforeChild : $child;
-              $mduiFound = true;
-              break;
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $uuInfo ) {
-          $uuInfo = $this->newXml->createElement(self::SAML_MDUI_UIINFO);
-          if ($beforeChild)
-            $extensions->insertBefore($uuInfo, $beforeChild);
-          else
-            $extensions->appendChild($uuInfo);
-        }
-        if (! $mduiFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
-        }
-        # Find mdui:* in XML
-        $child = $uuInfo->firstChild;
-        while ($child) {
-          if ($child->nodeType != 8) {
-            $lang = $child->getAttribute(self::SAMLXML_LANG);
-            $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-            $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
-            $element = $child->nodeName;
-            if (isset($oldMDUIElements[$element][$lang])) {
-              $size = $height.'x'.$width;
-              if (isset($oldMDUIElements[$element][$lang][$size])) {
-                unset($oldMDUIElements[$element][$lang][$size]);
-              }
-            }
-          }
-          $child = $child->nextSibling;
-        }
-        $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
-        $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-        $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
-        foreach ($oldMDUIElements as $element => $data) {
-          foreach ($data as $lang => $sizeValue) {
-            foreach ($sizeValue as $size => $value) {
-              # Add if missing
-              $mduiElement = $this->newXml->createElement($element, htmlspecialchars($value['value']));
-              if ($lang != '') {
-                $mduiElement->setAttribute(self::SAMLXML_LANG, $lang);
-              }
-              if ($size != '0x0') {
-                $mduiElement->setAttribute('height', $value['height']);
-                $mduiElement->setAttribute('width', $value['width']);
-              }
-              $uuInfo->appendChild($mduiElement);
-              $mduiAddHandler->bindParam(self::BIND_LANG, $lang);
-              $mduiAddHandler->bindParam(self::BIND_HEIGHT, $value['height']);
-              $mduiAddHandler->bindParam(self::BIND_WIDTH, $value['width']);
-              $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
-              $mduiAddHandler->bindParam(self::BIND_DATA, $value['value']);
-              $mduiAddHandler->execute();
-            }
-          }
-        }
-      }
-    }
-  }
-  private function mergeDiscoHints() {
-    if ( !$this->oldExists)
-      return;
-    $mduiHandler = $this->config->getDb()->prepare("SELECT element, data FROM Mdui WHERE entity_id = :Id AND type = 'IDPDisco' ORDER BY element;");
-    $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $mduiHandler->execute();
-    while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
-      $mdelement = self::SAML_MDUI.$mdui['element'];
-      $value = $mdui['data'];
-      if (! isset($oldMDUIElements[$mdelement]) )
-        $oldMDUIElements[$mdelement] = array();
-      $oldMDUIElements[$mdelement][$value] = true;
-    }
-    if (isset($oldMDUIElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $ssoDescriptor = false;
-      while ($child && ! $ssoDescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $ssoDescriptor = $child;
-        $child = $child->nextSibling;
-      }
-      if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->newXml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
-        $child = $extensions->firstChild;
-        $discoHints = false;
-        $mduiFound = false;
-        while ($child && ! $discoHints) {
-          switch ($child->nodeName) {
-            case self::SAML_MDUI_UIINFO :
-              $mduiFound = true;
-              break;
-            case self::SAML_MDUI_DISCOHINTS :
-              $uuInfo = $child;
-              $mduiFound = true;
-              break;
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $discoHints ) {
-          $discoHints = $this->newXml->createElement(self::SAML_MDUI_DISCOHINTS);
-          $extensions->appendChild($discoHints);
-        }
-        if (! $mduiFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
-        }
-        # Find mdui:* in XML
-        $child = $discoHints->firstChild;
-        while ($child) {
-          $element = $child->nodeName;
-          $value = $child->nodeValue;
-          if (isset($oldMDUIElements[$element][$value])) {
-            unset($oldMDUIElements[$element][$value]);
-          }
-          $child = $child->nextSibling;
-        }
-        $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO Mdui (entity_id, type, element, data) VALUES (:Id, 'IDPDisco', :Element, :Data);");
-        $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-        foreach ($oldMDUIElements as $element => $valueArray) {
-          foreach ($valueArray as $value => $true) {
-            # Add if missing
-            $mduiElement = $this->newXml->createElement($element, $value);
-            $discoHints->appendChild($mduiElement);
-            $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
-            $mduiAddHandler->bindParam(self::BIND_DATA, $value);
-            $mduiAddHandler->execute();
-          }
-        }
-      }
-    }
-  }
-  private function mergeAttributeConsumingService() {
-    if ( !$this->oldExists)
-      return;
-
-    $serviceIndexHandler = $this->config->getDb()->prepare('SELECT Service_index FROM AttributeConsumingService WHERE entity_id = :Id ORDER BY Service_index;');
-    $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-
-    $serviceElementHandler = $this->config->getDb()->prepare('SELECT element, lang, data FROM AttributeConsumingService_Service WHERE entity_id = :Id AND Service_index = :Index ORDER BY element DESC, lang;');
-    $serviceElementHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
-
-    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT FriendlyName, Name, NameFormat, isRequired FROM AttributeConsumingService_RequestedAttribute WHERE entity_id = :Id AND Service_index = :Index ORDER BY isRequired DESC, FriendlyName;');
-    $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $requestedAttributeHandler->bindParam(self::BIND_INDEX, $index);
-
-    $serviceIndexHandler->execute();
-
-    while ($serviceIndex = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
-      $index = $serviceIndex['Service_index'];
-      $oldServiceIndexes[$index] = $index;
-      $oldServiceElements[$index] = array();
-      $oldRequestedAttributes[$index] = array();
-      $serviceElementHandler->execute();
-      while ($serviceElement = $serviceElementHandler->fetch(PDO::FETCH_ASSOC)) {
-        $oldServiceElements[$index][$serviceElement['element']][$serviceElement['lang']] = $serviceElement['data'];
-      }
-      $requestedAttributeHandler->execute();
-      while ($requestedAttribute = $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
-        $oldRequestedAttributes[$index][$requestedAttribute['Name']] = array('isRequired' => $requestedAttribute['isRequired'], 'friendlyName' => $requestedAttribute['FriendlyName'], 'nameFormat' => $requestedAttribute['NameFormat']);
-      }
-    }
-
-    $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-    # Find md:IDPSSODescriptor in XML
-    $child = $entityDescriptor->firstChild;
-    $ssoDescriptor = false;
-    while ($child && ! $ssoDescriptor) {
-      if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR)
-        $ssoDescriptor = $child;
-      $child = $child->nextSibling;
-    }
-    if ($ssoDescriptor && isset($oldServiceIndexes)) {
-      $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
-      $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-      $addServiceIndexHandler->bindParam(self::BIND_INDEX, $index);
-
-      $serviceElementAddHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
-      $serviceElementAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-      $serviceElementAddHandler->bindParam(self::BIND_INDEX, $index);
-      $serviceElementAddHandler->bindParam(self::BIND_LANG, $lang);
-      $serviceElementAddHandler->bindParam(self::BIND_DATA, $value);
-
-      $requestedAttributeAddHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute (entity_id, Service_index, FriendlyName, Name, NameFormat, isRequired) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
-      $requestedAttributeAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-      $requestedAttributeAddHandler->bindParam(self::BIND_INDEX, $index);
-      $requestedAttributeAddHandler->bindParam(self::BIND_FRIENDLYNAME, $friendlyName);
-      $requestedAttributeAddHandler->bindParam(self::BIND_NAME, $name);
-      $requestedAttributeAddHandler->bindParam(self::BIND_NAMEFORMAT, $nameFormat);
-      $requestedAttributeAddHandler->bindParam(self::BIND_ISREQUIRED, $isRequired);
-
-      $child = $ssoDescriptor->firstChild;
-      while ($child) {
-        if ($child->nodeName == self::SAML_MD_ATTRIBUTECONSUMINGSERVICE ) {
-          $index = $child->getAttribute('index');
-
-          $attributeConsumingService = $child;
-          $servicechild = $attributeConsumingService->firstChild;
-          $nextOrder = 1;
-          while ($servicechild) {
-            switch ($servicechild->nodeName) {
-              case self::SAML_MD_SERVICENAME :
-                $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
-                if (isset($oldServiceElements[$index]['ServiceName'][$lang]))
-                  unset ($oldServiceElements[$index]['ServiceName'][$lang]);
-                break;
-              case self::SAML_MD_SERVICEDESCRIPTION :
-                if ($nextOrder < 2) {
-                  $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, self::SAML_MD_SERVICENAME);
-                  foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-                    $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-                    $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-                    $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
-                    $serviceElementAddHandler->execute();
-                    unset ($oldServiceElements[$index]['ServiceName'][$lang]);
-                  }
-                  unset($oldServiceElements[$index]['ServiceName']);
-                  $nextOrder = 2;
-                }
-                $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
-                if (isset($oldServiceElements[$index]['ServiceDescription'][$lang]))
-                  unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
-                break;
-              case self::SAML_MD_REQUESTEDATTRIBUTE :
-                if ($nextOrder < 3) {
-                  if(isset($oldServiceElements[$index]['ServiceName'])) {
-                    $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
-                    foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-                      $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-                      $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-                      $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
-                      $serviceElementAddHandler->execute();
-                      unset ($oldServiceElements[$index]['ServiceName'][$lang]);
-                    }
-                    unset($oldServiceElements[$index]['ServiceName']);
-                  }
-                  if (isset($oldServiceElements[$index]['ServiceDescription'])) {
-                    $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
-                    foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-                      $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
-                      $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-                      $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
-                      $serviceElementAddHandler->execute();
-                      unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
-                    }
-                    unset ($oldServiceElements[$index]['ServiceDescription']);
-                  }
-                  $nextOrder = 3;
-                }
-                $name = $servicechild->getAttribute('Name');
-                if (isset($oldRequestedAttributes[$index][$name]))
-                  unset ($oldRequestedAttributes[$index][$name]);
-                break;
-              default :
-                printf('%s<br>', $servicechild->nodeName);
-            }
-            $servicechild = $servicechild->nextSibling;
-          }
-          # Add what is left of this index at the end of this Service
-          if(isset($oldServiceElements[$index]['ServiceName'])) {
-            $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
-            foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-              $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-              $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-              $attributeConsumingService->appendChild($attributeConsumingServiceElement);
-              $serviceElementAddHandler->execute();
-            }
-          }
-          if (isset($oldServiceElements[$index]['ServiceDescription'])) {
-            $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
-            foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-              $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
-              $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-              $attributeConsumingService->appendChild($attributeConsumingServiceElement);
-              $serviceElementAddHandler->execute();
-            }
-          }
-          unset($oldServiceElements[$index]);
-
-          foreach ($oldRequestedAttributes[$index] as $name => $data) {
-            $friendlyName = $data['friendlyName'];
-            $nameFormat =  $data['nameFormat'];
-            $isRequired = $data['isRequired'];
-
-            $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-            if ($friendlyName != '' )
-              $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
-            $attributeConsumingServiceElement->setAttribute('Name', $name);
-            if ($nameFormat != '' )
-              $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
-            $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
-            $attributeConsumingService->appendChild($attributeConsumingServiceElement);
-            $requestedAttributeAddHandler->execute();
-          }
-          unset ($oldRequestedAttributes[$index]);
-          unset($oldServiceIndexes[$index]);
-        }
-        $child = $child->nextSibling;
-      }
-      foreach ($oldServiceIndexes as $index) {
-        $attributeConsumingService = $this->newXml->createElement(self::SAML_MD_ATTRIBUTECONSUMINGSERVICE);
-        $attributeConsumingService->setAttribute('index', $index);
-        $ssoDescriptor->appendChild($attributeConsumingService);
-        $addServiceIndexHandler->execute();
-
-        if(isset($oldServiceElements[$index]['ServiceName'])) {
-          $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
-          foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-            $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICENAME, $value);
-            $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-            $attributeConsumingService->appendChild($attributeConsumingServiceElement);
-            $serviceElementAddHandler->execute();
-          }
-        }
-        if (isset($oldServiceElements[$index]['ServiceDescription'])) {
-          $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
-          foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-            $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
-            $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
-            $attributeConsumingService->appendChild($attributeConsumingServiceElement);
-            $serviceElementAddHandler->execute();
-          }
-        }
-        unset($oldServiceElements[$index]);
-
-        foreach ($oldRequestedAttributes[$index] as $name => $data) {
-          $friendlyName = $data['friendlyName'];
-          $nameFormat =  $data['nameFormat'];
-          $isRequired = $data['isRequired'];
-
-          $attributeConsumingServiceElement = $this->newXml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-          if ($friendlyName != '' )
-            $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
-          $attributeConsumingServiceElement->setAttribute('Name', $name);
-          if ($nameFormat != '' )
-            $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
-          $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
-          $attributeConsumingService->appendChild($attributeConsumingServiceElement);
-          $requestedAttributeAddHandler->execute();
-        }
-        unset($oldRequestedAttributes[$index]);
-        unset($oldServiceIndexes[$index]);
-      }
-    }
-  }
-
-  private function mergeOrganization() {
-    if ( !$this->oldExists)
-      return;
-    $organizationHandler = $this->config->getDb()->prepare(
-      'SELECT element, lang, data FROM Organization WHERE entity_id = :Id ORDER BY element, lang;');
-    $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $organizationHandler->execute();
-    while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      $order = $this->orderOrganization['md:'.$organization['element']];
-      $oldElements[$order][] = $organization;
-    }
-    if (isset($oldElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $organization = false;
-      while ($child && ! $organization) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_ORGANIZATION :
-            $organization = $child;
-            break;
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-            $organization = $this->newXml->createElement(self::SAML_MD_ORGANIZATION);
-            $entityDescriptor->insertBefore($organization, $child);
-            break;
-          default :
-        }
-        $child = $child->nextSibling;
-      }
-
-      if (! $organization) {
-        # Add if missing
-        $organization = $this->newXml->createElement(self::SAML_MD_ORGANIZATION);
-        $entityDescriptor->appendChild($organization);
-      }
-
-      # Find md:Organization* in XML
-      $child = $organization->firstChild;
-      $nextOrder = 1;
-      while ($child) {
-        if ($child->nodeType != 8) {
-          $order = $this->orderOrganization[$child->nodeName];
-          while ($order > $nextOrder) {
-            if (isset($oldElements[$nextOrder])) {
-              foreach ($oldElements[$nextOrder] as $index => $element) {
-                $lang = $element['lang'];
-                $elementmd = 'md:'.$element['element'];
-                $value = $element['data'];
-                $organizationElement = $this->newXml->createElement($elementmd);
-                $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
-                $organizationElement->nodeValue = $value;
-                $organization->insertBefore($organizationElement, $child);
-                unset($oldElements[$nextOrder][$index]);
-              }
-            }
-            $nextOrder++;
-          }
-          $lang = $child->getAttribute(self::SAMLXML_LANG);
-          $elementmd = $child->nodeName;
-          if (isset($oldElements[$order])) {
-            foreach ($oldElements[$order] as $index => $element) {
-              if ($element['lang'] == $lang && 'md:'.$element['element'] == $elementmd) {
-                unset ($oldElements[$order][$index]);
-              }
-            }
-          }
-        }
-        $child = $child->nextSibling;
-      }
-      while ($nextOrder < 10) {
-        if (isset($oldElements[$nextOrder])) {
-          foreach ($oldElements[$nextOrder] as $element) {
-            $lang = $element['lang'];
-            $elementmd = 'md:'.$element['element'];
-            $value = $element['data'];
-            $organizationElement = $this->newXml->createElement($elementmd);
-            $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
-            $organizationElement->nodeValue = $value;
-            $organization->appendChild($organizationElement);
-          }
-        }
-        $nextOrder++;
-      }
-    }
-  }
-  private function mergeContactPersons() {
-    if ( !$this->oldExists) {
-      return;
-    }
-    $contactPersonHandler = $this->config->getDb()->prepare('SELECT * FROM ContactPerson WHERE entity_id = :Id;');
-    $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $contactPersonHandler->execute();
-    while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
-      $contactType = $contactPerson['contactType'];
-
-      $oldContactPersons[$contactType] = array (
-        'subcontactType' => ($contactPerson['subcontactType'] == 'security')
-          ? 'http://refeds.org/metadata/contactType/security' # NOSONAR Should be http://
-          : '',
-        1 => array('part' => self::SAML_MD_COMPANY, 'value' => $contactPerson['company']),
-        2 => array('part' => self::SAML_MD_GIVENNAME, 'value' => $contactPerson['givenName']),
-        3 => array('part' => self::SAML_MD_SURNAME, 'value' => $contactPerson['surName']),
-        4 => array('part' => self::SAML_MD_EMAILADDRESS, 'value' => $contactPerson['emailAddress']),
-        5 => array('part' => self::SAML_MD_TELEPHONENUMBER, 'value' => $contactPerson['telephoneNumber']),
-        6 => array('part' => self::SAML_MD_EXTENSIONS,  'value' => $contactPerson['extensions']));
-    }
-    if (isset($oldContactPersons)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->newXml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $contactPerson = false;
-      while ($child) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_CONTACTPERSON :
-            $type = $child->getAttribute('contactType');
-            if (isset($oldContactPersons[$type])) {
-              $subchild = $child->firstChild;
-              $nextOrder = 1;
-              $order = 1;
-              while ($subchild) {
-                $order = $this->orderContactPerson[$subchild->nodeName];
-                while ($order > $nextOrder) {
-                  if (!empty($oldContactPersons[$type][$nextOrder]['value'])) {
-                    $contactPersonElement = $this->newXml->createElement($oldContactPersons[$type][$nextOrder]['part']);
-                    $contactPersonElement->nodeValue = $oldContactPersons[$type][$nextOrder]['value'];
-                    $child->insertBefore($contactPersonElement, $subchild);
-                  }
-                  $nextOrder++;
-                }
-                $subchild = $subchild->nextSibling;
-                $nextOrder++;
-              }
-              while ($nextOrder < 7) {
-                if (!empty($oldContactPersons[$type][$nextOrder]['value'])) {
-                  $contactPersonElement = $this->newXml->createElement($oldContactPersons[$type][$nextOrder]['part']);
-                  $contactPersonElement->nodeValue = $oldContactPersons[$type][$nextOrder]['value'];
-                  $child->appendChild($contactPersonElement);
-                }
-                $nextOrder++;
-              }
-              unset($oldContactPersons[$type]);
-            }
-            break;
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-            foreach ($oldContactPersons as $type => $oldContactPerson) {
-              $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
-              $contactPerson->setAttribute('contactType', $type);
-              if ($oldContactPerson['subcontactType']) {
-                $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
-                $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
-              }
-              $entityDescriptor->insertBefore($contactPerson, $child);
-              $nextOrder = 1;
-              while ($nextOrder < 7) {
-                if (!empty($oldContactPerson[$nextOrder]['value'])) {
-                  $contactPersonElement = $this->newXml->createElement($oldContactPerson[$nextOrder]['part']);
-                  $contactPersonElement->nodeValue = $oldContactPerson[$nextOrder]['value'];
-                  $contactPerson->appendChild($contactPersonElement);
-                }
-                $nextOrder++;
-              }
-            }
-            break;
-          default :
-        }
-        $child = $child->nextSibling;
-      }
-      foreach ($oldContactPersons as $type => $oldContactPerson) {
-        $contactPerson = $this->newXml->createElement(self::SAML_MD_CONTACTPERSON);
-        $contactPerson->setAttribute('contactType', $type);
-        if ($oldContactPerson['subcontactType']) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
-          $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
-        }
-        $entityDescriptor->appendChild($contactPerson);
-        $nextOrder = 1;
-        while ($nextOrder < 7) {
-          if (!empty($oldContactPerson[$nextOrder]['value'])) {
-            $contactPersonElement = $this->newXml->createElement($oldContactPerson[$nextOrder]['part']);
-            $contactPersonElement->nodeValue = $oldContactPerson[$nextOrder]['value'];
-            $contactPerson->appendChild($contactPersonElement);
-          }
-          $nextOrder++;
-        }
-      }
-    }
-  }
-
   public function removeSSO($type) {
     switch ($type) {
       case 'SP' :
@@ -4593,7 +3530,7 @@ class MetadataEdit {
         printf ("Unknown type : %s", htmlspecialchars($type));
         return;
     }
-    $entityDescriptor = $this->getEntityDescriptor($this->newXml);
+    $entityDescriptor = $this->getEntityDescriptor($this->xml);
 
     # Find SSODecriptor in XML
     $child = $entityDescriptor->firstChild;
@@ -4609,27 +3546,15 @@ class MetadataEdit {
   public function saveXML() {
     $entityHandler = $this->config->getDb()->prepare('UPDATE Entities SET xml = :Xml WHERE id = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-    $entityHandler->bindValue(self::BIND_XML, $this->newXml->saveXML());
+    $entityHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
     $entityHandler->execute();
   }
 
-  private function getEntityDescriptor($xml) {
-    $child = $xml->firstChild;
-    while ($child) {
-      if ($child->nodeName == "md:EntityDescriptor") {
-        return $child;
-      }
-      $child = $child->nextSibling;
-    }
-    return false;
-  }
   private function showLangSelector($langValue) {
     print "\n".'              <select name="lang">';
-    foreach ($this->langCodes as $lang => $descr) {
-      if ($lang == $langValue)
-        printf('%s                <option value="%s" selected>%s</option>', "\n",  $lang, $descr);
-      else
-        printf('%s                <option value="%s">%s</option>', "\n",  $lang, $descr);
+    foreach (self::LANG_CODES as $lang => $descr) {
+      printf('%s                <option value="%s"%s>%s</option>', "\n",
+        $lang, $lang == $langValue ? self ::HTML_SELECTED : '', $descr);
     }
     print "\n              </select>\n";
   }

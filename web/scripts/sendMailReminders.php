@@ -7,7 +7,7 @@ use PHPMailer\PHPMailer\Exception;
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
-$config = new metadata\Configuration();
+$config = new \metadata\Configuration();
 
 $updateMailRemindersHandler = $config->getDb()->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
   VALUES (:Entity_Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()');

@@ -12,15 +12,19 @@ trait SAMLTrait {
   const SAML_BINDING_HTTP_REDIRECT = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect';
   const SAML_DS_KEYINFO = 'ds:KeyInfo';
   const SAML_DS_KEYNAME = 'ds:KeyName';
+  const SAML_DS_X509CERTIFICATE = 'ds:X509Certificate';
   const SAML_DS_X509DATA = 'ds:X509Data';
   const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
   const SAML_IDPDISC_DISCOVERYRESPONSE = 'idpdisc:DiscoveryResponse';
+  const SAML_MD_ADDITIONALMETADATALOCATION = 'md:AdditionalMetadataLocation';
+  const SAML_MD_AFFILIATIONDESCRIPTOR = 'md:AffiliationDescriptor';
   const SAML_MD_ARTIFACTRESOLUTIONSERVICE = 'md:ArtifactResolutionService';
   const SAML_MD_ASSERTIONCONSUMERSERVICE = 'md:AssertionConsumerService';
   const SAML_MD_ASSERTIONIDREQUESTSERVICE = 'md:AssertionIDRequestService';
   const SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR = 'md:AttributeAuthorityDescriptor';
   const SAML_MD_ATTRIBUTECONSUMINGSERVICE = 'md:AttributeConsumingService';
   const SAML_MD_ATTRIBUTESERVICE = 'md:AttributeService';
+  const SAML_MD_AUTHNAUTHORITYDESCRIPTOR = 'md:AuthnAuthorityDescriptor';
   const SAML_MD_COMPANY = 'md:Company';
   const SAML_MD_CONTACTPERSON = 'md:ContactPerson';
   const SAML_MD_EMAILADDRESS = 'md:EmailAddress';
@@ -33,6 +37,7 @@ trait SAMLTrait {
   const SAML_MD_MANAGENAMEIDSERVICE = 'md:ManageNameIDService';
   const SAML_MD_NAMEIDFORMAT = 'md:NameIDFormat';
   const SAML_MD_NAMEIDMAPPINGSERVICE = 'md:NameIDMappingService';
+  const SAML_MD_PDPDESCRIPTOR = 'md:PDPDescriptor';
   const SAML_MD_ORGANIZATION = 'md:Organization';
   const SAML_MD_ORGANIZATIONDISPLAYNAME = 'md:OrganizationDisplayName';
   const SAML_MD_ORGANIZATIONNAME = 'md:OrganizationName';
@@ -47,6 +52,7 @@ trait SAMLTrait {
   const SAML_MD_TELEPHONENUMBER = 'md:TelephoneNumber';
   const SAML_MDATTR_ENTITYATTRIBUTES = 'mdattr:EntityAttributes';
   const SAML_MDRPI_REGISTRATIONINFO = 'mdrpi:RegistrationInfo';
+  const SAML_MDUI = 'mdui:';
   const SAML_MDUI_DESCRIPTION = 'mdui:Description';
   const SAML_MDUI_DISCOHINTS = 'mdui:DiscoHints';
   const SAML_MDUI_DISPLAYNAME = 'mdui:DisplayName';
@@ -68,4 +74,10 @@ trait SAMLTrait {
   const SAML_SAMLA_ATTRIBUTEVALUE = 'samla:AttributeValue';
 
   const SAMLNF_URI = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri';
+  const SAMLXML_LANG = 'xml:lang';
+  const SAMLXMLNS_URI = 'http://www.w3.org/2000/xmlns/';
+  const SAMLXMLNS_DS = 'xmlns:ds';
+  const SAMLXMLNS_DS_URL = 'http://www.w3.org/2000/09/xmldsig#';
+  const SAMLXMLNS_MDUI = 'xmlns:mdui';
+  const SAMLXMLNS_MDUI_URL = 'urn:oasis:names:tc:SAML:metadata:ui';
 }
