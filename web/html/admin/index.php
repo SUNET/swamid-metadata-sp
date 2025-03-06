@@ -215,7 +215,6 @@ $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 
-
 $display = new \metadata\MetadataDisplay();
 
 if (isset($_FILES['XMLfile'])) {
@@ -1803,7 +1802,7 @@ function setupMail() {
 }
 
 function move2Draft($entitiesId) {
-  global $config, $html, $display, $menuActive;
+  global $config, $html, $menuActive;
   $entityHandler = $config->getDb()->prepare('SELECT `entityID`, `xml` FROM Entities WHERE `status` = 2 AND `id` = :Id;');
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();

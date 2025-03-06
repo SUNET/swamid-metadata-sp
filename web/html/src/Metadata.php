@@ -62,8 +62,6 @@ class Metadata extends Common {
         $this->isSP = $entity['isSP'];
         $this->isAA = $entity['isAA'];
         $this->feedValue = $entity['publishIn'];
-      } else {
-        $this->entityID = $id;
       }
     }
   }
@@ -75,7 +73,7 @@ class Metadata extends Common {
     $this->xml->formatOutput = true;
     $this->xml->loadXML($xml);
     $this->xml->encoding = 'UTF-8';
-    $this->cleanOutAttribuesInIDPSSODescriptor();
+    $newEntityID = $this->cleanOutAttribuesInIDPSSODescriptor();
     if ($this->entityExists && $this->status == 1) {
       # Update entity in database
       $entityHandlerUpdate = $this->config->getDb()->prepare('UPDATE Entities
@@ -86,21 +84,24 @@ class Metadata extends Common {
       $entityHandlerUpdate->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerUpdate->execute();
     } else {
-      # Add new entity into database
-      $entityHandlerInsert = $this->config->getDb()->prepare("INSERT INTO Entities
-        (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
-        `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
-        VALUES(:Id, 0, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '')");
-      $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
-      $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
-      $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
-      $entityHandlerInsert->execute();
-      $this->dbIdNr = $this->config->getDb()->lastInsertId();
+      if ($newEntityID) {
+        $this->entityID = $newEntityID;
+        # Add new entity into database
+        $entityHandlerInsert = $this->config->getDb()->prepare("INSERT INTO Entities
+          (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
+          `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
+          VALUES(:Id, 0, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '')");
+        $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
+        $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
+        $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
+        $entityHandlerInsert->execute();
+        $this->dbIdNr = $this->config->getDb()->lastInsertId();
+        $this->entityExists = true;
+      }
     }
     $this->isIdP = false;
     $this->isSP = false;
     $this->isAA = false;
-    $this->entityExists = true;
   }
 
   # Creates / updates XML from Published into Draft
@@ -156,6 +157,7 @@ class Metadata extends Common {
       $this->error .= 'SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata';
       $this->error .= " MUST NOT include any Attribute elements. Have been removed.\n";
     }
+    return $entityDescriptor->hasAttribute('entityID') ? $entityDescriptor->getAttribute('entityID') : false;
   }
 
   # Removed SAML1 support from an entity
