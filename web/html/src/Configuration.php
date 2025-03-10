@@ -5,15 +5,15 @@ use PDO;
 use PDOException;
 
 class Configuration {
-  private $smtpAuth = false; // Used while sending out in PHPMailer
-  private $smtp = false;
+  private bool $smtpAuth = false; // Used while sending out in PHPMailer
+  private array $smtp = array();
   private $imps = false;
-  private $mode = 'Lab';
-  private $baseURL = '';
-  private $entitySelectionProfiles = array();
-  private $db;
-  private $userLevels = array(); // indexed by username, maps to user privilege level
-  private $federation = array(); // hash of federation parameters
+  private string $mode = 'Lab';
+  private string $baseURL = '';
+  private array $entitySelectionProfiles = array();
+  private PDO $db;
+  private array $userLevels = array(); // indexed by username, maps to user privilege level
+  private array $federation = array(); // hash of federation parameters
 
   /**
    * Setup the class
