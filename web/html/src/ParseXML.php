@@ -452,7 +452,7 @@ class ParseXML extends Common {
     $keyOrder = 0;
     list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
     if ($shibboleth10found) {
-      $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n", $protocol);
+      $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n");
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
     $child = $data->firstChild;
