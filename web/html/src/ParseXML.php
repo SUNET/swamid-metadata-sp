@@ -945,7 +945,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
           break;
         default :
-          $this->result .= sprintf("Protocol %s missing in validator for $name.\n", $protocol);
+          $this->result .= sprintf("Unknown protocol %s found in validator for $name.\n", $protocol);
       }
     }
     return array($saml2found, $saml1found, $shibboleth10found);
