@@ -11,6 +11,15 @@ class ParseXML extends Common {
   use CommonTrait;
 
   # Setup
+  protected $samlProtocolSupportFound = array();
+  /* when parsing role descriptors, parseProtocolSupportEnumeration
+   * will add entries in format:
+   *    'RoleDesciptorName' => array(
+   *       'saml2' => true,
+   *       'saml1' => false,
+   *       'shibboleth10' => false,
+   *    ),
+   */
 
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
@@ -297,7 +306,10 @@ class ParseXML extends Common {
       $this->addEntityUrl('error', $data->getAttribute('errorURL'));
     }
     $keyOrder = 0;
-    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
+    $this->parseProtocolSupportEnumeration($data);
+    $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml2'];
+    $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml1'];
+    $shibboleth10found = $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['shibboleth10'];
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
     $child = $data->firstChild;
@@ -450,7 +462,10 @@ class ParseXML extends Common {
   protected function parseSPSSODescriptor($data) {
     $this->assertionConsumerServiceHTTPRedirectFound = false;
     $keyOrder = 0;
-    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
+    $this->parseProtocolSupportEnumeration($data);
+    $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2'];
+    $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1'];
+    $shibboleth10found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['shibboleth10'];
     if ($shibboleth10found) {
       $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n");
     }
@@ -661,7 +676,9 @@ class ParseXML extends Common {
    */
   protected function parseAttributeAuthorityDescriptor($data) {
     $keyOrder = 0;
-    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
+    $this->parseProtocolSupportEnumeration($data);
+    $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR]['saml2'];
+    $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR]['saml1'];
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.7
     $child = $data->firstChild;
     while ($child) {
@@ -948,7 +965,12 @@ class ParseXML extends Common {
           $this->result .= sprintf("Unknown protocol %s found in validator for $name.\n", $protocol);
       }
     }
-    return array($saml2found, $saml1found, $shibboleth10found);
+
+    $this->samlProtocolSupportFound[$name] = array(
+      'saml2' => $saml2found,
+      'saml1' => $saml1found,
+      'shibboleth10' => $shibboleth10found,
+    );
   }
 
   /**
