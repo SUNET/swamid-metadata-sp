@@ -22,9 +22,11 @@ class ParseXMLSWAMID extends ParseXML {
   protected function parseIDPSSODescriptor($data) {
     parent::parseIDPSSODescriptor($data);
 
-    if (! $this->saml2found) {
+    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
+
+    if (! $saml2found) {
       $this->error .= "IDPSSODescriptor is missing support for SAML2.\n";
-    } elseif ($this->saml1found) {
+    } elseif ($saml1found) {
       $this->warning .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
     }
   }
@@ -45,9 +47,11 @@ class ParseXMLSWAMID extends ParseXML {
   protected function parseSPSSODescriptor($data) {
     parent::parseSPSSODescriptor($data);
 
-    if (! $this->saml2found) {
+    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
+
+    if (! $saml2found) {
       $this->error .= "SPSSODescriptor is missing support for SAML2.\n";
-    } elseif ($this->saml1found) {
+    } elseif ($saml1found) {
       $this->errorNB .= "SPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
     }
     // 6.1.16

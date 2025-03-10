@@ -12,9 +12,6 @@ class ParseXML extends Common {
 
   # Setup
 
-  protected $saml2found = false;
-  protected $saml1found = false;
-  protected $shibboleth10found = false;
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
 
@@ -300,29 +297,7 @@ class ParseXML extends Common {
       $this->addEntityUrl('error', $data->getAttribute('errorURL'));
     }
     $keyOrder = 0;
-    $this->saml2found = false;
-    $this->saml1found = false;
-    $this->shibboleth10found = false;
-    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
-    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
-      switch ($protocol) {
-        case self::SAML_PROTOCOL_SAML2 :
-          $this->saml2found = true;
-          break;
-        case self::SAML_PROTOCOL_SAML1 :
-        case self::SAML_PROTOCOL_SAML11 :
-          $this->saml1found = true;
-          break;
-        case self::SAML_PROTOCOL_SHIB :
-          $this->shibboleth10found = true;
-          break;
-        case '' :
-          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
-          break;
-        default :
-          $this->result .= sprintf("Protocol %s missing in validator for IDPSSODescriptor.\n", $protocol);
-      }
-    }
+    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
     $child = $data->firstChild;
@@ -340,7 +315,7 @@ class ParseXML extends Common {
         case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
         case self::SAML_MD_SINGLELOGOUTSERVICE :
         #case 'ManageNameIDService' :
-          $this->checkSAMLEndpoint($child,'IDPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'IDPSSO', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
           $this->checkNameIDFormat($child->textContent);
@@ -349,7 +324,7 @@ class ParseXML extends Common {
         case self::SAML_MD_SINGLESIGNONSERVICE :
         case self::SAML_MD_NAMEIDMAPPINGSERVICE :
         case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
-          $this->checkSAMLEndpoint($child,'IDPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'IDPSSO', $saml2found, $saml1found);
           break;
         #case self::SAML_MD_ATTRIBUTEPROFILE :
         case self::SAML_SAMLA_ATTRIBUTE :
@@ -360,7 +335,7 @@ class ParseXML extends Common {
       }
       $child = $child->nextSibling;
     }
-    if ($this->shibboleth10found && ! $this->saml1found) {
+    if ($shibboleth10found && ! $saml1found) {
       # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
       $this->error .= "IDPSSODescriptor claims support for urn:mace:shibboleth:1.0. This depends on SAML1, no support for SAML1 claimed.\n";
     }
@@ -475,27 +450,9 @@ class ParseXML extends Common {
   protected function parseSPSSODescriptor($data) {
     $this->assertionConsumerServiceHTTPRedirectFound = false;
     $keyOrder = 0;
-    $this->saml2found = false;
-    $this->saml1found = false;
-    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
-    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
-      switch ($protocol) {
-        case self::SAML_PROTOCOL_SAML2 :
-          $this->saml2found = true;
-          break;
-        case self::SAML_PROTOCOL_SAML1 :
-        case self::SAML_PROTOCOL_SAML11 :
-          $this->saml1found = true;
-          break;
-        case self::SAML_PROTOCOL_SHIB :
-          $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n", $protocol);
-          break;
-        case '' :
-          $this->warning .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
-          break;
-        default :
-          $this->result .= sprintf("Protocol %s missing in validator for SPSSODescriptor.\n", $protocol);
-      }
+    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
+    if ($shibboleth10found) {
+      $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n", $protocol);
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
     $child = $data->firstChild;
@@ -512,14 +469,14 @@ class ParseXML extends Common {
         case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
         case self::SAML_MD_SINGLELOGOUTSERVICE :
         case self::SAML_MD_MANAGENAMEIDSERVICE :
-          $this->checkSAMLEndpoint($child,'SPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'SPSSO', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
           $this->checkNameIDFormat($child->textContent);
           break;
         # 2.4.4
         case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
-          $this->checkSAMLEndpoint($child,'SPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'SPSSO', $saml2found, $saml1found);
           $this->checkAssertionConsumerService($child);
           break;
         case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
@@ -956,6 +913,43 @@ class ParseXML extends Common {
       }
       $child = $child->nextSibling;
     }
+  }
+
+  /**
+   * Parse protocolSupportEnumeration
+   *
+   * @param DOMNode $data Role descriptor to parse protocolSupportEnumeration in
+   *
+   * @return void
+   */
+  protected function parseProtocolSupportEnumeration($data) {
+    $name = $data->nodeName;
+    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
+
+    $saml2found = false;
+    $saml1found = false;
+    $shibboleth10found = false;
+
+    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
+      switch ($protocol) {
+        case self::SAML_PROTOCOL_SAML2 :
+          $saml2found = true;
+          break;
+        case self::SAML_PROTOCOL_SAML1 :
+        case self::SAML_PROTOCOL_SAML11 :
+          $saml1found = true;
+          break;
+        case self::SAML_PROTOCOL_SHIB :
+          $shibboleth10found = true;
+          break;
+        case '' :
+          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
+          break;
+        default :
+          $this->result .= sprintf("Protocol %s missing in validator for $name.\n", $protocol);
+      }
+    }
+    return array($saml2found, $saml1found, $shibboleth10found);
   }
 
   /**
