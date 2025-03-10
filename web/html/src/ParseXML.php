@@ -111,7 +111,7 @@ class ParseXML extends Common {
           break;
         #case self::SAML_MD_ADDITIONALMETADATALOCATION :
         default :
-          $this->result .= $child->nodeType == 8 ? '' : sprintf("%s missing in validator.\n", $child->nodeName);
+          $this->result .= $child->nodeType == 8 ? '' : sprintf("Unknown element %s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -173,7 +173,7 @@ class ParseXML extends Common {
           $this->error .= "Scope found in Extensions should be below IDPSSODescriptor/Extensions.\n";
           break;
         default :
-          $this->result .= sprintf("Extensions->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element Extensions->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -193,7 +193,7 @@ class ParseXML extends Common {
         $this->parseExtensionsEntityAttributesAttribute($child);
       } else {
         $this->result .= $child->nodeType == 8 ? '' :
-        sprintf("Extensions->EntityAttributes->%s missing in validator.\n", $child->nodeName);
+        sprintf("Unknown element Extensions->EntityAttributes->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -343,7 +343,7 @@ class ParseXML extends Common {
           break;
         default :
         $this->result .= $child->nodeType == 8 ? '' :
-          sprintf("IDPSSODescriptor->%s missing in validator.\n", $child->nodeName);
+          sprintf("Unknown element IDPSSODescriptor->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -409,7 +409,7 @@ class ParseXML extends Common {
         case self::SAML_PSC_REQUESTEDPRINCIPALSELECTION :
           break;
         default :
-          $this->result .= sprintf("IDPSSODescriptor->Extensions->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element IDPSSODescriptor->Extensions->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -499,7 +499,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("SPSSODescriptor->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element SPSSODescriptor->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -535,7 +535,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("SPSSODescriptor->Extensions->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element SPSSODescriptor->Extensions->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -651,7 +651,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("SPSSODescriptor->AttributeConsumingService->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element SPSSODescriptor->AttributeConsumingService->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -708,7 +708,7 @@ class ParseXML extends Common {
 
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("AttributeAuthorityDescriptor->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element AttributeAuthorityDescriptor->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -744,7 +744,7 @@ class ParseXML extends Common {
           $element = substr($child->nodeName, 3); #NOSONAR Used in Bind above
           break;
         default :
-          $this->result .= sprintf("Organization->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element Organization->%s found in metadata.\n", $child->nodeName);
       }
       $organizationHandler->bindValue(self::BIND_VALUE, trim($child->textContent));
       $organizationHandler->execute();
@@ -826,7 +826,7 @@ class ParseXML extends Common {
           $telephoneNumber = $value;
           break;
         default :
-          $this->result .= sprintf("ContactPerson->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element ContactPerson->%s found in metadata.\n", $child->nodeName);
       }
       if ($value == '') {
         $this->error .= sprintf ("Error in uploaded XML. Element %s in contact type=%s is empty!\n",
@@ -962,7 +962,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
           break;
         default :
-          $this->result .= sprintf("Unknown protocol %s found in validator for $name.\n", $protocol);
+          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for $name.\n", $protocol);
       }
     }
 
@@ -1003,7 +1003,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("%sDescriptor->KeyDescriptor->%s missing in validator.\n", $type, $child->nodeName);
+            sprintf("Unknown element %sDescriptor->KeyDescriptor->%s found in metadata.\n", $type, $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -1043,7 +1043,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("%sDescriptor->KeyDescriptor->KeyInfo->%s missing in validator.\n", $type, $child->nodeName);
+            sprintf("Unknown element %sDescriptor->KeyDescriptor->KeyInfo->%s found in metadata.\n", $type, $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -1172,7 +1172,7 @@ class ParseXML extends Common {
         #case'ds:X509CRL' :
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("%sDescriptor->KeyDescriptor->KeyInfo->X509Data->%s missing in validator.\n",
+            sprintf("Unknown element %sDescriptor->KeyDescriptor->KeyInfo->X509Data->%s found in metadata.\n",
               $type, $child->nodeName);
       }
       $child = $child->nextSibling;
