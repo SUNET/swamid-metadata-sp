@@ -661,8 +661,7 @@ class ParseXML extends Common {
    */
   protected function parseAttributeAuthorityDescriptor($data) {
     $keyOrder = 0;
-    $saml2found = false;
-    $saml1found = false;
+    list($saml2found, $saml1found, $shibboleth10found) = $this->parseProtocolSupportEnumeration($data);
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.7
     $child = $data->firstChild;
     while ($child) {
