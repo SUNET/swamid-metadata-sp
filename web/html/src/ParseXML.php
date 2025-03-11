@@ -44,6 +44,8 @@ class ParseXML extends Common {
     # Remove old ContactPersons / Organization from previous runs
     $this->config->getDb()->prepare('DELETE FROM `EntityAttributes` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
+    $this->config->getDb()->prepare('DELETE FROM `DiscoveryResponse` WHERE `entity_id` = :Id')->execute(
+      array(self::BIND_ID => $this->dbIdNr));
     $this->config->getDb()->prepare('DELETE FROM `Mdui` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
     $this->config->getDb()->prepare('DELETE FROM `KeyInfo` WHERE `entity_id` = :Id')->execute(
@@ -548,6 +550,7 @@ class ParseXML extends Common {
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_IDPDISC_DISCOVERYRESPONSE :
+          $this->parseSSODescriptorExtensionsDiscoveryResponse($child);
           $this->discoveryResponseFound = true;
           break;
         case 'init:RequestInitiator' :
@@ -870,6 +873,32 @@ class ParseXML extends Common {
     $contactPersonHandler->bindParam(self::BIND_SURNAME, $surName);
     $contactPersonHandler->bindParam(self::BIND_TELEPHONENUMBER, $telephoneNumber);
     $contactPersonHandler->execute();
+  }
+
+  /**
+   * Parse SSODescriptor -> Extensions -> DiscoveryResponse
+   *
+   * Used by SPSSODescriptor
+   *
+   * @param DOMNode $data XML to parse
+   *
+   * @return void
+   */
+  protected function parseSSODescriptorExtensionsDiscoveryResponse($data) {
+    # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-idp-discovery-cs-01.html
+    if ($data->hasAttribute('Binding') && $data->hasAttribute('Location') && $data->hasAttribute('index')) {
+      if ($data->getAttribute('Binding') != 'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol') {
+        $this->error .= sprintf ("Binding in %s with index = %d is NOT urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol.\n",
+          $data->nodeName, $data->getAttribute('index'));
+      }
+      $discoveryHandler = $this->config->getDb()->prepare('INSERT INTO `DiscoveryResponse`
+        (`entity_id`, `index`, `location`) VALUES (:Id, :Index, :URL);');
+      $discoveryHandler->execute(array(
+        self::BIND_ID => $this->dbIdNr,
+        self::BIND_INDEX => $data->getAttribute('index'),
+        self::BIND_URL => $data->getAttribute('Location')
+      ));
+    }
   }
 
   /**

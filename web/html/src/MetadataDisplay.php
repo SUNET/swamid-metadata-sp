@@ -297,6 +297,7 @@ class MetadataDisplay extends Common {
       case 'EntityAttributes' :
       case 'IdPMDUI' :
       case 'SPMDUI' :
+      case 'DiscoveryResponse' :
       case 'DiscoHints' :
       case 'IdPKeyInfo' :
       case 'SPKeyInfo' :
@@ -593,6 +594,14 @@ class MetadataDisplay extends Common {
       $this->showAttributeConsumingService($oldEntityId, $entityId);
     }
     $this->showCollapseEnd('AttributeConsumingService', 1);
+    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 1, true,
+      $allowEdit ? 'DiscoveryResponse' : false, $entityId, $oldEntityId);
+    $this->showDiscoveryResponse($entityId, $oldEntityId, true);
+    if ($oldEntityId != 0 ) {
+      $this->showNewCol(1);
+      $this->showDiscoveryResponse($oldEntityId, $entityId);
+    }
+    $this->showCollapseEnd('DiscoveryResponse', 1);
     $this->showCollapseEnd('SP', 0);
   }
 
@@ -1050,6 +1059,40 @@ class MetadataDisplay extends Common {
       }
       print "\n                  </ul></li>\n                </ul>";
     }
+  }
+
+  /**
+   * Show DiscoveryResponse
+   *
+   * @return void
+   */
+  private function showDiscoveryResponse($entityId, $otherEntityId=0, $added = false) {
+    $discoveryHandler = $this->config->getDb()->prepare('SELECT `index`, `location`
+      FROM `DiscoveryResponse` WHERE `entity_id` = :Id ORDER BY `index`;');
+
+    if ($otherEntityId) {
+      $discoveryHandler->execute(array(self::BIND_ID => $otherEntityId));
+      while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
+        $otherDicsovery[$discovery['index']] = $discovery['location'];
+      }
+    }
+
+    $discoveryHandler->execute(array(self::BIND_ID => $entityId));
+    printf ('%s                <ul>%s', "\n", "\n");
+    while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
+      $index = $discovery['index'];
+      $location = $discovery['location'];
+      if ($otherEntityId) {
+        $state = ($added) ? 'success' : 'danger';
+        $state = (isset($otherDicsovery[$index]) && $otherDicsovery[$index] == $location)
+            ? 'dark' : $state;
+      } else {
+        $state = 'dark';
+      }
+      printf ('                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+        $state, $index, $location, "\n");
+    }
+    printf ('                </ul>');
   }
 
   ####
