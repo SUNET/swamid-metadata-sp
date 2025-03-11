@@ -1170,6 +1170,7 @@ function validateEntity($entitiesId) {
     CLASS_VALIDATOR.$config->getFederation()['extend'] :
     CLASS_VALIDATOR;
   $parser = new $xmlParser($entitiesId);
+  $parser->clearResult();
   $parser->clearWarning();
   $parser->clearError();
   $parser->parseXML();
