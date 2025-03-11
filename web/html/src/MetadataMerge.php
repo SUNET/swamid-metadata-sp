@@ -28,7 +28,7 @@ class MetadataMerge extends Common {
       self::SAML_MD_EXTENSIONS => 6);
 
     if ($this->entityExists && $oldID > 0) {
-      $entityHandler = $this->config->getDb()->prepare('SELECT entityID FROM Entities WHERE id = :Id;');
+      $entityHandler = $this->config->getDb()->prepare('SELECT `entityID` FROM `Entities` WHERE `id` = :Id;');
       $entityHandler->bindValue(self::BIND_ID, $oldID);
       $entityHandler->execute();
       if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -65,7 +65,7 @@ class MetadataMerge extends Common {
     }
 
     $registrationInstantHandler = $this->config->getDb()->prepare(
-      'SELECT registrationInstant AS ts FROM Entities WHERE id = :Id;');
+      'SELECT `registrationInstant` AS ts FROM `Entities` WHERE `id` = :Id;');
     $registrationInstantHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $registrationInstantHandler->execute();
     if ($instant = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -139,7 +139,7 @@ class MetadataMerge extends Common {
       return;
     }
     $entityAttributesHandler = $this->config->getDb()->prepare(
-      'SELECT type, attribute FROM EntityAttributes WHERE entity_id = :Id ORDER BY type, attribute;');
+      'SELECT `type`, `attribute` FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
     $entityAttributesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -259,7 +259,7 @@ class MetadataMerge extends Common {
     if ( !$this->oldExists)
       return;
     $errorURLHandler = $this->config->getDb()->prepare(
-      "SELECT DISTINCT URL FROM EntityURLs WHERE entity_id = :Id AND type = 'error';");
+      "SELECT DISTINCT URL FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $errorURLHandler->execute();
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -277,7 +277,7 @@ class MetadataMerge extends Common {
       if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
         $idpSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
-          "INSERT INTO EntityURLs (`entity_id`, `URL`, `type` )
+          "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')
           ON DUPLICATE KEY UPDATE `URL`= :URL;");
         $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -289,10 +289,10 @@ class MetadataMerge extends Common {
   private function mergeIdPScopes() {
     if ( !$this->oldExists)
       return;
-    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $scopesHandler->execute();
-    $scopesInsertHandler = $this->config->getDb()->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
+    $scopesInsertHandler = $this->config->getDb()->prepare('INSERT INTO `Scopes` (`entity_id`, `scope`, `regexp`) VALUES (:Id, :Scope, :Regexp);');
     $scopesInsertHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $oldScopes[$scope['scope']] = $scope['regexp'];
@@ -366,7 +366,7 @@ class MetadataMerge extends Common {
   private function mergeUIInfo($type) {
     if ( !$this->oldExists)
       return;
-    $mduiHandler = $this->config->getDb()->prepare('SELECT element, lang, height, width, data FROM Mdui WHERE entity_id = :Id AND type = :Type ORDER BY element, lang;');
+    $mduiHandler = $this->config->getDb()->prepare('SELECT element, lang, height, width, data FROM `Mdui` WHERE entity_id = :Id AND type = :Type ORDER BY element, lang;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
@@ -453,7 +453,7 @@ class MetadataMerge extends Common {
           }
           $child = $child->nextSibling;
         }
-        $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO Mdui (entity_id, type, lang, height, width, element, data) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
+        $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO `Mdui` (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
         $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
         foreach ($oldMDUIElements as $element => $data) {
@@ -484,7 +484,7 @@ class MetadataMerge extends Common {
   private function mergeDiscoHints() {
     if ( !$this->oldExists)
       return;
-    $mduiHandler = $this->config->getDb()->prepare("SELECT element, data FROM Mdui WHERE entity_id = :Id AND type = 'IDPDisco' ORDER BY element;");
+    $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -555,7 +555,7 @@ class MetadataMerge extends Common {
           }
           $child = $child->nextSibling;
         }
-        $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO Mdui (entity_id, type, element, data) VALUES (:Id, 'IDPDisco', :Element, :Data);");
+        $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO `Mdui` (`entity_id`, `type`, `element`, `data`) VALUES (:Id, 'IDPDisco', :Element, :Data);");
         $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
         foreach ($oldMDUIElements as $element => $valueArray) {
           foreach ($valueArray as $value => $true) {
@@ -574,14 +574,14 @@ class MetadataMerge extends Common {
     if ( !$this->oldExists)
       return;
 
-    $serviceIndexHandler = $this->config->getDb()->prepare('SELECT Service_index FROM AttributeConsumingService WHERE entity_id = :Id ORDER BY Service_index;');
+    $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index` FROM `AttributeConsumingService` WHERE `entity_id` = :Id ORDER BY `Service_index`;');
     $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
 
-    $serviceElementHandler = $this->config->getDb()->prepare('SELECT element, lang, data FROM AttributeConsumingService_Service WHERE entity_id = :Id AND Service_index = :Index ORDER BY element DESC, lang;');
+    $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data` FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `element` DESC, `lang`;');
     $serviceElementHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $serviceElementHandler->bindParam(self::BIND_INDEX, $index);
 
-    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT FriendlyName, Name, NameFormat, isRequired FROM AttributeConsumingService_RequestedAttribute WHERE entity_id = :Id AND Service_index = :Index ORDER BY isRequired DESC, FriendlyName;');
+    $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired` FROM `AttributeConsumingService_RequestedAttribute` WHERE `entity_id` = :Id AND `Service_index` = :Index ORDER BY `isRequired` DESC, `FriendlyName`;');
     $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $requestedAttributeHandler->bindParam(self::BIND_INDEX, $index);
 
@@ -613,17 +613,17 @@ class MetadataMerge extends Common {
       $child = $child->nextSibling;
     }
     if ($ssoDescriptor && isset($oldServiceIndexes)) {
-      $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService (entity_id, Service_index) VALUES (:Id, :Index);');
+      $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);');
       $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $addServiceIndexHandler->bindParam(self::BIND_INDEX, $index);
 
-      $serviceElementAddHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_Service (entity_id, Service_index, element, lang, data) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
+      $serviceElementAddHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService_Service` (`entity_id`, `Service_index`, `element`, `lang`, `data`) VALUES ( :Id, :Index, :Element, :Lang, :Data );');
       $serviceElementAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $serviceElementAddHandler->bindParam(self::BIND_INDEX, $index);
       $serviceElementAddHandler->bindParam(self::BIND_LANG, $lang);
       $serviceElementAddHandler->bindParam(self::BIND_DATA, $value);
 
-      $requestedAttributeAddHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute (entity_id, Service_index, FriendlyName, Name, NameFormat, isRequired) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
+      $requestedAttributeAddHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService_RequestedAttribute` (`entity_id`, `Service_index`, `FriendlyName`, `Name`, `NameFormat`, `isRequired`) VALUES ( :Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
       $requestedAttributeAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $requestedAttributeAddHandler->bindParam(self::BIND_INDEX, $index);
       $requestedAttributeAddHandler->bindParam(self::BIND_FRIENDLYNAME, $friendlyName);
@@ -790,7 +790,7 @@ class MetadataMerge extends Common {
     if ( !$this->oldExists)
       return;
     $organizationHandler = $this->config->getDb()->prepare(
-      'SELECT element, lang, data FROM Organization WHERE entity_id = :Id ORDER BY element, lang;');
+      'SELECT element, lang, data FROM `Organization` WHERE entity_id = :Id ORDER BY element, lang;');
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -877,7 +877,7 @@ class MetadataMerge extends Common {
     if ( !$this->oldExists) {
       return;
     }
-    $contactPersonHandler = $this->config->getDb()->prepare('SELECT * FROM ContactPerson WHERE entity_id = :Id;');
+    $contactPersonHandler = $this->config->getDb()->prepare('SELECT * FROM `ContactPerson` WHERE `entity_id` = :Id;');
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $contactPersonHandler->execute();
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {

@@ -33,7 +33,7 @@ class IMPS {
       'SELECT `IMPS`.`id`, `OrganizationInfo`.`OrganizationNameSv` AS `OrganizationName`, `name`, `maximumAL`, `lastUpdated`, `sharedIdp`
       FROM `IMPS`, `OrganizationInfo`
       WHERE `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
-        AND `IMPS`.`id` = :Id');
+        AND `IMPS`.`id` = :Id;');
     $impsHandler->execute(array(self::BIND_ID => $id));
     if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       $name = isset($_POST['name']) ? $_POST['name'] : $imps['name'];
@@ -79,11 +79,11 @@ class IMPS {
       $maximumAL = $_POST['maximumAL'];
       if ($maximumAL > 0 && $maximumAL < 4) {
         $impsHandler = $this->config->getDb()->prepare(
-          'UPDATE IMPS
+          'UPDATE `IMPS`
           SET `name` = :Name, `maximumAL` = :MaximunAL,
             `lastUpdated` = :LastUpdated,
             `lastValidated` = IF(lastValidated < :LastUpdated, :LastUpdated, lastValidated), `sharedIdp` = :SharedIdP
-          WHERE `id` = :Id');
+          WHERE `id` = :Id;');
         return $impsHandler->execute(array(
           self::BIND_ID => $id, ':Name' => $_POST['name'],
           ':MaximunAL' => $maximumAL,
@@ -100,7 +100,7 @@ class IMPS {
   public function BindIdP2IMPS($entity_Id, $imps_Id) {
     $impsHandler = $this->config->getDb()->prepare('INSERT INTO `IdpIMPS`
       (`entity_id`, `IMPS_id`) VALUES
-      (:Entity_id, :IMPS_id)');
+      (:Entity_id, :IMPS_id);');
     $impsHandler->execute(array('Entity_id' => $entity_Id, self::BIND_IMPS_ID => $imps_Id));
   }
 
@@ -108,17 +108,17 @@ class IMPS {
     $checkHandler = $this->config->getDb()->prepare(
       'SELECT * FROM `IdpIMPS`
       WHERE `entity_id` = :Entity_id AND
-        `IMPS_id` = :IMPS_id');
+        `IMPS_id` = :IMPS_id;');
     $checkHandler->execute(array('Entity_id' => $entity_Id, self::BIND_IMPS_ID => $imps_Id));
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `lastValidated`, `lastUpdated` , `email`, `fullName`
       FROM `IMPS`
       LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
-      WHERE `IMPS`.`id` = :IMPS_id');
+      WHERE `IMPS`.`id` = :IMPS_id;');
     $idpsHandler = $this->config->getDb()->prepare(
       'SELECT `entity_id`, `entityID` FROM `IdpIMPS`, `Entities`
       WHERE `IMPS_id` = :IMPS_id AND
-        `entity_id` = `Entities`.`id`');
+        `entity_id` = `Entities`.`id`;');
     $assuranceHandler = $this->config->getDb()->prepare(
       "SELECT `attribute`
       FROM `EntityAttributes`
@@ -143,7 +143,7 @@ class IMPS {
             $impsConfirmHandler = $this->config->getDb()->prepare(
               'UPDATE `IMPS`
               SET `lastValidated` = NOW(), `user_id` = :User_id
-              WHERE `id` = :IMPS_id');
+              WHERE `id` = :IMPS_id;');
             $impsConfirmHandler->execute(array(self::BIND_IMPS_ID => $imps_Id, self::BIND_USER_ID => $userId));
             return true;
           } else {

@@ -42,27 +42,27 @@ class ParseXML extends Common {
     }
 
     # Remove old ContactPersons / Organization from previous runs
-    $this->config->getDb()->prepare('DELETE FROM EntityAttributes WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `EntityAttributes` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM Mdui WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `Mdui` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM KeyInfo WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `KeyInfo` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM AttributeConsumingService WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM AttributeConsumingService_Service WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM AttributeConsumingService_RequestedAttribute
+    $this->config->getDb()->prepare('DELETE FROM `AttributeConsumingService_RequestedAttribute`
       WHERE `entity_id` = :Id')->execute(array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM Organization WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `Organization` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM ContactPerson WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `ContactPerson` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM EntityURLs WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `EntityURLs` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('DELETE FROM Scopes WHERE `entity_id` = :Id')->execute(
+    $this->config->getDb()->prepare('DELETE FROM `Scopes` WHERE `entity_id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
-    $this->config->getDb()->prepare('UPDATE Entities SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
+    $this->config->getDb()->prepare('UPDATE `Entities` SET `isIdP` = 0, `isSP` = 0, `isAA` = 0 WHERE `id` = :Id')->execute(
       array(self::BIND_ID => $this->dbIdNr));
     $this->isIdP = false;
     $this->isSP = false;
@@ -77,20 +77,20 @@ class ParseXML extends Common {
           $this->parseExtensions($child);
           break;
         case self::SAML_MD_IDPSSODESCRIPTOR :
-          $this->config->getDb()->prepare('UPDATE Entities SET `isIdP` = 1 WHERE `id` = :Id')->execute(
+          $this->config->getDb()->prepare('UPDATE `Entities` SET `isIdP` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
           $this->isIdP = true;
           $this->parseIDPSSODescriptor($child);
           break;
         case self::SAML_MD_SPSSODESCRIPTOR :
-          $this->config->getDb()->prepare('UPDATE Entities SET `isSP` = 1 WHERE `id` = :Id')->execute(
+          $this->config->getDb()->prepare('UPDATE `Entities` SET `isSP` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
           $this->isSP = true;
           $this->parseSPSSODescriptor($child);
           break;
         #case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
         case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          $this->config->getDb()->prepare('UPDATE Entities SET `isAA` = 1 WHERE `id` = :Id')->execute(
+          $this->config->getDb()->prepare('UPDATE `Entities` SET `isAA` = 1 WHERE `id` = :Id')->execute(
             array(self::BIND_ID => $this->dbIdNr));
           $this->parseAttributeAuthorityDescriptor($child);
           $this->isAA = true;
@@ -124,8 +124,8 @@ class ParseXML extends Common {
    * @return void
    */
   protected function addEntityUrl($type, $url) {
-    $urlHandler = $this->config->getDb()->prepare("INSERT INTO EntityURLs
-      (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, :Type)");
+    $urlHandler = $this->config->getDb()->prepare("INSERT INTO `EntityURLs`
+      (`entity_id`, `URL`, `type`) VALUES (:Id, :URL, :Type);");
     $urlHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->bindValue(self::BIND_TYPE, $type);
@@ -201,8 +201,8 @@ class ParseXML extends Common {
    * @return void
    */
   protected function parseExtensionsEntityAttributesAttribute($data) {
-    $entityAttributesHandler = $this->config->getDb()->prepare('INSERT INTO EntityAttributes (`entity_id`, `type`, `attribute`)
-      VALUES (:Id, :Type, :Value)');
+    $entityAttributesHandler = $this->config->getDb()->prepare('INSERT INTO `EntityAttributes` (`entity_id`, `type`, `attribute`)
+      VALUES (:Id, :Type, :Value);');
 
     if (! $data->hasAttribute('NameFormat') && $data->hasAttribute('Name')) {
       switch ($data->getAttribute('Name')) {
@@ -374,8 +374,8 @@ class ParseXML extends Common {
    * @return void
    */
   protected function parseIDPSSODescriptorExtensions($data) {
-    $scopesHandler = $this->config->getDb()->prepare('INSERT INTO Scopes (`entity_id`, `scope`, `regexp`)
-      VALUES (:Id, :Scope, :Regexp)');
+    $scopesHandler = $this->config->getDb()->prepare('INSERT INTO `Scopes` (`entity_id`, `scope`, `regexp`)
+      VALUES (:Id, :Scope, :Regexp);');
     $scopesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
     #xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
@@ -436,9 +436,9 @@ class ParseXML extends Common {
    * @return void
    */
   protected function parseIDPSSODescriptorExtensionsDiscoHints($data) {
-    $ssoUIIHandler = $this->config->getDb()->prepare("INSERT INTO Mdui
+    $ssoUIIHandler = $this->config->getDb()->prepare("INSERT INTO `Mdui`
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
-      VALUES (:Id, 'IDPDisco', '', 0, 0, :Element, :Value)");
+      VALUES (:Id, 'IDPDisco', '', 0, 0, :Element, :Value);");
 
     $ssoUIIHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $ssoUIIHandler->bindParam(self::BIND_ELEMENT, $element);
@@ -586,13 +586,13 @@ class ParseXML extends Common {
     $isDefault = ($data->getAttribute('isDefault') &&
       ($data->getAttribute('isDefault') == 'true' || $data->getAttribute('isDefault') == '1')) ? 1 : 0;
 
-    $serviceHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService
-      (`entity_id`, `Service_index`, `isDefault`) VALUES (:Id, :Index, :Default)');
-    $serviceElementHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_Service
-      (`entity_id`, `Service_index`, `lang`, `element`, `data`) VALUES (:Id, :Index, :Lang, :Element, :Data)');
-    $requestedAttributeHandler = $this->config->getDb()->prepare('INSERT INTO AttributeConsumingService_RequestedAttribute
+    $serviceHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService`
+      (`entity_id`, `Service_index`, `isDefault`) VALUES (:Id, :Index, :Default);');
+    $serviceElementHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService_Service`
+      (`entity_id`, `Service_index`, `lang`, `element`, `data`) VALUES (:Id, :Index, :Lang, :Element, :Data);');
+    $requestedAttributeHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService_RequestedAttribute`
       (`entity_id`, `Service_index`, `FriendlyName`, `Name`, `NameFormat`, `isRequired`)
-      VALUES (:Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired)');
+      VALUES (:Id, :Index, :FriendlyName, :Name, :NameFormat, :IsRequired);');
 
     $serviceHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $serviceHandler->bindParam(self::BIND_INDEX, $index);
@@ -750,8 +750,8 @@ class ParseXML extends Common {
    */
   protected function parseOrganization($data) {
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.3.2.1
-    $organizationHandler = $this->config->getDb()->prepare('INSERT INTO Organization (`entity_id`, `lang`, `element`, `data`)
-      VALUES (:Id, :Lang, :Element, :Value)');
+    $organizationHandler = $this->config->getDb()->prepare('INSERT INTO `Organization` (`entity_id`, `lang`, `element`, `data`)
+      VALUES (:Id, :Lang, :Element, :Value);');
 
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->bindParam(self::BIND_LANG, $lang);
@@ -797,11 +797,11 @@ class ParseXML extends Common {
     $contactType = $data->getAttribute('contactType');
     $subcontactType = '';
 
-    $contactPersonHandler = $this->config->getDb()->prepare('INSERT INTO ContactPerson
+    $contactPersonHandler = $this->config->getDb()->prepare('INSERT INTO `ContactPerson`
       (`entity_id`, `contactType`, `subcontactType`, `company`, `emailAddress`,
         `extensions`, `givenName`, `surName`, `telephoneNumber`)
       VALUES (:Id, :ContactType, :SubcontactType, :Company, :Email,
-        :Extensions, :GivenName, :SurName, :TelephoneNumber)');
+        :Extensions, :GivenName, :SurName, :TelephoneNumber);');
 
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
@@ -879,13 +879,18 @@ class ParseXML extends Common {
    *
    * @param DOMNode $data XML to parse
    *
+   * @param string $type Type of Node
+   *  - AttributeAuthority
+   *  - IDPSSO
+   *  - SPSSO
+   *
    * @return void
    */
   protected function parseSSODescriptorExtensionsUIInfo($data, $type) {
-    $ssoUIIHandler = $this->config->getDb()->prepare('INSERT INTO Mdui
+    $ssoUIIHandler = $this->config->getDb()->prepare('INSERT INTO `Mdui`
       (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`)
-      VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Value)');
-    $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width`, `status` FROM URLs WHERE `URL` = :URL');
+      VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Value);');
+    $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width`, `status` FROM `URLs` WHERE `URL` = :URL;');
 
     $ssoUIIHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $ssoUIIHandler->bindValue(self::BIND_TYPE, $type);
@@ -1059,11 +1064,11 @@ class ParseXML extends Common {
    * @return void
    */
   protected function parseKeyDescriptorKeyInfoX509Data($data, $type, $use, $order, $name) {
-    $keyInfoHandler = $this->config->getDb()->prepare('INSERT INTO KeyInfo
+    $keyInfoHandler = $this->config->getDb()->prepare('INSERT INTO `KeyInfo`
       (`entity_id`, `type`, `use`, `order`, `name`, `notValidAfter`,
         `subject`, `issuer`, `bits`, `key_type`, `serialNumber`)
       VALUES (:Id, :Type, :Use, :Order, :Name, :NotValidAfter,
-        :Subject, :Issuer, :Bits, :Key_type, :SerialNumber)');
+        :Subject, :Issuer, :Bits, :Key_type, :SerialNumber);');
 
     $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->bindValue(self::BIND_TYPE, $type);

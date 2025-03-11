@@ -45,7 +45,7 @@ class Metadata extends Common {
 
       $entityHandler = $this->config->getDb()->prepare('
         SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `xml`
-          FROM Entities WHERE `entityID` = :Id AND `status` = :Status');
+          FROM `Entities` WHERE `entityID` = :Id AND `status` = :Status;');
       $entityHandler->bindValue(self::BIND_ID, $id);
       $entityHandler->bindValue(self::BIND_STATUS, $this->status);
       $entityHandler->execute();
@@ -76,9 +76,9 @@ class Metadata extends Common {
     $newEntityID = $this->cleanOutAttribuesInIDPSSODescriptor();
     if ($this->entityExists && $this->status == 1) {
       # Update entity in database
-      $entityHandlerUpdate = $this->config->getDb()->prepare('UPDATE Entities
+      $entityHandlerUpdate = $this->config->getDb()->prepare('UPDATE `Entities`
         SET `isIdP` = 0, `isSP` = 0, `isAA` = 0, `xml` = :Xml , `lastUpdated` = NOW()
-        WHERE `entityID` = :Id AND `status` = :Status');
+        WHERE `entityID` = :Id AND `status` = :Status;');
       $entityHandlerUpdate->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerUpdate->bindValue(self::BIND_STATUS, $this->status);
       $entityHandlerUpdate->bindValue(self::BIND_XML, $this->xml->saveXML());
@@ -87,10 +87,10 @@ class Metadata extends Common {
       if ($newEntityID) {
         $this->entityID = $newEntityID;
         # Add new entity into database
-        $entityHandlerInsert = $this->config->getDb()->prepare("INSERT INTO Entities
+        $entityHandlerInsert = $this->config->getDb()->prepare("INSERT INTO `Entities`
           (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
           `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
-          VALUES(:Id, 0, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '')");
+          VALUES(:Id, 0, 0, 0, 0, :Status, :Xml, NOW(), '', '', '', '', '');");
         $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
         $entityHandlerInsert->bindValue(self::BIND_STATUS, $this->status);
         $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
@@ -109,9 +109,9 @@ class Metadata extends Common {
     if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
       # Add new entity into database
       $entityHandlerInsert = $this->config->getDb()->prepare(
-        "INSERT INTO Entities (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
+        "INSERT INTO `Entities` (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
         `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
-        VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW(), '', '', '', '', '')");
+        VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW(), '', '', '', '', '');");
       $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
       $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
       $entityHandlerInsert->execute();
@@ -356,7 +356,7 @@ class Metadata extends Common {
         default :
       }
     }
-    $publishedHandler = $this->config->getDb()->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
+    $publishedHandler = $this->config->getDb()->prepare('UPDATE `Entities` SET `publishIn` = :PublishIn WHERE `id` = :Id;');
     $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $publishedHandler->bindValue(self::BIND_PUBLISHIN, $publishIn);
     $publishedHandler->execute();
@@ -367,7 +367,7 @@ class Metadata extends Common {
   # Updates which feeds by value
   #############
   public function updateFeedByValue($publishIn) {
-    $publishedHandler = $this->config->getDb()->prepare('UPDATE Entities SET `publishIn` = :PublishIn WHERE `id` = :Id');
+    $publishedHandler = $this->config->getDb()->prepare('UPDATE `Entities` SET `publishIn` = :PublishIn WHERE `id` = :Id;');
     $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $publishedHandler->bindValue(self::BIND_PUBLISHIN, $publishIn);
     $publishedHandler->execute();
@@ -378,7 +378,7 @@ class Metadata extends Common {
   # Updates which user that is responsible for an entity
   #############
   public function updateResponsible($approvedBy) {
-    $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+    $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO `EntityUser` (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW();');
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
     $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $approvedBy);
@@ -390,13 +390,13 @@ class Metadata extends Common {
   #############
   public function copyResponsible($otherEntity_id) {
     $entityUserHandler = $this->config->getDb()->prepare(
-      'INSERT INTO EntityUser (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
+      'INSERT INTO `EntityUser` (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
       VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged)
-      ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged');
+      ON DUPLICATE KEY UPDATE `lastChanged` = :LastChanged;');
     $otherEntityUserHandler = $this->config->getDb()->prepare(
       'SELECT `user_id`, `approvedBy`, `lastChanged`
-      FROM EntityUser
-      WHERE `entity_id` = :OtherEntity_Id');
+      FROM `EntityUser`
+      WHERE `entity_id` = :OtherEntity_Id;');
 
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $otherEntityUserHandler->bindParam(self::BIND_OTHERENTITY_ID, $otherEntity_id);
@@ -416,7 +416,7 @@ class Metadata extends Common {
     $this->removeEntityReal($this->dbIdNr);
   }
   private function removeEntityReal($dbIdNr) {
-    $entityHandler = $this->config->getDb()->prepare('SELECT publishedId FROM Entities WHERE id = :Id');
+    $entityHandler = $this->config->getDb()->prepare('SELECT `publishedId` FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $dbIdNr);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -459,12 +459,12 @@ class Metadata extends Common {
   #############
   public function checkPendingIfPublished() {
     $pendingHandler = $this->config->getDb()->prepare('SELECT `entityID`, `xml`, `lastUpdated`
-      FROM Entities WHERE `status` = 2 AND `id` = :Id');
+      FROM `Entities` WHERE `status` = 2 AND `id` = :Id;');
     $pendingHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $pendingHandler->execute();
 
     $publishedHandler = $this->config->getDb()->prepare('SELECT `xml`, `lastUpdated`
-      FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
+      FROM `Entities` WHERE `status` = 1 AND `entityID` = :EntityID;');
     $publishedHandler->bindParam(self::BIND_ENTITYID, $entityID);
 
     $normalize = new \metadata\NormalizeXML();
@@ -491,8 +491,8 @@ class Metadata extends Common {
   # Moves an entity from Published to SoftDelete state
   #############
   public function move2SoftDelete() {
-    $entityHandler = $this->config->getDb()->prepare('UPDATE Entities
-      SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id');
+    $entityHandler = $this->config->getDb()->prepare('UPDATE `Entities`
+      SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityHandler->execute();
   }
@@ -504,24 +504,24 @@ class Metadata extends Common {
     # Check if entity id exist as status pending
     if ($this->status == 2) {
       $publishedEntityHandler = $this->config->getDb()->prepare('SELECT `id`
-        FROM Entities WHERE `status` = 1 AND `entityID` = :Id');
+        FROM `Entities` WHERE `status` = 1 AND `entityID` = :Id;');
       # Get id of published version
       $publishedEntityHandler->bindParam(self::BIND_ID, $this->entityID);
       $publishedEntityHandler->execute();
       if ($publishedEntity = $publishedEntityHandler->fetch(PDO::FETCH_ASSOC)) {
-        $entityHandler = $this->config->getDb()->prepare('SELECT `lastValidated` FROM Entities WHERE `id` = :Id');
+        $entityHandler = $this->config->getDb()->prepare('SELECT `lastValidated` FROM `Entities` WHERE `id` = :Id;');
         $entityUserHandler = $this->config->getDb()->prepare('SELECT `user_id`, `approvedBy`, `lastChanged`
-          FROM EntityUser WHERE `entity_id` = :Entity_id ORDER BY `lastChanged`');
-        $addEntityUserHandler = $this->config->getDb()->prepare('INSERT INTO EntityUser
+          FROM `EntityUser` WHERE `entity_id` = :Entity_id ORDER BY `lastChanged`;');
+        $addEntityUserHandler = $this->config->getDb()->prepare('INSERT INTO `EntityUser`
           (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
           VALUES(:Entity_id, :User_id, :ApprovedBy, :LastChanged)
           ON DUPLICATE KEY
           UPDATE `lastChanged` =
-            IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged)');
-        $updateEntityConfirmationHandler = $this->config->getDb()->prepare('INSERT INTO EntityConfirmation
+            IF(lastChanged < VALUES(lastChanged), VALUES(lastChanged), lastChanged);');
+        $updateEntityConfirmationHandler = $this->config->getDb()->prepare('INSERT INTO `EntityConfirmation`
           (`entity_id`, `user_id`, `lastConfirmed`)
           VALUES (:Entity_id, :User_id, :LastConfirmed)
-          ON DUPLICATE KEY UPDATE `user_id` = :User_id, `lastConfirmed` = :LastConfirmed');
+          ON DUPLICATE KEY UPDATE `user_id` = :User_id, `lastConfirmed` = :LastConfirmed;');
 
         # Get lastValidated
         $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -548,8 +548,8 @@ class Metadata extends Common {
         $updateEntityConfirmationHandler->execute();
       }
       # Move entity to status PendingPublished
-      $entityUpdateHandler = $this->config->getDb()->prepare('UPDATE Entities
-        SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id');
+      $entityUpdateHandler = $this->config->getDb()->prepare('UPDATE `Entities`
+        SET `status` = 5, `lastUpdated` = NOW() WHERE `status` = 2 AND `id` = :Id;');
       $entityUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
       $entityUpdateHandler->execute();
     }
@@ -602,9 +602,9 @@ class Metadata extends Common {
   #############
   public function moveDraftToPending($publishedEntity_id) {
     $this->addRegistrationInfo();
-    $entityHandler = $this->config->getDb()->prepare('UPDATE Entities
+    $entityHandler = $this->config->getDb()->prepare('UPDATE `Entities`
       SET `status` = 2, `publishedId` = :PublishedId, `lastUpdated` = NOW(), `xml` = :Xml
-      WHERE `status` = 3 AND `id` = :Id');
+      WHERE `status` = 3 AND `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityHandler->bindParam(self::BIND_PUBLISHEDID, $publishedEntity_id);
     $entityHandler->bindValue(self::BIND_XML, $this->xml->saveXML());
@@ -712,7 +712,7 @@ class Metadata extends Common {
     if ($this->entityDisplayName == '' ) {
       $displayHandler = $this->config->getDb()->prepare(
         "SELECT `data` AS DisplayName
-        FROM Mdui WHERE entity_id = :Entity_id AND `element` = 'DisplayName' AND `lang` = 'en'");
+        FROM `Mdui` WHERE `entity_id` = :Entity_id AND `element` = 'DisplayName' AND `lang` = 'en';");
       $displayHandler->bindParam(self::BIND_ENTITY_ID,$this->dbIdNr);
       $displayHandler->execute();
       if ($displayInfo = $displayHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -734,7 +734,7 @@ class Metadata extends Common {
       WHERE `Entities`.`id` = `entity_id`
         AND ((`entityID` = :EntityID AND `status` = 1) OR (`Entities`.`id` = :Entity_id AND `status` = 3))
         AND (`contactType`='technical' OR `contactType`='administrative')
-        AND `emailAddress` <> ''");
+        AND `emailAddress` <> '';");
     $contactHandler->bindParam(self::BIND_ENTITYID,$this->entityID);
     $contactHandler->bindParam(self::BIND_ENTITY_ID,$this->dbIdNr);
     $contactHandler->execute();
@@ -752,10 +752,10 @@ class Metadata extends Common {
   }
 
   public function confirmEntity($userId) {
-    $entityConfirmHandler = $this->config->getDb()->prepare('INSERT INTO EntityConfirmation
+    $entityConfirmHandler = $this->config->getDb()->prepare('INSERT INTO `EntityConfirmation`
       (`entity_id`, `user_id`, `lastConfirmed`)
       VALUES (:Id, :User_id, NOW())
-      ON DUPLICATE KEY UPDATE  `user_id` = :User_id, `lastConfirmed` = NOW()');
+      ON DUPLICATE KEY UPDATE  `user_id` = :User_id, `lastConfirmed` = NOW();');
     $entityConfirmHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityConfirmHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityConfirmHandler->execute();
@@ -763,25 +763,25 @@ class Metadata extends Common {
 
   public function getUser($userID, $email = '', $fullName = '', $add = false) {
     if ($this->user['id'] == 0) {
-      $userHandler = $this->config->getDb()->prepare('SELECT `id`, `email`, `fullName` FROM Users WHERE `userID` = :Id');
+      $userHandler = $this->config->getDb()->prepare('SELECT `id`, `email`, `fullName` FROM `Users` WHERE `userID` = :Id;');
       $userHandler->bindValue(self::BIND_ID, strtolower($userID));
       $userHandler->execute();
       if ($this->user = $userHandler->fetch(PDO::FETCH_ASSOC)) {
-        $lastSeenUserHandler = $this->config->getDb()->prepare('UPDATE Users
-          SET `lastSeen` = NOW() WHERE `userID` = :Id');
+        $lastSeenUserHandler = $this->config->getDb()->prepare('UPDATE `Users`
+          SET `lastSeen` = NOW() WHERE `userID` = :Id;');
         $lastSeenUserHandler->bindValue(self::BIND_ID, strtolower($userID));
         $lastSeenUserHandler->execute();
         if ($add && ($email <> $this->user['email'] || $fullName <>  $this->user['fullName'])) {
-          $userHandler = $this->config->getDb()->prepare('UPDATE Users
-            SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
+          $userHandler = $this->config->getDb()->prepare('UPDATE `Users`
+            SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id;');
           $userHandler->bindValue(self::BIND_ID, strtolower($userID));
           $userHandler->bindParam(self::BIND_EMAIL, $email);
           $userHandler->bindParam(self::BIND_FULLNAME, $fullName);
           $userHandler->execute();
         }
       } elseif ($add) {
-        $addNewUserHandler = $this->config->getDb()->prepare('INSERT INTO Users
-          (`userID`, `email`, `fullName`, `lastSeen`) VALUES(:Id, :Email, :FullName, NOW())');
+        $addNewUserHandler = $this->config->getDb()->prepare('INSERT INTO `Users`
+          (`userID`, `email`, `fullName`, `lastSeen`) VALUES(:Id, :Email, :FullName, NOW());');
         $addNewUserHandler->bindValue(self::BIND_ID, strtolower($userID));
         $addNewUserHandler->bindParam(self::BIND_EMAIL, $email);
         $addNewUserHandler->bindParam(self::BIND_FULLNAME, $fullName);
@@ -806,8 +806,8 @@ class Metadata extends Common {
   }
 
   public function updateUser($userID, $email, $fullName) {
-    $userHandler = $this->config->getDb()->prepare('UPDATE Users
-      SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id');
+    $userHandler = $this->config->getDb()->prepare('UPDATE `Users`
+      SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id;');
     $userHandler->bindValue(self::BIND_ID, strtolower($userID));
     $userHandler->bindValue(self::BIND_EMAIL, $email);
     $userHandler->bindValue(self::BIND_FULLNAME, $fullName);
@@ -820,7 +820,7 @@ class Metadata extends Common {
   public function isResponsible() {
     if ($this->user['id'] > 0) {
       $userHandler = $this->config->getDb()->prepare('SELECT *
-        FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :Entity_id' );
+        FROM `EntityUser` WHERE `user_id` = :User_id AND `entity_id`= :Entity_id' );
       $userHandler->bindParam(self::BIND_USER_ID, $this->user['id']);
       $userHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
       $userHandler->execute();
@@ -832,7 +832,7 @@ class Metadata extends Common {
 
   public function getResponsibles() {
     $usersHandler = $this->config->getDb()->prepare('SELECT `id`, `userID`, `email`, `fullName`
-      FROM EntityUser, Users WHERE `entity_id` = :Entity_id AND id = user_id ORDER BY `userID`;');
+      FROM `EntityUser`, `Users` WHERE `entity_id` = :Entity_id AND id = user_id ORDER BY `userID`;');
     $usersHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $usersHandler->execute();
     return $usersHandler->fetchAll(PDO::FETCH_ASSOC);
@@ -844,7 +844,7 @@ class Metadata extends Common {
     $addNewRequestHandler = $this->config->getDb()->prepare('INSERT INTO `AccessRequests`
       (`entity_id`, `user_id`, `hash`, `requestDate`)
       VALUES (:Entity_id, :User_id, :Hashvalue, NOW())
-      ON DUPLICATE KEY UPDATE `hash` = :Hashvalue, `requestDate` = NOW()');
+      ON DUPLICATE KEY UPDATE `hash` = :Hashvalue, `requestDate` = NOW();');
     $addNewRequestHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $addNewRequestHandler->bindParam(self::BIND_USER_ID, $userId);
     $addNewRequestHandler->bindParam(self::BIND_HASHVALUE, $hash);
@@ -855,7 +855,7 @@ class Metadata extends Common {
   public function validateCode($userId, $hash, $approvedBy) {
     if ($userId > 0) {
       $userHandler = $this->config->getDb()->prepare('SELECT *
-        FROM EntityUser WHERE `user_id` = :User_id AND `entity_id`= :EntityID' );
+        FROM `EntityUser` WHERE `user_id` = :User_id AND `entity_id`= :EntityID' );
       $userHandler->bindParam(self::BIND_USER_ID, $userId);
       $userHandler->bindParam(self::BIND_ENTITYID, $this->dbIdNr);
       $userHandler->execute();
@@ -865,13 +865,13 @@ class Metadata extends Common {
         $requestHandler = $this->config->getDb()->prepare('SELECT `requestDate`, NOW() - INTERVAL 1 DAY AS `limit`,
           `email`, `fullName`, `entityID`
           FROM `AccessRequests`, `Users`, `Entities`
-          WHERE Users.`id` = `user_id`
+          WHERE `Users`.`id` = `user_id`
             AND `Entities`.`id` = `entity_id`
             AND `entity_id` =  :Entity_id
             AND `user_id` = :User_id
-            AND `hash` = :Hashvalue');
+            AND `hash` = :Hashvalue;');
         $requestRemoveHandler = $this->config->getDb()->prepare('DELETE FROM `AccessRequests`
-          WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id');
+          WHERE `entity_id` =  :Entity_id AND `user_id` = :User_id;');
         $requestHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
         $requestHandler->bindParam(self::BIND_USER_ID, $userId);
         $requestHandler->bindParam(self::BIND_HASHVALUE, $hash);
@@ -899,10 +899,10 @@ class Metadata extends Common {
   }
 
   public function addAccess2Entity($userId, $approvedBy) {
-    $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO EntityUser
+    $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO `EntityUser`
       (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
       VALUES(:Entity_id, :User_id, :ApprovedBy, NOW())
-      ON DUPLICATE KEY UPDATE `lastChanged` = NOW()');
+      ON DUPLICATE KEY UPDATE `lastChanged` = NOW();');
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityUserHandler->bindParam(self::BIND_APPROVEDBY, $approvedBy);
@@ -910,8 +910,8 @@ class Metadata extends Common {
   }
 
   public function removeAccessFromEntity($userId) {
-    $entityUserHandler = $this->config->getDb()->prepare('DELETE FROM EntityUser
-      WHERE `entity_id` = :Entity_id AND `user_id` = :User_id');
+    $entityUserHandler = $this->config->getDb()->prepare('DELETE FROM `EntityUser`
+      WHERE `entity_id` = :Entity_id AND `user_id` = :User_id;');
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
     $entityUserHandler->bindParam(self::BIND_USER_ID, $userId);
     $entityUserHandler->execute();
@@ -926,7 +926,7 @@ class Metadata extends Common {
     $nrOfIdPs = 0;
 
     $entitys = $this->config->getDb()->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
-      FROM Entities WHERE status = 1 AND publishIn > 1");
+      FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
       switch ($row['publishIn']) {
@@ -944,9 +944,9 @@ class Metadata extends Common {
           printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
       }
     }
-    $statsUpdate = $this->config->getDb()->prepare("INSERT INTO EntitiesStatistics
+    $statsUpdate = $this->config->getDb()->prepare("INSERT INTO `EntitiesStatistics`
       (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`)
-      VALUES ('$date', $nrOfEntities, $nrOfSPs, $nrOfIdPs)");
+      VALUES ('$date', $nrOfEntities, $nrOfSPs, $nrOfIdPs);");
     $statsUpdate->execute();
   }
 }
