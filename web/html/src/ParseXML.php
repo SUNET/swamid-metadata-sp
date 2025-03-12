@@ -11,10 +11,16 @@ class ParseXML extends Common {
   use CommonTrait;
 
   # Setup
+  protected $samlProtocolSupportFound = array();
+  /* when parsing role descriptors, parseProtocolSupportEnumeration
+   * will add entries in format:
+   *    'RoleDesciptorName' => array(
+   *       'saml2' => true,
+   *       'saml1' => false,
+   *       'shibboleth10' => false,
+   *    ),
+   */
 
-  protected $saml2found = false;
-  protected $saml1found = false;
-  protected $shibboleth10found = false;
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
 
@@ -107,7 +113,7 @@ class ParseXML extends Common {
           break;
         #case self::SAML_MD_ADDITIONALMETADATALOCATION :
         default :
-          $this->result .= $child->nodeType == 8 ? '' : sprintf("%s missing in validator.\n", $child->nodeName);
+          $this->result .= $child->nodeType == 8 ? '' : sprintf("Unknown element %s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -169,7 +175,7 @@ class ParseXML extends Common {
           $this->error .= "Scope found in Extensions should be below IDPSSODescriptor/Extensions.\n";
           break;
         default :
-          $this->result .= sprintf("Extensions->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element Extensions->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -189,7 +195,7 @@ class ParseXML extends Common {
         $this->parseExtensionsEntityAttributesAttribute($child);
       } else {
         $this->result .= $child->nodeType == 8 ? '' :
-        sprintf("Extensions->EntityAttributes->%s missing in validator.\n", $child->nodeName);
+        sprintf("Unknown element Extensions->EntityAttributes->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -302,29 +308,10 @@ class ParseXML extends Common {
       $this->addEntityUrl('error', $data->getAttribute('errorURL'));
     }
     $keyOrder = 0;
-    $this->saml2found = false;
-    $this->saml1found = false;
-    $this->shibboleth10found = false;
-    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
-    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
-      switch ($protocol) {
-        case self::SAML_PROTOCOL_SAML2 :
-          $this->saml2found = true;
-          break;
-        case self::SAML_PROTOCOL_SAML1 :
-        case self::SAML_PROTOCOL_SAML11 :
-          $this->saml1found = true;
-          break;
-        case self::SAML_PROTOCOL_SHIB :
-          $this->shibboleth10found = true;
-          break;
-        case '' :
-          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
-          break;
-        default :
-          $this->result .= sprintf("Protocol %s missing in validator for IDPSSODescriptor.\n", $protocol);
-      }
-    }
+    $this->parseProtocolSupportEnumeration($data);
+    $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml2'];
+    $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml1'];
+    $shibboleth10found = $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['shibboleth10'];
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.3
     $child = $data->firstChild;
@@ -342,7 +329,7 @@ class ParseXML extends Common {
         case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
         case self::SAML_MD_SINGLELOGOUTSERVICE :
         #case 'ManageNameIDService' :
-          $this->checkSAMLEndpoint($child,'IDPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'IDPSSO', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
           $this->checkNameIDFormat($child->textContent);
@@ -351,18 +338,18 @@ class ParseXML extends Common {
         case self::SAML_MD_SINGLESIGNONSERVICE :
         case self::SAML_MD_NAMEIDMAPPINGSERVICE :
         case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
-          $this->checkSAMLEndpoint($child,'IDPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'IDPSSO', $saml2found, $saml1found);
           break;
         #case self::SAML_MD_ATTRIBUTEPROFILE :
         case self::SAML_SAMLA_ATTRIBUTE :
           break;
         default :
         $this->result .= $child->nodeType == 8 ? '' :
-          sprintf("IDPSSODescriptor->%s missing in validator.\n", $child->nodeName);
+          sprintf("Unknown element IDPSSODescriptor->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
-    if ($this->shibboleth10found && ! $this->saml1found) {
+    if ($shibboleth10found && ! $saml1found) {
       # https://shibboleth.atlassian.net/wiki/spaces/SP3/pages/2065334348/SSO#SAML1
       $this->error .= "IDPSSODescriptor claims support for urn:mace:shibboleth:1.0. This depends on SAML1, no support for SAML1 claimed.\n";
     }
@@ -424,7 +411,7 @@ class ParseXML extends Common {
         case self::SAML_PSC_REQUESTEDPRINCIPALSELECTION :
           break;
         default :
-          $this->result .= sprintf("IDPSSODescriptor->Extensions->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element IDPSSODescriptor->Extensions->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -477,27 +464,12 @@ class ParseXML extends Common {
   protected function parseSPSSODescriptor($data) {
     $this->assertionConsumerServiceHTTPRedirectFound = false;
     $keyOrder = 0;
-    $this->saml2found = false;
-    $this->saml1found = false;
-    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
-    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
-      switch ($protocol) {
-        case self::SAML_PROTOCOL_SAML2 :
-          $this->saml2found = true;
-          break;
-        case self::SAML_PROTOCOL_SAML1 :
-        case self::SAML_PROTOCOL_SAML11 :
-          $this->saml1found = true;
-          break;
-        case self::SAML_PROTOCOL_SHIB :
-          $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n", $protocol);
-          break;
-        case '' :
-          $this->warning .= sprintf("Extra space found in protocolSupportEnumeration for SPSSODescriptor. Please remove.\n");
-          break;
-        default :
-          $this->result .= sprintf("Protocol %s missing in validator for SPSSODescriptor.\n", $protocol);
-      }
+    $this->parseProtocolSupportEnumeration($data);
+    $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2'];
+    $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1'];
+    $shibboleth10found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['shibboleth10'];
+    if ($shibboleth10found) {
+      $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n");
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
     $child = $data->firstChild;
@@ -514,14 +486,14 @@ class ParseXML extends Common {
         case self::SAML_MD_ARTIFACTRESOLUTIONSERVICE :
         case self::SAML_MD_SINGLELOGOUTSERVICE :
         case self::SAML_MD_MANAGENAMEIDSERVICE :
-          $this->checkSAMLEndpoint($child,'SPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'SPSSO', $saml2found, $saml1found);
           break;
         case self::SAML_MD_NAMEIDFORMAT :
           $this->checkNameIDFormat($child->textContent);
           break;
         # 2.4.4
         case self::SAML_MD_ASSERTIONCONSUMERSERVICE :
-          $this->checkSAMLEndpoint($child,'SPSSO', $this->saml2found, $this->saml1found);
+          $this->checkSAMLEndpoint($child,'SPSSO', $saml2found, $saml1found);
           $this->checkAssertionConsumerService($child);
           break;
         case self::SAML_MD_ATTRIBUTECONSUMINGSERVICE :
@@ -529,7 +501,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("SPSSODescriptor->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element SPSSODescriptor->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -566,7 +538,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("SPSSODescriptor->Extensions->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element SPSSODescriptor->Extensions->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -682,7 +654,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("SPSSODescriptor->AttributeConsumingService->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element SPSSODescriptor->AttributeConsumingService->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -707,8 +679,9 @@ class ParseXML extends Common {
    */
   protected function parseAttributeAuthorityDescriptor($data) {
     $keyOrder = 0;
-    $saml2found = false;
-    $saml1found = false;
+    $this->parseProtocolSupportEnumeration($data);
+    $saml2found = $this->samlProtocolSupportFound[self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR]['saml2'];
+    $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR]['saml1'];
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.7
     $child = $data->firstChild;
     while ($child) {
@@ -738,7 +711,7 @@ class ParseXML extends Common {
 
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("AttributeAuthorityDescriptor->%s missing in validator.\n", $child->nodeName);
+            sprintf("Unknown element AttributeAuthorityDescriptor->%s found in metadata.\n", $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -774,7 +747,7 @@ class ParseXML extends Common {
           $element = substr($child->nodeName, 3); #NOSONAR Used in Bind above
           break;
         default :
-          $this->result .= sprintf("Organization->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element Organization->%s found in metadata.\n", $child->nodeName);
       }
       $organizationHandler->bindValue(self::BIND_VALUE, trim($child->textContent));
       $organizationHandler->execute();
@@ -856,7 +829,7 @@ class ParseXML extends Common {
           $telephoneNumber = $value;
           break;
         default :
-          $this->result .= sprintf("ContactPerson->%s missing in validator.\n", $child->nodeName);
+          $this->result .= sprintf("Unknown element ContactPerson->%s found in metadata.\n", $child->nodeName);
       }
       if ($value == '') {
         $this->error .= sprintf ("Error in uploaded XML. Element %s in contact type=%s is empty!\n",
@@ -993,6 +966,48 @@ class ParseXML extends Common {
   }
 
   /**
+   * Parse protocolSupportEnumeration
+   *
+   * @param DOMNode $data Role descriptor to parse protocolSupportEnumeration in
+   *
+   * @return void
+   */
+  protected function parseProtocolSupportEnumeration($data) {
+    $name = $data->nodeName;
+    $protocolSupportEnumeration = $data->getAttribute('protocolSupportEnumeration');
+
+    $saml2found = false;
+    $saml1found = false;
+    $shibboleth10found = false;
+
+    foreach (explode(' ',$protocolSupportEnumeration) as $protocol) {
+      switch ($protocol) {
+        case self::SAML_PROTOCOL_SAML2 :
+          $saml2found = true;
+          break;
+        case self::SAML_PROTOCOL_SAML1 :
+        case self::SAML_PROTOCOL_SAML11 :
+          $saml1found = true;
+          break;
+        case self::SAML_PROTOCOL_SHIB :
+          $shibboleth10found = true;
+          break;
+        case '' :
+          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
+          break;
+        default :
+          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for $name.\n", $protocol);
+      }
+    }
+
+    $this->samlProtocolSupportFound[$name] = array(
+      'saml2' => $saml2found,
+      'saml1' => $saml1found,
+      'shibboleth10' => $shibboleth10found,
+    );
+  }
+
+  /**
    * Parse SSODescriptor -> KeyDescriptor
    *
    * Used by AttributeAuthorityDescriptor, IDPSSODescriptor and SPSSODescriptor
@@ -1022,7 +1037,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("%sDescriptor->KeyDescriptor->%s missing in validator.\n", $type, $child->nodeName);
+            sprintf("Unknown element %sDescriptor->KeyDescriptor->%s found in metadata.\n", $type, $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -1062,7 +1077,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("%sDescriptor->KeyDescriptor->KeyInfo->%s missing in validator.\n", $type, $child->nodeName);
+            sprintf("Unknown element %sDescriptor->KeyDescriptor->KeyInfo->%s found in metadata.\n", $type, $child->nodeName);
       }
       $child = $child->nextSibling;
     }
@@ -1191,7 +1206,7 @@ class ParseXML extends Common {
         #case'ds:X509CRL' :
         default :
           $this->result .= $child->nodeType == 8 ? '' :
-            sprintf("%sDescriptor->KeyDescriptor->KeyInfo->X509Data->%s missing in validator.\n",
+            sprintf("Unknown element %sDescriptor->KeyDescriptor->KeyInfo->X509Data->%s found in metadata.\n",
               $type, $child->nodeName);
       }
       $child = $child->nextSibling;
