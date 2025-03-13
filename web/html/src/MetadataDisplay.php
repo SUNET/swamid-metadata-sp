@@ -594,7 +594,7 @@ class MetadataDisplay extends Common {
       $this->showAttributeConsumingService($oldEntityId, $entityId);
     }
     $this->showCollapseEnd('AttributeConsumingService', 1);
-    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 1, true,
+    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 1, false,
       $allowEdit ? 'DiscoveryResponse' : false, $entityId, $oldEntityId);
     $this->showDiscoveryResponse($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
