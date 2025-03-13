@@ -58,6 +58,14 @@ CREATE TABLE `ContactPerson` (
   CONSTRAINT `ContactPerson_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
 );
 
+CREATE TABLE `DiscoveryResponse` (
+  `entity_id` int(10) unsigned NOT NULL,
+  `index` smallint(5) unsigned NOT NULL,
+  `location` text DEFAULT NULL,
+  PRIMARY KEY (`entity_id`,`index`),
+  CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+);
+
 CREATE TABLE `Entities` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `publishedId` int(10) unsigned NOT NULL DEFAULT 0,
@@ -292,4 +300,8 @@ CREATE TABLE `assuranceLog` (
   PRIMARY KEY (`entityID`,`assurance`)
 );
 
-
+CREATE TABLE `params` (
+  `id` varchar(20) DEFAULT NULL,
+  `value` text DEFAULT NULL
+);
+INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '1');
