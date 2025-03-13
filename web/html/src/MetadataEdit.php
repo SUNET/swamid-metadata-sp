@@ -123,6 +123,9 @@ class MetadataEdit extends Common {
       case 'DiscoHints' :
         $this->editDiscoHints();
         break;
+      case 'DiscoveryResponse' :
+        $this->editDiscoveryResponse();
+        break;
       case 'Organization' :
         $this->editOrganization();
         break;
@@ -840,7 +843,7 @@ class MetadataEdit extends Common {
     printf ('%s      </div><!-- end col -->%s    </div><!-- end row -->%s', "\n", "\n", "\n");
   }
   private function editMDUI($type) {
-    printf ('%s    <div class="row">%s      <div class="col">%s', "\n", "\n", "\n");
+    printf (self::HTML_START_DIV_ROW_COL.'%s', "\n", "\n", "\n");
     $edit = $type == 'IDPSSO' ? 'IdPMDUI' : 'SPMDUI';
     if (isset($_GET['action'])) {
       $error = '';
@@ -1285,6 +1288,247 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+  /**
+   * Edit DiscoveryResponse
+   *
+   * @return void
+   */
+  private function editDiscoveryResponse() {
+    printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
+
+    if (isset($_GET['action'])) {
+      $error = '';
+      if ($_GET['action'] == 'AddIndex') {
+        $nextDiscoveryIndexHandler = $this->config->getDb()->prepare(
+          'SELECT MAX(`index`) AS lastIndex FROM `DiscoveryResponse` WHERE `entity_id` = :Id;');
+        $nextDiscoveryIndexHandler->execute(array(self::BIND_ID => $this->dbIdNr));
+        if ($discoveryIndex = $nextDiscoveryIndexHandler->fetch(PDO::FETCH_ASSOC)) {
+          $indexValue = $discoveryIndex['lastIndex']+1;
+        } else {
+          $indexValue = 1;
+        }
+      } elseif ($_GET['action'] == 'Copy' || $_GET['action'] == 'Delete' ) {
+        if (isset($_GET['index']) && $_GET['index'] > -1) {
+          $indexValue = $_GET['index'];
+        } else {
+          $error .= '<br>No Index';
+          $indexValue = -1;
+        }
+      } else {
+        if (isset($_GET['index']) && $_GET['index'] > -1) {
+          $indexValue = $_GET['index'];
+        } else {
+          $error .= '<br>No Index';
+          $indexValue = -1;
+        }
+        if (isset($_GET['value']) && trim($_GET['value']) != '') {
+          $value = trim($_GET['value']);
+        } else {
+          $error .= '<br>Value is empty';
+        }
+      }
+      if ($error) {
+        printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
+      } else {
+        $changed = false;
+        $entityDescriptor = $this->getEntityDescriptor($this->xml);
+
+        # Find md:SPSSODescriptor in XML
+        $child = $entityDescriptor->firstChild;
+        $ssoDescriptor = false;
+        while ($child && ! $ssoDescriptor) {
+          if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR) {
+            $ssoDescriptor = $child;
+          }
+          $child = $child->nextSibling;
+        }
+        switch ($_GET['action']) {
+          case 'Add' :
+          case 'Update' :
+            if ($ssoDescriptor) {
+              $changed = true;
+              $child = $ssoDescriptor->firstChild;
+              $extensions = false;
+              if ($child) {
+                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+                  $extensions = $child;
+                } else {
+                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+                  $ssoDescriptor->insertBefore($extensions, $child);
+                }
+              }
+              if (! $extensions) {
+                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+                $ssoDescriptor->appendChild($extensions);
+              }
+              $child = $extensions->firstChild;
+              $discoResponse = false;
+              $discoFound = false;
+              while ($child && ! $discoResponse) {
+                if ($child->nodeName == self::SAML_IDPDISC_DISCOVERYRESPONSE) {
+                  if ($child->getAttribute('index') == $indexValue) {
+                    $discoResponse = $child;
+                  }
+                  $discoFound = true;
+                }
+                $child = $child->nextSibling;
+              }
+              if (! $discoResponse ) {
+                $discoResponse = $this->xml->createElement(self::SAML_IDPDISC_DISCOVERYRESPONSE);
+                $discoResponse->setAttribute('Binding', 'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol');
+                $discoResponse->setAttribute('Location', $value);
+                $discoResponse->setAttribute('index', $indexValue);
+                $extensions->appendChild($discoResponse);
+                $discoveryHandler = $this->config->getDb()->prepare('INSERT INTO `DiscoveryResponse`
+                  (`entity_id`, `index`, `location`) VALUES (:Id, :Index, :URL);');
+                $discoveryHandler->execute(array(
+                  self::BIND_ID => $this->dbIdNr,
+                  self::BIND_INDEX => $indexValue,
+                  self::BIND_URL => $value));
+              } else {
+                $discoResponse->setAttribute('Location', $value);
+                $discoveryHandler = $this->config->getDb()->prepare('UPDATE `DiscoveryResponse`
+                  SET `location` =  :URL WHERE `entity_id` = :Id AND `index` = :Index;');
+                $discoveryHandler->execute(array(
+                  self::BIND_ID => $this->dbIdNr,
+                  self::BIND_INDEX => $indexValue,
+                  self::BIND_URL => $value));
+              }
+              if (! $discoFound) {
+                $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_IDPDISC, self::SAMLXMLNS_IDPDISC_URL);
+              }
+            }
+            break;
+          case 'Delete' :
+            if ($ssoDescriptor) {
+              $child = $ssoDescriptor->firstChild;
+              $extensions = false;
+              while ($child && ! $extensions) {
+                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+                  $extensions = $child;
+                }
+                $child = $child->nextSibling;
+              }
+              if ($extensions) {
+                $child = $extensions->firstChild;
+                $discoResponse = false;
+                $moreExtensions = false;
+                while ($child && ! $discoResponse) {
+                  if ($child->nodeName == self::SAML_IDPDISC_DISCOVERYRESPONSE && $child->getAttribute('index') == $indexValue) {
+                    $discoResponse = $child;
+                  } else {
+                    $moreExtensions = true;
+                  }
+                  $child = $child->nextSibling;
+                }
+                $moreExtensions = $moreExtensions ? true : $child;
+                if ($discoResponse) {
+                  # Remove Node
+                  $discoRemoveHandler = $this->config->getDb()->prepare(
+                    "DELETE FROM `DiscoveryResponse`
+                    WHERE `index` = :Index AND `entity_id` = :Id;");
+                  $discoRemoveHandler->execute(array(self::BIND_ID => $this->dbIdNr, self::BIND_INDEX => $indexValue));
+                  $changed = true;
+                  $extensions->removeChild($discoResponse);
+                  if (! $moreExtensions) {
+                    $ssoDescriptor->removeChild($extensions);
+                  }
+                }
+              }
+            }
+            break;
+          default :
+        }
+        if ($changed) {
+          $this->saveXML();
+        }
+      }
+    } else {
+      $indexValue = -1;
+    }
+
+    $discoveryHandler = $this->config->getDb()->prepare('SELECT `index`, `location`
+      FROM `DiscoveryResponse` WHERE `entity_id` = :Id ORDER BY `index`;');
+    $discoveryHandler->execute(array(self::BIND_ID => $this->dbOldIdNr));
+    while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
+      $oldDiscovery[$discovery['index']] = array('location' => $discovery['location'], 'state' => 'removed');
+    }
+
+    $discoveryHandler->execute(array(self::BIND_ID => $this->dbIdNr));
+    printf ('%s        <ul>%s', "\n", "\n");
+    while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
+      $index = $discovery['index'];
+      $location = $discovery['location'];
+      if (isset($oldDiscovery[$discovery['index']]) && $oldDiscovery[$discovery['index']]['location'] == $location) {
+        $state = 'dark';
+        $oldDiscovery[$discovery['index']]['state'] = 'same';
+      } else {
+        $state = 'success';
+      }
+
+      if ($indexValue == $index && isset($_GET['action']) && $_GET['action'] == "Copy") {
+        printf ('          <li>
+            <b>Index = %d</b><br>
+            <form>
+              <input type="hidden" name="edit" value="DiscoveryResponse">
+              <input type="hidden" name="Entity" value="%d">
+              <input type="hidden" name="oldEntity" value="%d">
+              <input type="hidden" name="index" value="%d">
+              <input type="text" name="value" size="60" value="%s">
+              <br>
+              <input type="submit" name="action" value="Update">
+            </form>
+          </li>%s',
+          $index, $this->dbIdNr, $this->dbOldIdNr, $index, $location, "\n");
+      } else {
+        $baseLink = sprintf('<a href="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&index=%s&action=',
+          $this->dbIdNr, $this->dbOldIdNr, $index);
+        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+        printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+          $links, $state, $index, $location, "\n");
+      }
+    }
+    if (isset($_GET['action']) && $_GET['action'] == "AddIndex") {
+      printf ('          <li>
+            <b>Index = %d</b><br>
+            <form>
+              <input type="hidden" name="edit" value="DiscoveryResponse">
+              <input type="hidden" name="Entity" value="%d">
+              <input type="hidden" name="oldEntity" value="%d">
+              <input type="hidden" name="index" value="%d">
+              <input type="text" name="value" size="60" value="%s">
+              <br>
+              <input type="submit" name="action" value="Add">
+            </form>
+          </li>%s',
+          $indexValue, $this->dbIdNr, $this->dbOldIdNr, $indexValue, '', "\n");
+    }
+
+    printf ('        </ul>
+        <a href="./?validateEntity=%d"><button>Back</button></a>
+        <a href="./?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=AddIndex"><button>Add Index</button></a>
+      </div><!-- end col -->
+      <div class="col">',
+      $this->dbIdNr, $this->dbIdNr, $this->dbOldIdNr);
+    if ($this->oldExists) {
+      printf ('%s        <ul>%s', "\n", "\n");
+      foreach ($oldDiscovery as $index => $data) {
+        if ($data['state'] == 'same') {
+          $copy = '';
+          $state = 'dark';
+        } else {
+          $copy = sprintf('<a href ="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=Add&index=%d&value=%s">[copy]</a> ',
+            $this->dbIdNr, $this->dbOldIdNr, $index, $data['location']);
+          $state = 'danger';
+        }
+        printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+          $copy, $state, $index, $data['location'], "\n");
+      }
+      print self::HTML_END_UL;
+    }
+    print self::HTML_END_DIV_COL_ROW;
+  }
+
   private function editDiscoHints() {
     printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
     if (isset($_GET['action'])) {

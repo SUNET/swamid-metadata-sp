@@ -1073,7 +1073,7 @@ class MetadataDisplay extends Common {
     if ($otherEntityId) {
       $discoveryHandler->execute(array(self::BIND_ID => $otherEntityId));
       while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
-        $otherDicsovery[$discovery['index']] = $discovery['location'];
+        $otherDiscovery[$discovery['index']] = $discovery['location'];
       }
     }
 
@@ -1084,7 +1084,7 @@ class MetadataDisplay extends Common {
       $location = $discovery['location'];
       if ($otherEntityId) {
         $state = ($added) ? 'success' : 'danger';
-        $state = (isset($otherDicsovery[$index]) && $otherDicsovery[$index] == $location)
+        $state = (isset($otherDiscovery[$index]) && $otherDiscovery[$index] == $location)
             ? 'dark' : $state;
       } else {
         $state = 'dark';

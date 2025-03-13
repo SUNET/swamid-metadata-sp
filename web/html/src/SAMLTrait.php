@@ -78,6 +78,8 @@ trait SAMLTrait {
   const SAMLXMLNS_URI = 'http://www.w3.org/2000/xmlns/';
   const SAMLXMLNS_DS = 'xmlns:ds';
   const SAMLXMLNS_DS_URL = 'http://www.w3.org/2000/09/xmldsig#';
+  const SAMLXMLNS_IDPDISC = 'xmlns:idpdisc';
+  const SAMLXMLNS_IDPDISC_URL = 'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol';
   const SAMLXMLNS_MDUI = 'xmlns:mdui';
   const SAMLXMLNS_MDUI_URL = 'urn:oasis:names:tc:SAML:metadata:ui';
 }
