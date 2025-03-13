@@ -47,19 +47,19 @@ class MetadataDisplay extends Common {
     );
     $entityHandler = $this->config->getDb()->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
-      FROM Entities WHERE `id` = :Id;');
+      FROM `Entities` WHERE `id` = :Id;');
     $urlHandler1 = $this->config->getDb()->prepare('
       SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
-      FROM URLs
-      WHERE URL IN (SELECT `data` FROM Mdui WHERE `entity_id` = :Id)');
+      FROM `URLs`
+      WHERE `URL` IN (SELECT `data` FROM `Mdui` WHERE `entity_id` = :Id);');
     $urlHandler2 = $this->config->getDb()->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
-      FROM URLs
-      WHERE URL IN (SELECT `URL` FROM EntityURLs WHERE `entity_id` = :Id AND type = 'error')");
+      FROM `URLs`
+      WHERE `URL` IN (SELECT `URL` FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error');");
     $urlHandler3 = $this->config->getDb()->prepare("
       SELECT `status`, `URL`, `lastValidated`, `validationOutput`
-      FROM URLs
-      WHERE URL IN (SELECT `data` FROM Organization WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id)");
+      FROM `URLs`
+      WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);");
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
         NOW() - INTERVAL 10 MONTH AS `warnDate`,
@@ -68,11 +68,11 @@ class MetadataDisplay extends Common {
       FROM `IdpIMPS`, `IMPS`
       WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND
         `IdpIMPS`.`entity_id` = :Id
-      ORDER BY `lastValidated`');
+      ORDER BY `lastValidated`;');
     $testResults = $this->config->getDb()->prepare('SELECT `test`, `result`, `time`
-      FROM TestResults WHERE entityID = :EntityID');
+      FROM `TestResults` WHERE entityID = :EntityID;');
     $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
-      FROM EntityAttributes WHERE `entity_id` = :Id AND type = :Type;");
+      FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type;");
     $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
 
     $entityHandler->execute(array(self::BIND_ID => $entityId));
@@ -297,6 +297,7 @@ class MetadataDisplay extends Common {
       case 'EntityAttributes' :
       case 'IdPMDUI' :
       case 'SPMDUI' :
+      case 'DiscoveryResponse' :
       case 'DiscoHints' :
       case 'IdPKeyInfo' :
       case 'SPKeyInfo' :
@@ -358,20 +359,20 @@ class MetadataDisplay extends Common {
   public function showIMPS($entityId, $allowEdit = false, $expanded = false) {
     $impsListHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `name`, `maximumAL`
-      FROM `IMPS`');
+      FROM `IMPS`;');
     $displayNameHandler = $this->config->getDb()->prepare(
       "SELECT `data`
       FROM `Organization`
       WHERE `element` = 'OrganizationName'
         AND  `lang`='sv'
-        AND `entity_id` = :Id");
+        AND `entity_id` = :Id;");
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastValidated`, `lastUpdated` , `email`, `fullName`,
         NOW() - INTERVAL 10 MONTH AS `warnDate`,
         NOW() - INTERVAL 12 MONTH AS `errorDate`
       FROM `IdpIMPS`, `IMPS`
       LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
-      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND `IdpIMPS`.`entity_id` = :Id');
+      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND `IdpIMPS`.`entity_id` = :Id;');
     $impsHandler->execute(array(self::BIND_ID => $entityId));
 
     $this->showCollapse('IMPS', 'IMPS', false, 0, $expanded, false, $entityId, 0);
@@ -453,7 +454,7 @@ class MetadataDisplay extends Common {
   }
   private function showEntityAttributesPart($entityId, $otherEntityId, $added) {
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
-      FROM EntityAttributes WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
+      FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
     if ($otherEntityId) {
       $entityAttributesHandler->bindParam(self::BIND_ID, $otherEntityId);
       $entityAttributesHandler->execute();
@@ -593,6 +594,14 @@ class MetadataDisplay extends Common {
       $this->showAttributeConsumingService($oldEntityId, $entityId);
     }
     $this->showCollapseEnd('AttributeConsumingService', 1);
+    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 1, false,
+      $allowEdit ? 'DiscoveryResponse' : false, $entityId, $oldEntityId);
+    $this->showDiscoveryResponse($entityId, $oldEntityId, true);
+    if ($oldEntityId != 0 ) {
+      $this->showNewCol(1);
+      $this->showDiscoveryResponse($oldEntityId, $entityId);
+    }
+    $this->showCollapseEnd('DiscoveryResponse', 1);
     $this->showCollapseEnd('SP', 0);
   }
 
@@ -617,7 +626,7 @@ class MetadataDisplay extends Common {
   ####
   private function showErrorURL($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
     $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
-      FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
+      FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     if ($otherEntityId) {
       $errorURLHandler->bindParam(self::BIND_ID, $otherEntityId);
       $errorURLHandler->execute();
@@ -661,7 +670,7 @@ class MetadataDisplay extends Common {
   # Shows showScopes
   ####
   private function showScopes($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
-    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id;');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     if ($otherEntityId) {
       $scopesHandler->bindParam(self::BIND_ID, $otherEntityId);
       $scopesHandler->execute();
@@ -695,12 +704,12 @@ class MetadataDisplay extends Common {
   ####
   private function showMDUI($entityId, $type, $otherEntityId = 0, $added = false) {
     $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data`
-      FROM Mdui WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `lang`, `element`;');
+      FROM `Mdui` WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `lang`, `element`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $otherMDUIElements = array();
     $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
     $mduiHandler->execute();
-    $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width` FROM URLs WHERE `URL` = :URL');
+    $urlHandler = $this->config->getDb()->prepare('SELECT `nosize`, `height`, `width` FROM `URLs` WHERE `URL` = :URL;');
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
       $size = $mdui['height'].'x'.$mdui['width'];
@@ -800,7 +809,7 @@ class MetadataDisplay extends Common {
   ####
   private function showDiscoHints($entityId, $otherEntityId=0, $added = false) {
     $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data`
-      FROM Mdui WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
+      FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $otherMDUIElements = array();
     $mduiHandler->bindParam(self::BIND_ID, $otherEntityId);
     $mduiHandler->execute();
@@ -846,7 +855,7 @@ class MetadataDisplay extends Common {
   ####
   private function showKeyInfo($entityId, $type, $otherEntityId=0, $added = false) {
     $keyInfoStatusHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`
-      FROM KeyInfo WHERE entity_id = :Id AND type = :Type');
+      FROM `KeyInfo` WHERE `entity_id` = :Id AND `type` = :Type;');
     $keyInfoStatusHandler->bindParam(self::BIND_TYPE, $type);
     $keyInfoStatusHandler->bindParam(self::BIND_ID, $entityId);
     $keyInfoStatusHandler->execute();
@@ -878,7 +887,7 @@ class MetadataDisplay extends Common {
 
     $keyInfoHandler = $this->config->getDb()->prepare('
       SELECT `use`, `order`, `name`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`, `serialNumber`
-        FROM KeyInfo WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `order`;');
+        FROM `KeyInfo` WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `order`;');
     $keyInfoHandler->bindParam(self::BIND_TYPE, $type);
     if ($otherEntityId) {
       $otherKeyInfos = array();
@@ -954,15 +963,15 @@ class MetadataDisplay extends Common {
   ####
   private function showAttributeConsumingService($entityId, $otherEntityId=0, $added = false) {
     $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index`
-      FROM AttributeConsumingService WHERE `entity_id` = :Id;');
+      FROM `AttributeConsumingService` WHERE `entity_id` = :Id;');
     $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
-      FROM AttributeConsumingService_Service
+      FROM `AttributeConsumingService_Service`
       WHERE `entity_id` = :Id AND `Service_index` = :Index
       ORDER BY `element` DESC, `lang`;');
 
     $serviceElementHandler->bindParam(self::BIND_INDEX, $serviceIndex);
     $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT `FriendlyName`, `Name`, `NameFormat`, `isRequired`
-      FROM AttributeConsumingService_RequestedAttribute
+      FROM `AttributeConsumingService_RequestedAttribute`
       WHERE `entity_id` = :Id AND `Service_index` = :Index
       ORDER BY `isRequired` DESC, `FriendlyName`;');
     $requestedAttributeHandler->bindParam(self::BIND_INDEX, $serviceIndex);
@@ -1052,6 +1061,40 @@ class MetadataDisplay extends Common {
     }
   }
 
+  /**
+   * Show DiscoveryResponse
+   *
+   * @return void
+   */
+  private function showDiscoveryResponse($entityId, $otherEntityId=0, $added = false) {
+    $discoveryHandler = $this->config->getDb()->prepare('SELECT `index`, `location`
+      FROM `DiscoveryResponse` WHERE `entity_id` = :Id ORDER BY `index`;');
+
+    if ($otherEntityId) {
+      $discoveryHandler->execute(array(self::BIND_ID => $otherEntityId));
+      while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
+        $otherDiscovery[$discovery['index']] = $discovery['location'];
+      }
+    }
+
+    $discoveryHandler->execute(array(self::BIND_ID => $entityId));
+    printf ('%s                <ul>%s', "\n", "\n");
+    while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
+      $index = $discovery['index'];
+      $location = $discovery['location'];
+      if ($otherEntityId) {
+        $state = ($added) ? 'success' : 'danger';
+        $state = (isset($otherDiscovery[$index]) && $otherDiscovery[$index] == $location)
+            ? 'dark' : $state;
+      } else {
+        $state = 'dark';
+      }
+      printf ('                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+        $state, $index, $location, "\n");
+    }
+    printf ('                </ul>');
+  }
+
   ####
   # Shows Organization information if exists
   ####
@@ -1070,7 +1113,7 @@ class MetadataDisplay extends Common {
   }
   private function showOrganizationPart($entityId, $otherEntityId, $added) {
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
-      FROM Organization WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
+      FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     if ($otherEntityId) {
       $organizationHandler->bindParam(self::BIND_ID, $otherEntityId);
       $organizationHandler->execute();
@@ -1125,7 +1168,7 @@ class MetadataDisplay extends Common {
   }
   private function showContactsPart($entityId, $otherEntityId, $added) {
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT *
-      FROM ContactPerson WHERE `entity_id` = :Id ORDER BY `contactType`;');
+      FROM `ContactPerson` WHERE `entity_id` = :Id ORDER BY `contactType`;');
     if ($otherEntityId) {
       $contactPersonHandler->bindParam(self::BIND_ID, $otherEntityId);
       $contactPersonHandler->execute();
@@ -1272,8 +1315,8 @@ class MetadataDisplay extends Common {
 
   public function showRawXML($entityId, $urn = false) {
     $entityHandler = $urn
-      ? $this->config->getDb()->prepare('SELECT `xml` FROM Entities WHERE `entityID` = :Id AND `status` = 1;')
-      : $this->config->getDb()->prepare('SELECT `xml` FROM Entities WHERE `id` = :Id;');
+      ? $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `entityID` = :Id AND `status` = 1;')
+      : $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $entityId);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1297,7 +1340,7 @@ class MetadataDisplay extends Common {
   public function showEditors($entityId){
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
     $usersHandler = $this->config->getDb()->prepare('SELECT `userID`, `email`, `fullName`
-      FROM EntityUser, Users WHERE `entity_id` = :Id AND id = user_id ORDER BY `userID`;');
+      FROM `EntityUser`, `Users` WHERE `entity_id` = :Id AND `id` = `user_id` ORDER BY `userID`;');
     $usersHandler->bindParam(self::BIND_ID, $entityId);
     $usersHandler->execute();
     print "        <ul>\n";
@@ -1312,23 +1355,23 @@ class MetadataDisplay extends Common {
   public function showURLStatus($url = false){
     if($url) {
       $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
-        FROM URLs WHERE `URL` = :URL');
+        FROM `URLs` WHERE `URL` = :URL;');
       $urlHandler->bindValue(self::BIND_URL, $url);
       $urlHandler->execute();
       $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
-        FROM EntityURLs, Entities WHERE entity_id = id AND `URL` = :URL');
+        FROM `EntityURLs`, `Entities` WHERE `entity_id` = `id` AND `URL` = :URL;');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
-        FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL');
+        FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL;');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
       $ssoUIIHandler->execute();
       $organizationHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `element`, `lang`, `entityID`, `status`
-        FROM Organization, Entities WHERE entity_id = id AND `data` = :URL');
+        FROM `Organization`, `Entities` WHERE `entity_id` = `id` AND `data` = :URL;');
       $organizationHandler->bindValue(self::BIND_URL, $url);
       $organizationHandler->execute();
       $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
-        FROM EntityAttributes WHERE `entity_id` = :Id AND type = 'entity-category'");
+        FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = 'entity-category';");
 
       printf ('    <table class="table table-striped table-bordered">%s', "\n");
       printf ('      <tr><th>URL</th><td>%s</td></tr>%s', htmlspecialchars($url), "\n");
@@ -1410,7 +1453,7 @@ class MetadataDisplay extends Common {
       $oldType = 0;
       $urlHandler = $this->config->getDb()->prepare(
         'SELECT `URL`, `type`, `status`, `cocov1Status`, `lastValidated`, `lastSeen`, `validationOutput`
-        FROM URLs WHERE `status` > 0 OR `cocov1Status` > 0 ORDER BY type DESC, `URL`;');
+        FROM `URLs` WHERE `status` > 0 OR `cocov1Status` > 0 ORDER BY type DESC, `URL`;');
       $urlHandler->execute();
 
       while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1444,7 +1487,7 @@ class MetadataDisplay extends Common {
       $warnTimeweek = date('Y-m-d H:i', time() - 608400 ); // (7 * 24 * 60 * 60 + 3600 =  7 days 1 hour)
       $urlWaitHandler = $this->config->getDb()->prepare(
         "SELECT `URL`, `validationOutput`, `lastValidated`, `lastSeen`, `status`
-        FROM URLs
+        FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
           OR (`status` > 0 AND `lastValidated` < ADDTIME(NOW(), '-6:0:0'))
         ORDER BY `lastValidated`;");
@@ -1588,10 +1631,10 @@ class MetadataDisplay extends Common {
     $emails = array();
     $entityHandler = $this->config->getDb()->prepare(
       "SELECT `id`, `publishIn`, `isIdP`, `isSP`, `entityID`, `errors`, `errorsNB`
-      FROM Entities WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY entityID");
+      FROM `Entities` WHERE (`errors` <> '' OR `errorsNB` <> '') AND `status` = 1 ORDER BY `entityID`;");
     $entityHandler->execute();
     $contactPersonHandler = $this->config->getDb()->prepare(
-      'SELECT contactType, emailAddress FROM ContactPerson WHERE `entity_id` = :Id;');
+      'SELECT `contactType`, `emailAddress` FROM `ContactPerson` WHERE `entity_id` = :Id;');
 
     if ($download) {
       header('Content-Type: text/csv; charset=utf-8');
@@ -1678,12 +1721,12 @@ class MetadataDisplay extends Common {
       FROM `MailReminders`, `Entities`
       LEFT JOIN `EntityConfirmation` ON `EntityConfirmation`.`entity_id` = `Entities`.`id`
       WHERE `Entities`.`id` = `MailReminders`.`entity_id`
-      ORDER BY `entityID`, `type`');
+      ORDER BY `entityID`, `type`;');
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `lastValidated`
       FROM `IMPS`, `IdpIMPS`
       WHERE `id` = `IMPS_id`
-        AND `entity_id` = :Id');
+        AND `entity_id` = :Id;');
     $entityHandler->execute();
     printf ('        <br>
         <h5>%s</h5>
@@ -1804,12 +1847,12 @@ class MetadataDisplay extends Common {
       'SELECT `id`, `entityID`, `publishIn`
       FROM `Entities`
       WHERE `status` = 1 AND `isIdP` = 1 AND id NOT IN (SELECT `entity_id` FROM `IdpIMPS`)
-      ORDER BY `publishIn` DESC, `entityID`');
+      ORDER BY `publishIn` DESC, `entityID`;');
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`,`name`, `maximumAL`
         FROM `IMPS`
         WHERE `id` NOT IN (SELECT `IMPS_id` FROM `IdpIMPS`)
-        ORDER BY `name`');
+        ORDER BY `name`;');
     $idpHandler->execute();
     printf('        <div class="row">
           <div class="col">
@@ -1833,7 +1876,7 @@ class MetadataDisplay extends Common {
   }
 
   public function showXMLDiff($entityId1, $entityId2) {
-    $entityHandler = $this->config->getDb()->prepare('SELECT `id`, `entityID`, `xml` FROM Entities WHERE `id` = :Id');
+    $entityHandler = $this->config->getDb()->prepare('SELECT `id`, `entityID`, `xml` FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->bindValue(self::BIND_ID, $entityId1);
     $entityHandler->execute();
     if ($entity1 = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1927,12 +1970,12 @@ class MetadataDisplay extends Common {
 
   public function showPendingList() {
     $entitiesHandler = $this->config->getDb()->prepare(
-      'SELECT Entities.`id`, `entityID`, `xml`, `lastUpdated`, `email`, `lastChanged`
-      FROM Entities, EntityUser, Users
-      WHERE `status` = 2 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id`
-      ORDER BY lastUpdated ASC, `entityID`, `lastChanged` DESC');
+      'SELECT `Entities`.`id`, `entityID`, `xml`, `lastUpdated`, `email`, `lastChanged`
+      FROM `Entities`, `EntityUser`, `Users`
+      WHERE `status` = 2 AND `Entities`.`id` = `entity_id` AND `user_id` = `Users`.`id`
+      ORDER BY `lastUpdated` ASC, `entityID`, `lastChanged` DESC;');
     $entityHandler = $this->config->getDb()->prepare(
-      'SELECT `id`, `xml`, `lastUpdated` FROM Entities WHERE `status` = 1 AND `entityID` = :EntityID');
+      'SELECT `id`, `xml`, `lastUpdated` FROM `Entities` WHERE `status` = 1 AND `entityID` = :EntityID;');
     $entityHandler->bindParam(self::BIND_ENTITYID, $entityID);
     $entitiesHandler->execute();
 
@@ -2003,7 +2046,7 @@ class MetadataDisplay extends Common {
       'esi' => 'European Student Identifier');
 
     $idpHandler = $this->config->getDb()->prepare(
-      "SELECT COUNT(`id`) AS `count` FROM Entities WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1");
+      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1;');
     $idpHandler->execute();
     if ($idps = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfIdPs = $idps['count'];
@@ -2012,9 +2055,9 @@ class MetadataDisplay extends Common {
     }
     $entityAttributesHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
-      FROM EntityAttributes, Entities
-      WHERE type = 'entity-category-support' AND `entity_id` = `Entities`.`id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
-      GROUP BY `attribute`");
+      FROM `EntityAttributes`, `Entities`
+      WHERE `type` = 'entity-category-support' AND `entity_id` = `Entities`.`id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
+      GROUP BY `attribute`;");
     $entityAttributesHandler->execute();
     while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
       $ecsTested[$ecsTagged[$attribute['attribute']]]['MarkedWithECS'] = $attribute['count'];
@@ -2022,9 +2065,9 @@ class MetadataDisplay extends Common {
 
     $testResultsHandeler = $this->config->getDb()->prepare(
       "SELECT COUNT(entityID) AS `count`, `test`, `result`
-      FROM TestResults
-      WHERE TestResults.`entityID` IN (SELECT `entityID`
-      FROM Entities WHERE `isIdP` = 1 AND `publishIn` > 1)
+      FROM `TestResults`
+      WHERE `TestResults`.`entityID` IN (SELECT `entityID`
+      FROM `Entities` WHERE `isIdP` = 1 AND `publishIn` > 1)
       GROUP BY `test`, `result`;");
     $testResultsHandeler->execute();
     while ($testResult = $testResultsHandeler->fetch(PDO::FETCH_ASSOC)) {
@@ -2156,7 +2199,7 @@ class MetadataDisplay extends Common {
 
   public function showRAFStatistics() {
     $idpCountHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`');
+      'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`;');
     $idpCountHandler->execute();
     if ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) {
       $idps = $idpCountRow['idps'];
@@ -2165,7 +2208,7 @@ class MetadataDisplay extends Common {
     }
 
     $idpAssuranceHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(`entityID`) as `count`, `assurance` FROM `assuranceLog` GROUP BY `assurance`');
+      'SELECT COUNT(`entityID`) as `count`, `assurance` FROM `assuranceLog` GROUP BY `assurance`;');
     $idpAssuranceHandler->execute();
     $assuranceCount = array(
       'SWAMID-AL1' => 0,
@@ -2187,7 +2230,7 @@ class MetadataDisplay extends Common {
         AND `isIdP` = 1
         AND `publishIn` > 1
         AND `type` = 'assurance-certification'
-      GROUP BY `attribute`");
+      GROUP BY `attribute`;");
 
     $metaAssuranceHandler->execute();
     $metaAssuranceCount = array(
@@ -2250,7 +2293,7 @@ class MetadataDisplay extends Common {
 
     $assuranceHandler = $this->config->getDb()->prepare(
       'SELECT `entityID`, `assurance`, `logDate`
-      FROM `assuranceLog` ORDER BY `entityID`, `assurance`');
+      FROM `assuranceLog` ORDER BY `entityID`, `assurance`;');
     $assuranceHandler->execute();
     $oldIdp = false;
     $assurance = array();
@@ -2374,7 +2417,7 @@ class MetadataDisplay extends Common {
     $nrOfIdPs = 0;
 
     $entitys = $this->config->getDb()->prepare(
-      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE status = 1 AND publishIn > 1");
+      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
     $entitys->execute();
     while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
       switch ($row['publishIn']) {
@@ -2407,7 +2450,7 @@ class MetadataDisplay extends Common {
     array_unshift($idpArray, $nrOfIdPs);
 
     $statusRows = $this->config->getDb()->prepare(
-      "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM EntitiesStatistics ORDER BY `date` DESC");
+      "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM `EntitiesStatistics` ORDER BY `date` DESC;");
     $statusRows->execute();
     while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
       $dateLabel = substr($row['date'],2,8);
@@ -2465,7 +2508,7 @@ class MetadataDisplay extends Common {
       LEFT JOIN `Organization` Org3
         ON `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL' AND `Org3`.`lang` = :Lang
       WHERE `Entities`.`status` = 1 AND `Entities`.`publishIn` > 1
-      GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`");
+      GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`;");
     if (isset($_GET['lang'])) {
       switch ($_GET['lang']) {
         case 'sv' :
@@ -2489,7 +2532,7 @@ class MetadataDisplay extends Common {
             AND `Org2`.`lang` = :Lang AND `Org2`.`data` = :OrganizationDisplayName
             AND `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL'
             AND `Org3`.`lang` = :Lang AND `Org3`.`data` = :OrganizationURL
-          ORDER BY `entityID`");
+          ORDER BY `entityID`;");
         $entitiesHandler->execute(array('OrganizationName' => $_GET['name'],
           'OrganizationDisplayName' => $_GET['display'],
           'OrganizationURL' => $_GET['url'],
@@ -2644,11 +2687,11 @@ class MetadataDisplay extends Common {
         FROM `OrganizationInfo`, `IMPS`
         LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
         WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id` AND `OrganizationInfo`.`notMemberAfter` is NULL
-        ORDER BY `name`');
+        ORDER BY `name`;');
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`
       FROM `Entities`, `IdpIMPS`
-      WHERE `id` = `entity_id` AND `IMPS_id` = :Id');
+      WHERE `id` = `entity_id` AND `IMPS_id` = :Id;');
     $flagDates = $this->config->getDb()->query('SELECT NOW() - INTERVAL ' . $this->config->getIMPS()['warn1'] . ' MONTH AS `warn1Date`,
       NOW() - INTERVAL ' . $this->config->getIMPS()['error'] . ' MONTH AS `errorDate`', PDO::FETCH_ASSOC);
 
@@ -2701,12 +2744,12 @@ class MetadataDisplay extends Common {
         FROM `OrganizationInfo`, `IMPS`
         WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id`
         GROUP BY(orgId)
-        ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`');
+        ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`;');
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `id`,`name`, `maximumAL`, `lastValidated`
         FROM `IMPS`
         WHERE `OrganizationInfo_id` = :Id
-        ORDER BY `name`');
+        ORDER BY `name`;');
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
@@ -2758,7 +2801,7 @@ class MetadataDisplay extends Common {
                           `status` = 1 AND
                           `Organization`.`entity_id` = `Entities`.`id` AND
                           `Organization`.`lang` = 'sv' AND
-                          `element`= 'OrganizationName'");
+                          `element`= 'OrganizationName';");
     $scopeHandler->execute();
     while ($scope = $scopeHandler->fetch(PDO::FETCH_ASSOC)) {
       printf ('          <tr>

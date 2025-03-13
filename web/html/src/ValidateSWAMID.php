@@ -107,7 +107,7 @@ class ValidateSWAMID extends Validate {
     $mduiArray = array();
     $usedLangArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `type`, `lang`, `element`
-      FROM Mdui WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
+      FROM `Mdui` WHERE `type` <> 'IDPDisco' AND `entity_id` = :Id;");
     $mduiHandler->execute(array(self::BIND_ID => $this->dbIdNr));
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $type = $mdui['type'];
@@ -151,7 +151,7 @@ class ValidateSWAMID extends Validate {
     $serviceArray = array();
 
     $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `Service_index`
-      FROM AttributeConsumingService_Service WHERE `entity_id` = :Id');
+      FROM `AttributeConsumingService_Service` WHERE `entity_id` = :Id');
     $serviceElementHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $serviceElementHandler->execute();
     while ($service = $serviceElementHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -170,7 +170,7 @@ class ValidateSWAMID extends Validate {
     }
 
     $organizationArray = array();
-    $organizationHandler = $this->config->getDb()->prepare('SELECT `lang`, `element` FROM Organization WHERE `entity_id` = :Id');
+    $organizationHandler = $this->config->getDb()->prepare('SELECT `lang`, `element` FROM `Organization` WHERE `entity_id` = :Id');
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -251,7 +251,7 @@ class ValidateSWAMID extends Validate {
    */
   private function checkEntityAttributes($type) {
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `attribute`
-      FROM EntityAttributes WHERE `entity_id` = :Id AND `type` = :Type');
+      FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
     if ($type == 'IDPSSO' ) {
@@ -304,7 +304,7 @@ class ValidateSWAMID extends Validate {
    */
   private function checkErrorURL() {
     $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
-      FROM EntityURLs WHERE `entity_id` = :Id AND `type` = 'error';");
+      FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $errorURLHandler->execute();
     if (! $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -325,7 +325,7 @@ class ValidateSWAMID extends Validate {
    * @return void
    */
   private function checkIDPScope() {
-    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM Scopes WHERE `entity_id` = :Id');
+    $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $scopesHandler->execute();
     $missingScope = true;
@@ -432,7 +432,7 @@ class ValidateSWAMID extends Validate {
       'InformationURL' => false,
       'PrivacyStatementURL' => false);
     $mduiHandler = $this->config->getDb()->prepare("SELECT DISTINCT `element`, `data`
-      FROM Mdui WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
+      FROM `Mdui` WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -477,7 +477,7 @@ class ValidateSWAMID extends Validate {
   private function checkRequiredSAMLcertificates($type) {
     $keyInfoArray = array ('IDPSSO' => false, 'SPSSO' => false, 'AttributeAuthority' => false);
     $keyInfoHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`, `subject`, `issuer`, `bits`, `key_type`
-      FROM KeyInfo
+      FROM `KeyInfo`
       WHERE `entity_id` = :Id AND `type` =:Type
       ORDER BY notValidAfter DESC');
     $keyInfoHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -737,7 +737,7 @@ class ValidateSWAMID extends Validate {
     $elementArray = array('OrganizationName' => false, 'OrganizationDisplayName' => false, 'OrganizationURL' => false);
 
     $organizationHandler = $this->config->getDb()->prepare('SELECT DISTINCT `element`
-      FROM Organization WHERE `entity_id` = :Id');
+      FROM `Organization` WHERE `entity_id` = :Id');
     $organizationHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -765,7 +765,7 @@ class ValidateSWAMID extends Validate {
   private function checkRequiredContactPersonElements() {
     $usedContactTypes = array();
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
-      FROM ContactPerson WHERE `entity_id` = :Id');
+      FROM `ContactPerson` WHERE `entity_id` = :Id');
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
 

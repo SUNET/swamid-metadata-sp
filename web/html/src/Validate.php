@@ -66,7 +66,7 @@ class Validate extends Common {
     $this->isSIRTFI = false;
 
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
-      FROM EntityAttributes WHERE `entity_id` = :Id');
+      FROM `EntityAttributes` WHERE `entity_id` = :Id');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->execute();
     while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -101,7 +101,7 @@ class Validate extends Common {
   protected function validateSPRandS() {
     $mduiArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`
-      FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
+      FROM `Mdui` WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -120,7 +120,7 @@ class Validate extends Common {
     }
 
     $contactPersonHandler = $this->config->getDb()->prepare("SELECT `emailAddress`
-      FROM ContactPerson WHERE `contactType` = 'technical' AND `entity_id` = :Id;");
+      FROM `ContactPerson` WHERE `contactType` = 'technical' AND `entity_id` = :Id;");
     $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
     if (! $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -140,9 +140,9 @@ class Validate extends Common {
     $mduiArray = array();
     $mduiElementArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`, `data`
-      FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
+      FROM `Mdui` WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
     $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT DISTINCT `Service_index`
-      FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id');
+      FROM `AttributeConsumingService_RequestedAttribute` WHERE `entity_id` = :Id');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
@@ -193,11 +193,11 @@ class Validate extends Common {
     $mduiArray = array();
     $mduiElementArray = array();
     $mduiHandler = $this->config->getDb()->prepare("SELECT `lang`, `element`, `data`
-      FROM Mdui WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
+      FROM `Mdui` WHERE `type` = 'SPSSO' AND `entity_id` = :Id;");
     $requestedAttributeHandler = $this->config->getDb()->prepare('SELECT DISTINCT `Service_index`
-      FROM AttributeConsumingService_RequestedAttribute WHERE `entity_id` = :Id');
+      FROM `AttributeConsumingService_RequestedAttribute` WHERE `entity_id` = :Id');
     $entityAttributesHandler =  $this->config->getDb()->prepare('SELECT attribute
-      FROM EntityAttributes WHERE `type` = :Type AND `entity_id` = :Id');
+      FROM `EntityAttributes` WHERE `type` = :Type AND `entity_id` = :Id');
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);

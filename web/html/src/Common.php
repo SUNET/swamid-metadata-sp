@@ -102,11 +102,11 @@ class Common {
         $this->isSP = $entity['isSP'] == 1;
         $this->isAA = $entity['isAA'] == 1;
         $this->feedValue = $entity['publishIn'];
-        $this->warning = $entity['warnings'];
-        $this->error = $entity['errors'];
-        $this->errorNB = $entity['errorsNB'];
-        $this->result = $entity['validationOutput'];
-        $this->registrationInstant = $entity['registrationInstant'];
+        $this->warning = strval($entity['warnings']);
+        $this->error = strval($entity['errors']);
+        $this->errorNB = strval($entity['errorsNB']);
+        $this->result = strval($entity['validationOutput']);
+        $this->registrationInstant = strval($entity['registrationInstant']);
         if ($this->handleXML) {
           $this->xml = new DOMDocument;
           $this->xml->preserveWhiteSpace = false;
