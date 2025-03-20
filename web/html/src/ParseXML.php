@@ -505,9 +505,11 @@ class ParseXML extends Common {
       }
       $child = $child->nextSibling;
     }
+    /*
     if (! $this->discoveryResponseFound) {
       $this->warning .= sprintf("SeamlessAccess: No DiscoveryResponse registered. SeamlessAccess will show a warning message if not added. Please consider to add.\n");
     }
+    */
   }
 
   /**

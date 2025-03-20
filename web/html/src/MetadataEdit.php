@@ -1450,6 +1450,7 @@ class MetadataEdit extends Common {
     $discoveryHandler = $this->config->getDb()->prepare('SELECT `index`, `location`
       FROM `DiscoveryResponse` WHERE `entity_id` = :Id ORDER BY `index`;');
     $discoveryHandler->execute(array(self::BIND_ID => $this->dbOldIdNr));
+    $oldDiscovery = array();
     while ($discovery = $discoveryHandler->fetch(PDO::FETCH_ASSOC)) {
       $oldDiscovery[$discovery['index']] = array('location' => $discovery['location'], 'state' => 'removed');
     }
