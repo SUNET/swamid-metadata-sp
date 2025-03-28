@@ -2416,6 +2416,7 @@ class MetadataDisplay extends Common {
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
 
+    $federation = $this->config->getFederation();
     $entitys = $this->config->getDb()->prepare(
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
     $entitys->execute();
@@ -2437,12 +2438,12 @@ class MetadataDisplay extends Common {
     }
 
     printf ('    <h3>Entity Statistics</h3>
-    <p>Statistics on number of entities in SWAMID.</p>
+    <p>Statistics on number of entities in %s.</p>
     <canvas id="total" width="200" height="50"></canvas>
     <br><br>
     <h3>Statistics in numbers</h3>
     <table class="table table-striped table-bordered">
-      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', "\n");
+      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', $federation['displayName'], "\n");
     printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
       'Now', $nrOfEntites, $nrOfSPs, $nrOfIdPs, "\n");
     array_unshift($labelsArray, 'Now');
