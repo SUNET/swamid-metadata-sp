@@ -2565,15 +2565,26 @@ class MetadataDisplay extends Common {
       $showEn = true;
     }
 
-    $organizationHandler->execute(array('Lang' => 'sv'));
-    $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
-    $this->printOrgList($organizationHandler, 'sv');
-    $this->showCollapseEnd('Organizations-sv', 0);
+    $languages  = $this->config->getFederation()['languages'];
 
-    $organizationHandler->execute(array('Lang' => 'en'));
-    $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
-    $this->printOrgList($organizationHandler, 'en');
-    $this->showCollapseEnd('Organizations-en', 0);
+    if (in_array('sv', $languages)) {
+        $organizationHandler->execute(array('Lang' => 'sv'));
+        $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
+        $this->printOrgList($organizationHandler, 'sv');
+        $this->showCollapseEnd('Organizations-sv', 0);
+    };
+
+    if (in_array('en', $languages)) {
+        $organizationHandler->execute(array('Lang' => 'en'));
+        // shortcut for English-only: no heading
+        if (count($languages)==1) {
+            $this->printOrgList($organizationHandler, 'en');
+        } else {
+            $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
+            $this->printOrgList($organizationHandler, 'en');
+            $this->showCollapseEnd('Organizations-en', 0);
+        };
+    };
 
   }
   private function printOrgList($organizationHandler, $lang){
