@@ -2815,9 +2815,12 @@ class MetadataDisplay extends Common {
   }
 
   public function showHelp() {
-    print "    <p>The SWAMID Metadata Tool is the place where you can see,
+    $federation = $this->config->getFederation();
+    $federation_display_name = $federation['displayName'];
+    $federation_long_name = $federation['longName'];
+    print "    <p>The $federation_display_name Metadata Tool is the place where you can see,
       register, update and remove metadata for Identity Providers and
-      Service Providers in the Academic Identity Federation SWAMID.</p>\n";
+      Service Providers in the $federation_long_name.</p>\n";
       $this->showCollapse('Request admin access', 'RequestAdminAccess', false, 0, false);?>
 
       To be able to update, remove or confirm an entity you must have administrative access to that entity. How to request access:
@@ -2831,7 +2834,7 @@ class MetadataDisplay extends Common {
         <li>Reach out to the administrative contact and ask them to accept your request by following the instructions in the mail.</li>
       </ol><?php
     $this->showCollapseEnd('RequestAdminAccess', 0);
-    $this->showCollapse('Register a new entity in SWAMID', 'RegisterNewEntity', false, 0, false);?>
+    $this->showCollapse("Register a new entity in $federation_display_name", 'RegisterNewEntity', false, 0, false);?>
 
           <ol>
             <li>Go to the tab "Upload new XML".</li>
@@ -2855,14 +2858,14 @@ class MetadataDisplay extends Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN or SWAMID Only federation.</li>
+              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
+              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
+            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
     $this->showCollapseEnd('RegisterNewEntity', 0);
-    $this->showCollapse('Update published entity in SWAMID', 'UpdateEntity', false, 0, false);?>
+    $this->showCollapse("Update published entity in $federation_display_name", 'UpdateEntity', false, 0, false);?>
 
           <ol>
             <li>Go to the tab "Published".</li>
@@ -2884,11 +2887,11 @@ class MetadataDisplay extends Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN or SWAMID Only federation.</li>
+              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
+              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
+            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
     $this->showCollapseEnd('UpdateEntity', 0);
     $this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);?>
@@ -2911,11 +2914,11 @@ class MetadataDisplay extends Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN or SWAMID Only federation.</li>
+              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
+              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
+            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
     $this->showCollapseEnd('ContinueUpdateEntity', 0);
     $this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);?>
