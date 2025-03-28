@@ -2182,15 +2182,16 @@ class MetadataDisplay extends Common {
 
   private function printAssuranceRow($idp, $assurance) {
     printf('      <tr>
-      <td>%s</td>
-      <td>%s</td><td>%s</td><td>%s</td>
-      <td>%s</td><td>%s</td><td>%s</td>
-      <td>%s</td>
-    </tr>%s',
-      $idp,
+      <td>%s</td>%s',
+      $idp, "\n");
+    printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
+      $idp, "\n");
+    printf('      <td>%s</td><td>%s</td><td>%s</td>
+      <td>%s</td>
+    </tr>%s',
       $assurance['RAF-low'],
       $assurance['RAF-medium'],
       $assurance['RAF-high'],
@@ -2243,19 +2244,31 @@ class MetadataDisplay extends Common {
 
     printf('    <div class="row">
       <div class="col">
-        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">&nbsp;</div></div>
+        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
+      $idps,
+      "\n");
+    printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">&nbsp;</div></div>
+        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>%s',
+      $assuranceCount['SWAMID-AL3'],
+      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+      $idps - $assuranceCount['SWAMID-AL1'],
+      "\n");
+    printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
         <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
-      </div>
-      <div class="col">
+      </div>%s',
+      $assuranceCount['RAF-high'],
+      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+      $idps - $assuranceCount['RAF-low'],
+      "\n");
+    printf('      <div class="col">
         <h3>SWAMID Assurance</h3>
         <canvas id="swamid"></canvas>
       </div>
@@ -2280,15 +2293,6 @@ class MetadataDisplay extends Common {
         <th>RAF-High</th>
         <th>Nothing</th>
       </tr>%s',
-      $idps,
-      $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-      $idps - $assuranceCount['SWAMID-AL1'],
-      $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-      $idps - $assuranceCount['RAF-low'],
       "\n");
 
     $assuranceHandler = $this->config->getDb()->prepare(
@@ -2326,8 +2330,9 @@ class MetadataDisplay extends Common {
     }
     print self::HTML_TABLE_END . "    <br>\n";
 
-    printf('      <script src="/include/chart/chart.min.js"></script>
-      <script>
+    printf('      <script src="/include/chart/chart.min.js"></script>%s',
+      "\n");
+    printf('      <script>
         const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
         const myswamid = new Chart(ctxswamid, {
           width: 200,
@@ -2348,8 +2353,13 @@ class MetadataDisplay extends Common {
             }]
           },
         });
-      </script>
-      <script>
+      </script>%s',
+    $assuranceCount['SWAMID-AL3'],
+    $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+    $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+    $idps - $assuranceCount['SWAMID-AL1'],
+    "\n");
+    printf('      <script>
         const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
         const myraf = new Chart(ctxraf, {
           width: 200,
@@ -2370,8 +2380,13 @@ class MetadataDisplay extends Common {
             }]
           },
         });
-      </script>
-      <script>
+      </script>%s',
+    $assuranceCount['RAF-high'],
+    $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+    $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+    $idps - $assuranceCount['RAF-low'],
+    "\n");
+    printf('      <script>
         const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
         const mymeta = new Chart(ctxmeta, {
           width: 200,
@@ -2392,14 +2407,6 @@ class MetadataDisplay extends Common {
           },
         });
       </script>',
-    $assuranceCount['SWAMID-AL3'],
-    $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-    $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-    $idps - $assuranceCount['SWAMID-AL1'],
-    $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-    $idps - $assuranceCount['RAF-low'],
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
       $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
