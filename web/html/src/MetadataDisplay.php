@@ -2181,14 +2181,17 @@ class MetadataDisplay extends Common {
   }
 
   private function printAssuranceRow($idp, $assurance) {
+    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     printf('      <tr>
       <td>%s</td>%s',
       $idp, "\n");
-    printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
+    if ($swamid_assurance) {
+        printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
       $idp, "\n");
+    };
     printf('      <td>%s</td><td>%s</td><td>%s</td>
       <td>%s</td>
     </tr>%s',
@@ -2199,6 +2202,7 @@ class MetadataDisplay extends Common {
   }
 
   public function showRAFStatistics() {
+    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     $idpCountHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`;');
     $idpCountHandler->execute();
@@ -2247,7 +2251,8 @@ class MetadataDisplay extends Common {
         <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
       $idps,
       "\n");
-    printf('        <div class="row"><div class="col">&nbsp;</div></div>
+    if ($swamid_assurance) {
+        printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
@@ -2257,6 +2262,7 @@ class MetadataDisplay extends Common {
       $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
       $idps - $assuranceCount['SWAMID-AL1'],
       "\n");
+    };
     printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
@@ -2268,11 +2274,11 @@ class MetadataDisplay extends Common {
       $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
       $idps - $assuranceCount['RAF-low'],
       "\n");
-    printf('      <div class="col">
+    printf(( $swamid_assurance ?  '      <div class="col">
         <h3>SWAMID Assurance</h3>
         <canvas id="swamid"></canvas>
       </div>
-      <div class="col">
+' : '' ) . '      <div class="col">
         <h3>REFEDS Assurance</h3>
         <canvas id="raf"></canvas>
       </div>
@@ -2285,10 +2291,10 @@ class MetadataDisplay extends Common {
     <table class="table table-striped table-bordered">
       <tr>
         <th>IdP</th>
-        <th>AL1</th>
+' . ( $swamid_assurance ? '        <th>AL1</th>
         <th>AL2</th>
         <th>AL3</th>
-        <th>RAF-Low</th>
+' : '' ) . '        <th>RAF-Low</th>
         <th>RAF-Medium</th>
         <th>RAF-High</th>
         <th>Nothing</th>
@@ -2332,7 +2338,8 @@ class MetadataDisplay extends Common {
 
     printf('      <script src="/include/chart/chart.min.js"></script>%s',
       "\n");
-    printf('      <script>
+    if ($swamid_assurance) {
+        printf('      <script>
         const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
         const myswamid = new Chart(ctxswamid, {
           width: 200,
@@ -2354,11 +2361,12 @@ class MetadataDisplay extends Common {
           },
         });
       </script>%s',
-    $assuranceCount['SWAMID-AL3'],
-    $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-    $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-    $idps - $assuranceCount['SWAMID-AL1'],
-    "\n");
+        $assuranceCount['SWAMID-AL3'],
+        $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+        $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+        $idps - $assuranceCount['SWAMID-AL1'],
+        "\n");
+    };
     printf('      <script>
         const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
         const myraf = new Chart(ctxraf, {

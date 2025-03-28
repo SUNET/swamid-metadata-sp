@@ -32,7 +32,7 @@ class Configuration {
       'name');
     $reqParamsSmtp = array('host', 'from', 'replyTo', 'replyName', 'sendOut');
     $reqParamsSmtpSasl = array('user', 'user');
-    $reqParamsFederation = array('displayName', 'longName', 'displayNameQA', 'name', 'aboutURL', 'contactURL', 'logoURL', 'logoWidth', 'logoHeight', 'languages');
+    $reqParamsFederation = array('displayName', 'longName', 'displayNameQA', 'name', 'aboutURL', 'contactURL', 'logoURL', 'logoWidth', 'logoHeight', 'languages', 'swamid_assurance');
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
