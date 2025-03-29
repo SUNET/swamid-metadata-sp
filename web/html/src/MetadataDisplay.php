@@ -2191,7 +2191,7 @@ class MetadataDisplay extends Common {
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
       $idp, "\n");
-    };
+    }
     printf('      <td>%s</td><td>%s</td><td>%s</td>
       <td>%s</td>
     </tr>%s',
@@ -2262,7 +2262,7 @@ class MetadataDisplay extends Common {
       $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
       $idps - $assuranceCount['SWAMID-AL1'],
       "\n");
-    };
+    }
     printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
@@ -2366,7 +2366,7 @@ class MetadataDisplay extends Common {
         $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
         $idps - $assuranceCount['SWAMID-AL1'],
         "\n");
-    };
+    }
     printf('      <script>
         const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
         const myraf = new Chart(ctxraf, {
@@ -2587,7 +2587,7 @@ class MetadataDisplay extends Common {
         $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
         $this->printOrgList($organizationHandler, 'sv');
         $this->showCollapseEnd('Organizations-sv', 0);
-    };
+    }
 
     if (in_array('en', $languages)) {
         $organizationHandler->execute(array('Lang' => 'en'));
@@ -2598,8 +2598,8 @@ class MetadataDisplay extends Common {
             $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
             $this->printOrgList($organizationHandler, 'en');
             $this->showCollapseEnd('Organizations-en', 0);
-        };
-    };
+        }
+    }
 
   }
   private function printOrgList($organizationHandler, $lang){
