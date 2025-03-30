@@ -57,6 +57,7 @@ $federation = array(
   'displayName' => 'SWAMID',
   'longName' => 'Academic Identity Federation SWAMID',
   'displayNameQA' => 'SWAMID QA',
+  'noAccountHtml' => 'you can create an eduID account at <a href="https://eduid.se">eduID.se</a>',
   'name' => 'swamid',
   'aboutURL' => 'https://www.sunet.se/swamid/',
   'contactURL' => 'https://www.sunet.se/swamid/kontakt/',
