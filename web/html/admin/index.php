@@ -1234,8 +1234,8 @@ function move2Pending($entitiesId) {
           $oldEntitiesId = $shadowMetadata->id();
           validateEntity($oldEntitiesId);
         } else {
-          $mailContacts->Subject  = 'Info : New SWAMID metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'New SWAMID metadata for ' . $shortEntityid;
+          $mailContacts->Subject  = 'Info : New ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
+          $mailRequester->Subject = 'New ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
           $oldEntitiesId = 0;
         }
 
@@ -1270,23 +1270,25 @@ function move2Pending($entitiesId) {
               <p>You have received this email because you are either
               the new or old technical and/or administrative contact.</p>
               <p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
-              <p>If you do not approve this update, forward this email to SWAMID Operations (operations@swamid.se)
+              <p>If you do not approve this update, forward this email to %s (%s)
               and request for the update to be denied.</p>
-              <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+              <p>This is a message from the %s.<br>
               --<br>
-              On behalf of SWAMID Operations</p>
+              On behalf of %s</p>
             </body>
           </html>",
-            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId);
+            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId,
+            $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested an update of \"%s\" (%s)
           \nYou have received this email because you are either the new or old technical and/or administrative contact.
           \nYou can see the new version at %s/?showEntity=%d
-          \nIf you do not approve this update, forward this email to SWAMID Operations (operations@swamid.se) and request for the update to be denied.
-          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          \nIf you do not approve this update, forward this email to %s (%s) and request for the update to be denied.
+          \nThis is a message from the %s.
           --
-          On behalf of SWAMID Operations",
-            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId);
+          On behalf of %s",
+            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId,
+            $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
 
           $mailRequester->isHTML(true);
           $mailRequester->Body = sprintf("<!DOCTYPE html>
@@ -1297,7 +1299,7 @@ function move2Pending($entitiesId) {
             <body>
               <p>Hi.</p>
               <p>You have requested an update of \"%s\" (%s)</p>
-              <p>To continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
+              <p>To continue the publication request, forward this email to %s (%s).
               If you don’t do this the publication request will not be processed.</p>
               <p>The new version can be found at <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a></p>
               <p>An email has also been sent to the following addresses since they are the new or old technical
@@ -1305,23 +1307,26 @@ function move2Pending($entitiesId) {
               <p><ul>
               <li>%s</li>
               </ul>
-              <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+              <p>This is a message from the %s.<br>
               --<br>
-              On behalf of SWAMID Operations</p>
+              On behalf of %s</p>
             </body>
           </html>",
-            $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId,
-            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
+            $displayName, $draftMetadata->entityID(), $federation['teamName'], $federation['teamMail'], $hostURL, $entitiesId,
+            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses),
+            $federation['toolName'], $federation['teamName']);
           $mailRequester->AltBody = sprintf("Hi.
           \nYou have requested an update of \"%s\" (%s)
-          \nTo continue the publication request, forward this email to SWAMID Operations (operations@swamid.se).
+          \nTo continue the publication request, forward this email to %s (%s).
           If you don’t do this the publication request will not be processed.
           \nThe new version can be found at %s/admin/?showEntity=%d
           \nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s
-          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          \nThis is a message from the %s.
           --
-          On behalf of SWAMID Operations",
-            $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
+          On behalf of %s",
+            $displayName, $draftMetadata->entityID(), $federation['teamName'], $federation['teamMail'],
+            $hostURL, $entitiesId, implode (", ",$addresses),
+            $federation['toolName'], $federation['teamName']);
 
           try {
             $mailContacts->send();
@@ -1665,27 +1670,29 @@ function requestRemoval($entitiesId) {
             </head>
             <body>
               <p>Hi.</p>
-              <p>%s (%s) has requested removal of the entity \"%s\" (%s) from the SWAMID metadata.</p>
+              <p>%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.</p>
               <p>You have received this email because you are either the technical and/or administrative contact.</p>
               <p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
-              <p>If you do not approve request please forward this email to SWAMID Operations (operations@swamid.se)
+              <p>If you do not approve request please forward this email to %s (%s)
               and request for the removal to be denied.</p>
-              <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+              <p>This is a message from the %s.<br>
               --<br>
-              On behalf of SWAMID Operations</p>
+              On behalf of %s</p>
             </body>
           </html>",
-          $fullName, $mail, $displayName, $metadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId);
+          $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
+          $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
         $mailContacts->AltBody = sprintf("Hi.
-          \n%s (%s) has requested removal of the entity \"%s\" (%s) from the SWAMID metadata.
+          \n%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.
           \nYou have received this email because you are either the technical and/or administrative contact.
           \nYou can see the current metadata at %s/?showEntity=%d
-          \nIf you do not approve request please forward this email to SWAMID Operations (operations@swamid.se)
+          \nIf you do not approve request please forward this email to %s (%s)
           and request for the removal to be denied.
-          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          \nThis is a message from the %s.
           --
-          On behalf of SWAMID Operations",
-          $fullName, $mail, $displayName, $metadata->entityID(), $hostURL, $entitiesId);
+          On behalf of %s",
+          $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId,
+          $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
 
         $mailRequester->isHTML(true);
         $mailRequester->Body   = sprintf("<!DOCTYPE html>
@@ -1695,36 +1702,39 @@ function requestRemoval($entitiesId) {
             </head>
             <body>
               <p>Hi.</p>
-              <p>You have requested removal of the entity \"%s\" (%s) from the SWAMID metadata.
-              <p>Please forward this email to SWAMID Operations (operations@swamid.se).</p>
+              <p>You have requested removal of the entity \"%s\" (%s) from the %s metadata.
+              <p>Please forward this email to %s (%s).</p>
               <p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
               <p>An email has also been sent to the following addresses since they are the technical
               and/or administrative contacts : </p>
               <p><ul>
               <li>%s</li>
               </ul>
-              <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+              <p>This is a message from the %s.<br>
               --<br>
-              On behalf of SWAMID Operations</p>
+              On behalf of %s</p>
             </body>
           </html>",
-          $displayName, $metadata->entityID(),
+          $displayName, $metadata->entityID(), $federation['displayName'],
+          $federation['teamName'], $federation['teamMail'],
           $hostURL, $entitiesId,
-          $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses));
+          $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
         $mailRequester->AltBody = sprintf("Hi.
-          \nYou have requested removal of the entity \"%s\" (%s) from the SWAMID metadata.
-          \nPlease forward this email to SWAMID Operations (operations@swamid.se).
+          \nYou have requested removal of the entity \"%s\" (%s) from the %s metadata.
+          \nPlease forward this email to %s (%s).
           \nThe current metadata can be found at %s/?showEntity=%d
           \nAn email has also been sent to the following addresses since they are the technical
           and/or administrative contacts : %s
-          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          \nThis is a message from the %s.
           --
-          On behalf of SWAMID Operations",
-          $displayName, $metadata->entityID(), $hostURL, $entitiesId, implode (", ",$addresses));
+          On behalf of %s",
+          $displayName, $metadata->entityID(), $federation['displayName'], $federation['teamName'], $federation['teamMail'],
+          $hostURL, $entitiesId, implode (", ",$addresses),
+          $federation['toolName'], $federation['teamName']);
 
         $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
-        $mailContacts->Subject  = 'Info : Request to remove SWAMID metadata for ' . $shortEntityid;
-        $mailRequester->Subject = 'Request to remove SWAMID metadata for ' . $shortEntityid;
+        $mailContacts->Subject  = 'Info : Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
+        $mailRequester->Subject = 'Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
 
         try {
           $mailContacts->send();
@@ -1917,6 +1927,7 @@ function requestAccess($entitiesId) {
   global $html, $menuActive;
   global $EPPN, $mail, $fullName, $userLevel;
   global $mailContacts, $mailRequester, $config;
+  $federation = $config->getFederation();
 
   $metadata = new \metadata\Metadata($entitiesId);
   if ($metadata->entityExists()) {
@@ -1958,20 +1969,21 @@ function requestAccess($entitiesId) {
           <p>You have received this email because you are either the technical and/or administrative contact.</p>
           <p>If you approve, please click on this link <a href=\"%s/admin/?approveAccessRequest=%s\">%s/admin/?approveAccessRequest=%s</a></p>
           <p>If you do not approve, you can ignore this email. No changes will be made.</p>
-          <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+          <p>This is a message from the %s.<br>
           --<br>
-          On behalf of SWAMID Operations</p>
+          On behalf of %s</p>
           </body>\n</html>",
-          $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode, $hostURL, $requestCode);
+          $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode, $hostURL, $requestCode,
+          $federation['toolName'], $federation['teamName']);
         $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested access to update %s
           \nYou have received this email because you are either the technical and/or administrative contact.
           \nIf you approve, please click on this link %s/admin/?approveAccessRequest=%s
           \nIf you do not approve, you can ignore this email. No changes will be made.
-          \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+          \nThis is a message from the %s.
           --
-          On behalf of SWAMID Operations",
-        $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode);
+          On behalf of %s",
+        $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode, $federation['toolName'], $federation['teamName']);
         $info = sprintf(
           "<p>The request has been sent to: %s</p>\n<p>Contact them and ask them to accept your request.</p>\n",
           implode (", ",$addresses));
