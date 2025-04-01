@@ -1479,7 +1479,7 @@ function annualConfirmation($entitiesId){
             '%s    <p>You are confirming that <b>%s</b> is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>%s',
             "\n", $metadata->entityID(), "\n");
           printf('    <form>
-      <input type="hidden" name="Entity" value="%d"
+      <input type="hidden" name="Entity" value="%d">
       <input type="hidden" name="FormVisit" value="true">
       <h5> Confirmation:</h5>
       <p>Registration criteria from SWAMID SAML WebSSO Technology Profile:
