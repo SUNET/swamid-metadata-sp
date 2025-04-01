@@ -68,6 +68,8 @@ $federation = array(
   'logoWidth' => 55,
   'logoHeight' => 63,
   'languages' => array('sv', 'en'),
+  'rulesName' => 'SWAMID SAML WebSSO Technology Profile',
+  'rulesURL' => 'https://www.swamid.se/policy/technology/saml-websso',
   'swamid_assurance' => true,
   # Optional if ypu want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples

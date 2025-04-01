@@ -1209,7 +1209,8 @@ function move2Pending($entitiesId) {
           $publish = false;
         }
         if (!isset($_GET['OrganisationOK'])) {
-          $errors .= "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n";
+          $errors .= sprintf('You must fulfill sections %s in %s.%s',
+            $sections, $federation['rulesName'], "\n");
           $publish = false;
         }
       } else {
@@ -1391,20 +1392,23 @@ function move2Pending($entitiesId) {
         }
         printf('      <br>
       <h5> Confirmation:</h5>
-      <p>Registration criteria from SWAMID SAML WebSSO Technology Profile:
+      <p>Registration criteria from %s:
         %s
       </p>
       <input type="checkbox" id="OrganisationOK" name="OrganisationOK">
       <label for="OrganisationOK">I confirm that this Entity fulfils sections <b>%s</b> in
-        <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">
-          SWAMID SAML WebSSO Technology Profile
+        <a href="%s" target="_blank">
+          %s
         </a>
       </label><br>
       <br>
       <input type="submit" name="action" value="Request publication">
     </form>
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>',
-          $infoText, $sections, $entitiesId);
+          $federation['rulesName'],
+          $infoText, $sections,
+          $federation['rulesURL'], $federation['rulesName'],
+          $entitiesId);
       }
     } else {
       printf('
@@ -1431,6 +1435,8 @@ function move2Pending($entitiesId) {
 function annualConfirmation($entitiesId){
   global $html, $menuActive;
   global $EPPN, $mail, $fullName, $userLevel;
+  global $config;
+  $federation = $config->getFederation();
 
   $metadata = new \metadata\Metadata($entitiesId);
   if ($metadata->status() == 1) {
@@ -1460,7 +1466,7 @@ function annualConfirmation($entitiesId){
           $confirm = true;
         } else {
           $errors .= isset($_GET['FormVisit'])
-            ? "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n"
+            ? sprintf('You must fulfill sections %s in %s.%s', $sections, $federation['rulesName'], "\n")
             : '';
         }
 
@@ -1476,22 +1482,23 @@ function annualConfirmation($entitiesId){
             printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
           }
           printf(
-            '%s    <p>You are confirming that <b>%s</b> is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>%s',
-            "\n", $metadata->entityID(), "\n");
+            '%s    <p>You are confirming that <b>%s</b> is operational and fulfils %s</p>%s',
+            "\n", $metadata->entityID(), $federation['rulesName'], "\n");
           printf('    <form>
       <input type="hidden" name="Entity" value="%d">
       <input type="hidden" name="FormVisit" value="true">
       <h5> Confirmation:</h5>
-      <p>Registration criteria from SWAMID SAML WebSSO Technology Profile:
+      <p>Registration criteria from %s:
         %s
       </p>
       <input type="checkbox" id="entityIsOK" name="entityIsOK">
-      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
+      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="%s" target="_blank">%s</a></label><br>
       <br>
       <input type="submit" name="action" value="Annual Confirmation">
     </form>
     <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>%s',
-            $entitiesId, $infoText, $sections, $entitiesId, "\n");
+            $entitiesId, $federation['rulesName'], $infoText, $sections,
+            $federation['rulesURL'], $federation['rulesName'], $entitiesId, "\n");
         }
       } else {
         # User have no access yet.
@@ -1530,6 +1537,8 @@ function annualConfirmation($entitiesId){
 function annualConfirmationList($list){
   global $html, $menuActive;
   global $EPPN, $mail, $fullName;
+  global $config;
+  $federation = $config->getFederation();
   $isIdP = false;
   $isSP = false;
   $entityList = array();
@@ -1581,7 +1590,7 @@ function annualConfirmationList($list){
       showMyEntities();
     } else {
       $errors .= isset($_POST['FormVisit'])
-        ? "You must fulfill sections $sections in SWAMID SAML WebSSO Technology Profile.\n"
+        ? sprintf('You must fulfill sections %s in %s.%s', $sections, $federation['rulesName'], "\n")
         : '';
 
       $html->showHeaders('Validate list');
@@ -1591,26 +1600,27 @@ function annualConfirmationList($list){
         printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
       }
       printf(
-      '%s    <p>You are confirming that the list below is operational and fulfils SWAMID SAML WebSSO Technology Profile</p>
+      '%s    <p>You are confirming that the list below is operational and fulfils %s</p>
     <form action="?action=myEntities" method="POST" enctype="multipart/form-data">
       <input type="hidden" name="FormVisit" value="true">
-      <ul>', "\n");
+      <ul>', "\n", $federation['rulesName']);
       foreach ($entityList as $id => $entityID) {
         printf('      <li><input type="hidden" name="validate_%d" value="on">%s</li>%s', $id , $entityID, "\n");
       }
       printf('
       </ul>
       <h5> Confirmation:</h5>
-      <p>Registration criteria from SWAMID SAML WebSSO Technology Profile:
+      <p>Registration criteria from %s:
         %s
       </p>
       <input type="checkbox" id="entityIsOK" name="entityIsOK">
-      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="http://www.swamid.se/policy/technology/saml-websso" target="_blank">SWAMID SAML WebSSO Technology Profile</a></label><br>
+      <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="%s" target="_blank">%s</a></label><br>
       <br>
       <input type="submit" name="action" value="Annual Confirmation">
     </form>
     <a href="/admin/?action=myEntities"><button>Return to My entities</button></a>%s',
-        $infoText, $sections, "\n");
+        $federation['rulesName'], $infoText, $sections,
+        $federation['rulesURL'], $federation['rulesName'], "\n");
     }
   } else {
     $menuActive = 'myEntities';

@@ -35,6 +35,7 @@ class Configuration {
     $reqParamsFederation = array('displayName', 'longName', 'displayNameQA',
       'noAccountHtml', 'name', 'aboutURL', 'contactURL', 'toolName', 'teamName',
       'teamMail', 'logoURL', 'logoWidth', 'logoHeight', 'languages',
+      'rulesName', 'rulesURL',
       'swamid_assurance');
 
     foreach ($reqParams as $param) {
