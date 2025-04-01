@@ -36,6 +36,8 @@ class Configuration {
       'noAccountHtml', 'name', 'aboutURL', 'contactURL', 'toolName', 'teamName',
       'teamMail', 'logoURL', 'logoWidth', 'logoHeight', 'languages',
       'rulesName', 'rulesURL',
+      'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
+      'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
       'swamid_assurance');
 
     foreach ($reqParams as $param) {

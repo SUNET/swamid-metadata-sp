@@ -13,35 +13,6 @@ const HTML_TEXT_CFE = "Can't find Entity";
 const HTML_TEXT_MCNBS = 'Message could not be sent to contacts.<br>';
 const HTML_TEXT_ME = 'Mailer Error: ';
 
-const HTML_TEXT_STP_BOTH = '4.1.1, 4.1.2, 4.2.1 and 4.2.2';
-const HTML_TEXT_STP_IDP = '4.1.1 and 4.1.2';
-const HTML_TEXT_STP_SP = '4.2.1 and 4.2.2';
-const HTML_TEXT_STPINFO_BOTH = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
-const HTML_TEXT_STPINFO_IDP = '<ul>
-          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
-          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
-        </ul>';
-const HTML_TEXT_STPINFO_SP = '<ul>
-          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
-            <li>a service owned by a Member Organisation;</li>
-            <li>a service under contract with at least one Member Organisation;</li>
-            <li>a government agency service used by at least one Member Organisation;</li>
-            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
-            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
-          </ul></li>
-          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
-        </ul>';
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
 const CLASS_PARSER = '\metadata\ParseXML';
@@ -1190,14 +1161,14 @@ function move2Pending($entitiesId) {
   if ($draftMetadata->entityExists()) {
     validateEntity($draftMetadata->id());
     if ( $draftMetadata->isIdP() && $draftMetadata->isSP()) {
-      $sections = HTML_TEXT_STP_BOTH ;
-      $infoText = HTML_TEXT_STPINFO_BOTH;
+      $sections = $federation['rulesSectsBoth'];
+      $infoText = $federation['rulesInfoBoth'];
     } elseif ($draftMetadata->isIdP()) {
-      $sections = HTML_TEXT_STP_IDP ;
-      $infoText = HTML_TEXT_STPINFO_IDP;
+      $sections = $federation['rulesSectsIdP'];
+      $infoText = $federation['rulesInfoIdP'];
     } elseif ($draftMetadata->isSP()) {
-      $sections = HTML_TEXT_STP_SP ;
-      $infoText = HTML_TEXT_STPINFO_SP;
+      $sections = $federation['rulesSectsSP'];
+      $infoText = $federation['rulesInfoSP'];
     }
     $html->showHeaders($draftMetadata->entityID());
     $errors = getBlockingErrors($entitiesId);
@@ -1451,14 +1422,14 @@ function annualConfirmation($entitiesId){
       if ($metadata->isResponsible()) {
         # User have access to entity
         if ( $metadata->isIdP() && $metadata->isSP()) {
-          $sections = HTML_TEXT_STP_BOTH ;
-          $infoText = HTML_TEXT_STPINFO_BOTH;
+          $sections = $federation['rulesSectsBoth'];
+          $infoText = $federation['rulesInfoBoth'];
         } elseif ($metadata->isIdP()) {
-          $sections = HTML_TEXT_STP_IDP ;
-          $infoText = HTML_TEXT_STPINFO_IDP;
+          $sections = $federation['rulesSectsIdP'];
+          $infoText = $federation['rulesInfoIdP'];
         } elseif ($metadata->isSP()) {
-          $sections = HTML_TEXT_STP_SP ;
-          $infoText = HTML_TEXT_STPINFO_SP;
+          $sections = $federation['rulesSectsSP'];
+          $infoText = $federation['rulesInfoSP'];
         }
 
         if (isset($_GET['entityIsOK'])) {
@@ -1570,14 +1541,14 @@ function annualConfirmationList($list){
   }
   if (sizeof($entityList)) {
     if ( $isIdP && $isSP) {
-      $sections = HTML_TEXT_STP_BOTH ;
-      $infoText = HTML_TEXT_STPINFO_BOTH;
+      $sections = $federation['rulesSectsBoth'];
+      $infoText = $federation['rulesInfoBoth'];
     } elseif ($isIdP) {
-      $sections = HTML_TEXT_STP_IDP ;
-      $infoText = HTML_TEXT_STPINFO_IDP;
+      $sections = $federation['rulesSectsIdP'];
+      $infoText = $federation['rulesInfoIdP'];
     } elseif ($isSP) {
-      $sections = HTML_TEXT_STP_SP ;
-      $infoText = HTML_TEXT_STPINFO_SP;
+      $sections = $federation['rulesSectsSP'];
+      $infoText = $federation['rulesInfoSP'];
     }
     if (isset($_POST['entityIsOK'])) {
       $metadata->updateUser($EPPN, $mail, $fullName, true);

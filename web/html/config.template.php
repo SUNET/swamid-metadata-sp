@@ -68,8 +68,40 @@ $federation = array(
   'logoWidth' => 55,
   'logoHeight' => 63,
   'languages' => array('sv', 'en'),
+
   'rulesName' => 'SWAMID SAML WebSSO Technology Profile',
   'rulesURL' => 'https://www.swamid.se/policy/technology/saml-websso',
+
+  'rulesSectsBoth' => '4.1.1, 4.1.2, 4.2.1 and 4.2.2',
+  'rulesSectsIdP' => '4.1.1 and 4.1.2',
+  'rulesSectsSP' => '4.2.1 and 4.2.2',
+  'rulesInfoBoth' => '<ul>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
+            <li>a service owned by a Member Organisation;</li>
+            <li>a service under contract with at least one Member Organisation;</li>
+            <li>a government agency service used by at least one Member Organisation;</li>
+            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
+            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
+          </ul></li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+        </ul>',
+  'rulesInfoIdP' => '<ul>
+          <li>4.1.1 For an organisation to be eligible to register an Identity Provider in SWAMID metadata the organisation MUST be a member of the SWAMID Identity Federation.</li>
+          <li>4.1.2 All Member Organisations MUST fulfil one or more of the SWAMID Identity Assurance Profiles to be eligible to have an Identity Provider registered in SWAMID metadata.</li>
+        </ul>',
+  'rulesInfoSP' => '<ul>
+          <li>4.2.1 A Relying Party is eligible for registration in SWAMID if they are:<ul>
+            <li>a service owned by a Member Organisation;</li>
+            <li>a service under contract with at least one Member Organisation;</li>
+            <li>a government agency service used by at least one Member Organisation;</li>
+            <li>a service that is operated at least in part for the purpose of supporting research and scholarship interaction, collaboration or management; or</li>
+            <li>a service granted special approval by SWAMID Board of Trustees after recommendation by SWAMID Operations.</li>
+          </ul></li>
+          <li>4.2.2 For a Relying Party to be registered in SWAMID the Service Owner MUST accept the <a href="https://mds.swamid.se/md/swamid-tou-en.txt" target="_blank">SWAMID Metadata Terms of Access and Use</a>.</li>
+        </ul>',
+
   'swamid_assurance' => true,
   # Optional if ypu want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
