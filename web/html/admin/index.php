@@ -2054,6 +2054,7 @@ function showHelp() {
 
 function approveAccessRequest($code) {
   global $EPPN, $config;
+  $federation = $config->getFederation();
   $codeArray = explode(':', base64_decode($code));
   if (isset($codeArray[2])) {
     $metadata = new \metadata\Metadata($codeArray[0]);
@@ -2086,17 +2087,19 @@ function approveAccessRequest($code) {
               <body>
                 <p>Hi.</p>
                 <p>Your access to %s have been granted.</p>
-                <p>-- <br>This mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations.
-                If you've any questions please contact operations@swamid.se.</p>
+                <p>-- <br>This mail was sent by %s, a service provided by %s.
+                If you've any questions please contact %s.</p>
               </body>
             </html>",
-            $metadata->entityID());
+            $metadata->entityID(),
+            $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $mail->AltBody = sprintf("Hi.
             \nYour access to %s have been granted.
             \n--
-            This mail was sent by SWAMID Metadata Admin Tool, a service provided by SWAMID Operations.
-            If you've any questions please contact operations@swamid.se.",
-            $metadata->entityID());
+            This mail was sent by %s, a service provided by %s.
+            If you've any questions please contact %s.",
+            $metadata->entityID(),
+            $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
           $mail->Subject = 'Access granted for ' . $shortEntityid;
 
