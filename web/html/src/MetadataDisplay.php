@@ -2181,16 +2181,20 @@ class MetadataDisplay extends Common {
   }
 
   private function printAssuranceRow($idp, $assurance) {
+    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     printf('      <tr>
-      <td>%s</td>
-      <td>%s</td><td>%s</td><td>%s</td>
-      <td>%s</td><td>%s</td><td>%s</td>
-      <td>%s</td>
-    </tr>%s',
-      $idp,
+      <td>%s</td>%s',
+      $idp, "\n");
+    if ($swamid_assurance) {
+        printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
+      $idp, "\n");
+    }
+    printf('      <td>%s</td><td>%s</td><td>%s</td>
+      <td>%s</td>
+    </tr>%s',
       $assurance['RAF-low'],
       $assurance['RAF-medium'],
       $assurance['RAF-high'],
@@ -2198,6 +2202,7 @@ class MetadataDisplay extends Common {
   }
 
   public function showRAFStatistics() {
+    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     $idpCountHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`;');
     $idpCountHandler->execute();
@@ -2243,23 +2248,37 @@ class MetadataDisplay extends Common {
 
     printf('    <div class="row">
       <div class="col">
-        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">&nbsp;</div></div>
+        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
+      $idps,
+      "\n");
+    if ($swamid_assurance) {
+        printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">&nbsp;</div></div>
+        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>%s',
+      $assuranceCount['SWAMID-AL3'],
+      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+      $idps - $assuranceCount['SWAMID-AL1'],
+      "\n");
+    }
+    printf('        <div class="row"><div class="col">&nbsp;</div></div>
         <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
         <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
-      </div>
-      <div class="col">
+      </div>%s',
+      $assuranceCount['RAF-high'],
+      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+      $idps - $assuranceCount['RAF-low'],
+      "\n");
+    printf(( $swamid_assurance ?  '      <div class="col">
         <h3>SWAMID Assurance</h3>
         <canvas id="swamid"></canvas>
       </div>
-      <div class="col">
+' : '' ) . '      <div class="col">
         <h3>REFEDS Assurance</h3>
         <canvas id="raf"></canvas>
       </div>
@@ -2272,23 +2291,14 @@ class MetadataDisplay extends Common {
     <table class="table table-striped table-bordered">
       <tr>
         <th>IdP</th>
-        <th>AL1</th>
+' . ( $swamid_assurance ? '        <th>AL1</th>
         <th>AL2</th>
         <th>AL3</th>
-        <th>RAF-Low</th>
+' : '' ) . '        <th>RAF-Low</th>
         <th>RAF-Medium</th>
         <th>RAF-High</th>
         <th>Nothing</th>
       </tr>%s',
-      $idps,
-      $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-      $idps - $assuranceCount['SWAMID-AL1'],
-      $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-      $idps - $assuranceCount['RAF-low'],
       "\n");
 
     $assuranceHandler = $this->config->getDb()->prepare(
@@ -2326,8 +2336,10 @@ class MetadataDisplay extends Common {
     }
     print self::HTML_TABLE_END . "    <br>\n";
 
-    printf('      <script src="/include/chart/chart.min.js"></script>
-      <script>
+    printf('      <script src="/include/chart/chart.min.js"></script>%s',
+      "\n");
+    if ($swamid_assurance) {
+        printf('      <script>
         const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
         const myswamid = new Chart(ctxswamid, {
           width: 200,
@@ -2348,8 +2360,14 @@ class MetadataDisplay extends Common {
             }]
           },
         });
-      </script>
-      <script>
+      </script>%s',
+        $assuranceCount['SWAMID-AL3'],
+        $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+        $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+        $idps - $assuranceCount['SWAMID-AL1'],
+        "\n");
+    }
+    printf('      <script>
         const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
         const myraf = new Chart(ctxraf, {
           width: 200,
@@ -2370,8 +2388,13 @@ class MetadataDisplay extends Common {
             }]
           },
         });
-      </script>
-      <script>
+      </script>%s',
+    $assuranceCount['RAF-high'],
+    $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+    $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+    $idps - $assuranceCount['RAF-low'],
+    "\n");
+    printf('      <script>
         const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
         const mymeta = new Chart(ctxmeta, {
           width: 200,
@@ -2392,14 +2415,6 @@ class MetadataDisplay extends Common {
           },
         });
       </script>',
-    $assuranceCount['SWAMID-AL3'],
-    $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-    $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-    $idps - $assuranceCount['SWAMID-AL1'],
-    $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-    $idps - $assuranceCount['RAF-low'],
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
       $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
@@ -2416,6 +2431,7 @@ class MetadataDisplay extends Common {
     $nrOfSPs = 0;
     $nrOfIdPs = 0;
 
+    $federation = $this->config->getFederation();
     $entitys = $this->config->getDb()->prepare(
       "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
     $entitys->execute();
@@ -2437,12 +2453,12 @@ class MetadataDisplay extends Common {
     }
 
     printf ('    <h3>Entity Statistics</h3>
-    <p>Statistics on number of entities in SWAMID.</p>
+    <p>Statistics on number of entities in %s.</p>
     <canvas id="total" width="200" height="50"></canvas>
     <br><br>
     <h3>Statistics in numbers</h3>
     <table class="table table-striped table-bordered">
-      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', "\n");
+      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', $federation['displayName'], "\n");
     printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
       'Now', $nrOfEntites, $nrOfSPs, $nrOfIdPs, "\n");
     array_unshift($labelsArray, 'Now');
@@ -2564,15 +2580,26 @@ class MetadataDisplay extends Common {
       $showEn = true;
     }
 
-    $organizationHandler->execute(array('Lang' => 'sv'));
-    $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
-    $this->printOrgList($organizationHandler, 'sv');
-    $this->showCollapseEnd('Organizations-sv', 0);
+    $languages  = $this->config->getFederation()['languages'];
 
-    $organizationHandler->execute(array('Lang' => 'en'));
-    $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
-    $this->printOrgList($organizationHandler, 'en');
-    $this->showCollapseEnd('Organizations-en', 0);
+    if (in_array('sv', $languages)) {
+        $organizationHandler->execute(array('Lang' => 'sv'));
+        $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
+        $this->printOrgList($organizationHandler, 'sv');
+        $this->showCollapseEnd('Organizations-sv', 0);
+    }
+
+    if (in_array('en', $languages)) {
+        $organizationHandler->execute(array('Lang' => 'en'));
+        // shortcut for English-only: no heading
+        if (count($languages)==1) {
+            $this->printOrgList($organizationHandler, 'en');
+        } else {
+            $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
+            $this->printOrgList($organizationHandler, 'en');
+            $this->showCollapseEnd('Organizations-en', 0);
+        }
+    }
 
   }
   private function printOrgList($organizationHandler, $lang){
@@ -2815,9 +2842,12 @@ class MetadataDisplay extends Common {
   }
 
   public function showHelp() {
-    print "    <p>The SWAMID Metadata Tool is the place where you can see,
+    $federation = $this->config->getFederation();
+    $federation_display_name = $federation['displayName'];
+    $federation_long_name = $federation['longName'];
+    print "    <p>The $federation_display_name Metadata Tool is the place where you can see,
       register, update and remove metadata for Identity Providers and
-      Service Providers in the Academic Identity Federation SWAMID.</p>\n";
+      Service Providers in the $federation_long_name.</p>\n";
       $this->showCollapse('Request admin access', 'RequestAdminAccess', false, 0, false);?>
 
       To be able to update, remove or confirm an entity you must have administrative access to that entity. How to request access:
@@ -2831,7 +2861,7 @@ class MetadataDisplay extends Common {
         <li>Reach out to the administrative contact and ask them to accept your request by following the instructions in the mail.</li>
       </ol><?php
     $this->showCollapseEnd('RequestAdminAccess', 0);
-    $this->showCollapse('Register a new entity in SWAMID', 'RegisterNewEntity', false, 0, false);?>
+    $this->showCollapse("Register a new entity in $federation_display_name", 'RegisterNewEntity', false, 0, false);?>
 
           <ol>
             <li>Go to the tab "Upload new XML".</li>
@@ -2855,14 +2885,14 @@ class MetadataDisplay extends Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN or SWAMID Only federation.</li>
+              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
+              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
+            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
     $this->showCollapseEnd('RegisterNewEntity', 0);
-    $this->showCollapse('Update published entity in SWAMID', 'UpdateEntity', false, 0, false);?>
+    $this->showCollapse("Update published entity in $federation_display_name", 'UpdateEntity', false, 0, false);?>
 
           <ol>
             <li>Go to the tab "Published".</li>
@@ -2884,11 +2914,11 @@ class MetadataDisplay extends Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN or SWAMID Only federation.</li>
+              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
+              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
+            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
     $this->showCollapseEnd('UpdateEntity', 0);
     $this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);?>
@@ -2911,11 +2941,11 @@ class MetadataDisplay extends Common {
             </li>
             <li>When you are finished and there are no more errors press the button ”Request publication”.</li>
             <li>Follow the instructions on the next web page and choose if the entity shall be published in
-              SWAMID and eduGAIN or SWAMID Only federation.</li>
+              <?= $federation_display_name ?> and eduGAIN or <?= $federation_display_name ?> Only federation.</li>
             <li>Continue to the next step by pressing on the button ”Request publication”.</li>
             <li>An e-mail will be sent to your registered address.
-              Forward this to SWAMID operations as described in the e-mail.</li>
-            <li>SWAMID Operations will now check and publish the request.</li>
+              Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
+            <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
     $this->showCollapseEnd('ContinueUpdateEntity', 0);
     $this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);?>

@@ -539,9 +539,7 @@ function showInfo() {
           at the top. When you have requested publication you will get an e-mail that you need to forward to
           operations for compleation.</p>
         <p>If you do not have an active user account at a <?= $federation['displayName'] ?> Identity Provider,
-          you can create an eduID account at <a href="https://eduid.se">eduID.se</a>.
-          Make sure that the primary email address of your eduID account matches an email address
-          associated with a contact person of your entities.</p>
+          <?= $federation['noAccountHtml'] ?>.</p>
       </div>
     </div>
 <?php
