@@ -1613,126 +1613,135 @@ function requestRemoval($entitiesId) {
       if (isset($_GET['confirmRemoval'])) {
         $menuActive = 'publ';
         showMenu();
-        $displayName = $metadata->entityDisplayName();
-
-        setupMail();
-
-        if ($config->sendOut()) {
-          $mailRequester->addAddress($mail);
-        }
 
         $removeHandler = $config->getDb()->prepare(
           'UPDATE `Entities`
           SET `removalRequestedBy` = :UserId
           WHERE `id` = :Entity_ID');
         $removeHandler->execute(array(':UserId' => $userID, ':Entity_ID' => $entitiesId));
-        $addresses = array();
-        $contactHandler = $config->getDb()->prepare(
-          "SELECT DISTINCT emailAddress
-          FROM ContactPerson
-          WHERE entity_id = :Entity_ID AND (contactType='technical' OR contactType='administrative')");
-        $contactHandler->bindParam(':Entity_ID',$entitiesId);
-        $contactHandler->execute();
-        while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
+
+        if ($config->getMode() == 'QA') {
+          printf ("    <p>Your entity will be removed within 15 to 30 minutes</p>\n");
+          printf ('    <hr>
+          <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
+            $entitiesId);
+        } else {
+          $displayName = $metadata->entityDisplayName();
+
+          setupMail();
+
           if ($config->sendOut()) {
-            $mailContacts->addAddress(substr($address['emailAddress'],7));
+            $mailRequester->addAddress($mail);
           }
-          $addresses[] = substr($address['emailAddress'],7);
+
+          $addresses = array();
+          $contactHandler = $config->getDb()->prepare(
+            "SELECT DISTINCT emailAddress
+            FROM ContactPerson
+            WHERE entity_id = :Entity_ID AND (contactType='technical' OR contactType='administrative')");
+          $contactHandler->bindParam(':Entity_ID',$entitiesId);
+          $contactHandler->execute();
+          while ($address = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
+            if ($config->sendOut()) {
+              $mailContacts->addAddress(substr($address['emailAddress'],7));
+            }
+            $addresses[] = substr($address['emailAddress'],7);
+          }
+
+          $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
+
+          //Content
+          $mailContacts->isHTML(true);
+          $mailContacts->Body = sprintf("<!DOCTYPE html>
+            <html lang=\"en\">
+              <head>
+                <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
+              </head>
+              <body>
+                <p>Hi.</p>
+                <p>%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.</p>
+                <p>You have received this email because you are either the technical and/or administrative contact.</p>
+                <p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+                <p>If you do not approve request please forward this email to %s (%s)
+                and request for the removal to be denied.</p>
+                <p>This is a message from the %s.<br>
+                --<br>
+                On behalf of %s</p>
+              </body>
+            </html>",
+            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
+            $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
+          $mailContacts->AltBody = sprintf("Hi.
+            \n%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.
+            \nYou have received this email because you are either the technical and/or administrative contact.
+            \nYou can see the current metadata at %s/?showEntity=%d
+            \nIf you do not approve request please forward this email to %s (%s)
+            and request for the removal to be denied.
+            \nThis is a message from the %s.
+            --
+            On behalf of %s",
+            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId,
+            $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
+
+          $mailRequester->isHTML(true);
+          $mailRequester->Body   = sprintf("<!DOCTYPE html>
+            <html lang=\"en\">
+              <head>
+                <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
+              </head>
+              <body>
+                <p>Hi.</p>
+                <p>You have requested removal of the entity \"%s\" (%s) from the %s metadata.
+                <p>Please forward this email to %s (%s).</p>
+                <p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+                <p>An email has also been sent to the following addresses since they are the technical
+                and/or administrative contacts : </p>
+                <p><ul>
+                <li>%s</li>
+                </ul>
+                <p>This is a message from the %s.<br>
+                --<br>
+                On behalf of %s</p>
+              </body>
+            </html>",
+            $displayName, $metadata->entityID(), $federation['displayName'],
+            $federation['teamName'], $federation['teamMail'],
+            $hostURL, $entitiesId,
+            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
+          $mailRequester->AltBody = sprintf("Hi.
+            \nYou have requested removal of the entity \"%s\" (%s) from the %s metadata.
+            \nPlease forward this email to %s (%s).
+            \nThe current metadata can be found at %s/?showEntity=%d
+            \nAn email has also been sent to the following addresses since they are the technical
+            and/or administrative contacts : %s
+            \nThis is a message from the %s.
+            --
+            On behalf of %s",
+            $displayName, $metadata->entityID(), $federation['displayName'], $federation['teamName'], $federation['teamMail'],
+            $hostURL, $entitiesId, implode (", ",$addresses),
+            $federation['toolName'], $federation['teamName']);
+
+          $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
+          $mailContacts->Subject  = 'Info : Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
+          $mailRequester->Subject = 'Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
+
+          try {
+            $mailContacts->send();
+          } catch (Exception $e) {
+            echo HTML_TEXT_MCNBS;
+            echo HTML_TEXT_ME . $mailContacts->ErrorInfo . '<br>';
+          }
+
+          try {
+            $mailRequester->send();
+          } catch (Exception $e) {
+            echo 'Message could not be sent to requester.<br>';
+            echo HTML_TEXT_ME . $mailRequester->ErrorInfo . '<br>';
+          }
+
+          printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
+          printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$entitiesId);
         }
-
-        $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-
-        //Content
-        $mailContacts->isHTML(true);
-        $mailContacts->Body = sprintf("<!DOCTYPE html>
-          <html lang=\"en\">
-            <head>
-              <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
-            </head>
-            <body>
-              <p>Hi.</p>
-              <p>%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.</p>
-              <p>You have received this email because you are either the technical and/or administrative contact.</p>
-              <p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
-              <p>If you do not approve request please forward this email to %s (%s)
-              and request for the removal to be denied.</p>
-              <p>This is a message from the %s.<br>
-              --<br>
-              On behalf of %s</p>
-            </body>
-          </html>",
-          $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
-          $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
-        $mailContacts->AltBody = sprintf("Hi.
-          \n%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.
-          \nYou have received this email because you are either the technical and/or administrative contact.
-          \nYou can see the current metadata at %s/?showEntity=%d
-          \nIf you do not approve request please forward this email to %s (%s)
-          and request for the removal to be denied.
-          \nThis is a message from the %s.
-          --
-          On behalf of %s",
-          $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId,
-          $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
-
-        $mailRequester->isHTML(true);
-        $mailRequester->Body   = sprintf("<!DOCTYPE html>
-          <html lang=\"en\">
-            <head>
-              <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
-            </head>
-            <body>
-              <p>Hi.</p>
-              <p>You have requested removal of the entity \"%s\" (%s) from the %s metadata.
-              <p>Please forward this email to %s (%s).</p>
-              <p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
-              <p>An email has also been sent to the following addresses since they are the technical
-              and/or administrative contacts : </p>
-              <p><ul>
-              <li>%s</li>
-              </ul>
-              <p>This is a message from the %s.<br>
-              --<br>
-              On behalf of %s</p>
-            </body>
-          </html>",
-          $displayName, $metadata->entityID(), $federation['displayName'],
-          $federation['teamName'], $federation['teamMail'],
-          $hostURL, $entitiesId,
-          $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
-        $mailRequester->AltBody = sprintf("Hi.
-          \nYou have requested removal of the entity \"%s\" (%s) from the %s metadata.
-          \nPlease forward this email to %s (%s).
-          \nThe current metadata can be found at %s/?showEntity=%d
-          \nAn email has also been sent to the following addresses since they are the technical
-          and/or administrative contacts : %s
-          \nThis is a message from the %s.
-          --
-          On behalf of %s",
-          $displayName, $metadata->entityID(), $federation['displayName'], $federation['teamName'], $federation['teamMail'],
-          $hostURL, $entitiesId, implode (", ",$addresses),
-          $federation['toolName'], $federation['teamName']);
-
-        $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
-        $mailContacts->Subject  = 'Info : Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
-        $mailRequester->Subject = 'Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
-
-        try {
-          $mailContacts->send();
-        } catch (Exception $e) {
-          echo HTML_TEXT_MCNBS;
-          echo HTML_TEXT_ME . $mailContacts->ErrorInfo . '<br>';
-        }
-
-        try {
-          $mailRequester->send();
-        } catch (Exception $e) {
-          echo 'Message could not be sent to requester.<br>';
-          echo HTML_TEXT_ME . $mailRequester->ErrorInfo . '<br>';
-        }
-
-        printf ("    <p>You should have got an email with information on how to proceed</p>\n    <p>Information has also been sent to the following technical and/or administrative contacts:</p>\n    <ul>\n      <li>%s</li>\n    </ul>\n", implode ("</li>\n    <li>",$addresses));
-        printf ('    <hr>%s    <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',"\n",$entitiesId);
       } else {
         $menuActive = 'publ';
         showMenu();
