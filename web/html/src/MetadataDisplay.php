@@ -2190,7 +2190,7 @@ class MetadataDisplay extends Common {
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
-      $idp, "\n");
+      "\n");
     }
     printf('      <td>%s</td><td>%s</td><td>%s</td>
       <td>%s</td>
