@@ -267,7 +267,7 @@ function checkEntities(&$xml) {
         }
         break;
       default:
-        printf ("Missing %s in child in %s\n", $child->nodeName, $entityID);
+        printf ("Missing %s in first child node\n", $child->nodeName);
     }
     $child = $child->nextSibling;
   }
