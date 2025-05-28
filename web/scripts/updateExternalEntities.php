@@ -13,7 +13,7 @@ $config->getDb()->query('UPDATE ExternalEntities SET updated = 0');
 $xml = new DOMDocument;
 $xml->preserveWhiteSpace = false;
 $xml->formatOutput = true;
-$xml->load('/opt/metadata/swamid-2.0.xml');
+$xml->load($config->getFederation()['metadata_main_path']);
 $xml->encoding = 'UTF-8';
 
 checkEntities($xml);
