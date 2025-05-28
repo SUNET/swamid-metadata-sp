@@ -157,7 +157,7 @@ function checkEntities(&$xml) {
                           case 'http://kafe.kreonet.net/jurisdiction' : # NOSONAR Should be http://
                             break;
                           default :
-                            printf ("Missing %s in entAttrChild->Attribute(Name) in %s\n",
+                            printf ("Unknown EntityAttribute name %s in entAttrChild->Attribute(Name) in %s\n",
                               $entAttrChild->getAttribute('Name'), $entityID);
                         }
                       }
@@ -171,7 +171,7 @@ function checkEntities(&$xml) {
                   case 'shibmd:Scope' :
                     break;
                   default :
-                    printf ("Missing %s in md:Extensions in %s\n",
+                    printf ("Unknown element %s in md:Extensions in %s\n",
                       $extChild->nodeName, $entityID);
                 }
               }
@@ -251,7 +251,7 @@ function checkEntities(&$xml) {
                  'email' => $email));
               break;
             default :
-              printf ("Missing %s in entityChild in %s\n", $entityChild->nodeName, $entityID);
+              printf ("Unknown element %s in entityChild in %s\n", $entityChild->nodeName, $entityID);
           }
           $entityChild = $entityChild->nextSibling;
         }
@@ -267,7 +267,7 @@ function checkEntities(&$xml) {
         }
         break;
       default:
-        printf ("Missing %s in first child node\n", $child->nodeName);
+        printf ("Unknown element %s in first child node\n", $child->nodeName);
     }
     $child = $child->nextSibling;
   }

@@ -188,7 +188,7 @@ function oldCerts() {
           }
           break;
         default :
-          printf ("Missing %s\n",$key['use']);
+          printf ("Unknown key use value %s\n",$key['use']);
       }
     }
     if ($keyStatus > 0) {
