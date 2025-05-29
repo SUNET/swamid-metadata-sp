@@ -25,6 +25,7 @@ const MDATTR_ENTITY_ATTRIBUTES = '{urn:oasis:names:tc:SAML:metadata:attribute}En
 const MDRPI_REGISTRATION_INFO = '{urn:oasis:names:tc:SAML:metadata:rpi}RegistrationInfo';
 const MDUI_DISPLAYNAME = '{urn:oasis:names:tc:SAML:metadata:ui}DisplayName';
 const MDUI_UIINFO = '{urn:oasis:names:tc:SAML:metadata:ui}UIInfo';
+const REMD_CONTACT_TYPE_SECURITY = 'http://refeds.org/metadata/contactType/security';
 const SAML_ATTRIBUTE = '{urn:oasis:names:tc:SAML:2.0:assertion}Attribute';
 const SAML_ATTRIBUTEVALUE = '{urn:oasis:names:tc:SAML:2.0:assertion}AttributeValue';
 const SHIBMD_SCOPE = '{urn:mace:shibboleth:metadata:1.0}Scope';
@@ -46,6 +47,15 @@ $config->getDb()->query('DELETE FROM ExternalEntities WHERE updated = 0');
 
 function nodeQName($node) {
   return sprintf("{%s}%s", $node->namespaceURI, $node->localName);
+}
+
+function contactType($contact) {
+  $contactType = $contact->getAttribute('contactType');
+  if ( $contactType == "other" &&
+       $contact->getAttribute('remd:contactType') == REMD_CONTACT_TYPE_SECURITY) {
+    $contactType  = "security";
+  };
+  return $contactType;
 }
 
 function checkEntities(&$xml) {
@@ -275,7 +285,7 @@ function checkEntities(&$xml) {
                   $email = $contactChild->nodeValue;
                 }
               }
-              array_push($contactsArray, array ('type' => $entityChild->getAttribute('contactType'),
+              array_push($contactsArray, array ('type' => contactType($entityChild),
                  'email' => $email));
               break;
             default :
