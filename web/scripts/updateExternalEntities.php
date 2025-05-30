@@ -157,8 +157,7 @@ function checkEntities(&$xml) {
                 switch (nodeQName($extChild)) {
                   case MDRPI_REGISTRATION_INFO :
                     $registrationAuthority = $extChild->getAttribute('registrationAuthority');
-                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/') ? false : true;  # NOSONAR Should be http://
-                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/loop') ? false : $saveEntity; # NOSONAR Should be http://
+                    $saveEntity = !in_array($registrationAuthority, $config->getFederation()['metadata_registration_authority_exclude']);
                     break;
                   case MDATTR_ENTITY_ATTRIBUTES :
                     foreach ($extChild->childNodes as $entAttrChild) {
