@@ -69,6 +69,12 @@ $federation = array(
   'logoHeight' => 63,
   'languages' => array('sv', 'en'),
 
+  'metadata_main_path' => '/opt/metadata/swamid-2.0.xml',
+  'metadata_registration_authority_exclude' => array(
+      'http://www.swamid.se/',     # NOSONAR Should be http://
+      'http://www.swamid.se/loop', # NOSONAR Should be http://
+  ),
+
   'rulesName' => 'SWAMID SAML WebSSO Technology Profile',
   'rulesURL' => 'https://www.swamid.se/policy/technology/saml-websso',
 

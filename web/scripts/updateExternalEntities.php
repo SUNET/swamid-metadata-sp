@@ -4,8 +4,33 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 
 $config = new \metadata\Configuration();
 
-const MD_EXTENSIONS = 'md:Extensions';
-const SAML_ATTRIBUTEVALUE = 'saml:AttributeValue';
+const ALG_DIGEST_METHOD = '{urn:oasis:names:tc:SAML:metadata:algsupport}DigestMethod';
+const ALG_SIGNING_METHOD = '{urn:oasis:names:tc:SAML:metadata:algsupport}SigningMethod';
+const DS_SIGNATURE = '{http://www.w3.org/2000/09/xmldsig#}Signature';
+const EDUIDCZ_REPUBLISH_REQUEST = '{http://eduid.cz/schema/metadata/1.0}RepublishRequest';
+const MD_AA_DESCRIPTOR = '{urn:oasis:names:tc:SAML:2.0:metadata}AttributeAuthorityDescriptor';
+const MD_ATTRIBUTE_CONSUMING_SERVICE = '{urn:oasis:names:tc:SAML:2.0:metadata}AttributeConsumingService';
+const MD_CONTACT_PERSON = '{urn:oasis:names:tc:SAML:2.0:metadata}ContactPerson';
+const MD_EMAIL_ADDRESS = '{urn:oasis:names:tc:SAML:2.0:metadata}EmailAddress';
+const MD_ENTITIES_DESCRIPTOR = '{urn:oasis:names:tc:SAML:2.0:metadata}EntitiesDescriptor';
+const MD_ENTITY_DESCRIPTOR = '{urn:oasis:names:tc:SAML:2.0:metadata}EntityDescriptor';
+const MD_EXTENSIONS = '{urn:oasis:names:tc:SAML:2.0:metadata}Extensions';
+const MD_IDPSSO_DESCRIPTOR = '{urn:oasis:names:tc:SAML:2.0:metadata}IDPSSODescriptor';
+const MD_ORGANIZATION_DISPLAYNAME = '{urn:oasis:names:tc:SAML:2.0:metadata}OrganizationDisplayName';
+const MD_ORGANIZATION_URL = '{urn:oasis:names:tc:SAML:2.0:metadata}OrganizationURL';
+const MD_ORGANIZATION = '{urn:oasis:names:tc:SAML:2.0:metadata}Organization';
+const MD_SERVICE_NAME = '{urn:oasis:names:tc:SAML:2.0:metadata}ServiceName';
+const MD_SPSSO_DESCRIPTOR = '{urn:oasis:names:tc:SAML:2.0:metadata}SPSSODescriptor';
+const MDATTR_ENTITY_ATTRIBUTES = '{urn:oasis:names:tc:SAML:metadata:attribute}EntityAttributes';
+const MDRPI_REGISTRATION_INFO = '{urn:oasis:names:tc:SAML:metadata:rpi}RegistrationInfo';
+const MDUI_DISPLAYNAME = '{urn:oasis:names:tc:SAML:metadata:ui}DisplayName';
+const MDUI_UIINFO = '{urn:oasis:names:tc:SAML:metadata:ui}UIInfo';
+const REMD_CONTACT_TYPE_SECURITY = 'http://refeds.org/metadata/contactType/security'; # NOSONAR Should be http://
+const SAML_ATTRIBUTE = '{urn:oasis:names:tc:SAML:2.0:assertion}Attribute';
+const SAML_ATTRIBUTEVALUE = '{urn:oasis:names:tc:SAML:2.0:assertion}AttributeValue';
+const SHIBMD_SCOPE = '{urn:mace:shibboleth:metadata:1.0}Scope';
+const SWITCHAAI_EXTENSIONS = '{https://rr.aai.switch.ch/}SWITCHaaiExtensions';
+const TAAT_TAAT = '{http://www.eenet.ee/EENet/urn}taat';
 const XML_LANG = 'xml:lang';
 
 $config->getDb()->query('UPDATE ExternalEntities SET updated = 0');
@@ -13,12 +38,25 @@ $config->getDb()->query('UPDATE ExternalEntities SET updated = 0');
 $xml = new DOMDocument;
 $xml->preserveWhiteSpace = false;
 $xml->formatOutput = true;
-$xml->load('/opt/metadata/swamid-2.0.xml');
+$xml->load($config->getFederation()['metadata_main_path']);
 $xml->encoding = 'UTF-8';
 
 checkEntities($xml);
 unset($xml);
 $config->getDb()->query('DELETE FROM ExternalEntities WHERE updated = 0');
+
+function nodeQName($node) {
+  return sprintf("{%s}%s", $node->namespaceURI, $node->localName);
+}
+
+function contactType($contact) {
+  $contactType = $contact->getAttribute('contactType');
+  if ( $contactType == "other" &&
+       $contact->getAttribute('remd:contactType') == REMD_CONTACT_TYPE_SECURITY) {
+    $contactType  = "security";
+  };
+  return $contactType;
+}
 
 function checkEntities(&$xml) {
   global $config;
@@ -88,14 +126,14 @@ function checkEntities(&$xml) {
 
   $child = $xml->firstChild;
   while ($child) {
-    switch ($child->nodeName) {
-      case 'md:EntitiesDescriptor' :
+    switch (nodeQName($child)) {
+      case MD_ENTITIES_DESCRIPTOR :
         checkEntities($child);
         break;
-      case 'ds:Signature' :
+      case DS_SIGNATURE :
       case MD_EXTENSIONS :
         break;
-      case 'md:EntityDescriptor':
+      case MD_ENTITY_DESCRIPTOR :
         $saveEntity = true;
         $entityID = $child->getAttribute('entityID'); #NOSONAR used above
         $isIdP = 0;
@@ -113,36 +151,35 @@ function checkEntities(&$xml) {
 
         $entityChild =  $child->firstChild;
         while ($entityChild && $saveEntity) {
-          switch ($entityChild->nodeName) {
+          switch (nodeQName($entityChild)) {
             case MD_EXTENSIONS :
               foreach ($entityChild->childNodes as $extChild) {
-                switch ($extChild->nodeName) {
-                  case 'mdrpi:RegistrationInfo' :
+                switch (nodeQName($extChild)) {
+                  case MDRPI_REGISTRATION_INFO :
                     $registrationAuthority = $extChild->getAttribute('registrationAuthority');
-                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/') ? false : true;  # NOSONAR Should be http://
-                    $saveEntity = ($registrationAuthority == 'http://www.swamid.se/loop') ? false : $saveEntity; # NOSONAR Should be http://
+                    $saveEntity = !in_array($registrationAuthority, $config->getFederation()['metadata_registration_authority_exclude']);
                     break;
-                  case 'mdattr:EntityAttributes' :
+                  case MDATTR_ENTITY_ATTRIBUTES :
                     foreach ($extChild->childNodes as $entAttrChild) {
-                      if ($entAttrChild->nodeName == 'saml:Attribute') {
+                      if (nodeQName($entAttrChild) == SAML_ATTRIBUTE) {
                         switch ($entAttrChild->getAttribute('Name')){
                           case 'http://macedir.org/entity-category' : # NOSONAR Should be http://
                             foreach ($entAttrChild->childNodes as $attrChild) {
-                              if ($attrChild->nodeName == SAML_ATTRIBUTEVALUE) {
+                              if (nodeQName($attrChild) == SAML_ATTRIBUTEVALUE) {
                                 $eC .= $attrChild->nodeValue . ' ';
                               }
                             }
                             break;
                           case 'http://macedir.org/entity-category-support' : # NOSONAR Should be http://
                             foreach ($entAttrChild->childNodes as $attrChild) {
-                              if ($attrChild->nodeName == SAML_ATTRIBUTEVALUE) {
+                              if (nodeQName($attrChild) == SAML_ATTRIBUTEVALUE) {
                                 $eCS .= $attrChild->nodeValue . ' ';
                               }
                             }
                             break;
                           case 'urn:oasis:names:tc:SAML:attribute:assurance-certification' :
                             foreach ($entAttrChild->childNodes as $attrChild) {
-                              if ($attrChild->nodeName == SAML_ATTRIBUTEVALUE) {
+                              if (nodeQName($attrChild) == SAML_ATTRIBUTEVALUE) {
                                 $assuranceC .= $attrChild->nodeValue . ' ';
                               }
                             }
@@ -157,46 +194,46 @@ function checkEntities(&$xml) {
                           case 'http://kafe.kreonet.net/jurisdiction' : # NOSONAR Should be http://
                             break;
                           default :
-                            printf ("Missing %s in entAttrChild->Attribute(Name) in %s\n",
+                            printf ("Unknown EntityAttribute name %s in entAttrChild->Attribute(Name) in %s\n",
                               $entAttrChild->getAttribute('Name'), $entityID);
                         }
                       }
                     }
                     break;
-                  case 'alg:SigningMethod' :
-                  case 'alg:DigestMethod' :
-                  case 'eduidmd:RepublishRequest' :
-                  case 'taat:taat' :
-                  case 'mdext:SWITCHaaiExtensions' :
-                  case 'shibmd:Scope' :
+                  case ALG_SIGNING_METHOD :
+                  case ALG_DIGEST_METHOD :
+                  case EDUIDCZ_REPUBLISH_REQUEST :
+                  case TAAT_TAAT :
+                  case SWITCHAAI_EXTENSIONS :
+                  case SHIBMD_SCOPE :
                     break;
                   default :
-                    printf ("Missing %s in md:Extensions in %s\n",
-                      $extChild->nodeName, $entityID);
+                    printf ("Unknown element %s in md:Extensions in %s\n",
+                      nodeQName($extChild), $entityID);
                 }
               }
               break;
-            case 'md:IDPSSODescriptor' :
+            case MD_IDPSSO_DESCRIPTOR :
               $isIdP = 1;
               foreach ($entityChild->childNodes as $SSOChild) {
-                if ($SSOChild->nodeName == MD_EXTENSIONS) {
+                if (nodeQName($SSOChild) == MD_EXTENSIONS) {
                   foreach ($SSOChild->childNodes as $extChild) {
-                    if ($extChild->nodeName == 'shibmd:Scope') {
+                    if (nodeQName($extChild) == SHIBMD_SCOPE) {
                       $scopes .= $extChild->nodeValue . ' ';
                     }
                   }
                 }
               }
               break;
-            case 'md:SPSSODescriptor' :
+            case MD_SPSSO_DESCRIPTOR :
               $isSP = 1;
               foreach ($entityChild->childNodes as $SSOChild) {
-                switch ($SSOChild->nodeName) {
+                switch (nodeQName($SSOChild)) {
                   case MD_EXTENSIONS :
                     foreach ($SSOChild->childNodes as $extChild) {
-                      if ($extChild->nodeName == 'mdui:UIInfo') {
+                      if (nodeQName($extChild) == MDUI_UIINFO) {
                         foreach ($extChild->childNodes as $UUIChild) {
-                          if ($UUIChild->nodeName == 'mdui:DisplayName' &&
+                          if (nodeQName($UUIChild) == MDUI_DISPLAYNAME &&
                             ($displayName == '' || $UUIChild->getAttribute(XML_LANG) == 'en')) {
                             $displayName = $UUIChild->nodeValue;
                           }
@@ -204,9 +241,9 @@ function checkEntities(&$xml) {
                       }
                     }
                     break;
-                  case 'md:AttributeConsumingService' :
+                  case MD_ATTRIBUTE_CONSUMING_SERVICE :
                     foreach ($SSOChild->childNodes as $acsChild) {
-                      if ($acsChild->nodeName == 'md:ServiceName' &&
+                      if (nodeQName($acsChild) == MD_SERVICE_NAME &&
                         ($serviceName == '' || $acsChild->getAttribute(XML_LANG) == 'en')) {
                           $serviceName = $acsChild->nodeValue;
                         }
@@ -217,19 +254,19 @@ function checkEntities(&$xml) {
                 }
               }
               break;
-            case 'md:AttributeAuthorityDescriptor' :
+            case MD_AA_DESCRIPTOR :
               break;
-            case 'md:Organization' :
+            case MD_ORGANIZATION :
               $orgURL = '';
               $orgName = '';
               foreach ($entityChild->childNodes as $orgChild) {
-                switch ($orgChild->nodeName) {
-                  case 'md:OrganizationURL' :
+                switch (nodeQName($orgChild)) {
+                  case MD_ORGANIZATION_URL :
                     if ($orgURL == '' || $orgChild->getAttribute(XML_LANG) == 'en') {
                       $orgURL = $orgChild->nodeValue;
                     }
                     break;
-                  case 'md:OrganizationDisplayName' :
+                  case MD_ORGANIZATION_DISPLAYNAME :
                     if ($orgName == '' || $orgChild->getAttribute(XML_LANG) == 'en') {
                       $orgName = $orgChild->nodeValue;
                     }
@@ -240,18 +277,18 @@ function checkEntities(&$xml) {
                 $organization = sprintf('<a href="%s">%s</a>', $orgURL, $orgName); #NOSONAR used above
               }
               break;
-            case 'md:ContactPerson' :
+            case MD_CONTACT_PERSON :
               $email = '';
               foreach ($entityChild->childNodes as $contactChild) {
-                if ($contactChild->nodeName == 'md:EmailAddress') {
+                if (nodeQName($contactChild) == MD_EMAIL_ADDRESS) {
                   $email = $contactChild->nodeValue;
                 }
               }
-              array_push($contactsArray, array ('type' => $entityChild->getAttribute('contactType'),
+              array_push($contactsArray, array ('type' => contactType($entityChild),
                  'email' => $email));
               break;
             default :
-              printf ("Missing %s in entityChild in %s\n", $entityChild->nodeName, $entityID);
+              printf ("Unknown element %s in entityChild in %s\n", nodeQName($entityChild), $entityID);
           }
           $entityChild = $entityChild->nextSibling;
         }
@@ -267,7 +304,7 @@ function checkEntities(&$xml) {
         }
         break;
       default:
-        printf ("Missing %s in child in %s\n", $child->nodeName, $entityID);
+        printf ("Unknown element %s in first child node\n", nodeQName($child));
     }
     $child = $child->nextSibling;
   }
