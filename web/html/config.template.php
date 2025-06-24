@@ -109,7 +109,7 @@ $federation = array(
         </ul>',
 
   'swamid_assurance' => true,
-  # Optional if ypu want to extend Validate and ParseXML with an extended version
+  # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
 );

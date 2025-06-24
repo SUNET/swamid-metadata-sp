@@ -383,13 +383,13 @@ class MetadataDisplay extends Common {
 
         $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . " (" . $imps['email'] . ")";
         printf ('%s          <div class="alert-%s">
-            <b><a href="?action=Members&tab=imps&id=%d">%s</a></b>
+            <b><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></b>
             <ul>
               <li>Accepted by Board of Trustees : %s</li>
               <li>Last validated : %s</li>
               <li>Last validated by : %s</li>
             </ul>',
-          "\n", $state, $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          "\n", $state, $imps['id'], $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy);
         if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
           printf ('%s            <b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.
@@ -1867,7 +1867,7 @@ class MetadataDisplay extends Common {
             <h4>IMPS:s missing an IdP</h4>
             <ul>%s' ,"\n");
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf('              <li><a href="?action=Members&tab=imps&id=%d">%s</a></li>%s', $imps['id'], $imps['name'], "\n");
+      printf('              <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></li>%s', $imps['id'], $imps['id'], $imps['name'], "\n");
 
     }
     printf('            </ul>
@@ -2706,6 +2706,7 @@ class MetadataDisplay extends Common {
     printf('%s      </div><!-- End tab-pane scopes -->
     </div><!-- End tab-content -->%s',"\n", "\n");
   }
+
   private function showIMPSList($id, $userLevel) {
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
@@ -2727,6 +2728,10 @@ class MetadataDisplay extends Common {
       $warn1Date = $dates['warn1Date'];
       $errorDate = $dates['errorDate'];
     }
+    if ($userLevel > 10) {
+      printf('%s          <a href=".?action=Members&subAction=editImps&id=0"><button type="button" class="btn btn-outline-primary">Add new IMPS</button></a>',
+        "\n");
+    }
     $impsHandler->execute();
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($warn1Date > $imps['lastValidated']) {
@@ -2745,7 +2750,7 @@ class MetadataDisplay extends Common {
       }
       $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
       printf('%s                <ul>
-                  <li>Organization  : <a href="?action=Members&tab=organizations&id=%d">%s</a></li>
+                  <li>Organization  : <a href="?action=Members&tab=organizations&id=%d#org-%d">%s</a></li>
                   <li>Allowed maximum AL : %d</li>
                   <li>Accepted by Board of Trustees : %s</li>
                   <li>Last validated : %s</li>
@@ -2753,7 +2758,7 @@ class MetadataDisplay extends Common {
                 </ul>
                 <h5>Connected IdP:s</h5>
                 <ul>%s',
-        "\n", $imps['orgId'], $orgName, $imps['maximumAL'],
+        "\n", $imps['orgId'], $imps['orgId'], $orgName, $imps['maximumAL'],
         $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
         while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
           printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
@@ -2762,14 +2767,15 @@ class MetadataDisplay extends Common {
       $this->showCollapseEnd("imps-" . $imps['id'], 1);
     }
   }
+
   private function showOrganizationInfoLists($id, $userLevel) {
     $organizationHandler = $this->config->getDb()->prepare(
       'SELECT `OrganizationInfo`.`id` AS orgId,
           `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
           `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`,
           `memberSince`, `notMemberAfter`, COUNT(`IMPS`.`id`) AS count
-        FROM `OrganizationInfo`, `IMPS`
-        WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id`
+        FROM `OrganizationInfo`
+        LEFT JOIN `IMPS` ON `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
         GROUP BY(orgId)
         ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`;');
     $impsHandler = $this->config->getDb()->prepare(
@@ -2777,12 +2783,27 @@ class MetadataDisplay extends Common {
         FROM `IMPS`
         WHERE `OrganizationInfo_id` = :Id
         ORDER BY `name`;');
+    $showAllOrgs = isset($_GET['showAllOrgs']);
+    printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
+      $id, $showAllOrgs ? '' : '&showAllOrgs', $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
+    if ($userLevel > 10) {
+      printf('%s          <a href=".?action=Members&subAction=editOrganization&id=0%s"><button type="button" class="btn btn-outline-primary">Add new Organization</button></a>',
+        "\n", $showAllOrgs ? '&showAllOrgs' : '');
+    }
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($organization['count'] == 0 && !$showAllOrgs ) { continue; }
       $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $name = $organization['OrganizationDisplayNameSv'] == '' ? $organization['OrganizationDisplayNameEn'] : $organization['OrganizationDisplayNameSv'];
       $name .= "(" . $organization['count'] . ")";
+      $name .= $organization['notMemberAfter'] ? '- Not member any more' : '';
       $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
+      if ($userLevel > 10) {
+        printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
+                <a href="?action=Members&subAction=removeOrganization&id=%d%s"><i class="fas fa-trash"></i></a>',
+                "\n", $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '',
+                $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '');
+      }
       printf('%s                <ul>
                   <li>Swedish (sv)
                     <ul>
@@ -2801,16 +2822,16 @@ class MetadataDisplay extends Common {
                   <li>memberSince : %s</li>
                   <li>IMPS:s
                     <ul>%s', "\n",
-                $organization['OrganizationNameSv'],
-                $organization['OrganizationDisplayNameSv'],
-                $organization['OrganizationURLSv'],
-                $organization['OrganizationNameEn'],
-                $organization['OrganizationDisplayNameEn'],
-                $organization['OrganizationURLEn'],
-                $organization['memberSince'],
-                  "\n");
+          $organization['OrganizationNameSv'],
+          $organization['OrganizationDisplayNameSv'],
+          $organization['OrganizationURLSv'],
+          $organization['OrganizationNameEn'],
+          $organization['OrganizationDisplayNameEn'],
+          $organization['OrganizationURLEn'],
+          $organization['memberSince'], "\n");
       while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('                      <li><a href="?action=Members&tab=imps&id=%d">%s</a> (AL%d) - %s</li>%s', $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
+        printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
+          $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
       }
       print '                    </ul>
                   </li>
@@ -2818,9 +2839,10 @@ class MetadataDisplay extends Common {
       $this->showCollapseEnd("org-" . $organization['orgId'], 1);
     }
   }
+
   private function showScopeList() {
-    printf ('        <table id="scope-table" class="table table-striped table-bordered">
-          <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n");
+    printf ('%s        <table id="scope-table" class="table table-striped table-bordered">
+          <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n", "\n");
     $scopeHandler = $this->config->getDb()->prepare("SELECT DISTINCT `scope`, `entityID`, `data`, `id`
                         FROM `Scopes` ,`Entities`, `Organization`
                         WHERE `Scopes`.`entity_id` = `Entities`.`id` AND
@@ -2972,6 +2994,7 @@ class MetadataDisplay extends Common {
           </ol><?php
     $this->showCollapseEnd('WithdrawPublicationRequest', 0);
   }
+
   #############
   # Return collapseIcons
   #############

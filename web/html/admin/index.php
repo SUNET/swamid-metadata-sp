@@ -477,7 +477,7 @@ if (isset($_FILES['XMLfile'])) {
           $menuActive = 'Members';
           $html->showHeaders('Show Member Information');
           showMenu();
-          if (isset($_GET['subAction']) && isset($_GET['id'])) {
+          if (isset($_GET['subAction']) && isset($_GET['id']) && $userLevel > 10) {
             $imps = new \metadata\IMPS();
             switch ($_GET['subAction']) {
               case 'editImps' :
@@ -489,6 +489,29 @@ if (isset($_FILES['XMLfile'])) {
                   $html->addTableSort('scope-table');
                 } else {
                   $imps->editIMPS($_GET['id']);
+                }
+                break;
+              case 'removeImps' :
+                if ($imps->removeImps($_GET['id'])) {
+                  $display->showMembers($userLevel);
+                  $html->addTableSort('scope-table');
+                }
+                break;
+              case 'editOrganization' :
+                $imps->editOrganization($_GET['id']);
+                break;
+              case 'saveOrganization' :
+                if ($imps->saveOrganization($_GET['id'])) {
+                  $display->showMembers($userLevel);
+                  $html->addTableSort('scope-table');
+                } else {
+                  $imps->editOrganization($_GET['id']);
+                }
+                break;
+              case 'removeOrganization':
+                if ($imps->removeOrganization($_GET['id'])) {
+                  $display->showMembers($userLevel);
+                  $html->addTableSort('scope-table');
                 }
                 break;
               default :
