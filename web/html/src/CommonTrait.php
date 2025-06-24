@@ -397,7 +397,8 @@ trait CommonTrait {
 
   const DIGEST_METHODS  = array(
     # https://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-metadata-algsupport-v1.0-cs01.html
-    # The <alg:DigestMethod> element describes a Message Digest algorithm.
+    # 2.4 The <alg:DigestMethod> element describes a Message Digest algorithm.
+    # Allowed algorithm is listed in https://www.w3.org/TR/xmldsig-core/
     # 6.2 Message Digests
     # https://www.w3.org/TR/xmldsig-core/#sec-MessageDigests
     # 6.2.1 SHA-1
@@ -414,10 +415,8 @@ trait CommonTrait {
     # https://www.rfc-editor.org/rfc/rfc9231.html#section-2.1
     # 2.1.1. MD5
     'http://www.w3.org/2001/04/xmldsig-more#md5' => 'obsolete',
-    # 2.1.2. SHA-224
-    'http://www.w3.org/2001/04/xmldsig-more#sha224' => 'good',
-    # 2.1.3. SHA-384
-    'http://www.w3.org/2001/04/xmldsig-more#sha384' => 'good',
+    # 2.1.2. SHA-224 see 6.2.2 SHA-224
+    # 2.1.3. SHA-384 see 6.2.4 SHA-384
     # 2.1.4. Whirlpool
     'http://www.w3.org/2007/05/xmldsig-more#whirlpool' => 'good',
     # 2.1.5. SHA-3 Algorithms
@@ -427,7 +426,7 @@ trait CommonTrait {
     'http://www.w3.org/2007/05/xmldsig-more#sha3-512' => 'good',
     # https://www.w3.org/TR/xmlenc-core1/#sec-Alg-MessageDigest
     # Message Digest
-    'http://www.w3.org/2001/04/xmlenc#sha384' => 'good',
+    #'http://www.w3.org/2001/04/xmlenc#sha384' => 'good',
     'http://www.w3.org/2001/04/xmlenc#ripemd160' => 'good',
   );
   const SIGNING_METHODS = array(
