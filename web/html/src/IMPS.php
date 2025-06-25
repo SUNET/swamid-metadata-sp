@@ -439,7 +439,6 @@ class IMPS {
             $this->errors .= $_POST[$key] == '' ? "Missing value for OrganizationURL. Must not be empty\n": '';
             break;
           case 'memberSince' :
-            $this->errors .= $_POST[$key] == '' ? "Missing value for Member Since. Must not be empty\n": '';
           case 'notMemberAfter' :
             $this->errors .= ($_POST[$key] == '' ||
               checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
@@ -484,7 +483,7 @@ class IMPS {
       'OrganizationNameEn' => $_POST['OrganizationNameEn'],
       'OrganizationDisplayNameEn' => $_POST['OrganizationDisplayNameEn'],
       'OrganizationURLEn' => $_POST['OrganizationURLEn'],
-      'memberSince' => $_POST['memberSince'],
+      'memberSince' => $_POST['memberSince'] == '' ? NULL : $_POST['memberSince'],
       'notMemberAfter' => $_POST['notMemberAfter'] == '' ? NULL : $_POST['notMemberAfter']);
     if ($id > 0) {
       $updatedArray[self::BIND_ID] = $id;
