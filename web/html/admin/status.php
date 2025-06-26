@@ -67,6 +67,13 @@ if (isset($_GET['action'])) {
       showValidationOutput();
       $html->addTableSort('validation-table');
       break;
+    case 'organizations' :
+      $menuActive = 'organizations';
+      showMenu();
+      showOrganizationDifference();
+      $html->addTableSort('Organizationen-table');
+      $html->addTableSort('Organizationsv-table');
+      break;
     default :
   }
 } else {
@@ -189,9 +196,117 @@ function showValidationOutput() {
   print HTML_TABLE_END;
 }
 
-####
-# Shows menu row
-####
+/**
+ * Show Diffenrence betwen Organizations in Metadata and OrganizationInfo table in DB
+ *
+ * @return void
+ */
+function showOrganizationDifference() {
+  global $config;;
+
+  $organizationHandler = $config->getDb()->prepare(
+    "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
+      `Org2`.`data` AS `OrganizationDisplayName`, `Org3`.`data` AS `OrganizationURL`
+    FROM `Entities`
+    LEFT JOIN `Organization` Org1
+      ON `Entities`.`id` = `Org1`.`entity_id` AND `Org1`.`element` = 'OrganizationName' AND `Org1`.`lang` = :Lang
+    LEFT JOIN `Organization` Org2
+      ON `Entities`.`id` = `Org2`.`entity_id` AND `Org2`.`element` = 'OrganizationDisplayName'
+      AND `Org2`.`lang` = :Lang
+    LEFT JOIN `Organization` Org3
+      ON `Entities`.`id` = `Org3`.`entity_id` AND `Org3`.`element` = 'OrganizationURL' AND `Org3`.`lang` = :Lang
+    WHERE `Entities`.`status` = 1 AND `Entities`.`publishIn` > 1
+    GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+    ORDER BY `OrganizationName` COLLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COLLATE utf8mb4_swedish_ci, `OrganizationURL` COLLATE utf8mb4_swedish_ci;");
+
+  $sql['sv'] = 'SELECT `id`, `OrganizationNameSv` AS OrganizationName, `OrganizationDisplayNameSv` AS OrganizationDisplayName, `OrganizationURLSv` AS OrganizationURL FROM OrganizationInfo ORDER BY `OrganizationName` COlLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COlLATE utf8mb4_swedish_ci, `OrganizationURL` COlLATE utf8mb4_swedish_ci;';
+  $sql['en'] = 'SELECT `id`, `OrganizationNameEn` AS OrganizationName, `OrganizationDisplayNameEn` AS OrganizationDisplayName, `OrganizationURLEn` AS OrganizationURL FROM OrganizationInfo ORDER BY `OrganizationName` COlLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COlLATE utf8mb4_swedish_ci, `OrganizationURL` COlLATE utf8mb4_swedish_ci;';
+  printf ('    <h5>Comparing of Organizations in Metadata and Members/OrginfoTable</h5>%s', "\n");
+  foreach (array('en', 'sv') as $lang) {
+    printf ('    <h6>Lang = %s</h6>
+    <table id="Organization%s-table" class="table table-striped table-bordered">
+      <thead>
+        <tr>
+          <th>OrganizationName</th>
+          <th>OrganizationDisplayName</th>
+          <th>OrganizationURL</th>
+          <th>Count</th>
+        </tr>
+      </thead>%s',
+      $lang, $lang, "\n");
+    $organizationHandler->execute(array('Lang' => $lang));
+    $orgInfoHandler = $config->getDb()->query($sql[$lang]);
+    $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
+    while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($organization['OrganizationName'] != '' && $organization['OrganizationDisplayName'] != '' &&
+        $organization['OrganizationURL'] != '') {
+        $newOrgInfo = true;
+        $orgsSame = false;
+        while($newOrgInfo && !$orgsSame && $orgInfo) {
+          if ($orgInfo['OrganizationName'] < $organization['OrganizationName']) {
+            printNewOrgInfo($orgInfo);
+            $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
+          } elseif ($orgInfo['OrganizationName'] == $organization['OrganizationName']) {
+            #OrganizationName Same
+            if ($orgInfo['OrganizationDisplayName'] < $organization['OrganizationDisplayName']) {
+              printNewOrgInfo($orgInfo);
+              $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
+            } elseif ($orgInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName']) {
+              # OrganizationDisplayName Same
+              if ($orgInfo['OrganizationURL'] < $organization['OrganizationURL']) {
+                printNewOrgInfo($orgInfo);
+                $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
+              } elseif ($orgInfo['OrganizationURL'] == $organization['OrganizationURL']) {
+                # OrganizationURL Same
+                $orgsSame = true;
+                $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
+              } else {
+                $newOrgInfo = false;
+              }
+            } else {
+              $newOrgInfo = false;
+            }
+          } else {
+            $newOrgInfo = false;
+          }
+        }
+
+        printf ('      <tr class="table-%s">
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td><a href=".?action=OrganizationsInfo&name=%s&display=%s&url=%s&lang=%s">%d</a></td>
+      </tr>%s',
+          $orgsSame ? 'success' : 'warning',
+          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
+          $organization['OrganizationURL'],
+          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
+          $organization['OrganizationURL'], $lang,
+          $organization['count'], "\n");
+      }
+    }
+    print "    </table>\n";
+  }
+}
+
+function printNewOrgInfo($organization) {
+  printf ('      <tr class="table-danger">
+        <td>%s</td>
+        <td>%s</td>
+        <td>%s</td>
+        <td><a href="./?action=Members&tab=organizations&id=%d&showAllOrgs#org-%d" target="_blank">Edit</a>(%d)</td>
+      </tr>%s',
+          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
+          $organization['OrganizationURL'],
+          $organization['id'], $organization['id'], $organization['id'], "\n");
+}
+
+
+/**
+ * Shows menu row
+ *
+ * @return void
+ */
 function showMenu() {
   global $menuActive;
 
@@ -201,5 +316,6 @@ function showMenu() {
   printf('<a href="?action=shadow"><button type="button" class="btn btn%s-primary">Shadow</button></a>', $menuActive == 'shadow' ? '' : HTML_OUTLINE);
   printf('<a href="?action=users"><button type="button" class="btn btn%s-primary">Users</button></a>', $menuActive == 'users' ? '' : HTML_OUTLINE);
   printf('<a href="?action=validation"><button type="button" class="btn btn%s-primary">Validation</button></a>', $menuActive == 'validation' ? '' : HTML_OUTLINE);
+  printf('<a href="?action=organizations"><button type="button" class="btn btn%s-primary">Organizations</button></a>', $menuActive == 'organizations' ? '' : HTML_OUTLINE);
   print "\n    <br>\n    <br>\n";
 }
