@@ -150,25 +150,75 @@ class Configuration {
         $dbVersion = 0;
       } catch(PDOException $e) {
         $this->createTables();
-        $dbVersion = 1;
+        $dbVersion = 2;
       }
     }
-    if ($dbVersion < 1) {
-      $this->db->query(
-        'CREATE TABLE `params` (
-          `id` varchar(20) DEFAULT NULL,
-          `value` text DEFAULT NULL
-        );');
-      $this->db->query(
-        "INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '1');");
+    if ($dbVersion < 2) {
+      if ($dbVersion < 1) {
+        $this->db->query(
+          'CREATE TABLE `params` (
+            `id` varchar(20) DEFAULT NULL,
+            `value` text DEFAULT NULL
+          );');
+        $this->db->query(
+          "INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '1');");
 
-      $this->db->query('CREATE TABLE `DiscoveryResponse` (
-        `entity_id` int(10) unsigned NOT NULL,
-        `index` smallint(5) unsigned NOT NULL,
-        `location` text DEFAULT NULL,
-        PRIMARY KEY (`entity_id`,`index`),
-        CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+        $this->db->query('CREATE TABLE `DiscoveryResponse` (
+          `entity_id` int(10) unsigned NOT NULL,
+          `index` smallint(5) unsigned NOT NULL,
+          `location` text DEFAULT NULL,
+          PRIMARY KEY (`entity_id`,`index`),
+          CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+        );');
+      }
+      $this->db->query('START TRANSACTION;');
+      $this->db->query('CREATE TABLE `OrganizationInfoData` (
+        `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
+        `lang` char(10) DEFAULT NULL,
+        `OrganizationName` text DEFAULT NULL,
+        `OrganizationDisplayName` text DEFAULT NULL,
+        `OrganizationURL` text DEFAULT NULL,
+        CONSTRAINT `OrganizationInfoData_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
       );');
+      $this->db->query('ALTER TABLE `Entities`
+        ADD `OrganizationInfo_id` int(10) unsigned DEFAULT 0 AFTER `lastValidated`');
+
+      $OrganizationInfoHandler = $this->db->prepare(
+        'SELECT `id`, `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
+          `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`
+        FROM `OrganizationInfo`;');
+      $OrganizationInfoHandlerData = $this->db->prepare(
+        'INSERT INTO `OrganizationInfoData` (
+          `OrganizationInfo_id`, `lang`,
+          `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
+        VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
+
+      $OrganizationInfoHandler->execute();
+      while ($orgInfo = $OrganizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+        $OrganizationInfoHandlerData->execute(array(
+          ':Id' => $orgInfo['id'],
+          ':Lang' => 'sv',
+          ':OrganizationName' => $orgInfo['OrganizationNameSv'],
+          ':OrganizationDisplayName' => $orgInfo['OrganizationDisplayNameSv'],
+          ':OrganizationURL' => $orgInfo['OrganizationURLSv']));
+        $OrganizationInfoHandlerData->execute(array(
+          ':Id' => $orgInfo['id'],
+          ':Lang' => 'en',
+          ':OrganizationName' => $orgInfo['OrganizationNameEn'],
+          ':OrganizationDisplayName' => $orgInfo['OrganizationDisplayNameEn'],
+          ':OrganizationURL' => $orgInfo['OrganizationURLEn']));
+      }
+
+      $this->db->query('ALTER TABLE `OrganizationInfo`
+        DROP COLUMN `OrganizationNameSv`,
+        DROP COLUMN `OrganizationDisplayNameSv`,
+        DROP COLUMN `OrganizationURLSv`,
+        DROP COLUMN `OrganizationNameEn`,
+        DROP COLUMN `OrganizationDisplayNameEn`,
+        DROP COLUMN `OrganizationURLEn`;');
+      $this->db->query(
+        "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
+      $this->db->query('COMMIT;');
     }
   }
 
@@ -402,15 +452,18 @@ class Configuration {
 
     $this->db->query('CREATE TABLE `OrganizationInfo` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-      `OrganizationNameSv` text DEFAULT NULL,
-      `OrganizationDisplayNameSv` text DEFAULT NULL,
-      `OrganizationURLSv` text DEFAULT NULL,
-      `OrganizationNameEn` text DEFAULT NULL,
-      `OrganizationDisplayNameEn` text DEFAULT NULL,
-      `OrganizationURLEn` text DEFAULT NULL,
       `memberSince` date DEFAULT NULL,
       `notMemberAfter` date DEFAULT NULL,
       PRIMARY KEY (`id`)
+    );');
+
+    $this->db->query('CREATE TABLE `OrganizationInfoData` (
+        `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
+        `lang` char(10) DEFAULT NULL,
+        `OrganizationName` text DEFAULT NULL,
+        `OrganizationDisplayName` text DEFAULT NULL,
+        `OrganizationURL` text DEFAULT NULL,
+        CONSTRAINT `OrganizationInfoData_ibfk_1` FOREIGN KEY (`OrganizationInfo_id`) REFERENCES `OrganizationInfo` (`id`) ON DELETE CASCADE
     );');
 
     $this->db->query('CREATE TABLE `Scopes` (

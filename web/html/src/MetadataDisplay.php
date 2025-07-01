@@ -2268,17 +2268,18 @@ class MetadataDisplay extends Common {
         <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
         <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
-      </div>%s',
+      </div>',
       $assuranceCount['RAF-high'],
       $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
       $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
       $idps - $assuranceCount['RAF-low'],
       "\n");
-    printf(( $swamid_assurance ?  '      <div class="col">
+    printf(( $swamid_assurance ?  '
+      <div class="col">
         <h3>SWAMID Assurance</h3>
         <canvas id="swamid"></canvas>
-      </div>
-' : '' ) . '      <div class="col">
+      </div>' : '' ) . '
+      <div class="col">
         <h3>REFEDS Assurance</h3>
         <canvas id="raf"></canvas>
       </div>
@@ -2290,11 +2291,11 @@ class MetadataDisplay extends Common {
     <br>
     <table class="table table-striped table-bordered">
       <tr>
-        <th>IdP</th>
-' . ( $swamid_assurance ? '        <th>AL1</th>
+        <th>IdP</th>' . ( $swamid_assurance ? '
+        <th>AL1</th>
         <th>AL2</th>
-        <th>AL3</th>
-' : '' ) . '        <th>RAF-Low</th>
+        <th>AL3</th>' : '' ) . '
+        <th>RAF-Low</th>
         <th>RAF-Medium</th>
         <th>RAF-High</th>
         <th>Nothing</th>
@@ -2709,13 +2710,16 @@ class MetadataDisplay extends Common {
 
   private function showIMPSList($id, $userLevel) {
     $impsHandler = $this->config->getDb()->prepare(
-      'SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
-        `OrganizationInfo`.`id` AS orgId, `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`,
+      "SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
+        `IMPS`.`OrganizationInfo_id` AS orgId, `OrganizationDisplayName`,
         `email`, `fullName`
-        FROM `OrganizationInfo`, `IMPS`
-        LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
-        WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id` AND `OrganizationInfo`.`notMemberAfter` is NULL
-        ORDER BY `name`;');
+      FROM `OrganizationInfo`, `OrganizationInfoData`, `IMPS`
+      LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
+      WHERE `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id` AND
+        `IMPS`.`OrganizationInfo_id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
+        `OrganizationInfo`.`notMemberAfter` is NULL AND
+        `lang` = 'en'
+      ORDER BY `name`;");
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`
       FROM `Entities`, `IdpIMPS`
@@ -2728,6 +2732,7 @@ class MetadataDisplay extends Common {
       $warn1Date = $dates['warn1Date'];
       $errorDate = $dates['errorDate'];
     }
+    $flagDates->closeCursor();
     if ($userLevel > 10) {
       printf('%s          <a href=".?action=Members&subAction=editImps&id=0"><button type="button" class="btn btn-outline-primary">Add new IMPS</button></a>',
         "\n");
@@ -2743,7 +2748,6 @@ class MetadataDisplay extends Common {
       $lastValidated = substr($imps['lastValidated'], 0 ,10);
       $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
       $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
-      $orgName = $imps['OrganizationDisplayNameSv'] == '' ? $imps['OrganizationDisplayNameEn'] : $imps['OrganizationDisplayNameSv'];
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
@@ -2758,31 +2762,42 @@ class MetadataDisplay extends Common {
                 </ul>
                 <h5>Connected IdP:s</h5>
                 <ul>%s',
-        "\n", $imps['orgId'], $imps['orgId'], $orgName, $imps['maximumAL'],
+        "\n", $imps['orgId'], $imps['orgId'], $imps['OrganizationDisplayName'], $imps['maximumAL'],
         $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
-        while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
-          printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
-        }
-        print '                </ul>';
+      while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
+      }
+      print '                </ul>';
       $this->showCollapseEnd("imps-" . $imps['id'], 1);
+      $idpHandler->closeCursor();
     }
   }
 
   private function showOrganizationInfoLists($id, $userLevel) {
     $organizationHandler = $this->config->getDb()->prepare(
-      'SELECT `OrganizationInfo`.`id` AS orgId,
-          `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
-          `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`,
-          `memberSince`, `notMemberAfter`, COUNT(`IMPS`.`id`) AS count
-        FROM `OrganizationInfo`
+      "SELECT `OrganizationInfo`.`id` AS orgId,
+          `OrganizationDisplayName`, `memberSince`, `notMemberAfter`,
+        FROM `OrganizationInfoData`, `OrganizationInfo`
         LEFT JOIN `IMPS` ON `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
         GROUP BY(orgId)
-        ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`;');
+        ORDER BY `OrganizationDisplayName`;");
+    $organizationDataHandler = $this->config->getDb()->prepare(
+      'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+        FROM `OrganizationInfoData`
+        WHERE `OrganizationInfo_id` = :Id
+        ORDER BY `lang`;');
+
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `id`,`name`, `maximumAL`, `lastValidated`
         FROM `IMPS`
         WHERE `OrganizationInfo_id` = :Id
         ORDER BY `name`;');
+    $entitiesHandler = $this->config->getDb()->prepare(
+      'SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
+      FROM `Entities`
+      WHERE `status` = 1
+        AND `OrganizationInfo_id` = :Id;');
+
     $showAllOrgs = isset($_GET['showAllOrgs']);
     printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
       $id, $showAllOrgs ? '' : '&showAllOrgs', $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
@@ -2794,8 +2809,8 @@ class MetadataDisplay extends Common {
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($organization['count'] == 0 && !$showAllOrgs ) { continue; }
       $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
-      $name = $organization['OrganizationDisplayNameSv'] == '' ? $organization['OrganizationDisplayNameEn'] : $organization['OrganizationDisplayNameSv'];
       $name .= "(" . $organization['count'] . ")";
+      $name = $organization['OrganizationDisplayName'];
       $name .= $organization['notMemberAfter'] ? '- Not member any more' : '';
       $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
       if ($userLevel > 10) {
@@ -2804,34 +2819,33 @@ class MetadataDisplay extends Common {
                 "\n", $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '',
                 $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '');
       }
-      printf('%s                <ul>
-                  <li>Swedish (sv)
+      printf('%s                <ul>%s', "\n", "\n");
+      while ($orgInfoData = $organizationDataHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf('                  <li>%s
                     <ul>
                       <li>Name : %s</li>
                       <li>DisplayName : %s</li>
                       <li>URL : %s</li>
                     </ul>
-                  </li>
-                  <li>English (en)
-                    <ul>
-                      <li>Name : %s</li>
-                      <li>DisplayName : %s</li>
-                      <li>URL : %s</li>
-                    </ul>
-                  </li>
-                  <li>memberSince : %s</li>
+                  </li>%s',
+          isset(self::LANG_CODES[$orgInfoData['lang']]) ? self::LANG_CODES[$orgInfoData['lang']] : sprintf('Unkown lang code: %s', $orgInfoData['lang']),
+          $orgInfoData['OrganizationName'], $orgInfoData['OrganizationDisplayName'], $orgInfoData['OrganizationURL'], "\n");
+
+      }
+      printf('                  <li>memberSince : %s</li>
                   <li>IMPS:s
-                    <ul>%s', "\n",
-          $organization['OrganizationNameSv'],
-          $organization['OrganizationDisplayNameSv'],
-          $organization['OrganizationURLSv'],
-          $organization['OrganizationNameEn'],
-          $organization['OrganizationDisplayNameEn'],
-          $organization['OrganizationURLEn'],
-          $organization['memberSince'], "\n");
+                    <ul>%s', $organization['memberSince'], "\n");
       while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
           $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
+      }
+      printf ('                    </ul>
+                  </li>
+                  <li>Entities
+                    <ul>%s', "\n");
+      while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('                      <li><a href="?showEntity=%d">%s</a></li>%s',
+          $entity['id'], $entity['entityID'], "\n");
       }
       print '                    </ul>
                   </li>
