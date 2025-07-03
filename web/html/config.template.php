@@ -59,6 +59,8 @@ $federation = array(
   'displayNameQA' => 'SWAMID QA',
   'noAccountHtml' => 'you can create an eduID account at <a href="https://eduid.se">eduID.se</a>',
   'name' => 'swamid',
+  'localFeed' => 'swamid-2.0',
+  'eduGAINFeed' => 'swamid-edugain',
   'aboutURL' => 'https://www.sunet.se/swamid/',
   'contactURL' => 'https://www.sunet.se/swamid/kontakt/',
   'toolName' => 'SWAMID SAML WebSSO metadata administration tool',
