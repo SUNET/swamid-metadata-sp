@@ -547,6 +547,7 @@ function showInfo() {
 
 function showFeed($id) {
   global $config;
+  $federation = $config->getFederation();
   $entity = $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id');
   $entity->bindParam(':Id', $id);
   $entity->execute();
@@ -554,17 +555,17 @@ function showFeed($id) {
     switch($row['publishIn']) {
       case 2 :
       case 3 :
-        print "swamid-2.0\n";
+        printf ("%s\n", $federation['localFeed']);
         break;
       case 6 :
       case 7 :
-        print "swamid-edugain\n";
+        printf ("%s\n", $federation['eduGAINFeed']);
         break;
       default :
-        print "swamid-2.0\n";
+        printf ("%s\n", $federation['localFeed']);
     }
   } else
-    print "swamid-2.0\n";
+    printf ("%s\n", $federation['localFeed']);
   exit;
 }
 

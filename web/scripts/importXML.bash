@@ -8,10 +8,10 @@ if [ -r $file ]; then
     feed="Testing"
   fi
   if [ $SWAMIDDir = "swamid-2.0" ]; then
-    feed="Testing Swamid"
+    feed="Testing swamid-2.0"
   fi
   if [ $SWAMIDDir = "swamid-edugain" ]; then
-    feed="Testing Swamid Edugain"
+    feed="Testing swamid-2.0 swamid-edugain"
   fi
 
   php /var/www/scripts/importAndValidateXML.php $file "$feed"

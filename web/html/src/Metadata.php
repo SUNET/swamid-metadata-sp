@@ -344,13 +344,14 @@ class Metadata extends Common {
   public function updateFeed($feeds) {
     #2 = SWAMID
     #3 = eduGAIN
+    $federation = $this->config->getFederation();
     $publishIn = 0;
     foreach (explode(' ', $feeds) as $feed ) {
       switch (strtolower($feed)) {
-        case 'swamid' :
+        case $federation['localFeed'] :
           $publishIn += 2;
           break;
-        case 'edugain' :
+        case $federation['eduGAINFeed'] :
           $publishIn += 4;
           break;
         default :
