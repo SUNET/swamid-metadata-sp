@@ -26,6 +26,7 @@ class Common {
   protected string $result = '';
   protected string $warning = '';
   protected int $status = 0;
+  protected int $organizationInfoId = 0;
 
   protected DOMDocument $xml;
   private bool $handleXML = true;
@@ -87,8 +88,8 @@ class Common {
       $this->config = new Configuration();
     }
     if ($id > 0) {
-      $sql = 'SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `errors`, `errorsNB`, `warnings`,
-          `registrationInstant`, `validationOutput`';
+      $sql = 'SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `OrganizationInfo_id`,
+        `errors`, `errorsNB`, `warnings`, `registrationInstant`, `validationOutput`';
       $sql .= $this->handleXML ? ', `xml` ' : ' ';
       $sql .= 'FROM `Entities` WHERE `id` = :Id';
       $entityHandler = $this->config->getDb()->prepare($sql);
@@ -97,6 +98,7 @@ class Common {
         $this->entityExists = true;
         $this->dbIdNr = $entity['id'];
         $this->status = $entity['status'];
+        $this->organizationInfoId = $entity['OrganizationInfo_id'];
         $this->entityID = $entity['entityID'];
         $this->isIdP = $entity['isIdP'] == 1;
         $this->isSP = $entity['isSP'] == 1;

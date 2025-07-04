@@ -219,8 +219,11 @@ function showOrganizationDifference() {
     GROUP BY `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
     ORDER BY `OrganizationName` COLLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COLLATE utf8mb4_swedish_ci, `OrganizationURL` COLLATE utf8mb4_swedish_ci;");
 
-  $sql['sv'] = 'SELECT `id`, `OrganizationNameSv` AS OrganizationName, `OrganizationDisplayNameSv` AS OrganizationDisplayName, `OrganizationURLSv` AS OrganizationURL FROM OrganizationInfo ORDER BY `OrganizationName` COlLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COlLATE utf8mb4_swedish_ci, `OrganizationURL` COlLATE utf8mb4_swedish_ci;';
-  $sql['en'] = 'SELECT `id`, `OrganizationNameEn` AS OrganizationName, `OrganizationDisplayNameEn` AS OrganizationDisplayName, `OrganizationURLEn` AS OrganizationURL FROM OrganizationInfo ORDER BY `OrganizationName` COlLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COlLATE utf8mb4_swedish_ci, `OrganizationURL` COlLATE utf8mb4_swedish_ci;';
+  $orgInfoHandler = $config->getDb()->prepare(
+    'SELECT `OrganizationInfo_id`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+    FROM OrganizationInfoData
+    WHERE `lang`= :Lang
+    ORDER BY `OrganizationName` COlLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COlLATE utf8mb4_swedish_ci, `OrganizationURL` COlLATE utf8mb4_swedish_ci;');
   printf ('    <h5>Comparing of Organizations in Metadata and Members/OrginfoTable</h5>%s', "\n");
   foreach (array('en', 'sv') as $lang) {
     printf ('    <h6>Lang = %s</h6>
@@ -235,7 +238,7 @@ function showOrganizationDifference() {
       </thead>%s',
       $lang, $lang, "\n");
     $organizationHandler->execute(array('Lang' => $lang));
-    $orgInfoHandler = $config->getDb()->query($sql[$lang]);
+    $orgInfoHandler->execute(array('Lang' => $lang));
     $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($organization['OrganizationName'] != '' && $organization['OrganizationDisplayName'] != '' &&
@@ -298,7 +301,7 @@ function printNewOrgInfo($organization) {
       </tr>%s',
           $organization['OrganizationName'], $organization['OrganizationDisplayName'],
           $organization['OrganizationURL'],
-          $organization['id'], $organization['id'], $organization['id'], "\n");
+          $organization['OrganizationInfo_id'], $organization['OrganizationInfo_id'], $organization['OrganizationInfo_id'], "\n");
 }
 
 

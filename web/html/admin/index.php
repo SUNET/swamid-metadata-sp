@@ -359,6 +359,24 @@ if (isset($_FILES['XMLfile'])) {
             print HTML_TEXT_CFE;
           }
           break;
+        case 'addOrganization2Entity' :
+          if (checkAccess($entitiesId, $EPPN, $userLevel, 10, false)) {
+            if (isset($_GET['organizationId'])) {
+              $updateEntitiesHandler = $config->getDb()->prepare( $userLevel > 19
+              ? 'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id;'
+              : 'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id AND status = 3;');
+              $updateEntitiesHandler->execute(array('OrgId' => $_GET['organizationId'], 'Id' => $entitiesId));
+            }
+            showEntity($entitiesId);
+          }
+          break;
+        case 'copyDefaultOrganization' :
+          if (checkAccess($entitiesId, $EPPN, $userLevel, 10, false)) {
+            $editMeta = new \metadata\MetadataEdit($entitiesId);
+            $editMeta->copyDefaultOrganization();
+            showEntity($entitiesId);
+          }
+          break;
         default :
           if ($userLevel > 19) {
             printf ('Missing action : %s', urlencode($_GET['action']));
@@ -862,6 +880,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       </div>
     </div>
     <br><?php
+    $display->showOrganizationInfo($entitiesId, $allowEdit, $userLevel > 19, $entityError['organizationErrors']);
     if ($entity['isIdP'] && $entity['status'] == 1 && $config->getIMPS()) { $display->showIMPS($entitiesId, $userLevel > 19, $entityError['IMPSError']); }
     $display->showEntityAttributes($entitiesId, $oldEntitiesId, $allowEdit);
     $able2beRemoveSSO = ($entity['isIdP'] && $entity['isSP'] && $allowEdit);
@@ -883,7 +902,7 @@ function showEntity($entitiesId, $showHeader = true)  {
 }
 
 ####
-# Shows a list of entitys
+# Shows a list of entities
 ####
 function showList($entities, $minLevel) {
   global $EPPN, $userLevel;

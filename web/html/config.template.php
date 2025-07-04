@@ -111,6 +111,8 @@ $federation = array(
         </ul>',
 
   'swamid_assurance' => true,
+  # If we should check/force a organization connected to each entity
+  'checkOrganization' => false,
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
