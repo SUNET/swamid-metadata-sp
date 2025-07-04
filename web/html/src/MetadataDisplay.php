@@ -421,9 +421,9 @@ class MetadataDisplay extends Common {
     printf('              <option value="0">New Organization</option>%s', "\n");
     while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($currentOrgId == 0) {
-        $selected = $organizationInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName'] ? ' selected' : '';
+        $selected = $organizationInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName'] ? self::HTML_SELECTED : '';
       } else {
-        $selected = $organizationInfo['id'] == $currentOrgId ? ' selected' : '';
+        $selected = $organizationInfo['id'] == $currentOrgId ? self::HTML_SELECTED : '';
       }
       printf('              <option value="%d"%s>%s</option>%s',
         $organizationInfo['id'], $selected,
@@ -444,67 +444,65 @@ class MetadataDisplay extends Common {
       FROM `Entities`
       WHERE `id` = :Id;');
     $entityHandler->execute(array(self::BIND_ID => $entitiesId));
-    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($allowEdit || $admin || $organizationErrors) {
-        $this->showCollapse('OrganizationInfo', 'OrganizationInfo', false, 0, $organizationErrors, false, $entitiesId, 0);
-        if ($entity['OrganizationInfo_id'] > 0) {
-          $organizationInfoHandler = $this->config->getDb()->prepare(
-            'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
-            FROM `OrganizationInfoData`
-            WHERE `OrganizationInfo_id`= :Id
-            ORDER BY `lang`;');
-          $organizationInfoHandler->execute(array(self::BIND_ID => $entity['OrganizationInfo_id']));
-          printf ('%s          <b>Default information for your organization :</b>
+    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC) && ($allowEdit || $admin || $organizationErrors)) {
+      $this->showCollapse('OrganizationInfo', 'OrganizationInfo', false, 0, $organizationErrors, false, $entitiesId, 0);
+      if ($entity['OrganizationInfo_id'] > 0) {
+        $organizationInfoHandler = $this->config->getDb()->prepare(
+          'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
+          FROM `OrganizationInfoData`
+          WHERE `OrganizationInfo_id`= :Id
+          ORDER BY `lang`;');
+        $organizationInfoHandler->execute(array(self::BIND_ID => $entity['OrganizationInfo_id']));
+        printf ('%s          <b>Default information for your organization :</b>
           <ul>%s', "\n", "\n");
-          while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-            $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
-            $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
-            $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
-          }
-          foreach ($organizationDefaults as $element => $elementData) {
-            foreach ($elementData as $lang => $value) {
-              printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
-                $element, $lang, $value, "\n");
-            }
-          }
-          printf('          </ul>%s', "\n",);
-        } else {
-          printf('%s          Entity not bound to any Organization.<br>%s', "\n", "\n");
+        while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+          $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
+          $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
+          $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
         }
+        foreach ($organizationDefaults as $element => $elementData) {
+          foreach ($elementData as $lang => $value) {
+            printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
+              $element, $lang, $value, "\n");
+          }
+        }
+        printf('          </ul>%s', "\n",);
+      } else {
+        printf('%s          Entity not bound to any Organization.<br>%s', "\n", "\n");
+      }
 
-        if ($allowEdit || $admin) {
-          if ($entity['OrganizationInfo_id'] > 0 && $entity['status'] == 3 && $organizationErrors) {
-            printf('          <a href="./?action=copyDefaultOrganization&Entity=%d"><button>%s</button></a>%s',
-              $entitiesId, 'Import the default organization information to this Draft', "\n");
-          } elseif ($entity['OrganizationInfo_id'] == 0) {
-            printf('          Please select your organization.<br>
+      if ($allowEdit || $admin) {
+        if ($entity['OrganizationInfo_id'] > 0 && $entity['status'] == 3 && $organizationErrors) {
+          printf('          <a href="./?action=copyDefaultOrganization&Entity=%d"><button>%s</button></a>%s',
+            $entitiesId, 'Import the default organization information to this Draft', "\n");
+        } elseif ($entity['OrganizationInfo_id'] == 0) {
+          printf('          Please select your organization.<br>
           If this is a organization not already existing in SWAMID, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
             $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
-          }
-          $this->showAddOrganizationIdForm($entitiesId, $entity['OrganizationInfo_id']);
-        } else {
-          printf('          Solutions : <ul>
+        }
+        $this->showAddOrganizationIdForm($entitiesId, $entity['OrganizationInfo_id']);
+      } else {
+        printf('          Solutions : <ul>
             <li>Create a Draft and update the information</li>
           </ul>');
-        }
-        if ($organizationErrors && $entity['OrganizationInfo_id'] > 0) {
-          $this->showNewCol(0);
-          $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
-            FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
-          $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
-          printf ('%s          <b>Found in Metadata/Organization :</b>
-          <ul>%s', "\n", "\n");
-          while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-            $state = (isset ($organizationDefaults[$organization['element']][$organization['lang']])
-              && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
-              ? 'danger' : 'dark';
-            printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
-              $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
-          }
-          printf('          </ul>%s', "\n",);
-        }
-        $this->showCollapseEnd('OrganizationInfo', 0);
       }
+      if ($organizationErrors && $entity['OrganizationInfo_id'] > 0) {
+        $this->showNewCol(0);
+        $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
+          FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
+        $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
+        printf ('%s          <b>Found in Metadata/Organization :</b>
+          <ul>%s', "\n", "\n");
+        while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+          $state = (isset ($organizationDefaults[$organization['element']][$organization['lang']])
+            && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
+            ? 'danger' : 'dark';
+          printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
+            $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
+        }
+        printf('          </ul>%s', "\n",);
+      }
+      $this->showCollapseEnd('OrganizationInfo', 0);
     }
   }
   ####

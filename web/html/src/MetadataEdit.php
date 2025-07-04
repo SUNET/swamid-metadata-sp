@@ -3786,11 +3786,8 @@ class MetadataEdit extends Common {
     $child = $entityDescriptor->firstChild;
     $organization = false;
     while ($child && ! $organization) {
-      switch ($child->nodeName) {
-        case self::SAML_MD_ORGANIZATION :
-          $organization = $child;
-          break;
-        default :
+      if ($child->nodeName == self::SAML_MD_ORGANIZATION) {
+        $organization = $child;
       }
       $child = $child->nextSibling;
     }

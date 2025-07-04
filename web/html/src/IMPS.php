@@ -10,6 +10,8 @@ class IMPS {
   const BIND_LANG = ':Lang';
   const BIND_USER_ID = 'User_id';
 
+  const TEXT_MISSING_POST = "Missing POST variable(s)\n";
+
   private $config;
   private $errors = '';
 
@@ -118,7 +120,7 @@ class IMPS {
       $this->errors .= checkdate(intval(substr($_POST['lastUpdated'],5,2)), intval(substr($_POST['lastUpdated'],8,2)), intval(substr($_POST['lastUpdated'],0,4)))
         ? '' : "Invalid BOT date.\n";
     } else {
-      $this->errors .= "Missing POST variable(s)\n";
+      $this->errors .= self::TEXT_MISSING_POST;
     }
     if ($this->errors != '') {
       return false;
@@ -375,7 +377,7 @@ class IMPS {
         $orgName = isset($_POST['OrganizationName'][$lang]) ? $_POST['OrganizationName'][$lang] : $organizationData['OrganizationName'];
         $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang]) ? $_POST['OrganizationDisplayName'][$lang] : $organizationData['OrganizationDisplayName'];
         $orgURL = isset($_POST['OrganizationURL'][$lang]) ? $_POST['OrganizationURL'][$lang] : $organizationData['OrganizationURL'];
-        $this->editOrganization_printOrg($lang, $orgName, $orgDisplayName, $orgURL);
+        $this->editOrganizationPrintOrg($lang, $orgName, $orgDisplayName, $orgURL);
         $usedLang[$lang] = true;
       }
       foreach ($this->config->getFederation()['languages'] as $lang) {
@@ -383,7 +385,7 @@ class IMPS {
           $orgName = isset($_POST['OrganizationName'][$lang]) ? $_POST['OrganizationName'][$lang] : '';
           $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang]) ? $_POST['OrganizationDisplayName'][$lang] : '';
           $orgURL = isset($_POST['OrganizationURL'][$lang]) ? $_POST['OrganizationURL'][$lang] : '';
-          $this->editOrganization_printOrg($lang, $orgName, $orgDisplayName, $orgURL);
+          $this->editOrganizationPrintOrg($lang, $orgName, $orgDisplayName, $orgURL);
         }
       }
       printf('          <div class="row">
@@ -422,7 +424,7 @@ class IMPS {
    *
    * @return void
    */
-  private function editOrganization_printOrg($lang, $orgName, $orgDisplayName, $orgURL) {
+  private function editOrganizationPrintOrg($lang, $orgName, $orgDisplayName, $orgURL) {
     printf('          <div class="row">
             <div class="col"><h5>%s</h5></div>
           </div>
@@ -454,12 +456,11 @@ class IMPS {
   public function saveOrganization($id) {
     foreach (array('memberSince', 'notMemberAfter') as $key) {
       if (isset($_POST[$key])) {
-        $this->errors .= ($_POST[$key] == '' ||
+        $this->errors = ($_POST[$key] == '' ||
           checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
           ? '' : "Invalid date. \n";
       } else {
-        $this->errors .= "Missing POST variable(s)\n";
-        return false;
+        $this->errors = self::TEXT_MISSING_POST;
       }
     }
     foreach (array('OrganizationName', 'OrganizationDisplayName', 'OrganizationURL') as $key) {
@@ -478,8 +479,7 @@ class IMPS {
             default :
           }
         } else {
-          $this->errors .= "Missing POST variable(s)\n";
-          return false;
+          $this->errors = self::TEXT_MISSING_POST;
         }
       }
     }

@@ -183,25 +183,25 @@ class Configuration {
       $this->db->query('ALTER TABLE `Entities`
         ADD `OrganizationInfo_id` int(10) unsigned DEFAULT 0 AFTER `lastValidated`');
 
-      $OrganizationInfoHandler = $this->db->prepare(
+      $organizationInfoHandler = $this->db->prepare(
         'SELECT `id`, `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
           `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`
         FROM `OrganizationInfo`;');
-      $OrganizationInfoHandlerData = $this->db->prepare(
+      $organizationInfoHandlerData = $this->db->prepare(
         'INSERT INTO `OrganizationInfoData` (
           `OrganizationInfo_id`, `lang`,
           `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
         VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
 
-      $OrganizationInfoHandler->execute();
-      while ($orgInfo = $OrganizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-        $OrganizationInfoHandlerData->execute(array(
+      $organizationInfoHandler->execute();
+      while ($orgInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+        $organizationInfoHandlerData->execute(array(
           ':Id' => $orgInfo['id'],
           ':Lang' => 'sv',
           ':OrganizationName' => $orgInfo['OrganizationNameSv'],
           ':OrganizationDisplayName' => $orgInfo['OrganizationDisplayNameSv'],
           ':OrganizationURL' => $orgInfo['OrganizationURLSv']));
-        $OrganizationInfoHandlerData->execute(array(
+        $organizationInfoHandlerData->execute(array(
           ':Id' => $orgInfo['id'],
           ':Lang' => 'en',
           ':OrganizationName' => $orgInfo['OrganizationNameEn'],
