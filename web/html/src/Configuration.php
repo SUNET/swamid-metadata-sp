@@ -39,7 +39,7 @@ class Configuration {
       'rulesName', 'rulesURL',
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
-      'swamid_assurance');
+      'swamid_assurance', 'checkOrganization');
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
@@ -302,6 +302,7 @@ class Configuration {
       `removalRequestedBy` int(10) unsigned DEFAULT 0,
       `lastUpdated` datetime DEFAULT NULL,
       `lastValidated` datetime DEFAULT NULL,
+      `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
       `validationOutput` text DEFAULT NULL,
       `warnings` text DEFAULT NULL,
       `errors` text DEFAULT NULL,

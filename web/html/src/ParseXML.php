@@ -11,7 +11,6 @@ class ParseXML extends Common {
   use CommonTrait;
 
   # Setup
-  protected $samlProtocolSupportFound = array();
   /* when parsing role descriptors, parseProtocolSupportEnumeration
    * will add entries in format:
    *    'RoleDesciptorName' => array(
@@ -20,7 +19,7 @@ class ParseXML extends Common {
    *       'shibboleth10' => false,
    *    ),
    */
-
+  protected $samlProtocolSupportFound = array();
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
 
