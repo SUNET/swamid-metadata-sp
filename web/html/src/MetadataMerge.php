@@ -8,24 +8,10 @@ class MetadataMerge extends Common {
   private int $dbOldIdNr = 0;
   private bool $oldExists = false;
   private bool $oldentityID = false;
-  private array $orderOrganization = array();
-  private array $orderContactPerson = array();
 
   public function __construct($id, $oldID = 0) {
     parent::__construct($id);
     $this->dbOldIdNr = is_numeric($oldID) ? $oldID : 0;
-
-    $this->orderOrganization = array (self::SAML_MD_EXTENSIONS => 1,
-      self::SAML_MD_ORGANIZATIONNAME => 2,
-      self::SAML_MD_ORGANIZATIONDISPLAYNAME => 3,
-      self::SAML_MD_ORGANIZATIONURL => 4);
-
-    $this->orderContactPerson = array (self::SAML_MD_COMPANY => 1,
-      self::SAML_MD_GIVENNAME => 2,
-      self::SAML_MD_SURNAME => 3,
-      self::SAML_MD_EMAILADDRESS => 4,
-      self::SAML_MD_TELEPHONENUMBER => 5,
-      self::SAML_MD_EXTENSIONS => 6);
 
     if ($this->entityExists && $oldID > 0) {
       $entityHandler = $this->config->getDb()->prepare('SELECT `entityID` FROM `Entities` WHERE `id` = :Id;');
@@ -794,7 +780,7 @@ class MetadataMerge extends Common {
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      $order = $this->orderOrganization['md:'.$organization['element']];
+      $order = self::ORDER_ORGANIZATION['md:'.$organization['element']];
       $oldElements[$order][] = $organization;
     }
     if (isset($oldElements)) {
@@ -829,7 +815,7 @@ class MetadataMerge extends Common {
       $nextOrder = 1;
       while ($child) {
         if ($child->nodeType != 8) {
-          $order = $this->orderOrganization[$child->nodeName];
+          $order = self::ORDER_ORGANIZATION[$child->nodeName];
           while ($order > $nextOrder) {
             if (isset($oldElements[$nextOrder])) {
               foreach ($oldElements[$nextOrder] as $index => $element) {
@@ -909,7 +895,7 @@ class MetadataMerge extends Common {
               $nextOrder = 1;
               $order = 1;
               while ($subchild) {
-                $order = $this->orderContactPerson[$subchild->nodeName];
+                $order = self::ORDER_CONTACTPERSON[$subchild->nodeName];
                 while ($order > $nextOrder) {
                   if (!empty($oldContactPersons[$type][$nextOrder]['value'])) {
                     $contactPersonElement = $this->xml->createElement($oldContactPersons[$type][$nextOrder]['part']);

@@ -82,4 +82,19 @@ trait SAMLTrait {
   const SAMLXMLNS_IDPDISC_URL = 'urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol';
   const SAMLXMLNS_MDUI = 'xmlns:mdui';
   const SAMLXMLNS_MDUI_URL = 'urn:oasis:names:tc:SAML:metadata:ui';
+
+  const ORDER_ATTRIBUTEREQUESTINGSERVICE = array (self::SAML_MD_SERVICENAME => 1,
+    self::SAML_MD_SERVICEDESCRIPTION => 2,
+    self::SAML_MD_REQUESTEDATTRIBUTE => 3);
+  const ORDER_CONTACTPERSON = array (self::SAML_MD_COMPANY => 1,
+    self::SAML_MD_GIVENNAME => 2,
+    self::SAML_MD_SURNAME => 3,
+    self::SAML_MD_EMAILADDRESS => 4,
+    self::SAML_MD_TELEPHONENUMBER => 5,
+    self::SAML_MD_EXTENSIONS => 6);
+  const ORDER_ORGANIZATION = array (self::SAML_MD_EXTENSIONS => 1,
+    self::SAML_MD_ORGANIZATIONNAME => 2,
+    self::SAML_MD_ORGANIZATIONDISPLAYNAME => 3,
+    self::SAML_MD_ORGANIZATIONURL => 4);
+
 }
