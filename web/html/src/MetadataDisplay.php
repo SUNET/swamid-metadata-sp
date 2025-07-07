@@ -509,7 +509,7 @@ class MetadataDisplay extends Common {
    * Shows diffence betwen DefaultOrganization and Metadata
    *
    * Compares the array organizationDefaults with whats in Metadata/Organization
-   * 
+   *
    * @param int $entitiesId Id of Entities for Organization
    *
    * @param array $organizationDefaults

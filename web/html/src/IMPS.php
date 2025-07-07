@@ -560,7 +560,7 @@ class IMPS {
         <form action="?action=Members&subAction=removeOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">%s',
       $organization['id'], $showAllOrgs, $organization['id'], "\n");
     while ($organizationData = $organizationsDataHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->printOrganization($organizationData['lang'], $organizationData['OrganizationName'], 
+      $this->printOrganization($organizationData['lang'], $organizationData['OrganizationName'],
         $organizationData['OrganizationDisplayName'], $organizationData['OrganizationURL'], true);
     }
     printf('          <div class="row">
