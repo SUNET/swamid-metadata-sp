@@ -216,6 +216,18 @@ class Configuration {
         DROP COLUMN `OrganizationNameEn`,
         DROP COLUMN `OrganizationDisplayNameEn`,
         DROP COLUMN `OrganizationURLEn`;');
+      # Cleanup unused id column:s with autoincrement
+      $this->db->query('ALTER TABLE `AttributeConsumingService_RequestedAttribute`
+        DROP COLUMN `id`;');
+      $this->db->query('ALTER TABLE `AttributeConsumingService_Service`
+        DROP COLUMN `id`;');
+      $this->db->query('ALTER TABLE `ContactPerson`
+        DROP COLUMN `id`;');
+      $this->db->query('ALTER TABLE `EntityAttributes`
+        DROP COLUMN `id`;');
+      $this->db->query('ALTER TABLE `KeyInfo`
+        DROP COLUMN `id`;');
+      $this->db->query('ALTER TABLE `Mdui` DROP COLUMN `id`;');
       $this->db->query(
         "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
       $this->db->query('COMMIT;');

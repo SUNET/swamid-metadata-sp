@@ -1679,7 +1679,7 @@ function requestRemoval($entitiesId) {
           $addresses = array();
           $contactHandler = $config->getDb()->prepare(
             "SELECT DISTINCT emailAddress
-            FROM ContactPerson
+            FROM `ContactPerson`
             WHERE entity_id = :Entity_ID AND (contactType='technical' OR contactType='administrative')");
           $contactHandler->bindParam(':Entity_ID',$entitiesId);
           $contactHandler->execute();

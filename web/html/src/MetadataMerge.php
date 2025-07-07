@@ -366,7 +366,7 @@ class MetadataMerge extends Common {
   private function mergeUIInfo($type) {
     if ( !$this->oldExists)
       return;
-    $mduiHandler = $this->config->getDb()->prepare('SELECT element, lang, height, width, data FROM `Mdui` WHERE entity_id = :Id AND type = :Type ORDER BY element, lang;');
+    $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND type = :Type ORDER BY `element`, `lang`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
