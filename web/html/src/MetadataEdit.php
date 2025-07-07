@@ -277,7 +277,7 @@ class MetadataEdit extends Common {
                 $update = false;
               }
             } else {
-              $attributeValue->nodeValue = trim($_GET['attribute']);
+              $attributeValue->nodeValue = htmlspecialchars(trim($_GET['attribute']));
               $attribute->appendChild($attributeValue);
             }
 
@@ -713,7 +713,7 @@ class MetadataEdit extends Common {
               $child = $child->nextSibling;
             }
             if (! $scope ) {
-              $scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, $scopeValue);
+              $scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, htmlspecialchars($scopeValue));
               $scope->setAttribute('regexp', 'false');
               if ($beforeChild) {
                 $extensions->insertBefore($scope, $beforeChild);
@@ -1614,7 +1614,7 @@ class MetadataEdit extends Common {
               }
               if (! $mduiElement) {
                 # Add if missing
-                $mduiElement = $this->xml->createElement($elementmd, $value);
+                $mduiElement = $this->xml->createElement($elementmd, htmlspecialchars($value));
                 $discoHints->appendChild($mduiElement);
                 $mduiAddHandler = $this->config->getDb()->prepare("INSERT INTO `Mdui` (`entity_id`, `type`, `element`, `data`)
                   VALUES (:Id, 'IDPDisco', :Element, :Data);");
@@ -2658,7 +2658,7 @@ class MetadataEdit extends Common {
                 $mduiHandler->execute();
                 while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
                   $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME,
-                    $mdui['data']);
+                    htmlspecialchars($mdui['data']));
                   $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $mdui['lang']);
                   $attributeConsumingService->appendChild($attributeConsumingServiceElement);
 
@@ -2753,7 +2753,7 @@ class MetadataEdit extends Common {
                   $child = $child->nextSibling;
                 } else {
                   if ($placement < 3 ) {
-                    $attributeConsumingServiceElement = $this->xml->createElement($elementmd, $value);
+                    $attributeConsumingServiceElement = $this->xml->createElement($elementmd, htmlspecialchars($value));
                   } else {
                     $attributeConsumingServiceElement = $this->xml->createElement($elementmd);
                   }
@@ -2762,7 +2762,7 @@ class MetadataEdit extends Common {
               }
               if (!$attributeConsumingServiceElement) {
                 if ($placement < 3 ) {
-                  $attributeConsumingServiceElement = $this->xml->createElement($elementmd, $value);
+                  $attributeConsumingServiceElement = $this->xml->createElement($elementmd, htmlspecialchars($value));
                 } else {
                   $attributeConsumingServiceElement = $this->xml->createElement($elementmd);
                 }
@@ -2771,7 +2771,7 @@ class MetadataEdit extends Common {
               if ($update) {
                 if ($placement < 3 ) {
                   $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $langvalue);
-                  $attributeConsumingServiceElement->nodeValue = $value;
+                  $attributeConsumingServiceElement->nodeValue = htmlspecialchars($value);
                   $serviceElementUpdateHandler = $this->config->getDb()->prepare(
                     'UPDATE `AttributeConsumingService_Service`
                     SET `data` = :Data
@@ -3270,14 +3270,14 @@ class MetadataEdit extends Common {
                 && $this->orderOrganization[$child->nodeName] <= $placement) {
                 $child = $child->nextSibling;
               } else {
-                $organizationElement = $this->xml->createElement($elementmd, $value);
+                $organizationElement = $this->xml->createElement($elementmd, htmlspecialchars($value));
                 $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
                 $organization->insertBefore($organizationElement, $child);
               }
             }
             if (! $organizationElement) {
               # Add if missing
-              $organizationElement = $this->xml->createElement($elementmd, $value);
+              $organizationElement = $this->xml->createElement($elementmd, htmlspecialchars($value));
               $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
               $organization->appendChild($organizationElement);
             }
@@ -3292,7 +3292,7 @@ class MetadataEdit extends Common {
               $organizationAddHandler->execute();
               $changed = true;
             } elseif ($organizationElement->nodeValue != $value) {
-              $organizationElement->nodeValue = $value;
+              $organizationElement->nodeValue = htmlspecialchars($value);
               $organizationUpdateHandler = $this->config->getDb()->prepare(
                 'UPDATE `Organization` SET `data` = :Data WHERE `entity_id` = :Id AND `element` = :Element AND `lang` = :Lang;');
               $organizationUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -3541,7 +3541,7 @@ class MetadataEdit extends Common {
             $contactPerson->appendChild($contactPersonElement);
           }
           if ($contactPersonElement->nodeValue != $value) {
-            $contactPersonElement->nodeValue = $value;
+            $contactPersonElement->nodeValue = htmlspecialchars($value);
             $sql="UPDATE `ContactPerson` SET $part = :Data WHERE `entity_id` = :Id AND `contactType` = :ContactType ;";
             // SONAR Comment : $part is validated above. Must exist as index in in $this->orderContactPerson
             $contactPersonUpdateHandler = $this->config->getDb()->prepare($sql); # NOSONAR
@@ -3798,7 +3798,7 @@ class MetadataEdit extends Common {
         $element = substr($child->nodeName, 3);
         $lang = $child->getAttribute(self::SAMLXML_LANG);
         if (isset($organizationDefaults[$element][$lang])) {
-          $child->nodeValue = $organizationDefaults[$element][$lang];
+          $child->nodeValue = htmlspecialchars($organizationDefaults[$element][$lang]);
           $organizationUpdateHandler->execute(array(
             self::BIND_ID => $this->dbIdNr,
             self::BIND_ELEMENT => $element,

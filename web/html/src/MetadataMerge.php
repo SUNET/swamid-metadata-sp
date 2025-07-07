@@ -233,7 +233,7 @@ class MetadataMerge extends Common {
         }
         foreach ($oldAttributeValues[$type] as $value) {
           $attributeValue = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-          $attributeValue->nodeValue = $value;
+          $attributeValue->nodeValue = htmlspecialchars($value);
           $attribute->appendChild($attributeValue);
           unset($oldAttributeValues[$type][$value]);
         }
@@ -249,7 +249,7 @@ class MetadataMerge extends Common {
         }
         foreach ($values as $value) {
           $attributeValue = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-          $attributeValue->nodeValue = $value;
+          $attributeValue->nodeValue = htmlspecialchars($value);
           $attribute->appendChild($attributeValue);
         }
       }
@@ -275,7 +275,7 @@ class MetadataMerge extends Common {
       }
 
       if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
-        $idpSSODescriptor->setAttribute('errorURL', $errorURL['URL']);
+        $idpSSODescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
           "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')
@@ -346,7 +346,7 @@ class MetadataMerge extends Common {
           $child = $child->nextSibling;
         }
         foreach ($oldScopes as $scopevalue => $value) {
-          $Scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, $scopevalue);
+          $Scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, htmlspecialchars($scopevalue));
           $Scope->setAttribute('regexp', $value);
           if ($beforeChild)
             $extensions->insertBefore($Scope, $beforeChild);
@@ -560,7 +560,7 @@ class MetadataMerge extends Common {
         foreach ($oldMDUIElements as $element => $valueArray) {
           foreach ($valueArray as $value => $true) {
             # Add if missing
-            $mduiElement = $this->xml->createElement($element, $value);
+            $mduiElement = $this->xml->createElement($element, htmlspecialchars($value));
             $discoHints->appendChild($mduiElement);
             $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
             $mduiAddHandler->bindParam(self::BIND_DATA, $value);
@@ -650,7 +650,7 @@ class MetadataMerge extends Common {
                 if ($nextOrder < 2) {
                   $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, self::SAML_MD_SERVICENAME);
                   foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-                    $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, $value);
+                    $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
                     $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                     $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                     $serviceElementAddHandler->execute();
@@ -668,7 +668,7 @@ class MetadataMerge extends Common {
                   if(isset($oldServiceElements[$index]['ServiceName'])) {
                     $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
                     foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-                      $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, $value);
+                      $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
                       $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                       $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                       $serviceElementAddHandler->execute();
@@ -679,7 +679,7 @@ class MetadataMerge extends Common {
                   if (isset($oldServiceElements[$index]['ServiceDescription'])) {
                     $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
                     foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-                      $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
+                      $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, htmlspecialchars($value));
                       $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
                       $attributeConsumingService->insertBefore($attributeConsumingServiceElement, $servicechild);
                       $serviceElementAddHandler->execute();
@@ -702,7 +702,7 @@ class MetadataMerge extends Common {
           if(isset($oldServiceElements[$index]['ServiceName'])) {
             $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
             foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-              $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, $value);
+              $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
               $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
               $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               $serviceElementAddHandler->execute();
@@ -711,7 +711,7 @@ class MetadataMerge extends Common {
           if (isset($oldServiceElements[$index]['ServiceDescription'])) {
             $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
             foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-              $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
+              $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, htmlspecialchars($value));
               $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
               $attributeConsumingService->appendChild($attributeConsumingServiceElement);
               $serviceElementAddHandler->execute();
@@ -748,7 +748,7 @@ class MetadataMerge extends Common {
         if(isset($oldServiceElements[$index]['ServiceName'])) {
           $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceName');
           foreach ($oldServiceElements[$index]['ServiceName'] as $lang => $value) {
-            $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, $value);
+            $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICENAME, htmlspecialchars($value));
             $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $serviceElementAddHandler->execute();
@@ -757,7 +757,7 @@ class MetadataMerge extends Common {
         if (isset($oldServiceElements[$index]['ServiceDescription'])) {
           $serviceElementAddHandler->bindValue(self::BIND_ELEMENT, 'ServiceDescription');
           foreach ($oldServiceElements[$index]['ServiceDescription'] as $lang => $value) {
-            $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, $value);
+            $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_SERVICEDESCRIPTION, htmlspecialchars($value));
             $attributeConsumingServiceElement->setAttribute(self::SAMLXML_LANG, $lang);
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $serviceElementAddHandler->execute();
@@ -838,7 +838,7 @@ class MetadataMerge extends Common {
                 $value = $element['data'];
                 $organizationElement = $this->xml->createElement($elementmd);
                 $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
-                $organizationElement->nodeValue = $value;
+                $organizationElement->nodeValue = htmlspecialchars($value);
                 $organization->insertBefore($organizationElement, $child);
                 unset($oldElements[$nextOrder][$index]);
               }
@@ -865,7 +865,7 @@ class MetadataMerge extends Common {
             $value = $element['data'];
             $organizationElement = $this->xml->createElement($elementmd);
             $organizationElement->setAttribute(self::SAMLXML_LANG, $lang);
-            $organizationElement->nodeValue = $value;
+            $organizationElement->nodeValue = htmlspecialchars($value);
             $organization->appendChild($organizationElement);
           }
         }
@@ -913,7 +913,7 @@ class MetadataMerge extends Common {
                 while ($order > $nextOrder) {
                   if (!empty($oldContactPersons[$type][$nextOrder]['value'])) {
                     $contactPersonElement = $this->xml->createElement($oldContactPersons[$type][$nextOrder]['part']);
-                    $contactPersonElement->nodeValue = $oldContactPersons[$type][$nextOrder]['value'];
+                    $contactPersonElement->nodeValue = htmlspecialchars($oldContactPersons[$type][$nextOrder]['value']);
                     $child->insertBefore($contactPersonElement, $subchild);
                   }
                   $nextOrder++;
@@ -924,7 +924,7 @@ class MetadataMerge extends Common {
               while ($nextOrder < 7) {
                 if (!empty($oldContactPersons[$type][$nextOrder]['value'])) {
                   $contactPersonElement = $this->xml->createElement($oldContactPersons[$type][$nextOrder]['part']);
-                  $contactPersonElement->nodeValue = $oldContactPersons[$type][$nextOrder]['value'];
+                  $contactPersonElement->nodeValue = htmlspecialchars($oldContactPersons[$type][$nextOrder]['value']);
                   $child->appendChild($contactPersonElement);
                 }
                 $nextOrder++;
@@ -945,7 +945,7 @@ class MetadataMerge extends Common {
               while ($nextOrder < 7) {
                 if (!empty($oldContactPerson[$nextOrder]['value'])) {
                   $contactPersonElement = $this->xml->createElement($oldContactPerson[$nextOrder]['part']);
-                  $contactPersonElement->nodeValue = $oldContactPerson[$nextOrder]['value'];
+                  $contactPersonElement->nodeValue = htmlspecialchars($oldContactPerson[$nextOrder]['value']);
                   $contactPerson->appendChild($contactPersonElement);
                 }
                 $nextOrder++;
@@ -968,7 +968,7 @@ class MetadataMerge extends Common {
         while ($nextOrder < 7) {
           if (!empty($oldContactPerson[$nextOrder]['value'])) {
             $contactPersonElement = $this->xml->createElement($oldContactPerson[$nextOrder]['part']);
-            $contactPersonElement->nodeValue = $oldContactPerson[$nextOrder]['value'];
+            $contactPersonElement->nodeValue = htmlspecialchars($oldContactPerson[$nextOrder]['value']);
             $contactPerson->appendChild($contactPersonElement);
           }
           $nextOrder++;
