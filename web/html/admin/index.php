@@ -780,7 +780,7 @@ function showEntity($entitiesId, $showHeader = true)  {
         <button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>',
           "\n", $entitiesId, getErrors($entitiesId) == '' ? 'success' : 'secondary');
           printf('%s      <a href=".?action=createDraft&Entity=%d">
-        <button type="button" class="btn btn-outline-primary">Create draft</button></a>', "\n", $entitiesId);
+        <button type="button" class="btn btn-outline-primary">Create Draft</button></a>', "\n", $entitiesId);
           if ($entityError['saml1Error']) {
             printf('%s      <a href=".?action=draftRemoveSaml1&Entity=%d">
         <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',

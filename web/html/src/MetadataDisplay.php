@@ -3119,7 +3119,7 @@ class MetadataDisplay extends Common {
           <ol>
             <li>Go to the tab "Published".</li>
             <li>Choose the entity you want to  update by clicking on its entityID.</li>
-            <li>Click on the button "Create draft" to start updating the entity.</li>
+            <li>Click on the button "Create Draft" to start updating the entity.</li>
             <li>Add or update metadata information by clicking on the pencil for each metadata section.
               Continue adding and changing information in the metadata until the information is correct
               and there are no errors left.
