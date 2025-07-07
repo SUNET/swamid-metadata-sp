@@ -444,29 +444,10 @@ class MetadataDisplay extends Common {
       FROM `Entities`
       WHERE `id` = :Id;');
     $entityHandler->execute(array(self::BIND_ID => $entitiesId));
-    if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC) && ($allowEdit || $admin || $organizationErrors)) {
+    if (($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) && ($allowEdit || $admin || $organizationErrors)) {
       $this->showCollapse('OrganizationInfo', 'OrganizationInfo', false, 0, $organizationErrors, false, $entitiesId, 0);
       if ($entity['OrganizationInfo_id'] > 0) {
-        $organizationInfoHandler = $this->config->getDb()->prepare(
-          'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
-          FROM `OrganizationInfoData`
-          WHERE `OrganizationInfo_id`= :Id
-          ORDER BY `lang`;');
-        $organizationInfoHandler->execute(array(self::BIND_ID => $entity['OrganizationInfo_id']));
-        printf ('%s          <b>Default information for your organization :</b>
-          <ul>%s', "\n", "\n");
-        while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-          $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
-          $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
-          $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
-        }
-        foreach ($organizationDefaults as $element => $elementData) {
-          foreach ($elementData as $lang => $value) {
-            printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
-              $element, $lang, $value, "\n");
-          }
-        }
-        printf('          </ul>%s', "\n",);
+        $organizationDefaults = $this->printDefaultOrganizationInfo($entity['OrganizationInfo_id']);
       } else {
         printf('%s          Entity not bound to any Organization.<br>%s', "\n", "\n");
       }
@@ -487,24 +468,71 @@ class MetadataDisplay extends Common {
           </ul>');
       }
       if ($organizationErrors && $entity['OrganizationInfo_id'] > 0) {
-        $this->showNewCol(0);
-        $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
-          FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
-        $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
-        printf ('%s          <b>Found in Metadata/Organization :</b>
-          <ul>%s', "\n", "\n");
-        while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-          $state = (isset ($organizationDefaults[$organization['element']][$organization['lang']])
-            && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
-            ? 'danger' : 'dark';
-          printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
-            $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
-        }
-        printf('          </ul>%s', "\n",);
+        $this->compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults);
       }
       $this->showCollapseEnd('OrganizationInfo', 0);
     }
   }
+
+  /**
+   * Shows and returns DefaultOrganizationInfo
+   *
+   * @param int $id Id of OrganizationInfo
+   *
+   * @return array
+   */
+  private function printDefaultOrganizationInfo($id) {
+    $organizationInfoHandler = $this->config->getDb()->prepare(
+      'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
+      FROM `OrganizationInfoData`
+      WHERE `OrganizationInfo_id`= :Id
+      ORDER BY `lang`;');
+    $organizationInfoHandler->execute(array(self::BIND_ID => $id));
+    printf ('%s          <b>Default information for your organization :</b>
+          <ul>%s', "\n", "\n");
+    while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
+      $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
+      $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
+    }
+    foreach ($organizationDefaults as $element => $elementData) {
+      foreach ($elementData as $lang => $value) {
+        printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
+          $element, $lang, $value, "\n");
+      }
+    }
+    printf('          </ul>%s', "\n",);
+    return $organizationDefaults;
+  }
+
+  /**
+   * Shows diffence betwen DefaultOrganization and Metadata
+   *
+   * Compares the array organizationDefaults with whats in Metadata/Organization
+   * 
+   * @param int $entitiesId Id of Entities for Organization
+   *
+   * @param array $organizationDefaults
+   *
+   * @return void
+   */
+  private function compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults) {
+    $this->showNewCol(0);
+    $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
+      FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
+    $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
+    printf ('%s          <b>Found in Metadata/Organization :</b>
+          <ul>%s', "\n", "\n");
+    while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+      $state = (isset ($organizationDefaults[$organization['element']][$organization['lang']])
+        && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
+        ? 'danger' : 'dark';
+      printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
+        $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
+    }
+    printf('          </ul>%s', "\n",);
+  }
+
   ####
   # Shows Info about IMPS connected to this entity
   ####
