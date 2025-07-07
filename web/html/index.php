@@ -250,10 +250,10 @@ function showEntity($entity_id, $urn = false)  {
 function showList($entities, $show) {
   global $config;
   $federation = $config->getFederation();
-  $entityAttributesHandler = $config->getDb()->prepare('SELECT * FROM EntityAttributes WHERE entity_id = :Id;');
-  $mduiHandler = $config->getDb()->prepare("SELECT data FROM Mdui
-    WHERE element = 'DisplayName' AND entity_id = :Id
-    ORDER BY type,lang;");
+  $entityAttributesHandler = $config->getDb()->prepare('SELECT * FROM `EntityAttributes` WHERE `entity_id` = :Id;');
+  $mduiHandler = $config->getDb()->prepare("SELECT `data` FROM `Mdui`
+    WHERE `element` = 'DisplayName' AND `entity_id` = :Id
+    ORDER BY `type`, `lang`;");
 
   $countSWAMID = 0;
   $counteduGAIN = 0;

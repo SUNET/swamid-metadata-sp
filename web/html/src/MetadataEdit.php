@@ -3760,6 +3760,57 @@ class MetadataEdit extends Common {
     }
   }
 
+  /**
+   * Copy default values to Organization
+  */
+  public function copyDefaultOrganization() {
+    $organizationInfoHandler = $this->config->getDb()->prepare(
+      'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
+      FROM `OrganizationInfoData`
+      WHERE `OrganizationInfo_id`= :Id
+      ORDER BY `lang`;');
+    $organizationUpdateHandler = $this->config->getDb()->prepare(
+      'UPDATE `Organization`
+      SET `data` = :Data
+      WHERE `entity_id` = :Id
+        AND `element` = :Element
+        AND `lang` = :Lang;');
+    $organizationInfoHandler->execute(array(self::BIND_ID => $this->organizationInfoId));
+    while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
+      $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
+      $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
+    }
+
+    $entityDescriptor = $this->getEntityDescriptor($this->xml);
+    $child = $entityDescriptor->firstChild;
+    $organization = false;
+    while ($child && ! $organization) {
+      if ($child->nodeName == self::SAML_MD_ORGANIZATION) {
+        $organization = $child;
+      }
+      $child = $child->nextSibling;
+    }
+    if ($organization) {
+      $child = $organization->firstChild;
+      while ($child) {
+        # Remove md: from name
+        $element = substr($child->nodeName, 3);
+        $lang = $child->getAttribute(self::SAMLXML_LANG);
+        if (isset($organizationDefaults[$element][$lang])) {
+          $child->nodeValue = $organizationDefaults[$element][$lang];
+          $organizationUpdateHandler->execute(array(
+            self::BIND_ID => $this->dbIdNr,
+            self::BIND_ELEMENT => $element,
+            self::BIND_LANG => $lang,
+            self::BIND_DATA => $organizationDefaults[$element][$lang]));
+        }
+        $child = $child->nextSibling;
+      }
+    }
+    $this->saveXML();
+  }
+
   public function removeSSO($type) {
     switch ($type) {
       case 'SP' :

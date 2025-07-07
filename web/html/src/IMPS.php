@@ -4,9 +4,13 @@ namespace metadata;
 use PDO;
 
 class IMPS {
+  use CommonTrait;
   const BIND_ID = ':Id';
   const BIND_IMPS_ID = 'IMPS_id';
-  const BIND_USER_ID = ':User_id';
+  const BIND_LANG = ':Lang';
+  const BIND_USER_ID = 'User_id';
+
+  const TEXT_MISSING_POST = "Missing POST variable(s)\n";
 
   private $config;
   private $errors = '';
@@ -42,10 +46,12 @@ class IMPS {
       <div class="col">' . "\n";
 
     $organizationsHandler = $this->config->getDb()->prepare(
-      'SELECT `id`, `OrganizationDisplayNameSv`
-      FROM `OrganizationInfo`
-      WHERE `notMemberAfter` IS NULL
-      ORDER BY `OrganizationDisplayNameSv`;');
+      "SELECT `id`, `OrganizationDisplayName`
+      FROM `OrganizationInfo`, `OrganizationInfoData`
+      WHERE `notMemberAfter` IS NULL AND
+        `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
+        `lang` = 'en'
+      ORDER BY `OrganizationDisplayName`;");
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `IMPS`.`id`, `name`, `maximumAL`, `lastUpdated`, `sharedIdp`, `OrganizationInfo_id`
       FROM `IMPS`
@@ -66,7 +72,7 @@ class IMPS {
       while ($organization = $organizationsHandler->fetch(PDO::FETCH_ASSOC)) {
         printf('               <option value="%d"%s>%s</option>%s',
           $organization['id'], $organization['id'] == $imps['OrganizationInfo_id'] ? ' selected' : '',
-          $organization['OrganizationDisplayNameSv'], "\n");
+          $organization['OrganizationDisplayName'], "\n");
       }
       printf('              </select>
             </div>
@@ -114,7 +120,7 @@ class IMPS {
       $this->errors .= checkdate(intval(substr($_POST['lastUpdated'],5,2)), intval(substr($_POST['lastUpdated'],8,2)), intval(substr($_POST['lastUpdated'],0,4)))
         ? '' : "Invalid BOT date.\n";
     } else {
-      $this->errors .= "Missing POST variable(s)\n";
+      $this->errors .= self::TEXT_MISSING_POST;
     }
     if ($this->errors != '') {
       return false;
@@ -339,53 +345,50 @@ class IMPS {
       <div class="col">' . "\n";
 
     $organizationsHandler = $this->config->getDb()->prepare(
-      'SELECT `id`, `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`, `OrganizationNameEn`,
-        `OrganizationDisplayNameEn`, `OrganizationURLEn`, `memberSince`, `notMemberAfter`
+      'SELECT `id`, `memberSince`, `notMemberAfter`
       FROM `OrganizationInfo`
       WHERE `id` = :Id;');
+    $organizationsDataHandler = $this->config->getDb()->prepare(
+      'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+      FROM `OrganizationInfoData`
+      WHERE `OrganizationInfo_id` = :Id
+      ORDER BY `lang`;');
+
+    $allLang = array();
+    foreach ($this->config->getFederation()['languages'] as $lang) {
+      $allLang[$lang] = false;
+    }
     $organizationsHandler->execute(array(self::BIND_ID => $id));
     if ($id == 0 || $organization = $organizationsHandler->fetch(PDO::FETCH_ASSOC)) {
-      $orgNameSv = isset($_POST['OrganizationNameSv']) ? $_POST['OrganizationNameSv'] : $organization['OrganizationNameSv'];
-      $orgDisplayNameSv = isset($_POST['OrganizationDisplayNameSv']) ? $_POST['OrganizationDisplayNameSv'] : $organization['OrganizationDisplayNameSv'];
-      $orgURLSv = isset($_POST['OrganizationURLSv']) ? $_POST['OrganizationURLSv'] : $organization['OrganizationURLSv'];
-      $orgNameEn = isset($_POST['OrganizationNameEn']) ? $_POST['OrganizationNameEn'] : $organization['OrganizationNameEn'];
-      $orgDisplayNameEn = isset($_POST['OrganizationDisplayNameEn']) ? $_POST['OrganizationDisplayNameEn'] : $organization['OrganizationDisplayNameEn'];
-      $orgURLEn = isset($_POST['OrganizationURLEn']) ? $_POST['OrganizationURLEn'] : $organization['OrganizationURLEn'];
+      $usedLang = $allLang;
+      $organizationsDataHandler->execute(array(self::BIND_ID => $id));
+      if ($id == 0) {
+        $organization['id'] = 0;
+        $organization['memberSince'] = '';
+        $organization['notMemberAfter'] = '';
+      }
       $memberSince = isset($_POST['memberSince']) ? $_POST['memberSince'] : $organization['memberSince'];
       $notMemberAfter = isset($_POST['notMemberAfter']) ? $_POST['notMemberAfter'] : $organization['notMemberAfter'];
 
-      printf('        <form action="?action=Members&subAction=saveOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">
-          <div class="row">
-            <div class="col"><h5>Swedish</h5></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationName</div>
-            <div class="col"><input type="text" name="OrganizationNameSv" value="%s" size="30"></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationDisplayName</div>
-            <div class="col"><input type="text" name="OrganizationDisplayNameSv" value="%s" size="30"></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationURL</div>
-            <div class="col"><input type="text" name="OrganizationURLSv" value="%s" size="30"></div>
-          </div>
-          <div class="row">
-            <div class="col"><h5>English</h5></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationName</div>
-            <div class="col"><input type="text" name="OrganizationNameEn" value="%s" size="30"></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationDisplayName</div>
-            <div class="col"><input type="text" name="OrganizationDisplayNameEn" value="%s" size="30"></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationURL</div>
-            <div class="col"><input type="text" name="OrganizationURLEn" value="%s" size="30"></div>
-          </div>
-          <div class="row">
+      printf('        <form action="?action=Members&subAction=saveOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">%s',
+        $organization['id'], $showAllOrgs, $organization['id'], "\n");
+      while($organizationData = $organizationsDataHandler->fetch(PDO::FETCH_ASSOC)) {
+        $lang = $organizationData['lang'];
+        $orgName = isset($_POST['OrganizationName'][$lang]) ? $_POST['OrganizationName'][$lang] : $organizationData['OrganizationName'];
+        $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang]) ? $_POST['OrganizationDisplayName'][$lang] : $organizationData['OrganizationDisplayName'];
+        $orgURL = isset($_POST['OrganizationURL'][$lang]) ? $_POST['OrganizationURL'][$lang] : $organizationData['OrganizationURL'];
+        $this->printOrganization($lang, $orgName, $orgDisplayName, $orgURL);
+        $usedLang[$lang] = true;
+      }
+      foreach ($this->config->getFederation()['languages'] as $lang) {
+        if (! $usedLang[$lang]) {
+          $orgName = isset($_POST['OrganizationName'][$lang]) ? $_POST['OrganizationName'][$lang] : '';
+          $orgDisplayName = isset($_POST['OrganizationDisplayName'][$lang]) ? $_POST['OrganizationDisplayName'][$lang] : '';
+          $orgURL = isset($_POST['OrganizationURL'][$lang]) ? $_POST['OrganizationURL'][$lang] : '';
+          $this->printOrganization($lang, $orgName, $orgDisplayName, $orgURL);
+        }
+      }
+      printf('          <div class="row">
             <div class="col"><h5>Membership</h5></div>
           </div>
           <div class="row">
@@ -399,12 +402,8 @@ class IMPS {
           <input type="submit">
         </form>
         <a href="./?action=Members&tab=organizations&id=%d%s#org-%d"><button>Back</button></a>%s',
-        $organization['id'], $showAllOrgs, $organization['id'],
-        htmlspecialchars($orgNameSv), htmlspecialchars($orgDisplayNameSv), htmlspecialchars($orgURLSv),
-        htmlspecialchars($orgNameEn), htmlspecialchars($orgDisplayNameEn), htmlspecialchars($orgURLEn),
         htmlspecialchars($memberSince), htmlspecialchars($notMemberAfter),
         $organization['id'], $showAllOrgs, $organization['id'], "\n");
-
     } else {
       print '        Can\'t find Organization';
     }
@@ -420,75 +419,79 @@ class IMPS {
    * @return bool|PDO
    */
   public function saveOrganization($id) {
-    foreach (array(
-      'OrganizationNameSv', 'OrganizationDisplayNameSv', 'OrganizationURLSv',
-      'OrganizationNameEn', 'OrganizationDisplayNameEn', 'OrganizationURLEn',
-      'memberSince', 'notMemberAfter') as $key) {
+    foreach (array('memberSince', 'notMemberAfter') as $key) {
       if (isset($_POST[$key])) {
-        switch ($key) {
-          case 'OrganizationNameSv' :
-          case 'OrganizationNameEn' :
-            $this->errors .= $_POST[$key] == '' ? "Missing value for OrganizationName. Must not be empty\n": '';
-            break;
-          case 'OrganizationDisplayNameSv' :
-          case 'OrganizationDisplayNameEn' :
-            $this->errors .= $_POST[$key] == '' ? "Missing value for OrganizationDisplayName. Must not be empty\n": '';
-            break;
-          case 'OrganizationURLSv' :
-          case 'OrganizationURLEn' :
-            $this->errors .= $_POST[$key] == '' ? "Missing value for OrganizationURL. Must not be empty\n": '';
-            break;
-          case 'memberSince' :
-          case 'notMemberAfter' :
-            $this->errors .= ($_POST[$key] == '' ||
-              checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
-              ? '' : "Invalid date. \n";
-            break;
-          default :
-        }
+        $this->errors = ($_POST[$key] == '' ||
+          checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
+          ? '' : "Invalid date. \n";
       } else {
-        $this->errors .= "Missing POST variable(s)\n";
-        return false;
+        $this->errors = self::TEXT_MISSING_POST;
+      }
+    }
+    foreach (array('OrganizationName', 'OrganizationDisplayName', 'OrganizationURL') as $key) {
+      foreach ($this->config->getFederation()['languages'] as $lang) {
+        if (isset($_POST[$key][$lang])) {
+          switch ($key) {
+            case 'OrganizationName' :
+              $this->errors .= $_POST[$key][$lang] == '' ? "Missing value for OrganizationName[$lang]. Must not be empty\n": '';
+              break;
+            case 'OrganizationDisplayName' :
+              $this->errors .= $_POST[$key][$lang] == '' ? "Missing value for OrganizationDisplayName[$lang]. Must not be empty\n": '';
+              break;
+            case 'OrganizationURL' :
+              $this->errors .= $_POST[$key][$lang] == '' ? "Missing value for OrganizationURL[$lang]. Must not be empty\n": '';
+              break;
+            default :
+          }
+        } else {
+          $this->errors = self::TEXT_MISSING_POST;
+        }
       }
     }
     if ($this->errors != '') { return false; }
 
+    $clearOrganizationsDataHandler = $this->config->getDb()->prepare(
+      'DELETE FROM `OrganizationInfoData`
+      WHERE `OrganizationInfo_id` = :Id;');
+    $addOrganizationsDataHandler = $this->config->getDb()->prepare(
+      'INSERT INTO `OrganizationInfoData`
+        (`OrganizationInfo_id`, `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
+      VAlUES
+        (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
     if ($id == 0) {
       $organizationsHandler = $this->config->getDb()->prepare(
         'INSERT INTO `OrganizationInfo`
-          (`OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
-          `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`,
-          `memberSince`, `notMemberAfter`)
+          (`memberSince`, `notMemberAfter`)
         VAlUES
-          (:OrganizationNameSv, :OrganizationDisplayNameSv, :OrganizationURLSv,
-          :OrganizationNameEn, :OrganizationDisplayNameEn, :OrganizationURLEn,
-          :memberSince, :notMemberAfter);');
+          (:memberSince, :notMemberAfter);');
     } else {
       $organizationsHandler = $this->config->getDb()->prepare(
           'UPDATE `OrganizationInfo`
-          SET `OrganizationNameSv` = :OrganizationNameSv,
-            `OrganizationDisplayNameSv` = :OrganizationDisplayNameSv,
-            `OrganizationURLSv` = :OrganizationURLSv,
-            `OrganizationNameEn` = :OrganizationNameEn,
-            `OrganizationDisplayNameEn` = :OrganizationDisplayNameEn,
-            `OrganizationURLEn` = :OrganizationURLEn,
-            `memberSince` = :memberSince,
+          SET `memberSince` = :memberSince,
             `notMemberAfter` = :notMemberAfter
           WHERE `id` = :Id;');
     }
     $updatedArray = array(
-      'OrganizationNameSv' => $_POST['OrganizationNameSv'],
-      'OrganizationDisplayNameSv' => $_POST['OrganizationDisplayNameSv'],
-      'OrganizationURLSv' => $_POST['OrganizationURLSv'],
-      'OrganizationNameEn' => $_POST['OrganizationNameEn'],
-      'OrganizationDisplayNameEn' => $_POST['OrganizationDisplayNameEn'],
-      'OrganizationURLEn' => $_POST['OrganizationURLEn'],
       'memberSince' => $_POST['memberSince'] == '' ? NULL : $_POST['memberSince'],
       'notMemberAfter' => $_POST['notMemberAfter'] == '' ? NULL : $_POST['notMemberAfter']);
     if ($id > 0) {
       $updatedArray[self::BIND_ID] = $id;
+      $result =  $organizationsHandler->execute($updatedArray);
+    } else {
+      $result =  $organizationsHandler->execute($updatedArray);
+      $id = $this->config->getDb()->lastInsertId();
     }
-    return $organizationsHandler->execute($updatedArray);
+
+    $clearOrganizationsDataHandler->execute(array(self::BIND_ID => $id));
+    foreach ($this->config->getFederation()['languages'] as $lang) {
+      $result = $result & $addOrganizationsDataHandler->execute(array(
+        self::BIND_ID => $id,
+        self::BIND_LANG => $lang,
+        'OrganizationName' => $_POST['OrganizationName'][$lang],
+        'OrganizationURL' => $_POST['OrganizationURL'][$lang],
+        'OrganizationDisplayName' => $_POST['OrganizationDisplayName'][$lang]));
+    }
+    return $result;
   }
 
   /**
@@ -499,16 +502,10 @@ class IMPS {
    * @return bool
    */
   public function removeOrganization($id) {
-    $showAllOrgs = isset($_GET['showAllOrgs']) ? '&showAllOrgs' : '';
     $organizationsHandler = $this->config->getDb()->prepare(
-      'SELECT `id`, `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`, `OrganizationNameEn`,
-        `OrganizationDisplayNameEn`, `OrganizationURLEn`, `memberSince`, `notMemberAfter`
+      'SELECT `id`, `memberSince`, `notMemberAfter`
       FROM `OrganizationInfo`
       WHERE `id` = :Id;');
-    $impsHandler = $this->config->getDb()->prepare(
-      'SELECT `IMPS`.`id`, `name`
-      FROM `IMPS`
-      WHERE  `OrganizationInfo_id` = :Id;');
     $organizationsHandler->execute(array(self::BIND_ID => $id));
     if ($organization = $organizationsHandler->fetch(PDO::FETCH_ASSOC)) {
       if (isset($_POST['Remove'])) {
@@ -517,6 +514,10 @@ class IMPS {
           WHERE `id` = :Id;');
         return $organizationRemoveHandler->execute(array(self::BIND_ID => $id));
       } else {
+        $impsHandler = $this->config->getDb()->prepare(
+          'SELECT `IMPS`.`id`, `name`
+          FROM `IMPS`
+          WHERE  `OrganizationInfo_id` = :Id;');
         $impsHandler->execute(array(self::BIND_ID => $id));
         if ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
           printf('        <div class="row">
@@ -530,41 +531,39 @@ class IMPS {
           } while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC));
           printf('          </ul></div>%s        </div>%s', "\n", "\n");
         } else {
-          printf('        <div class="row">
+          $this->showRemoveOrganizationInfo($organization);
+        }
+      }
+    } else {
+      print '        Can\'t find Organization';
+    }
+    return false;
+  }
+
+  /**
+   * Show form before removing an Organization
+   *
+   * @param array $organization
+   *
+   * @return void
+   */
+  private function showRemoveOrganizationInfo($organization) {
+    $showAllOrgs = isset($_GET['showAllOrgs']) ? '&showAllOrgs' : '';
+    $organizationsDataHandler = $this->config->getDb()->prepare(
+      'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+      FROM `OrganizationInfoData`
+      WHERE `OrganizationInfo_id` = :Id;');
+    $organizationsDataHandler->execute(array(self::BIND_ID => $organization['id']));
+    printf('        <div class="row">
           <div class="col">Are you sure that you want to remove the Organization below ? </h4></div>
         </div>
-        <form action="?action=Members&subAction=removeOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">
-          <div class="row">
-            <div class="col"><h5>Swedish</h5></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationName</div>
-            <div class="col">%s</div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationDisplayName</div>
-            <div class="col">%s</div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationURL</div>
-            <div class="col">%s</div>
-          </div>
-          <div class="row">
-            <div class="col"><h5>English</h5></div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationName</div>
-            <div class="col">%s</div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationDisplayName</div>
-            <div class="col">%s</div>
-          </div>
-          <div class="row">
-            <div class="col-2">OrganizationURL</div>
-            <div class="col">%s</div>
-          </div>
-          <div class="row">
+        <form action="?action=Members&subAction=removeOrganization&id=%d&tab=organizations%s#org-%d" method="POST" enctype="multipart/form-data">%s',
+      $organization['id'], $showAllOrgs, $organization['id'], "\n");
+    while ($organizationData = $organizationsDataHandler->fetch(PDO::FETCH_ASSOC)) {
+      $this->printOrganization($organizationData['lang'], $organizationData['OrganizationName'],
+        $organizationData['OrganizationDisplayName'], $organizationData['OrganizationURL'], true);
+    }
+    printf('          <div class="row">
             <div class="col"><h5>Membership</h5></div>
           </div>
           <div class="row">
@@ -578,15 +577,42 @@ class IMPS {
           <input type="submit" name="Remove" value="Remove">
         </form>
         <a href="./?action=Members&tab=organizations&id=%d%s#org-%d"><button>Back</button></a>%s',
-          $organization['id'], $showAllOrgs, $organization['id'],
-          $organization['OrganizationNameSv'], $organization['OrganizationDisplayNameSv'], $organization['OrganizationURLSv'],
-          $organization['OrganizationNameEn'], $organization['OrganizationDisplayNameEn'], $organization['OrganizationURLEn'],
-          $organization['memberSince'], $organization['notMemberAfter'], $organization['id'], $showAllOrgs, $organization['id'], "\n");
-        }
-      }
-    } else {
-      print '        Can\'t find Organization';
-    }
-    return false;
+      $organization['memberSince'], $organization['notMemberAfter'], $organization['id'], $showAllOrgs, $organization['id'], "\n");
+  }
+
+  /**
+   * Print OrgInfo for one language
+   *
+   * @param string $lang
+   *
+   * @param string $orgName
+   *
+   * @param string $orgDisplayName
+   *
+   * @param string $orgURL
+   *
+   * @return void
+   */
+  private function printOrganization($lang, $orgName, $orgDisplayName, $orgURL, $readOnly = false) {
+    $readOnlyHTML = $readOnly ? ' readonly' : '';
+    printf('          <div class="row">
+            <div class="col"><h5>%s</h5></div>
+          </div>
+          <div class="row">
+            <div class="col-2">OrganizationName</div>
+            <div class="col"><input type="text" name="OrganizationName[%s]" value="%s" size="30"%s></div>
+          </div>
+          <div class="row">
+            <div class="col-2">OrganizationDisplayName</div>
+            <div class="col"><input type="text" name="OrganizationDisplayName[%s]" value="%s" size="30"%s></div>
+          </div>
+          <div class="row">
+            <div class="col-2">OrganizationURL</div>
+            <div class="col"><input type="text" name="OrganizationURL[%s]" value="%s" size="30"%s></div>
+          </div>%s',
+      isset(self::LANG_CODES[$lang]) ? self::LANG_CODES[$lang] : sprintf('Unkown lang code: %s', $lang),
+      $lang, htmlspecialchars($orgName), $readOnlyHTML,
+      $lang, htmlspecialchars($orgDisplayName), $readOnlyHTML,
+      $lang, htmlspecialchars($orgURL), $readOnlyHTML, "\n");
   }
 }

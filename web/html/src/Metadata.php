@@ -109,12 +109,13 @@ class Metadata extends Common {
     if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
       # Add new entity into database
       $entityHandlerInsert = $this->config->getDb()->prepare(
-        "INSERT INTO `Entities` (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `xml`, `lastUpdated`,
-        `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
-        VALUES(:Id, 0, 0, 0, 0, 3, :Xml, NOW(), '', '', '', '', '');");
-      $entityHandlerInsert->bindValue(self::BIND_ID, $this->entityID);
-      $entityHandlerInsert->bindValue(self::BIND_XML, $this->xml->saveXML());
-      $entityHandlerInsert->execute();
+        "INSERT INTO `Entities` (`entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `OrganizationInfo_id`, `xml`,
+        `lastUpdated`, `warnings`, `errors`, `errorsNB`, `validationOutput`, `registrationInstant`)
+        VALUES(:EntityID, 0, 0, 0, 0, 3, :Id, :Xml, NOW(), '', '', '', '', '');");
+      $entityHandlerInsert->execute(array(
+        self::BIND_ENTITYID => $this->entityID,
+        self::BIND_XML => $this->xml->saveXML(),
+        self::BIND_ID => $this->organizationInfoId));
       $oldDbNr = $this->dbIdNr;
       $this->warning = '';
       $this->error = '';
@@ -338,9 +339,13 @@ class Metadata extends Common {
     }
   }
 
-  #############
-  # Updates which feeds an entity belongs to
-  #############
+  /**
+   * Update feed for an entity
+   *
+   * @param string $feeds
+   *
+   * @return void
+   */
   public function updateFeed($feeds) {
     #2 = SWAMID
     #3 = eduGAIN
@@ -523,6 +528,8 @@ class Metadata extends Common {
           (`entity_id`, `user_id`, `lastConfirmed`)
           VALUES (:Entity_id, :User_id, :LastConfirmed)
           ON DUPLICATE KEY UPDATE `user_id` = :User_id, `lastConfirmed` = :LastConfirmed;');
+        $updateEntitiesHandler = $this->config->getDb()->prepare(
+          'UPDATE `Entities` SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id;');
 
         # Get lastValidated
         $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -547,6 +554,8 @@ class Metadata extends Common {
         $updateEntityConfirmationHandler->bindParam(self::BIND_USER_ID, $lastUser);
         $updateEntityConfirmationHandler->bindParam(self::BIND_LASTCONFIRMED, $entity['lastValidated']);
         $updateEntityConfirmationHandler->execute();
+        # copy over organizationInfoId from pending
+        $updateEntitiesHandler->execute(array(self::BIND_ID => $publishedEntity['id'], ':OrgId' => $this->organizationInfoId ));
       }
       # Move entity to status PendingPublished
       $entityUpdateHandler = $this->config->getDb()->prepare('UPDATE `Entities`

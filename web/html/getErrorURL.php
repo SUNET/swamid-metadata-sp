@@ -9,10 +9,10 @@ $config = new \metadata\Configuration();
 
 print "<?php\n\n\$helpdesks = array(\n";
 
-$entityHandler = $config->getDb()->prepare("SELECT `id`, `entityID` FROM Entities WHERE `status` = 1 AND isIdP = 1 ORDER BY `entityID` ASC");
-$displayHandler = $config->getDb()->prepare("SELECT `lang`, `data` FROM Mdui WHERE `type` = 'IDPSSO' AND `element`= 'DisplayName' AND `entity_id`= :Id ORDER BY `lang` DESC");
-$contactHandler = $config->getDb()->prepare("SELECT `emailAddress` FROM ContactPerson WHERE `contactType` = 'support' AND `entity_id`= :Id");
-$errorUrlHandler = $config->getDb()->prepare("SELECT `URL` FROM EntityURLs WHERE `type` = 'error' AND `entity_id`= :Id");
+$entityHandler = $config->getDb()->prepare("SELECT `id`, `entityID` FROM `Entities` WHERE `status` = 1 AND `isIdP` = 1 ORDER BY `entityID` ASC");
+$displayHandler = $config->getDb()->prepare("SELECT `lang`, `data` FROM `Mdui` WHERE `type` = 'IDPSSO' AND `element`= 'DisplayName' AND `entity_id`= :Id ORDER BY `lang` DESC");
+$contactHandler = $config->getDb()->prepare("SELECT `emailAddress` FROM `ContactPerson` WHERE `contactType` = 'support' AND `entity_id`= :Id");
+$errorUrlHandler = $config->getDb()->prepare("SELECT `URL` FROM `EntityURLs` WHERE `type` = 'error' AND `entity_id`= :Id");
 $displayHandler->bindParam(':Id', $Entity_id);
 $contactHandler->bindParam(':Id', $Entity_id);
 $errorUrlHandler->bindParam(':Id', $Entity_id);

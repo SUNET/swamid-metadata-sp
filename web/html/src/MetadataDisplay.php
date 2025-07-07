@@ -41,42 +41,45 @@ class MetadataDisplay extends Common {
   # Shows menu row
   ####
   public function showStatusbar($entityId, $admin = false){
-    $entityError = array(
-      'saml1Error' => false,
-      'algorithmError' => false
-    );
     $entityHandler = $this->config->getDb()->prepare('
-      SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`
+      SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`, `OrganizationInfo_id`
       FROM `Entities` WHERE `id` = :Id;');
-    $urlHandler1 = $this->config->getDb()->prepare('
-      SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
-      FROM `URLs`
-      WHERE `URL` IN (SELECT `data` FROM `Mdui` WHERE `entity_id` = :Id);');
-    $urlHandler2 = $this->config->getDb()->prepare("
-      SELECT `status`, `URL`, `lastValidated`, `validationOutput`
-      FROM `URLs`
-      WHERE `URL` IN (SELECT `URL` FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error');");
-    $urlHandler3 = $this->config->getDb()->prepare("
-      SELECT `status`, `URL`, `lastValidated`, `validationOutput`
-      FROM `URLs`
-      WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);");
-    $impsHandler = $this->config->getDb()->prepare(
-      'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
-        NOW() - INTERVAL 10 MONTH AS `warnDate`,
-        NOW() - INTERVAL 12 MONTH AS `errorDate`,
-        lastValidated + INTERVAL 12 MONTH AS `expireDate`
-      FROM `IdpIMPS`, `IMPS`
-      WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND
-        `IdpIMPS`.`entity_id` = :Id
-      ORDER BY `lastValidated`;');
-    $testResults = $this->config->getDb()->prepare('SELECT `test`, `result`, `time`
-      FROM `TestResults` WHERE entityID = :EntityID;');
-    $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
-      FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type;");
-    $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
-
     $entityHandler->execute(array(self::BIND_ID => $entityId));
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+      # Setup up all handlers in DB
+      # Better to wait untill we know that entity exists.
+      $entityError = array(
+        'saml1Error' => false,
+        'algorithmError' => false,
+        'IMPSError' => false,
+        'organizationErrors' => false);
+      $urlHandler1 = $this->config->getDb()->prepare('
+        SELECT `status`, `cocov1Status`,  `URL`, `lastValidated`, `validationOutput`
+        FROM `URLs`
+        WHERE `URL` IN (SELECT `data` FROM `Mdui` WHERE `entity_id` = :Id);');
+      $urlHandler2 = $this->config->getDb()->prepare("
+        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        FROM `URLs`
+        WHERE `URL` IN (SELECT `URL` FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error');");
+      $urlHandler3 = $this->config->getDb()->prepare("
+        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        FROM `URLs`
+        WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);");
+      $impsHandler = $this->config->getDb()->prepare(
+        'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
+          NOW() - INTERVAL 10 MONTH AS `warnDate`,
+          NOW() - INTERVAL 12 MONTH AS `errorDate`,
+          lastValidated + INTERVAL 12 MONTH AS `expireDate`
+        FROM `IdpIMPS`, `IMPS`
+        WHERE `IdpIMPS`.`IMPS_id` = `IMPS`.`id` AND
+          `IdpIMPS`.`entity_id` = :Id
+        ORDER BY `lastValidated`;');
+      $testResults = $this->config->getDb()->prepare('SELECT `test`, `result`, `time`
+        FROM `TestResults` WHERE entityID = :EntityID;');
+      $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
+        FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type;");
+      $entityAttributesHandler->bindParam(self::BIND_ID, $entityId);
+
       $errors = '';
       $warnings = '';
       $notice = '';
@@ -86,7 +89,6 @@ class MetadataDisplay extends Common {
         'claims support for SAML1.');
       $entityError['saml1Error'] =  strpos($entity['errors'], 'oasis-sstc-saml-bindings-1.1: SAML1 Binding in ') === false ? $entityError['saml1Error'] : true;
       $entityError['algorithmError'] = strpos($entity['errors'], ' is obsolete in xml');
-      $entityError['IMPSError'] = false;
 
       if ($entity['isIdP']) {
         $ecsTagged = array(self::SAML_EC_ESI => false,
@@ -238,6 +240,38 @@ class MetadataDisplay extends Common {
             $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
         }
       }
+      if ($this->config->getFederation()['checkOrganization']) {
+        $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
+          FROM `Organization` WHERE `entity_id` = :Id ORDER BY `lang`, `element`;');
+        $organizationInfoHandler = $this->config->getDb()->prepare(
+          'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+          FROM `OrganizationInfoData`
+          WHERE `OrganizationInfo_id` = :Id;');
+        $organizationDefaults = array();
+        $organizationDefaultsMatch = true;
+
+        if ($entity['OrganizationInfo_id'] == 0) {
+          // No OrganizationInfo_id value
+          $errors .=  "Entity not bound to any Organization.\n";
+          $entityError['organizationErrors'] = true;
+        } else {
+          $organizationInfoHandler->execute(array(self::BIND_ID => $entity['OrganizationInfo_id']));
+          while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+            $organizationDefaults[$organizationInfo['lang']]['OrganizationName'] = $organizationInfo['OrganizationName'];
+            $organizationDefaults[$organizationInfo['lang']]['OrganizationDisplayName'] = $organizationInfo['OrganizationDisplayName'];
+            $organizationDefaults[$organizationInfo['lang']]['OrganizationURL'] = $organizationInfo['OrganizationURL'];
+          }
+          $organizationHandler->execute(array(self::BIND_ID => $entityId));
+          while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+            if (isset($organizationDefaults[$organization['lang']])
+              && $organizationDefaults[$organization['lang']][$organization['element']] <> $organization['data']) {
+                $organizationDefaultsMatch = false;
+                $entityError['organizationErrors'] = true;
+            }
+          }
+          $errors .= $organizationDefaultsMatch ? '' : 'The Organization information in SAML Metadata differ from registered default information for organization bound to the Entity.';
+        }
+      }
       $errors .= $entity['errors'] . $entity['errorsNB'];
       if ($errors != '') {
         printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
@@ -263,12 +297,12 @@ class MetadataDisplay extends Common {
         <b>Notice:</b><br>
         %s%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "<br>", $notice), "\n", "\n");
       }
-    }
-    if ($admin && $entity['status'] < 4) {
-      printf('%s    <div class="row">
-    <a href=".?validateEntity=%d">
-      <button type="button" class="btn btn-outline-primary">Validate</button>
-    </a></div>', "\n", $entityId);
+
+      if ($admin && $entity['status'] < 4) {
+        printf('%s    <div class="row">%s    <a href=".?validateEntity=%d">
+      <button type="button" class="btn btn-outline-primary">Validate</button>%s    </a></div>',
+          "\n", "\n", $entityId, "\n");
+      }
     }
     return $entityError;
   }
@@ -351,6 +385,152 @@ class MetadataDisplay extends Common {
         <?=$spacer?></div><!-- end col -->
       <?=$spacer?></div><!-- end row -->
     <?=$spacer?></div><!-- end collapse <?=$name?>--><?php
+  }
+
+  /**
+   * Shows a formular to connect entiy to an organization
+   *
+   * @param int $entitiesId id of entity
+   *
+   * @return void
+   */
+  public function showAddOrganizationIdForm($entitiesId, $currentOrgId) {
+    printf ('          <form>
+            <input type="hidden" name="action" value="addOrganization2Entity">
+            <input type="hidden" name="Entity" value="%d">
+            Select Organization for entity :
+            <select name="organizationId">%s', $entitiesId, "\n");
+    $organizationHandler = $this->config->getDb()->prepare(
+      "SELECT `data` AS OrganizationDisplayName
+      FROM `Organization`
+      WHERE `entity_id` = :Id AND
+        `element` = 'OrganizationDisplayName' AND
+        `lang` = 'en';");
+    $organizationInfoHandler = $this->config->getDb()->prepare(
+      "SELECT `id`, `OrganizationDisplayName`
+      FROM `OrganizationInfo`, `OrganizationInfoData`
+      WHERE `notMemberAfter` IS NULL AND
+        `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
+        `lang` = 'en'
+      ORDER BY `OrganizationDisplayName`;");
+    $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
+    $organizationInfoHandler->execute();
+    if (!$organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)){
+      $organization['OrganizationDisplayName'] = 'NotFound';
+    }
+    printf('              <option value="0">New Organization</option>%s', "\n");
+    while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($currentOrgId == 0) {
+        $selected = $organizationInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName'] ? self::HTML_SELECTED : '';
+      } else {
+        $selected = $organizationInfo['id'] == $currentOrgId ? self::HTML_SELECTED : '';
+      }
+      printf('              <option value="%d"%s>%s</option>%s',
+        $organizationInfo['id'], $selected,
+        $organizationInfo['OrganizationDisplayName'],
+        "\n");
+    }
+    printf ('            </select>
+            <button type="submit">Connect</button>
+          </form>');
+  }
+
+  /**
+   * Show OrganizationInfo for an entity
+   */
+  public function showOrganizationInfo($entitiesId, $allowEdit = false, $admin = false, $organizationErrors = false) {
+    $entityHandler = $this->config->getDb()->prepare(
+      'SELECT `OrganizationInfo_id`, `status`
+      FROM `Entities`
+      WHERE `id` = :Id;');
+    $entityHandler->execute(array(self::BIND_ID => $entitiesId));
+    if (($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) && ($allowEdit || $admin || $organizationErrors)) {
+      $this->showCollapse('OrganizationInfo', 'OrganizationInfo', false, 0, $organizationErrors, false, $entitiesId, 0);
+      if ($entity['OrganizationInfo_id'] > 0) {
+        $organizationDefaults = $this->printDefaultOrganizationInfo($entity['OrganizationInfo_id']);
+      } else {
+        printf('%s          Entity not bound to any Organization.<br>%s', "\n", "\n");
+      }
+
+      if ($allowEdit || $admin) {
+        if ($entity['OrganizationInfo_id'] > 0 && $entity['status'] == 3 && $organizationErrors) {
+          printf('          <a href="./?action=copyDefaultOrganization&Entity=%d"><button>%s</button></a>%s',
+            $entitiesId, 'Import the default organization information to this Draft', "\n");
+        } elseif ($entity['OrganizationInfo_id'] == 0) {
+          printf('          Please select your organization.<br>
+          If this is a organization not already existing in SWAMID, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
+            $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
+        }
+        $this->showAddOrganizationIdForm($entitiesId, $entity['OrganizationInfo_id']);
+      } else {
+        printf('          Solutions : <ul>
+            <li>Create a Draft and update the information</li>
+          </ul>');
+      }
+      if ($organizationErrors && $entity['OrganizationInfo_id'] > 0) {
+        $this->compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults);
+      }
+      $this->showCollapseEnd('OrganizationInfo', 0);
+    }
+  }
+
+  /**
+   * Shows and returns DefaultOrganizationInfo
+   *
+   * @param int $id Id of OrganizationInfo
+   *
+   * @return array
+   */
+  private function printDefaultOrganizationInfo($id) {
+    $organizationInfoHandler = $this->config->getDb()->prepare(
+      'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
+      FROM `OrganizationInfoData`
+      WHERE `OrganizationInfo_id`= :Id
+      ORDER BY `lang`;');
+    $organizationInfoHandler->execute(array(self::BIND_ID => $id));
+    printf ('%s          <b>Default information for your organization :</b>
+          <ul>%s', "\n", "\n");
+    while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
+      $organizationDefaults['OrganizationName'][$organizationInfo['lang']] = $organizationInfo['OrganizationName'];
+      $organizationDefaults['OrganizationURL'][$organizationInfo['lang']] = $organizationInfo['OrganizationURL'];
+    }
+    foreach ($organizationDefaults as $element => $elementData) {
+      foreach ($elementData as $lang => $value) {
+        printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
+          $element, $lang, $value, "\n");
+      }
+    }
+    printf('          </ul>%s', "\n",);
+    return $organizationDefaults;
+  }
+
+  /**
+   * Shows diffence betwen DefaultOrganization and Metadata
+   *
+   * Compares the array organizationDefaults with whats in Metadata/Organization
+   *
+   * @param int $entitiesId Id of Entities for Organization
+   *
+   * @param array $organizationDefaults
+   *
+   * @return void
+   */
+  private function compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults) {
+    $this->showNewCol(0);
+    $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
+      FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
+    $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
+    printf ('%s          <b>Found in Metadata/Organization :</b>
+          <ul>%s', "\n", "\n");
+    while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+      $state = (isset ($organizationDefaults[$organization['element']][$organization['lang']])
+        && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
+        ? 'danger' : 'dark';
+      printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
+        $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
+    }
+    printf('          </ul>%s', "\n",);
   }
 
   ####
@@ -2268,17 +2448,18 @@ class MetadataDisplay extends Common {
         <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
         <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
         <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
-      </div>%s',
+      </div>',
       $assuranceCount['RAF-high'],
       $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
       $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
       $idps - $assuranceCount['RAF-low'],
       "\n");
-    printf(( $swamid_assurance ?  '      <div class="col">
+    printf(( $swamid_assurance ?  '
+      <div class="col">
         <h3>SWAMID Assurance</h3>
         <canvas id="swamid"></canvas>
-      </div>
-' : '' ) . '      <div class="col">
+      </div>' : '' ) . '
+      <div class="col">
         <h3>REFEDS Assurance</h3>
         <canvas id="raf"></canvas>
       </div>
@@ -2290,11 +2471,11 @@ class MetadataDisplay extends Common {
     <br>
     <table class="table table-striped table-bordered">
       <tr>
-        <th>IdP</th>
-' . ( $swamid_assurance ? '        <th>AL1</th>
+        <th>IdP</th>' . ( $swamid_assurance ? '
+        <th>AL1</th>
         <th>AL2</th>
-        <th>AL3</th>
-' : '' ) . '        <th>RAF-Low</th>
+        <th>AL3</th>' : '' ) . '
+        <th>RAF-Low</th>
         <th>RAF-Medium</th>
         <th>RAF-High</th>
         <th>Nothing</th>
@@ -2709,13 +2890,16 @@ class MetadataDisplay extends Common {
 
   private function showIMPSList($id, $userLevel) {
     $impsHandler = $this->config->getDb()->prepare(
-      'SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
-        `OrganizationInfo`.`id` AS orgId, `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`,
+      "SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
+        `IMPS`.`OrganizationInfo_id` AS orgId, `OrganizationDisplayName`,
         `email`, `fullName`
-        FROM `OrganizationInfo`, `IMPS`
-        LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
-        WHERE `OrganizationInfo_id` = `OrganizationInfo`.`id` AND `OrganizationInfo`.`notMemberAfter` is NULL
-        ORDER BY `name`;');
+      FROM `OrganizationInfo`, `OrganizationInfoData`, `IMPS`
+      LEFT JOIN `Users` ON `Users`.`id` = `IMPS`.`user_id`
+      WHERE `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id` AND
+        `IMPS`.`OrganizationInfo_id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
+        `OrganizationInfo`.`notMemberAfter` is NULL AND
+        `lang` = 'en'
+      ORDER BY `name`;");
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`
       FROM `Entities`, `IdpIMPS`
@@ -2728,6 +2912,7 @@ class MetadataDisplay extends Common {
       $warn1Date = $dates['warn1Date'];
       $errorDate = $dates['errorDate'];
     }
+    $flagDates->closeCursor();
     if ($userLevel > 10) {
       printf('%s          <a href=".?action=Members&subAction=editImps&id=0"><button type="button" class="btn btn-outline-primary">Add new IMPS</button></a>',
         "\n");
@@ -2743,7 +2928,6 @@ class MetadataDisplay extends Common {
       $lastValidated = substr($imps['lastValidated'], 0 ,10);
       $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
       $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
-      $orgName = $imps['OrganizationDisplayNameSv'] == '' ? $imps['OrganizationDisplayNameEn'] : $imps['OrganizationDisplayNameSv'];
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
@@ -2758,31 +2942,46 @@ class MetadataDisplay extends Common {
                 </ul>
                 <h5>Connected IdP:s</h5>
                 <ul>%s',
-        "\n", $imps['orgId'], $imps['orgId'], $orgName, $imps['maximumAL'],
+        "\n", $imps['orgId'], $imps['orgId'], $imps['OrganizationDisplayName'], $imps['maximumAL'],
         $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
-        while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
-          printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
-        }
-        print '                </ul>';
+      while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
+      }
+      print '                </ul>';
       $this->showCollapseEnd("imps-" . $imps['id'], 1);
+      $idpHandler->closeCursor();
     }
   }
 
   private function showOrganizationInfoLists($id, $userLevel) {
     $organizationHandler = $this->config->getDb()->prepare(
-      'SELECT `OrganizationInfo`.`id` AS orgId,
-          `OrganizationNameSv`, `OrganizationDisplayNameSv`, `OrganizationURLSv`,
-          `OrganizationNameEn`, `OrganizationDisplayNameEn`, `OrganizationURLEn`,
-          `memberSince`, `notMemberAfter`, COUNT(`IMPS`.`id`) AS count
-        FROM `OrganizationInfo`
+      "SELECT `OrganizationInfo`.`id` AS orgId,
+          `OrganizationDisplayName`, `memberSince`, `notMemberAfter`,
+          COUNT(`IMPS`.`id`) AS impsCount, COUNT(`Entities`.`id`) AS entitiesCount
+        FROM `OrganizationInfoData`, `OrganizationInfo`
         LEFT JOIN `IMPS` ON `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
+        LEFT JOIN `Entities` ON `Entities`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
+        WHERE `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
+          `lang` = 'en'
         GROUP BY(orgId)
-        ORDER BY `OrganizationDisplayNameSv`, `OrganizationDisplayNameEn`;');
+        ORDER BY `OrganizationDisplayName`;");
+    $organizationDataHandler = $this->config->getDb()->prepare(
+      'SELECT `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`
+        FROM `OrganizationInfoData`
+        WHERE `OrganizationInfo_id` = :Id
+        ORDER BY `lang`;');
+
     $impsHandler = $this->config->getDb()->prepare(
       'SELECT `id`,`name`, `maximumAL`, `lastValidated`
         FROM `IMPS`
         WHERE `OrganizationInfo_id` = :Id
         ORDER BY `name`;');
+    $entitiesHandler = $this->config->getDb()->prepare(
+      'SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
+      FROM `Entities`
+      WHERE `status` = 1
+        AND `OrganizationInfo_id` = :Id;');
+
     $showAllOrgs = isset($_GET['showAllOrgs']);
     printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
       $id, $showAllOrgs ? '' : '&showAllOrgs', $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
@@ -2792,10 +2991,12 @@ class MetadataDisplay extends Common {
     }
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($organization['count'] == 0 && !$showAllOrgs ) { continue; }
+      if ($organization['impsCount'] == 0 && !$showAllOrgs ) { continue; }
       $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
-      $name = $organization['OrganizationDisplayNameSv'] == '' ? $organization['OrganizationDisplayNameEn'] : $organization['OrganizationDisplayNameSv'];
-      $name .= "(" . $organization['count'] . ")";
+      $entitiesHandler->execute(array(self::BIND_ID => $organization['orgId']));
+      $organizationDataHandler->execute(array(self::BIND_ID => $organization['orgId']));
+      $name = $organization['OrganizationDisplayName'];
+      $name .= '(' . $organization['impsCount'] . '/' . $organization['entitiesCount'] . ')';
       $name .= $organization['notMemberAfter'] ? '- Not member any more' : '';
       $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
       if ($userLevel > 10) {
@@ -2804,34 +3005,33 @@ class MetadataDisplay extends Common {
                 "\n", $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '',
                 $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '');
       }
-      printf('%s                <ul>
-                  <li>Swedish (sv)
+      printf('%s                <ul>%s', "\n", "\n");
+      while ($orgInfoData = $organizationDataHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf('                  <li>%s
                     <ul>
                       <li>Name : %s</li>
                       <li>DisplayName : %s</li>
                       <li>URL : %s</li>
                     </ul>
-                  </li>
-                  <li>English (en)
-                    <ul>
-                      <li>Name : %s</li>
-                      <li>DisplayName : %s</li>
-                      <li>URL : %s</li>
-                    </ul>
-                  </li>
-                  <li>memberSince : %s</li>
+                  </li>%s',
+          isset(self::LANG_CODES[$orgInfoData['lang']]) ? self::LANG_CODES[$orgInfoData['lang']] : sprintf('Unkown lang code: %s', $orgInfoData['lang']),
+          $orgInfoData['OrganizationName'], $orgInfoData['OrganizationDisplayName'], $orgInfoData['OrganizationURL'], "\n");
+
+      }
+      printf('                  <li>memberSince : %s</li>
                   <li>IMPS:s
-                    <ul>%s', "\n",
-          $organization['OrganizationNameSv'],
-          $organization['OrganizationDisplayNameSv'],
-          $organization['OrganizationURLSv'],
-          $organization['OrganizationNameEn'],
-          $organization['OrganizationDisplayNameEn'],
-          $organization['OrganizationURLEn'],
-          $organization['memberSince'], "\n");
+                    <ul>%s', $organization['memberSince'], "\n");
       while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
           $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
+      }
+      printf ('                    </ul>
+                  </li>
+                  <li>Entities
+                    <ul>%s', "\n");
+      while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('                      <li><a href="?showEntity=%d">%s</a></li>%s',
+          $entity['id'], $entity['entityID'], "\n");
       }
       print '                    </ul>
                   </li>
@@ -2919,7 +3119,7 @@ class MetadataDisplay extends Common {
           <ol>
             <li>Go to the tab "Published".</li>
             <li>Choose the entity you want to  update by clicking on its entityID.</li>
-            <li>Click on the button "Create draft" to start updating the entity.</li>
+            <li>Click on the button "Create Draft" to start updating the entity.</li>
             <li>Add or update metadata information by clicking on the pencil for each metadata section.
               Continue adding and changing information in the metadata until the information is correct
               and there are no errors left.
