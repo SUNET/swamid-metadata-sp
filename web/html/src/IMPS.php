@@ -615,4 +615,40 @@ class IMPS {
       $lang, htmlspecialchars($orgDisplayName), $readOnlyHTML,
       $lang, htmlspecialchars($orgURL), $readOnlyHTML, "\n");
   }
+
+  public function createOrganizationFromEntity($entitiesId) {
+    $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `data`
+      FROM `Organization` WHERE `entity_id` = :Id AND `lang` = :Lang;');
+    $entityHandler = $this->config->getDb()->prepare(
+      'UPDATE `Entities`
+      SET `OrganizationInfo_id` = :OrgInfoId
+      WHERE `id` = :Id;');
+    $organizationsInfoHandler = $this->config->getDb()->prepare(
+      'INSERT INTO `OrganizationInfo` (`memberSince`, `notMemberAfter`)
+      VALUES (NULL, NULL);');
+    $organizationsInfoDataHandler = $this->config->getDb()->prepare(
+      'INSERT INTO `OrganizationInfoData`
+        (`OrganizationInfo_id`, `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
+      VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
+    $organizationData = array();
+
+    $organizationsInfoHandler->execute();
+    $organizationsInfoId = $this->config->getDb()->lastInsertId();
+    foreach ($this->config->getFederation()['languages'] as $lang) {
+      $organizationHandler->execute(array(self::BIND_ID => $entitiesId, self::BIND_LANG => $lang));
+      $organizationData['OrganizationName'] = '';
+      $organizationData['OrganizationURL'] = '';
+      $organizationData['OrganizationDisplayName'] = '';
+      while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
+        $organizationData[$organization['element']] = $organization['data'];
+      }
+      $organizationsInfoDataHandler->execute(array(
+        self::BIND_ID => $organizationsInfoId,
+        self::BIND_LANG => $lang,
+        'OrganizationName' => $organizationData['OrganizationName'],
+        'OrganizationURL' => $organizationData['OrganizationURL'],
+        'OrganizationDisplayName' => $organizationData['OrganizationDisplayName']));
+    }
+    $entityHandler->execute(array(self::BIND_ID => $entitiesId, 'OrgInfoId' => $organizationsInfoId));
+  }
 }
