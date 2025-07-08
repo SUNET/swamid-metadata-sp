@@ -529,4 +529,83 @@ class Common {
     }
     return false;
   }
+
+  /**
+   * Find Extensions below EntityDescriptor
+   *
+   * Return DOM of XML if found / created in other cases return false
+   *
+   * @param DOMNode $xml DOMNode in a XML object
+   *
+   * @param bool $create If we should create missing Extensions
+   *
+   * @return DOMNode|bool
+   */
+  public function getExtensions($entityDescriptor, $create = true) {
+    # Find md:Extensions in XML
+    $child = $entityDescriptor->firstChild;
+    $extensions = false;
+    while ($child && ! $extensions) {
+      switch ($child->nodeName) {
+        case self::SAML_MD_EXTENSIONS :
+          $extensions = $child;
+          break;
+        case self::SAML_MD_SPSSODESCRIPTOR :
+        case self::SAML_MD_IDPSSODESCRIPTOR :
+        case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
+        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
+        case self::SAML_MD_PDPDESCRIPTOR :
+        case self::SAML_MD_AFFILIATIONDESCRIPTOR :
+        case self::SAML_MD_ORGANIZATION :
+        case self::SAML_MD_CONTACTPERSON :
+        case self::SAML_MD_ADDITIONALMETADATALOCATION :
+        default :
+          if ($create) {
+            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+            $entityDescriptor->insertBefore($extensions, $child);
+          }
+          # Leave switch and while loop
+          break 2;
+      }
+      $child = $child->nextSibling;
+    }
+    if (! $extensions && $create) {
+      # Add if missing
+      $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+      $entityDescriptor->appendChild($extensions);
+    }
+    return $extensions;
+  }
+
+  /**
+   * Find SSODescriptor below EntityDescriptor
+   *
+   * Return DOM of XML if found in other cases return false
+   *
+   * @param DOMNode $xml DOMNode in a XML object
+   *
+   * @param string $type Type of SSODescript to look for
+   *
+   * @return DOMNode|bool
+   */
+  public function getSSODecriptor($entityDescriptor, $type) {
+    switch ($type) {
+      case 'SPSSO' :
+        $ssoDescriptorName = self::SAML_MD_SPSSODESCRIPTOR;
+        break;
+      case 'IDPSSO' :
+        $ssoDescriptorName = self::SAML_MD_IDPSSODESCRIPTOR;
+        break;
+      case 'AttributeAuthority' :
+        $ssoDescriptorName = self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR;
+        break;
+    }
+    # Find md:xxxSSODescriptor in XML
+    $child = $entityDescriptor->firstChild;
+    $ssoDescriptor = false;
+    while ($child && ! $ssoDescriptor) {
+      $ssoDescriptor = $child->nodeName == $ssoDescriptorName ? $child : false;
+      $child = $child->nextSibling;
+    }
+  }
 }

@@ -56,35 +56,7 @@ class MetadataMerge extends Common {
     $registrationInstantHandler->execute();
     if ($instant = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC)) {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
-      if (! $extensions) {
-        # Add if missing
-        $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-        $entityDescriptor->appendChild($extensions);
-      }
+      $extensions = $this->getExtensions($entityDescriptor);
       # Find mdattr:EntityAttributes in XML
       $child = $extensions->firstChild;
       $registrationInfo = false;
@@ -103,18 +75,18 @@ class MetadataMerge extends Common {
         $extensions->appendChild($registrationInfo);
       }
 
-      # Find samla:Attribute in XML
+      # Find mdrpi:RegistrationPolicy in XML
       $child = $registrationInfo->firstChild;
       $registrationPolicy = false;
       while ($child && ! $registrationPolicy) {
-        if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
+        if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONPOLICY && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
           $registrationPolicy = $child;
         } else {
           $child = $child->nextSibling;
         }
       }
       if (!$registrationPolicy) {
-        $registrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
+        $registrationPolicy = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONPOLICY, 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
         $registrationPolicy->setAttribute(self::SAMLXML_LANG, 'en');
         $registrationInfo->appendChild($registrationPolicy);
       }
@@ -160,35 +132,7 @@ class MetadataMerge extends Common {
     }
     if(isset($oldAttributeValues)) {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
-      if (! $extensions) {
-        # Add if missing
-        $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-        $entityDescriptor->appendChild($extensions);
-      }
+      $extensions = $this->getExtensions($entityDescriptor);
 
       # Find mdattr:EntityAttributes in XML
       $child = $extensions->firstChild;
@@ -250,18 +194,9 @@ class MetadataMerge extends Common {
     $errorURLHandler->execute();
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $idpSSODescriptor = $child;
-        $child = $child->nextSibling;
-      }
-
-      if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
-        $idpSSODescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
+      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
+      if ($ssoDescriptor  && $ssoDescriptor->getAttribute('errorURL') == '') {
+        $ssoDescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
           "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')
@@ -285,18 +220,9 @@ class MetadataMerge extends Common {
     }
     if ($oldScopes) {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $idpSSODescriptor = $child;
-        $child = $child->nextSibling;
-      }
-
-      if ($idpSSODescriptor) {
-        $child = $idpSSODescriptor->firstChild;
+      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
+      if ($ssoDescriptor) {
+        $child = $ssoDescriptor->firstChild;
         $extensions = false;
         while ($child && ! $extensions) {
           switch ($child->nodeName) {
@@ -305,13 +231,13 @@ class MetadataMerge extends Common {
               break;
             default :
               $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $idpSSODescriptor->insertBefore($extensions, $child);
+              $ssoDescriptor->insertBefore($extensions, $child);
           }
           $child = $child->nextSibling;
         }
         if (! $extensions) {
           $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $idpSSODescriptor->appendChild($extensions);
+          $ssoDescriptor->appendChild($extensions);
         }
         $child = $extensions->firstChild;
         $beforeChild = false;
@@ -368,15 +294,7 @@ class MetadataMerge extends Common {
     }
     if (isset($oldMDUIElements)) {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $ssoDescriptor = false;
-      while ($child && ! $ssoDescriptor) {
-        if ($child->nodeName == 'md:'.$type.'Descriptor')
-          $ssoDescriptor = $child;
-        $child = $child->nextSibling;
-      }
+      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, $type);
       if ($ssoDescriptor) {
         $child = $ssoDescriptor->firstChild;
         $extensions = false;
@@ -482,15 +400,7 @@ class MetadataMerge extends Common {
     }
     if (isset($oldMDUIElements)) {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $ssoDescriptor = false;
-      while ($child && ! $ssoDescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $ssoDescriptor = $child;
-        $child = $child->nextSibling;
-      }
+      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
       if ($ssoDescriptor) {
         $child = $ssoDescriptor->firstChild;
         $extensions = false;
@@ -589,15 +499,7 @@ class MetadataMerge extends Common {
     }
 
     $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-    # Find md:IDPSSODescriptor in XML
-    $child = $entityDescriptor->firstChild;
-    $ssoDescriptor = false;
-    while ($child && ! $ssoDescriptor) {
-      if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR)
-        $ssoDescriptor = $child;
-      $child = $child->nextSibling;
-    }
+    $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'SPSSO');
     if ($ssoDescriptor && isset($oldServiceIndexes)) {
       $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);');
       $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);

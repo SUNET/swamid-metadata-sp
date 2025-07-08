@@ -52,6 +52,7 @@ trait SAMLTrait {
   const SAML_MD_TELEPHONENUMBER = 'md:TelephoneNumber';
   const SAML_MDATTR_ENTITYATTRIBUTES = 'mdattr:EntityAttributes';
   const SAML_MDRPI_REGISTRATIONINFO = 'mdrpi:RegistrationInfo';
+  const SAML_MDRPI_REGISTRATIONPOLICY = 'mdrpi:RegistrationPolicy';
   const SAML_MDUI = 'mdui:';
   const SAML_MDUI_DESCRIPTION = 'mdui:Description';
   const SAML_MDUI_DISCOHINTS = 'mdui:DiscoHints';

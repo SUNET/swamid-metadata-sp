@@ -137,22 +137,19 @@ class Metadata extends Common {
   private function cleanOutAttribuesInIDPSSODescriptor() {
     $removed = false;
     $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
-        $subchild = $child->firstChild;
-        while ($subchild) {
-          if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {
-            $remChild = $subchild;
-            $subchild = $subchild->nextSibling;
-            $child->removeChild($remChild);
-            $removed = true;
-          } else {
-            $subchild = $subchild->nextSibling;
-          }
+    $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
+    if ($ssoDescriptor) {
+      $subchild = $ssoDescriptor->firstChild;
+      while ($subchild) {
+        if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {
+          $remChild = $subchild;
+          $subchild = $subchild->nextSibling;
+          $child->removeChild($remChild);
+          $removed = true;
+        } else {
+          $subchild = $subchild->nextSibling;
         }
       }
-      $child = $child->nextSibling;
     }
     if ($removed) {
       $this->error .= 'SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata';
@@ -624,35 +621,7 @@ class Metadata extends Common {
 
   private function addRegistrationInfo() {
     $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    # Find md:Extensions in XML
-    $child = $entityDescriptor->firstChild;
-    $extensions = false;
-    while ($child && ! $extensions) {
-      switch ($child->nodeName) {
-        case self::SAML_MD_EXTENSIONS :
-          $extensions = $child;
-          break;
-        case self::SAML_MD_SPSSODESCRIPTOR :
-        case self::SAML_MD_IDPSSODESCRIPTOR :
-        case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-        case self::SAML_MD_PDPDESCRIPTOR :
-        case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-        case self::SAML_MD_ORGANIZATION :
-        case self::SAML_MD_CONTACTPERSON :
-        case self::SAML_MD_ADDITIONALMETADATALOCATION :
-        default :
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $entityDescriptor->insertBefore($extensions, $child);
-          break;
-      }
-      $child = $child->nextSibling;
-    }
-    if (! $extensions) {
-      # Add if missing
-      $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-      $entityDescriptor->appendChild($extensions);
-    }
+    $extensions = $this->getExtensions($entityDescriptor);
     # Find mdattr:EntityAttributes in XML
     $child = $extensions->firstChild;
     $registrationInfo = false;
