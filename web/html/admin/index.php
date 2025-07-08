@@ -377,6 +377,13 @@ if (isset($_FILES['XMLfile'])) {
             showEntity($entitiesId);
           }
           break;
+        case 'createOrganizationFromEntity' :
+          if ($userLevel > 19) {
+            $imps = new \metadata\IMPS();
+            $imps->createOrganizationFromEntity($entitiesId);
+          }
+          showEntity($entitiesId);
+          break;
         default :
           if ($userLevel > 19) {
             printf ('Missing action : %s', urlencode($_GET['action']));
