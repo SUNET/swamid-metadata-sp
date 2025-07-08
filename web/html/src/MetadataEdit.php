@@ -613,22 +613,7 @@ class MetadataEdit extends Common {
       switch ($_GET['action']) {
         case 'Add' :
           if ($ssoDescriptor) {
-            $child = $ssoDescriptor->firstChild;
-            $extensions = false;
-            while ($child && ! $extensions) {
-              if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                $extensions = $child;
-              } else {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->insertBefore($extensions, $child);
-              }
-              $child = $child->nextSibling;
-            }
-            if (! $extensions) {
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->appendChild($extensions);
-            }
-
+            $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
             $child = $extensions->firstChild;
             $beforeChild = false;
             $scope = false;
@@ -676,15 +661,7 @@ class MetadataEdit extends Common {
           break;
         case 'Delete' :
           if ($ssoDescriptor) {
-            $child = $ssoDescriptor->firstChild;
-            $extensions = false;
-            while ($child && ! $extensions) {
-              if ($child->nodeName == self::SAML_MD_EXTENSIONS ) {
-                $extensions = $child;
-              }
-              $child = $child->nextSibling;
-            }
-
+            $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
             if ($extensions) {
               $moreElements = false;
               $child = $extensions->firstChild;
@@ -834,20 +811,7 @@ class MetadataEdit extends Common {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              if ($child) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                } else {
-                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                  $ssoDescriptor->insertBefore($extensions, $child);
-                }
-              }
-              if (! $extensions) {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->appendChild($extensions);
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
               $child = $extensions->firstChild;
               $beforeChild = false;
               $uuInfo = false;
@@ -954,14 +918,7 @@ class MetadataEdit extends Common {
             break;
           case 'Delete' :
             if ($ssoDescriptor) {
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                }
-                $child = $child->nextSibling;
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $uuInfo = false;
@@ -1275,20 +1232,7 @@ class MetadataEdit extends Common {
           case 'Update' :
             if ($ssoDescriptor) {
               $changed = true;
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              if ($child) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                } else {
-                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                  $ssoDescriptor->insertBefore($extensions, $child);
-                }
-              }
-              if (! $extensions) {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->appendChild($extensions);
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
               $child = $extensions->firstChild;
               $discoResponse = false;
               $discoFound = false;
@@ -1329,14 +1273,7 @@ class MetadataEdit extends Common {
             break;
           case 'Delete' :
             if ($ssoDescriptor) {
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                }
-                $child = $child->nextSibling;
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $discoResponse = false;
@@ -1485,20 +1422,7 @@ class MetadataEdit extends Common {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              if ($child) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                } else {
-                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                  $ssoDescriptor->insertBefore($extensions, $child);
-                }
-              }
-              if (! $extensions) {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->appendChild($extensions);
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
               $child = $extensions->firstChild;
               $discoHints = false;
               $mduiFound = false;
@@ -1546,14 +1470,7 @@ class MetadataEdit extends Common {
             break;
           case 'Delete' :
             if ($ssoDescriptor) {
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                }
-                $child = $child->nextSibling;
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $discoHints = false;
@@ -1767,18 +1684,8 @@ class MetadataEdit extends Common {
           }
         }
 
-        $descriptor = 'md:'.$type.'Descriptor';
         $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-        # Find md:SSODescriptor in XML
-        $child = $entityDescriptor->firstChild;
-        $ssoDescriptor = false;
-        while ($child && ! $ssoDescriptor) {
-          if ($child->nodeName == $descriptor) {
-            $ssoDescriptor = $child;
-          }
-          $child = $child->nextSibling;
-        }
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, $type);
         if ($ssoDescriptor) {
           $child = $ssoDescriptor->firstChild;
           $beforeChild = false;

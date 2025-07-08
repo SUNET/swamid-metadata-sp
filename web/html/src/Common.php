@@ -599,6 +599,7 @@ class Common {
       case 'AttributeAuthority' :
         $ssoDescriptorName = self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR;
         break;
+      default:
     }
     # Find md:xxxSSODescriptor in XML
     $child = $entityDescriptor->firstChild;
@@ -607,5 +608,42 @@ class Common {
       $ssoDescriptor = $child->nodeName == $ssoDescriptorName ? $child : false;
       $child = $child->nextSibling;
     }
+    return $ssoDescriptor;
+  }
+
+  /**
+   * Find Extensions below a SSODescriptor
+   *
+   * Return DOM of XML if found / created in other cases return false
+   *
+   * @param DOMNode $xml DOMNode of a SSODescriptor as a XML object
+   *
+   * @param bool $create If we should create missing Extensions
+   *
+   * @return DOMNode|bool
+   */
+  public function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
+    $child = $ssoDescriptor->firstChild;
+    $extensions = false;
+    while ($child && ! $extensions) {
+      switch ($child->nodeName) {
+        case self::SAML_MD_EXTENSIONS :
+          $extensions = $child;
+          break;
+        default :
+          if ($create) {
+            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+            $ssoDescriptor->insertBefore($extensions, $child);
+          }
+          # Leave switch and while loop
+          break 2;
+      }
+      $child = $child->nextSibling;
+    }
+    if (! $extensions && $create) {
+      $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+      $ssoDescriptor->appendChild($extensions);
+    }
+    return $extensions;
   }
 }

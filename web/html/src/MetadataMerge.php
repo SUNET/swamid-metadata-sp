@@ -222,23 +222,7 @@ class MetadataMerge extends Common {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
       if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
+        $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $beforeChild = false;
         $Scope = false;
@@ -296,23 +280,7 @@ class MetadataMerge extends Common {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, $type);
       if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
+        $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $beforeChild = false;
         $uuInfo = false;
@@ -402,23 +370,7 @@ class MetadataMerge extends Common {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
       if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
+        $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $discoHints = false;
         $mduiFound = false;
