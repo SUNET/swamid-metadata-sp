@@ -625,22 +625,14 @@ class Common {
   public function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
     $child = $ssoDescriptor->firstChild;
     $extensions = false;
-    while ($child && ! $extensions) {
-      switch ($child->nodeName) {
-        case self::SAML_MD_EXTENSIONS :
-          $extensions = $child;
-          break;
-        default :
-          if ($create) {
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          # Leave switch and while loop
-          break 2;
+    if ($child) {
+      if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+        $extensions = $child;
+      } elseif ($create) {
+        $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+        $ssoDescriptor->insertBefore($extensions, $child);
       }
-      $child = $child->nextSibling;
-    }
-    if (! $extensions && $create) {
+    } elseif($create) {
       $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
       $ssoDescriptor->appendChild($extensions);
     }

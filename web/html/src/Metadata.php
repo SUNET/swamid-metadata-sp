@@ -144,7 +144,7 @@ class Metadata extends Common {
         if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {
           $remChild = $subchild;
           $subchild = $subchild->nextSibling;
-          $child->removeChild($remChild);
+          $ssoDescriptor->removeChild($remChild);
           $removed = true;
         } else {
           $subchild = $subchild->nextSibling;
