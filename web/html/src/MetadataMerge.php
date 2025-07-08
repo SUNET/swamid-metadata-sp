@@ -518,7 +518,7 @@ class MetadataMerge extends Common {
               $mduiFound = true;
               break;
             case self::SAML_MDUI_DISCOHINTS :
-              $uuInfo = $child;
+              $discoHints = $child;
               $mduiFound = true;
               break;
           }
