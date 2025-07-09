@@ -108,16 +108,22 @@ function showSoftDeletedEntities() {
 function showPublishedPendingEntities() {
   global $config;;
   $entityHandler = $config->getDb()->prepare(
-    'SELECT Entities.`id`, `entityID`, `lastUpdated`, `email`
-    FROM Entities, EntityUser, Users
-    WHERE `status` = 5 AND Entities.`id` = `entity_id` AND `user_id` = Users.`id`;');
+    'SELECT `Entities`.`id`, `entityID`, `lastUpdated`, `email`, `Users`.`lastSeen`
+    FROM `Entities`, `EntityUser`, `Users`
+    WHERE `status` = 5 AND `Entities`.`id` = `entity_id` AND `user_id` = `Users`.`id`
+    ORDER BY `Entities`.`id`, `Users`.`lastSeen` DESC;');
   $entityHandler->execute();
   printf ('        <h5>Entities from Pending that is Published</h5>
         <table id="pubPend-table" class="table table-striped table-bordered">
           <thead><tr><th>Id</th><th>EntityID</th><th>Published</th><th>Requester</th></tr></thead>%s',
         "\n");
+  $lastId = 0;
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href=./?showEntity=%d target="_blank">%d</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], $entity['entityID'], $entity['lastUpdated'], $entity['email'], "\n");
+    if ($lastId != $entity['id'] ) {
+      printf('          <tr><td><a href=./?showEntity=%d target="_blank">%d</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
+        $entity['id'], $entity['id'], $entity['entityID'], $entity['lastUpdated'], $entity['email'], "\n");
+      $lastId = $entity['id'];
+    }
   }
   print HTML_TABLE_END;
 }
