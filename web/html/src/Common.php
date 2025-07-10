@@ -206,116 +206,105 @@ class Common {
       SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status,
         `height` = :Height, `width` = :Width, `nosize` = :NoSize, `validationOutput` = :Result
       WHERE `URL` = :URL;");
-    if ($limit > 10) {
-      $sql = "SELECT `URL`, `type` FROM `URLs`
+    $sql = ($limit > 10) ?
+      "SELECT `URL`, `type` FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-6:0:0'))
-        ORDER BY `lastValidated` LIMIT $limit;";
-    } else {
-      $sql = "SELECT `URL`, `type`
+        ORDER BY `lastValidated` LIMIT $limit;"
+    :
+      "SELECT `URL`, `type`
         FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-20 0:0:0')
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-8:0:0'))
         ORDER BY `lastValidated` LIMIT $limit;";
-    }
     $urlHandler = $this->config->getDb()->prepare($sql);
     $urlHandler->execute();
     $count = 0;
-    if ($verbose) {
-      printf ('    <table class="table table-striped table-bordered">%s', "\n");
-    }
     while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-      $urlUpdateHandler->bindValue(self::BIND_URL, $url['URL']);
+      $updateArray = array(
+        self::BIND_URL => $url['URL'],
+        self::BIND_HEIGHT => 0,
+        self::BIND_WIDTH => 0,
+        self::BIND_NOSIZE => 0
+      );
 
       curl_setopt($ch, CURLOPT_URL, $url['URL']);
-      $height = 0;
-      $width = 0;
-      $nosize = 0;
       $verboseInfo = sprintf('<tr><td>%s</td><td>', $url['URL']);
       $output = curl_exec($ch);
       if (curl_errno($ch)) {
         $verboseInfo .= 'Curl error';
-        $urlUpdateHandler->bindValue(self::BIND_RESULT, curl_error($ch));
-        $urlUpdateHandler->bindValue(self::BIND_STATUS, 3);
-        $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+        $updateArray[self::BIND_RESULT] = curl_error($ch);
+        $updateArray[self::BIND_STATUS] = 3;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
       } else {
-        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
-          case 200 :
-            $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-            if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
-              if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
-                $nosize = 1;
-              } else {
-                $size = getimagesizefromstring($output);
-                $width = $size[0];
-                $height = $size[1];
-              }
-            }
-            switch ($url['type']) {
-              case 1 :
-              case 2 :
-                $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Reachable');
-                $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
-                break;
-              case 3 :
-                if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
-                  $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Policy OK');
-                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
-                } else {
-                  $urlUpdateHandler->bindValue(self::BIND_RESULT,
-                    'Policy missing link to ' . self::SAML_EC_COCOV1);
-                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-                }
-                break;
-              default :
-                break;
-            }
-            break;
-          case 403 :
-            $verboseInfo .= '403';
-            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Access denied. Can't check URL.");
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-            break;
-          case 404 :
-            $verboseInfo .= '404';
-            $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Page not found.');
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-            break;
-          case 503 :
-            $verboseInfo .= '503';
-            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Service Unavailable. Can't check URL.");
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-            break;
-          default :
-            $verboseInfo .= $http_code;
-            $urlUpdateHandler->bindValue(self::BIND_RESULT,
-              "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-        }
+        $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
       }
       $this->checkURLStatus($url['URL'], $verbose);
-      $urlUpdateHandler->bindValue(self::BIND_HEIGHT, $height);
-      $urlUpdateHandler->bindValue(self::BIND_WIDTH, $width);
-      $urlUpdateHandler->bindValue(self::BIND_NOSIZE, $nosize);
-      $urlUpdateHandler->execute();
+      $urlUpdateHandler->execute($updateArray);
       $count ++;
-      if ($verbose) {
-        printf ('      %s</td></tr>%s', $verboseInfo, "\n");
-      }
+      $verboseInfo .= sprintf ('      </td></tr>%s', "\n");
     }
     if ($verbose) {
-      printf ('    </table>%s', "\n");
+      printf('    <table class="table table-striped table-bordered">%s%s    </table>%s', "\n", $verboseInfo, "\n");
     }
     curl_close($ch);
     if ($limit > 10) {
       printf ("Checked %d URL:s\n", $count);
+    }
+  }
+
+  private function checkCurlReturnCode($ch, $output, $type, &$updateArray, &$verboseInfo) {
+    switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
+      case 200 :
+        $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
+          if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
+            $updateArray[self::BIND_NOSIZE] = 1;
+          } else {
+            $size = getimagesizefromstring($output);
+            $updateArray[self::BIND_WIDTH] = $size[0];
+            $updateArray[self::BIND_HEIGHT] = $size[1];
+          }
+        }
+        if ($type == 3) {
+          if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
+            $updateArray[self::BIND_RESULT] = 'Policy OK';
+            $updateArray[self::BIND_STATUS] = 0;
+            $updateArray[self::BIND_COCOV1STATUS] = 0;
+          } else {
+            $updateArray[self::BIND_RESULT] = 'Policy missing link to ' . self::SAML_EC_COCOV1;
+            $updateArray[self::BIND_STATUS] = 0;
+            $updateArray[self::BIND_COCOV1STATUS] = 1;
+          }
+        } else {
+          $updateArray[self::BIND_RESULT] = 'Reachable';
+          $updateArray[self::BIND_STATUS] = 0;
+          $updateArray[self::BIND_COCOV1STATUS] = 0;
+        }
+        break;
+      case 403 :
+        $verboseInfo .= '403';
+        $updateArray[self::BIND_RESULT] = "Access denied. Can't check URL.";
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+        break;
+      case 404 :
+        $verboseInfo .= '404';
+        $updateArray[self::BIND_RESULT] = 'Page not found.';
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+        break;
+      case 503 :
+        $verboseInfo .= '503';
+        $updateArray[self::BIND_RESULT] = "Service Unavailable. Can't check URL.";
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+        break;
+      default :
+        $verboseInfo .= $http_code;
+        $updateArray[self::BIND_RESULT] = "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(";
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
   }
 
