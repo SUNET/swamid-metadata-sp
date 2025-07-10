@@ -146,31 +146,7 @@ class MetadataEdit extends Common {
           exit;
       }
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
+      $extensions = $this->getExtensions($entityDescriptor, false);
 
       switch ($_GET['action']) {
         case 'Add' :
@@ -526,22 +502,13 @@ class MetadataEdit extends Common {
     if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $errorURLValue = trim(urldecode($_GET['errorURL']));
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
-          $idpSSODescriptor = $child;
-        }
-        $child = $child->nextSibling;
-      }
+      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
 
       $update = false;
       switch ($_GET['action']) {
         case 'Update' :
-          if ($idpSSODescriptor) {
-            $idpSSODescriptor->setAttribute('errorURL', $errorURLValue);
+          if ($ssoDescriptor) {
+            $ssoDescriptor->setAttribute('errorURL', $errorURLValue);
             $errorURLUpdateHandler = $this->config->getDb()->prepare(
               "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type`)
               VALUES (:Id, :URL, 'error') ON DUPLICATE KEY UPDATE `URL` = :URL;");
@@ -552,8 +519,8 @@ class MetadataEdit extends Common {
           }
           break;
         case 'Delete' :
-          if ($idpSSODescriptor) {
-            $idpSSODescriptor->removeAttribute('errorURL');
+          if ($ssoDescriptor) {
+            $ssoDescriptor->removeAttribute('errorURL');
             $errorURLUpdateHandler = $this->config->getDb()->prepare(
               "DELETE FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
             $errorURLUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -642,36 +609,11 @@ class MetadataEdit extends Common {
       $changed = false;
       $entityDescriptor = $this->getEntityDescriptor($this->xml);
       $scopeValue = trim($_GET['value']);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
-          $idpSSODescriptor = $child;
-        }
-        $child = $child->nextSibling;
-      }
-
+      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
       switch ($_GET['action']) {
         case 'Add' :
-          if ($idpSSODescriptor) {
-            $child = $idpSSODescriptor->firstChild;
-            $extensions = false;
-            while ($child && ! $extensions) {
-              if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                $extensions = $child;
-              } else {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $idpSSODescriptor->insertBefore($extensions, $child);
-              }
-              $child = $child->nextSibling;
-            }
-            if (! $extensions) {
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $idpSSODescriptor->appendChild($extensions);
-            }
-
+          if ($ssoDescriptor) {
+            $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
             $child = $extensions->firstChild;
             $beforeChild = false;
             $scope = false;
@@ -718,16 +660,8 @@ class MetadataEdit extends Common {
           }
           break;
         case 'Delete' :
-          if ($idpSSODescriptor) {
-            $child = $idpSSODescriptor->firstChild;
-            $extensions = false;
-            while ($child && ! $extensions) {
-              if ($child->nodeName == self::SAML_MD_EXTENSIONS ) {
-                $extensions = $child;
-              }
-              $child = $child->nextSibling;
-            }
-
+          if ($ssoDescriptor) {
+            $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
             if ($extensions) {
               $moreElements = false;
               $child = $extensions->firstChild;
@@ -742,7 +676,7 @@ class MetadataEdit extends Common {
                 $child = $child->nextSibling;
               }
               if (! $moreElements ) {
-                $idpSSODescriptor->removeChild($extensions);
+                $ssoDescriptor->removeChild($extensions);
               }
               if ($changed) {
                 $scopesDeleteHandler = $this->config->getDb()->prepare(
@@ -877,20 +811,7 @@ class MetadataEdit extends Common {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              if ($child) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                } else {
-                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                  $ssoDescriptor->insertBefore($extensions, $child);
-                }
-              }
-              if (! $extensions) {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->appendChild($extensions);
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
               $child = $extensions->firstChild;
               $beforeChild = false;
               $uuInfo = false;
@@ -997,14 +918,7 @@ class MetadataEdit extends Common {
             break;
           case 'Delete' :
             if ($ssoDescriptor) {
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                }
-                $child = $child->nextSibling;
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $uuInfo = false;
@@ -1312,35 +1226,13 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-        # Find md:SPSSODescriptor in XML
-        $child = $entityDescriptor->firstChild;
-        $ssoDescriptor = false;
-        while ($child && ! $ssoDescriptor) {
-          if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR) {
-            $ssoDescriptor = $child;
-          }
-          $child = $child->nextSibling;
-        }
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'SPSSO');
         switch ($_GET['action']) {
           case 'Add' :
           case 'Update' :
             if ($ssoDescriptor) {
               $changed = true;
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              if ($child) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                } else {
-                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                  $ssoDescriptor->insertBefore($extensions, $child);
-                }
-              }
-              if (! $extensions) {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->appendChild($extensions);
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
               $child = $extensions->firstChild;
               $discoResponse = false;
               $discoFound = false;
@@ -1381,14 +1273,7 @@ class MetadataEdit extends Common {
             break;
           case 'Delete' :
             if ($ssoDescriptor) {
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                }
-                $child = $child->nextSibling;
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $discoResponse = false;
@@ -1532,34 +1417,12 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-        # Find md:IDPSSODescriptor in XML
-        $child = $entityDescriptor->firstChild;
-        $ssoDescriptor = false;
-        while ($child && ! $ssoDescriptor) {
-          if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
-            $ssoDescriptor = $child;
-          }
-          $child = $child->nextSibling;
-        }
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
         switch ($_GET['action']) {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              if ($child) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                } else {
-                  $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                  $ssoDescriptor->insertBefore($extensions, $child);
-                }
-              }
-              if (! $extensions) {
-                $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-                $ssoDescriptor->appendChild($extensions);
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
               $child = $extensions->firstChild;
               $discoHints = false;
               $mduiFound = false;
@@ -1607,14 +1470,7 @@ class MetadataEdit extends Common {
             break;
           case 'Delete' :
             if ($ssoDescriptor) {
-              $child = $ssoDescriptor->firstChild;
-              $extensions = false;
-              while ($child && ! $extensions) {
-                if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
-                  $extensions = $child;
-                }
-                $child = $child->nextSibling;
-              }
+              $extensions = $this->getSSODescriptorExtensions($ssoDescriptor, false);
               if ($extensions) {
                 $child = $extensions->firstChild;
                 $discoHints = false;
@@ -1828,18 +1684,8 @@ class MetadataEdit extends Common {
           }
         }
 
-        $descriptor = 'md:'.$type.'Descriptor';
         $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-        # Find md:SSODescriptor in XML
-        $child = $entityDescriptor->firstChild;
-        $ssoDescriptor = false;
-        while ($child && ! $ssoDescriptor) {
-          if ($child->nodeName == $descriptor) {
-            $ssoDescriptor = $child;
-          }
-          $child = $child->nextSibling;
-        }
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, $type);
         if ($ssoDescriptor) {
           $child = $ssoDescriptor->firstChild;
           $beforeChild = false;
@@ -2575,16 +2421,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-        # Find md:IDPSSODescriptor in XML
-        $child = $entityDescriptor->firstChild;
-        $ssoDescriptor = false;
-        while ($child && ! $ssoDescriptor) {
-          if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR) {
-            $ssoDescriptor = $child;
-          }
-          $child = $child->nextSibling;
-        }
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'SPSSO');
         switch ($_GET['action']) {
           case 'AddIndex' :
             if ($ssoDescriptor) {
@@ -3792,29 +3629,23 @@ class MetadataEdit extends Common {
   }
 
   public function removeSSO($type) {
+    $entityDescriptor = $this->getEntityDescriptor($this->xml);
     switch ($type) {
       case 'SP' :
-        $ssoDescriptor = self::SAML_MD_SPSSODESCRIPTOR;
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'SPSSO');
         break;
       case 'IdP' :
-        $ssoDescriptor = self::SAML_MD_IDPSSODESCRIPTOR;
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
         break;
       case 'AttributeAuthority' :
-        $ssoDescriptor = self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR;
+        $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'AttributeAuthority');
         break;
       default :
         printf ("Unknown type : %s", htmlspecialchars($type));
         return;
     }
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-    # Find SSODecriptor in XML
-    $child = $entityDescriptor->firstChild;
-    while ($child) {
-      if ($child->nodeName == $ssoDescriptor) {
-        $entityDescriptor->removeChild($child);
-      }
-      $child = $child->nextSibling;
+    if ($ssoDescriptor) {
+      $entityDescriptor->removeChild($ssoDescriptor);
     }
     $this->saveXML();
   }
