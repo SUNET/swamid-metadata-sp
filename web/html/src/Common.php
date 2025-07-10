@@ -541,7 +541,7 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  public function getExtensions($entityDescriptor, $create = true) {
+  protected function getExtensions($entityDescriptor, $create = true) {
     # Find md:Extensions in XML
     $child = $entityDescriptor->firstChild;
     $extensions = false;
@@ -588,7 +588,7 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  public function getSSODecriptor($entityDescriptor, $type) {
+  protected function getSSODecriptor($entityDescriptor, $type) {
     switch ($type) {
       case 'SPSSO' :
         $ssoDescriptorName = self::SAML_MD_SPSSODESCRIPTOR;
@@ -622,7 +622,7 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  public function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
+  protected function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
     $child = $ssoDescriptor->firstChild;
     $extensions = false;
     if ($child) {

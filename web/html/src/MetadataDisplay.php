@@ -1613,16 +1613,10 @@ class MetadataDisplay extends Common {
             }
           }
         }
-        switch ($entity['element']) {
-          case 'Logo' :
-          case 'InformationURL' :
-          case 'PrivacyStatementURL' :
-            printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
-              $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
-              substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
-            break;
-          default :
-            # Skip other elements
+        if ($entity['element'] == 'Logo' || $entity['element'] == 'InformationURL' || $entity['element'] == 'PrivacyStatementURL') {
+          printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
+            $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
+            substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
         }
       }
       while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
