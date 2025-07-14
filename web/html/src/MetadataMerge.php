@@ -25,8 +25,9 @@ class MetadataMerge extends Common {
   }
 
   public function mergeFrom() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $this->mergeRegistrationInfo();
     $this->mergeEntityAttributes();
     if ($this->isIdP) {
@@ -63,8 +64,9 @@ class MetadataMerge extends Common {
       while ($child && ! $registrationInfo) {
         if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONINFO) {
           $registrationInfo = $child;
-        } else
+        } else {
           $child = $child->nextSibling;
+        }
       }
       if (! $registrationInfo) {
         # Add if missing
@@ -140,8 +142,9 @@ class MetadataMerge extends Common {
       while ($child && ! $entityAttributes) {
         if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTES) {
           $entityAttributes = $child;
-        } else
+        } else {
           $child = $child->nextSibling;
+        }
       }
       if (! $entityAttributes) {
         # Add if missing
@@ -157,8 +160,9 @@ class MetadataMerge extends Common {
         $type = $attribute->getAttribute('Name');
         while($attributeValue) {
           $value = $attributeValue->textContent;
-          if (isset($oldAttributeValues[$type][$value]))
+          if (isset($oldAttributeValues[$type][$value])) {
             unset($oldAttributeValues[$type][$value]);
+          }
           $attributeValue = $attributeValue->nextSibling;
         }
         foreach ($oldAttributeValues[$type] as $value) {
@@ -186,8 +190,9 @@ class MetadataMerge extends Common {
     }
   }
   private function mergeIdpErrorURL () {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $errorURLHandler = $this->config->getDb()->prepare(
       "SELECT DISTINCT URL FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -208,8 +213,9 @@ class MetadataMerge extends Common {
     }
   }
   private function mergeIdPScopes() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $scopesHandler->execute();
@@ -225,29 +231,31 @@ class MetadataMerge extends Common {
         $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $beforeChild = false;
-        $Scope = false;
         $shibmdFound = false;
-        while ($child && ! $Scope) {
+        while ($child) {
           switch ($child->nodeName) {
             case self::SAML_SHIBMD_SCOPE :
               $shibmdFound = true;
-              if (isset ($oldScopes[$child->textContent]))
+              if (isset ($oldScopes[$child->textContent])) {
                 unset ($oldScopes[$child->textContent]);
+              }
               break;
             case self::SAML_MDUI_UIINFO :
             case self::SAML_MDUI_DISCOHINTS :
               $beforeChild = $beforeChild ? $beforeChild : $child;
               break;
+            default :
           }
           $child = $child->nextSibling;
         }
         foreach ($oldScopes as $scopevalue => $value) {
-          $Scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, htmlspecialchars($scopevalue));
-          $Scope->setAttribute('regexp', $value);
-          if ($beforeChild)
-            $extensions->insertBefore($Scope, $beforeChild);
-          else
-            $extensions->appendChild($Scope);
+          $scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, htmlspecialchars($scopevalue));
+          $scope->setAttribute('regexp', $value);
+          if ($beforeChild) {
+            $extensions->insertBefore($scope, $beforeChild);
+          } else {
+            $extensions->appendChild($scope);
+          }
           $scopesInsertHandler->bindParam(self::BIND_SCOPE, $scopevalue);
           $scopesInsertHandler->bindParam(self::BIND_REGEXP, $value);
           $scopesInsertHandler->execute();
@@ -260,8 +268,9 @@ class MetadataMerge extends Common {
     }
   }
   private function mergeUIInfo($type) {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND type = :Type ORDER BY `element`, `lang`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -270,10 +279,12 @@ class MetadataMerge extends Common {
       $mdelement = self::SAML_MDUI.$mdui['element'];
       $size = $mdui['height'].'x'.$mdui['width'];
       $lang = $mdui['lang'];
-      if (! isset($oldMDUIElements[$mdelement]) )
+      if (! isset($oldMDUIElements[$mdelement]) ) {
         $oldMDUIElements[$mdelement] = array();
-      if (! isset($oldMDUIElements[$mdelement][$lang]) )
+      }
+      if (! isset($oldMDUIElements[$mdelement][$lang]) ) {
         $oldMDUIElements[$mdelement][$lang] = array();
+      }
       $oldMDUIElements[$mdelement][$lang][$size] = array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width']);
     }
     if (isset($oldMDUIElements)) {
@@ -295,15 +306,17 @@ class MetadataMerge extends Common {
               $beforeChild = $beforeChild ? $beforeChild : $child;
               $mduiFound = true;
               break;
+            default :
           }
           $child = $child->nextSibling;
         }
         if (! $uuInfo ) {
           $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
-          if ($beforeChild)
+          if ($beforeChild) {
             $extensions->insertBefore($uuInfo, $beforeChild);
-          else
+          } else {
             $extensions->appendChild($uuInfo);
+          }
         }
         if (! $mduiFound) {
           $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
@@ -354,16 +367,18 @@ class MetadataMerge extends Common {
     }
   }
   private function mergeDiscoHints() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $mdelement = self::SAML_MDUI.$mdui['element'];
       $value = $mdui['data'];
-      if (! isset($oldMDUIElements[$mdelement]) )
+      if (! isset($oldMDUIElements[$mdelement]) ) {
         $oldMDUIElements[$mdelement] = array();
+      }
       $oldMDUIElements[$mdelement][$value] = true;
     }
     if (isset($oldMDUIElements)) {
@@ -419,9 +434,9 @@ class MetadataMerge extends Common {
     }
   }
   private function mergeAttributeConsumingService() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
-
+    }
     $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index` FROM `AttributeConsumingService` WHERE `entity_id` = :Id ORDER BY `Service_index`;');
     $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
 
@@ -483,8 +498,9 @@ class MetadataMerge extends Common {
             switch ($servicechild->nodeName) {
               case self::SAML_MD_SERVICENAME :
                 $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
-                if (isset($oldServiceElements[$index]['ServiceName'][$lang]))
+                if (isset($oldServiceElements[$index]['ServiceName'][$lang])) {
                   unset ($oldServiceElements[$index]['ServiceName'][$lang]);
+                }
                 break;
               case self::SAML_MD_SERVICEDESCRIPTION :
                 if ($nextOrder < 2) {
@@ -500,8 +516,9 @@ class MetadataMerge extends Common {
                   $nextOrder = 2;
                 }
                 $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
-                if (isset($oldServiceElements[$index]['ServiceDescription'][$lang]))
+                if (isset($oldServiceElements[$index]['ServiceDescription'][$lang])) {
                   unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
+                }
                 break;
               case self::SAML_MD_REQUESTEDATTRIBUTE :
                 if ($nextOrder < 3) {
@@ -530,8 +547,9 @@ class MetadataMerge extends Common {
                   $nextOrder = 3;
                 }
                 $name = $servicechild->getAttribute('Name');
-                if (isset($oldRequestedAttributes[$index][$name]))
+                if (isset($oldRequestedAttributes[$index][$name])) {
                   unset ($oldRequestedAttributes[$index][$name]);
+                }
                 break;
               default :
                 printf('%s<br>', $servicechild->nodeName);
@@ -565,11 +583,13 @@ class MetadataMerge extends Common {
             $isRequired = $data['isRequired'];
 
             $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-            if ($friendlyName != '' )
+            if ($friendlyName != '' ) {
               $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
+            }
             $attributeConsumingServiceElement->setAttribute('Name', $name);
-            if ($nameFormat != '' )
+            if ($nameFormat != '' ) {
               $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+            }
             $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $requestedAttributeAddHandler->execute();
@@ -611,11 +631,13 @@ class MetadataMerge extends Common {
           $isRequired = $data['isRequired'];
 
           $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-          if ($friendlyName != '' )
+          if ($friendlyName != '' ) {
             $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
+          }
           $attributeConsumingServiceElement->setAttribute('Name', $name);
-          if ($nameFormat != '' )
+          if ($nameFormat != '' ) {
             $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+          }
           $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
           $attributeConsumingService->appendChild($attributeConsumingServiceElement);
           $requestedAttributeAddHandler->execute();
@@ -627,8 +649,9 @@ class MetadataMerge extends Common {
   }
 
   private function mergeOrganization() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $organizationHandler = $this->config->getDb()->prepare(
       'SELECT element, lang, data FROM `Organization` WHERE entity_id = :Id ORDER BY element, lang;');
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);

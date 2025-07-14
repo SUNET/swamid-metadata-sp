@@ -27,6 +27,7 @@ class MetadataDisplay extends Common {
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
+  const HTML_SHOWALLORGS = '&showAllOrgs';
   const HTML_SPACER = '      ';
   const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_TABLE_END = "    </table>\n";
@@ -2982,10 +2983,10 @@ class MetadataDisplay extends Common {
 
     $showAllOrgs = isset($_GET['showAllOrgs']);
     printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
-      $id, $showAllOrgs ? '' : '&showAllOrgs', $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
+      $id, $showAllOrgs ? '' : self::HTML_SHOWALLORGS, $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
     if ($userLevel > 10) {
       printf('%s          <a href=".?action=Members&subAction=editOrganization&id=0%s"><button type="button" class="btn btn-outline-primary">Add new Organization</button></a>',
-        "\n", $showAllOrgs ? '&showAllOrgs' : '');
+        "\n", $showAllOrgs ? self::HTML_SHOWALLORGS : '');
     }
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -3000,8 +3001,8 @@ class MetadataDisplay extends Common {
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeOrganization&id=%d%s"><i class="fas fa-trash"></i></a>',
-                "\n", $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '',
-                $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '');
+                "\n", $organization['orgId'], $showAllOrgs ? self::HTML_SHOWALLORGS : '',
+                $organization['orgId'], $showAllOrgs ? self::HTML_SHOWALLORGS : '');
       }
       printf('%s                <ul>%s', "\n", "\n");
       while ($orgInfoData = $organizationDataHandler->fetch(PDO::FETCH_ASSOC)) {

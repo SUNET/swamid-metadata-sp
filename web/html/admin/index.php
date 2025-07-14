@@ -12,6 +12,8 @@ const HTML_CHECKED = ' checked';
 const HTML_TEXT_CFE = "Can't find Entity";
 const HTML_TEXT_MCNBS = 'Message could not be sent to contacts.<br>';
 const HTML_TEXT_ME = 'Mailer Error: ';
+const HTML_TEXT_MEDFOR = ' metadata for ';
+const HTML_TEXT_YMFS = 'You must fulfill sections %s in %s.%s';
 
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
@@ -331,7 +333,7 @@ if (isset($_FILES['XMLfile'])) {
         case 'AddImps2IdP' :
           if ($userLevel > 19 && isset($_GET['ImpsId'])) {
             $imps = new \metadata\IMPS();
-            $imps->BindIdP2IMPS($entitiesId, $_GET['ImpsId']);
+            $imps->bindIdP2IMPS($entitiesId, $_GET['ImpsId']);
           }
           $metadata = new \metadata\Metadata($entitiesId);
           showEntity($entitiesId);
@@ -1229,7 +1231,7 @@ function move2Pending($entitiesId) {
           $publish = false;
         }
         if (!isset($_GET['OrganisationOK'])) {
-          $errors .= sprintf('You must fulfill sections %s in %s.%s',
+          $errors .= sprintf(HTML_TEXT_YMFS,
             $sections, $federation['rulesName'], "\n");
           $publish = false;
         }
@@ -1255,8 +1257,8 @@ function move2Pending($entitiesId) {
           $oldEntitiesId = $shadowMetadata->id();
           validateEntity($oldEntitiesId);
         } else {
-          $mailContacts->Subject  = 'Info : New ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'New ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
+          $mailContacts->Subject  = 'Info : New ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
+          $mailRequester->Subject = 'New ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
           $oldEntitiesId = 0;
         }
 
@@ -1486,7 +1488,7 @@ function annualConfirmation($entitiesId){
           $confirm = true;
         } else {
           $errors .= isset($_GET['FormVisit'])
-            ? sprintf('You must fulfill sections %s in %s.%s', $sections, $federation['rulesName'], "\n")
+            ? sprintf(HTML_TEXT_YMFS, $sections, $federation['rulesName'], "\n")
             : '';
         }
 
@@ -1610,7 +1612,7 @@ function annualConfirmationList($list){
       showMyEntities();
     } else {
       $errors .= isset($_POST['FormVisit'])
-        ? sprintf('You must fulfill sections %s in %s.%s', $sections, $federation['rulesName'], "\n")
+        ? sprintf(HTML_TEXT_YMFS, $sections, $federation['rulesName'], "\n")
         : '';
 
       $html->showHeaders('Validate list');
@@ -1771,8 +1773,8 @@ function requestRemoval($entitiesId) {
             $federation['toolName'], $federation['teamName']);
 
           $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
-          $mailContacts->Subject  = 'Info : Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'Request to remove ' . $federation['displayName'] . ' metadata for ' . $shortEntityid;
+          $mailContacts->Subject  = 'Info : Request to remove ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
+          $mailRequester->Subject = 'Request to remove ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
 
           try {
             $mailContacts->send();
