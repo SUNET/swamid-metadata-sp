@@ -1,4 +1,10 @@
 <?php
+
+const BIND_DATE = ':Date';
+const BIND_ID = ':Id';
+const BIND_LEVEL = ':Level';
+const BIND_TYPE = ':Type';
+
 // Import PHPMailer classes into the global namespace
 // These must be at the top of your script, not inside a function
 use PHPMailer\PHPMailer\PHPMailer;
@@ -10,9 +16,9 @@ require_once __DIR__ . '/../html/vendor/autoload.php';
 $config = new \metadata\Configuration();
 
 $updateMailRemindersHandler = $config->getDb()->prepare('INSERT INTO MailReminders (`entity_id`, `type`, `level`, `mailDate`)
-  VALUES (:Entity_Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()');
+  VALUES (:Id, :Type, :Level, NOW()) ON DUPLICATE KEY UPDATE `level` = :Level, `mailDate` = NOW()');
 $removeMailRemindersHandler = $config->getDb()->prepare('DELETE FROM MailReminders
-  WHERE `entity_id` = :Entity_Id AND `type` = :Type');
+  WHERE `entity_id` = :Id AND `type` = :Type');
 $getMailRemindersHandler = $config->getDb()->prepare(
   'SELECT `entity_id`, `level` FROM MailReminders WHERE `type` = :Type');
 
@@ -31,7 +37,7 @@ function confirmEntities() {
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
   # Time to confirm entities again ?
   $reminders = array();
-  $getMailRemindersHandler->execute(array('Type' => 1));
+  $getMailRemindersHandler->execute(array(BIND_TYPE => 1));
   while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
     $reminders[$entity['entity_id']] = $entity['level'];
   }
@@ -62,17 +68,17 @@ function confirmEntities() {
       }
       if ($errorDate > $entity['lastConfirmed'] && $reminders[$entity['id']] < 3) {
         printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 3));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 3));
         sendEntityConfirmation($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
       } elseif ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
         printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 2));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 2));
         sendEntityConfirmation($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 11);
       } elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
         printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 1, 'Level' => 1));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 1));
         sendEntityConfirmation($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
       }
@@ -81,8 +87,8 @@ function confirmEntities() {
   }
 
   $reminder = 0;
-  $removeMailRemindersHandler->bindValue(':Type', 1);
-  $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
+  $removeMailRemindersHandler->bindValue(BIND_TYPE, 1);
+  $removeMailRemindersHandler->bindParam(BIND_ID, $reminder);
   foreach ($reminders as $reminder => $level) {
     $removeMailRemindersHandler->execute();
   }
@@ -93,7 +99,7 @@ function oldCerts() {
   global $updateMailRemindersHandler, $removeMailRemindersHandler, $getMailRemindersHandler, $config;
   # Time to update certs ?
   $reminders = array();
-  $getMailRemindersHandler->execute(array('Type' => 2));
+  $getMailRemindersHandler->execute(array(BIND_TYPE => 2));
   while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
     $reminders[$entity['entity_id']] = $entity['level'];
   }
@@ -123,7 +129,7 @@ function oldCerts() {
   $entitiesHandler->bindValue(':Date', $warn1Date);
   $entitiesHandler->execute();
   while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-    $keyHandler->bindValue(':Id', $entity['id']);
+    $keyHandler->bindValue(BIND_ID, $entity['id']);
     $keyHandler->execute();
     $keyType = 'None';
     $keyStatus = 0;
@@ -201,7 +207,7 @@ function oldCerts() {
       }
       if ($reminders[$entity['id']] < $maxStatus) {
         printf("\nProblem with %s\n%s",$entity['entityID'],$errorText);
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 2, 'Level' => $maxStatus));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 2, BIND_LEVEL => $maxStatus));
         sendCertReminder($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $maxStatus);
       }
@@ -209,8 +215,8 @@ function oldCerts() {
     }
   }
   $reminder = 0;
-  $removeMailRemindersHandler->bindValue(':Type', 2);
-  $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
+  $removeMailRemindersHandler->bindValue(BIND_TYPE, 2);
+  $removeMailRemindersHandler->bindParam(BIND_ID, $reminder);
   foreach ($reminders as $reminder => $level) {
     $removeMailRemindersHandler->execute();
   }
@@ -232,7 +238,7 @@ function checkOldPending() {
 
   # Warn for pending not handled
   $reminders = array();
-  $getMailRemindersHandler->execute(array('Type' => 3));
+  $getMailRemindersHandler->execute(array(BIND_TYPE => 3));
   while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
     $reminders[$entity['entity_id']] = $entity['level'];
   }
@@ -265,17 +271,17 @@ function checkOldPending() {
       }
       if ($warn3Date > $entity['lastValidated'] && $reminders[$entity['id']] < 3) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 3, 'Level' => 3));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 3));
         sendOldUpdates($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 11);
       } elseif ($warn2Date > $entity['lastValidated'] && $reminders[$entity['id']] < 2) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 3, 'Level' => 2));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 2));
         sendOldUpdates($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 4);
       } elseif ($warn1Date > $entity['lastValidated'] && $reminders[$entity['id']] < 1) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 3, 'Level' => 1));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 1));
         sendOldUpdates($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 1);
       }
@@ -284,8 +290,8 @@ function checkOldPending() {
   }
 
   $reminder = 0;
-  $removeMailRemindersHandler->bindValue(':Type', 3);
-  $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
+  $removeMailRemindersHandler->bindValue(BIND_TYPE, 3);
+  $removeMailRemindersHandler->bindParam(BIND_ID, $reminder);
   foreach ($reminders as $reminder => $level) {
     $removeMailRemindersHandler->execute();
   }
@@ -297,7 +303,7 @@ function checkOldDraft() {
 
   # Warn for drafts not handled
   $reminders = array();
-  $getMailRemindersHandler->execute(array('Type' => 4));
+  $getMailRemindersHandler->execute(array(BIND_TYPE => 4));
   while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
     $reminders[$entity['entity_id']] = $entity['level'];
   }
@@ -328,12 +334,12 @@ function checkOldDraft() {
       }
       if ($warn2Date > $entity['lastValidated'] && $reminders[$entity['id']] < 2) {
         printf('Draft since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 4, 'Level' => 2));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 4, BIND_LEVEL => 2));
         sendOldUpdates($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 7, false);
       } elseif ($warn1Date > $entity['lastValidated'] && $reminders[$entity['id']] < 1) {
         printf('Draft since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $entity['id'], 'Type' => 4, 'Level' => 1));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 4, BIND_LEVEL => 1));
         sendOldUpdates($entity['id'], $entity['entityID'],
           iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 2, false);
       }
@@ -342,8 +348,8 @@ function checkOldDraft() {
   }
 
   $reminder = 0;
-  $removeMailRemindersHandler->bindValue(':Type', 3);
-  $removeMailRemindersHandler->bindParam(':Entity_Id', $reminder);
+  $removeMailRemindersHandler->bindValue(BIND_TYPE, 3);
+  $removeMailRemindersHandler->bindParam(BIND_ID, $reminder);
   foreach ($reminders as $reminder => $level) {
     $removeMailRemindersHandler->execute();
   }
@@ -356,13 +362,13 @@ function checkOldIMPS() {
   # Warn for IMPS:es not validated
   $idpImpsHandler = $config->getDb()->prepare('SELECT `IMPS_id`
     FROM `IdpIMPS`
-    WHERE `entity_id` = :Entity_Id');
+    WHERE `entity_id` = :Id');
 
   $reminders = array();
   $reminderIMPS = array();
-  $getMailRemindersHandler->execute(array('Type' => 5));
+  $getMailRemindersHandler->execute(array(BIND_TYPE => 5));
   while ($entity = $getMailRemindersHandler->fetch(PDO::FETCH_ASSOC)) {
-    $idpImpsHandler->execute(array('Entity_Id' => $entity['entity_id']));
+    $idpImpsHandler->execute(array('Id' => $entity['entity_id']));
     while ($imps = $idpImpsHandler->fetch(PDO::FETCH_ASSOC)) {
       $reminderIMPS[$imps['IMPS_id']] = $entity['level'];
     }
@@ -395,19 +401,19 @@ function checkOldIMPS() {
       }
       if ($oldDate > $imps['lastUpdated'] && $reminderIMPS[$imps['id']] < 4) {
         printf('Error old profile %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 4));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 4));
         sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), 99);
       } elseif ($errorDate > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 3) {
         printf('Error %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 3));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 3));
         sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['error']);
       } elseif ($warn2Date > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 2) {
         printf('Warn2 %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 2));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 2));
         sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['warn2']);
       } elseif ($warn1Date > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 1) {
         printf('Warn1 %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
-        $updateMailRemindersHandler->execute(array('Entity_Id' => $imps['entity_id'], 'Type' => 5, 'Level' => 1));
+        $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 1));
         sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['warn1']);
       }
       unset($reminders[$imps['entity_id']]);
@@ -416,7 +422,7 @@ function checkOldIMPS() {
 
   foreach ($reminders as $reminder => $level) {
     print "Removing $reminder\n";
-    $removeMailRemindersHandler->execute(array('Type' => 5, 'Entity_Id' => $reminder));
+    $removeMailRemindersHandler->execute(array(BIND_TYPE => 5, BIND_ID => $reminder));
   }
   $impsHandler->closeCursor();
 }

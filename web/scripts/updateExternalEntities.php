@@ -54,7 +54,7 @@ function contactType($contact) {
   if ( $contactType == "other" &&
        $contact->getAttribute('remd:contactType') == REMD_CONTACT_TYPE_SECURITY) {
     $contactType  = "security";
-  };
+  }
   return $contactType;
 }
 
