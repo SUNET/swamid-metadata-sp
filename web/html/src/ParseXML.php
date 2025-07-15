@@ -76,8 +76,7 @@ class ParseXML extends Common {
     $this->isAA = false;
 
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
+    $child = $this->entityDescriptor->firstChild;
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :

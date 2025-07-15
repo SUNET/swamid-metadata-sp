@@ -28,6 +28,7 @@ class MetadataMerge extends Common {
     if ( !$this->oldExists) {
       return;
     }
+    $this->getEntityDescriptor($this->xml);
     $this->mergeRegistrationInfo();
     $this->mergeEntityAttributes();
     if ($this->isIdP) {
@@ -56,8 +57,7 @@ class MetadataMerge extends Common {
     $registrationInstantHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $registrationInstantHandler->execute();
     if ($instant = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      $extensions = $this->getExtensions($entityDescriptor);
+      $extensions = $this->getExtensions();
       # Find mdattr:EntityAttributes in XML
       $child = $extensions->firstChild;
       $registrationInfo = false;
@@ -70,7 +70,7 @@ class MetadataMerge extends Common {
       }
       if (! $registrationInfo) {
         # Add if missing
-        $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
+        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
         $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
         $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
         $registrationInfo->setAttribute('registrationInstant', $instant['ts']);
@@ -133,8 +133,7 @@ class MetadataMerge extends Common {
       $oldAttributeValues[$attributeType][$attribute['attribute']] = $attribute['attribute'];
     }
     if(isset($oldAttributeValues)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      $extensions = $this->getExtensions($entityDescriptor);
+      $extensions = $this->getExtensions();
 
       # Find mdattr:EntityAttributes in XML
       $child = $extensions->firstChild;
@@ -148,7 +147,7 @@ class MetadataMerge extends Common {
       }
       if (! $entityAttributes) {
         # Add if missing
-        $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
+        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
         $entityAttributes = $this->xml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
         $extensions->appendChild($entityAttributes);
       }
@@ -175,7 +174,7 @@ class MetadataMerge extends Common {
       }
       foreach ($oldAttributeValues as $type => $values) {
         if (! empty($values)) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
           $attribute = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTE);
           $attribute->setAttribute('Name', $type);
           $attribute->setAttribute('NameFormat', self::SAMLNF_URI);
@@ -198,8 +197,7 @@ class MetadataMerge extends Common {
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $errorURLHandler->execute();
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
+      $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
       if ($ssoDescriptor  && $ssoDescriptor->getAttribute('errorURL') == '') {
         $ssoDescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
@@ -225,9 +223,7 @@ class MetadataMerge extends Common {
       $oldScopes[$scope['scope']] = $scope['regexp'];
     }
     if ($oldScopes) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
-      if ($ssoDescriptor) {
+      if ($ssoDescriptor = $this->getSSODecriptor('IDPSSO')) {
         $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $beforeChild = false;
@@ -262,7 +258,7 @@ class MetadataMerge extends Common {
         }
 
         if (! $shibmdFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
         }
       }
     }
@@ -288,9 +284,7 @@ class MetadataMerge extends Common {
       $oldMDUIElements[$mdelement][$lang][$size] = array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width']);
     }
     if (isset($oldMDUIElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, $type);
-      if ($ssoDescriptor) {
+      if ($ssoDescriptor = $this->getSSODecriptor($type)) {
         $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $beforeChild = false;
@@ -319,7 +313,7 @@ class MetadataMerge extends Common {
           }
         }
         if (! $mduiFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
         }
         # Find mdui:* in XML
         $child = $uuInfo->firstChild;
@@ -382,8 +376,7 @@ class MetadataMerge extends Common {
       $oldMDUIElements[$mdelement][$value] = true;
     }
     if (isset($oldMDUIElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
+      $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
       if ($ssoDescriptor) {
         $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
@@ -406,7 +399,7 @@ class MetadataMerge extends Common {
           $extensions->appendChild($discoHints);
         }
         if (! $mduiFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
         }
         # Find mdui:* in XML
         $child = $discoHints->firstChild;
@@ -465,8 +458,8 @@ class MetadataMerge extends Common {
       }
     }
 
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'SPSSO');
+    $this->getEntityDescriptor($this->xml);
+    $ssoDescriptor = $this->getSSODecriptor('SPSSO');
     if ($ssoDescriptor && isset($oldServiceIndexes)) {
       $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);');
       $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -661,10 +654,8 @@ class MetadataMerge extends Common {
       $oldElements[$order][] = $organization;
     }
     if (isset($oldElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
+      # Find md:Organization in XML
+      $child = $this->entityDescriptor->firstChild;
       $organization = false;
       while ($child && ! $organization) {
         switch ($child->nodeName) {
@@ -674,7 +665,7 @@ class MetadataMerge extends Common {
           case self::SAML_MD_CONTACTPERSON :
           case self::SAML_MD_ADDITIONALMETADATALOCATION :
             $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
-            $entityDescriptor->insertBefore($organization, $child);
+            $this->entityDescriptor->insertBefore($organization, $child);
             break;
           default :
         }
@@ -684,7 +675,7 @@ class MetadataMerge extends Common {
       if (! $organization) {
         # Add if missing
         $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
-        $entityDescriptor->appendChild($organization);
+        $this->entityDescriptor->appendChild($organization);
       }
 
       # Find md:Organization* in XML
@@ -758,10 +749,8 @@ class MetadataMerge extends Common {
         6 => array('part' => self::SAML_MD_EXTENSIONS,  'value' => $contactPerson['extensions']));
     }
     if (isset($oldContactPersons)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
+      # Find md:Contacts in XML
+      $child = $this->entityDescriptor->firstChild;
       $contactPerson = false;
       while ($child) {
         switch ($child->nodeName) {
@@ -800,10 +789,10 @@ class MetadataMerge extends Common {
               $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
               $contactPerson->setAttribute('contactType', $type);
               if ($oldContactPerson['subcontactType']) {
-                $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
+                $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
                 $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
               }
-              $entityDescriptor->insertBefore($contactPerson, $child);
+              $this->entityDescriptor->insertBefore($contactPerson, $child);
               $nextOrder = 1;
               while ($nextOrder < 7) {
                 if (!empty($oldContactPerson[$nextOrder]['value'])) {
@@ -823,10 +812,10 @@ class MetadataMerge extends Common {
         $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
         $contactPerson->setAttribute('contactType', $type);
         if ($oldContactPerson['subcontactType']) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
           $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
         }
-        $entityDescriptor->appendChild($contactPerson);
+        $this->entityDescriptor->appendChild($contactPerson);
         $nextOrder = 1;
         while ($nextOrder < 7) {
           if (!empty($oldContactPerson[$nextOrder]['value'])) {

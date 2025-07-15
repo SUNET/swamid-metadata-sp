@@ -3,6 +3,7 @@ namespace metadata;
 
 use PDO;
 use DOMDocument;
+use DOMElement;
 
 /**
  * Class to collect common functions for Validate and ParseXML
@@ -29,6 +30,7 @@ class Common {
   protected int $organizationInfoId = 0;
 
   protected DOMDocument $xml;
+  protected DOMElement $entityDescriptor;
   private bool $handleXML = true;
 
   const BIND_BITS = ':Bits';
@@ -115,6 +117,7 @@ class Common {
           $this->xml->formatOutput = true;
           $this->xml->loadXML($entity['xml']);
           $this->xml->encoding = 'UTF-8';
+          $this->getEntityDescriptor($this->xml);
         }
       }
     }
@@ -506,34 +509,35 @@ class Common {
    *
    * @param DOMNode $xml DOMNode in a XML object
    *
-   * @return DOMNode
+   * @return DOMElement
    */
   protected function getEntityDescriptor($xml) {
     $child = $xml->firstChild;
     while ($child) {
       if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
+        $this->entityDescriptor = $child;
         return $child;
       }
       $child = $child->nextSibling;
     }
-    return false;
+    return null;
   }
 
   /**
    * Find Extensions below EntityDescriptor
    *
-   * Return DOM of XML if found / created in other cases return false
+   * Return DOM of XML if found / created in other cases return null
    *
    * @param DOMNode $xml DOMNode in a XML object
    *
    * @param bool $create If we should create missing Extensions
    *
-   * @return DOMNode|bool
+   * @return DOMElement
    */
-  protected function getExtensions($entityDescriptor, $create = true) {
+  protected function getExtensions($create = true) {
     # Find md:Extensions in XML
-    $child = $entityDescriptor->firstChild;
-    $extensions = false;
+    $child = $this->entityDescriptor->firstChild;
+    $extensions = null;
     while ($child && ! $extensions) {
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :
@@ -551,7 +555,7 @@ class Common {
         default :
           if ($create) {
             $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
+            $this->entityDescriptor->insertBefore($extensions, $child);
           }
           # Leave switch and while loop
           break 2;
@@ -561,7 +565,7 @@ class Common {
     if (! $extensions && $create) {
       # Add if missing
       $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-      $entityDescriptor->appendChild($extensions);
+      $this->entityDescriptor->appendChild($extensions);
     }
     return $extensions;
   }
@@ -569,7 +573,7 @@ class Common {
   /**
    * Find SSODescriptor below EntityDescriptor
    *
-   * Return DOM of XML if found in other cases return false
+   * Return DOM of XML if found in other cases return null
    *
    * @param DOMNode $xml DOMNode in a XML object
    *
@@ -577,7 +581,7 @@ class Common {
    *
    * @return DOMNode|bool
    */
-  protected function getSSODecriptor($entityDescriptor, $type) {
+  protected function getSSODecriptor($type) {
     switch ($type) {
       case 'SPSSO' :
         $ssoDescriptorName = self::SAML_MD_SPSSODESCRIPTOR;
@@ -591,10 +595,10 @@ class Common {
       default:
     }
     # Find md:xxxSSODescriptor in XML
-    $child = $entityDescriptor->firstChild;
-    $ssoDescriptor = false;
+    $child = $this->entityDescriptor->firstChild;
+    $ssoDescriptor = null;
     while ($child && ! $ssoDescriptor) {
-      $ssoDescriptor = $child->nodeName == $ssoDescriptorName ? $child : false;
+      $ssoDescriptor = $child->nodeName == $ssoDescriptorName ? $child : null;
       $child = $child->nextSibling;
     }
     return $ssoDescriptor;
@@ -603,7 +607,7 @@ class Common {
   /**
    * Find Extensions below a SSODescriptor
    *
-   * Return DOM of XML if found / created in other cases return false
+   * Return DOM of XML if found / created in other cases return null
    *
    * @param DOMNode $xml DOMNode of a SSODescriptor as a XML object
    *
@@ -613,7 +617,7 @@ class Common {
    */
   protected function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
     $child = $ssoDescriptor->firstChild;
-    $extensions = false;
+    $extensions = null;
     if ($child) {
       if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
         $extensions = $child;
@@ -626,5 +630,35 @@ class Common {
       $ssoDescriptor->appendChild($extensions);
     }
     return $extensions;
+  }
+
+  protected function getUUInfo($extensions, $create = true) {
+    $child = $extensions->firstChild;
+    $uuInfo = null;
+    $mduiFound = false;
+    while ($child && ! $uuInfo) {
+      switch ($child->nodeName) {
+        case self::SAML_MDUI_UIINFO :
+          $mduiFound = true;
+          $uuInfo = $child;
+          break;
+        case self::SAML_MDUI_DISCOHINTS :
+          $mduiFound = true;
+          if ($create) {
+            $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
+            $extensions->insertBefore($uuInfo, $child);
+          }
+          break;
+        default :
+          $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
+          $extensions->appendChild($uuInfo);
+      }
+      $child = $child->nextSibling;
+    }
+    if (! $mduiFound) {
+      $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI,
+        self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+    }
+    return $uuInfo;
   }
 }

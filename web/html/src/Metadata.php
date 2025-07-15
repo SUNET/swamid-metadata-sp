@@ -136,9 +136,7 @@ class Metadata extends Common {
   #############
   private function cleanOutAttribuesInIDPSSODescriptor() {
     $removed = false;
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $ssoDescriptor = $this->getSSODecriptor($entityDescriptor, 'IDPSSO');
-    if ($ssoDescriptor) {
+    if ($ssoDescriptor = $this->getSSODecriptor('IDPSSO')) {
       $subchild = $ssoDescriptor->firstChild;
       while ($subchild) {
         if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {
@@ -155,13 +153,12 @@ class Metadata extends Common {
       $this->error .= 'SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata';
       $this->error .= " MUST NOT include any Attribute elements. Have been removed.\n";
     }
-    return $entityDescriptor->hasAttribute('entityID') ? $entityDescriptor->getAttribute('entityID') : false;
+    return $this->entityDescriptor->hasAttribute('entityID') ? $this->entityDescriptor->getAttribute('entityID') : false;
   }
 
   # Removed SAML1 support from an entity
   public function removeSaml1Support() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
+    $child = $this->entityDescriptor->firstChild;
     while ($child) {
       $checkProtocol = 0;
       switch ($child->nodeName) {
@@ -245,7 +242,7 @@ class Metadata extends Common {
           $this->result .= sprintf("Removed %s since protocolSupportEnumeration was empty\n", $child->nodeName);
           $remChild = $child;
           $child = $child->nextSibling;
-          $entityDescriptor->removeChild($remChild);
+          $this->entityDescriptor->removeChild($remChild);
         }
       } else {
         $child = $child->nextSibling;
@@ -256,8 +253,7 @@ class Metadata extends Common {
 
   # Remove Obsolete Algorithms
   public function removeObsoleteAlgorithms() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
+    $child = $this->entityDescriptor->firstChild;
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :
@@ -620,8 +616,7 @@ class Metadata extends Common {
   }
 
   private function addRegistrationInfo() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $extensions = $this->getExtensions($entityDescriptor);
+    $extensions = $this->getExtensions();
     # Find mdattr:EntityAttributes in XML
     $child = $extensions->firstChild;
     $registrationInfo = false;
@@ -634,7 +629,7 @@ class Metadata extends Common {
     if (! $registrationInfo) {
       # Add if missing
       $ts=date("Y-m-d\TH:i:s\Z");
-      $entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
+      $this->entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
         'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
       $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
       $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
