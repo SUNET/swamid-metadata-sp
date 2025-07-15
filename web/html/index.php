@@ -1,5 +1,7 @@
 <?php
 
+const HTML_OUTLINE = '-outline';
+
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
 
@@ -128,12 +130,12 @@ function showMenu($menuActive, $query = '') {
 
   print "\n    ";
   $query = $query == '' ? '' : '&query=' . urlencode($query);
-  printf('<a href="./?show=All%s"><button type="button" class="btn btn%s-primary">All in %s</button></a>', $query, $menuActive == 'all' ? '' : '-outline', $federation['displayName']);
-  printf('<a href="./?show=IdP%s"><button type="button" class="btn btn%s-primary">IdP in %s</button></a>', $query, $menuActive == 'IdPs' ? '' : '-outline', $federation['displayName']);
-  printf('<a href="./?show=SP%s"><button type="button" class="btn btn%s-primary">SP in %s</button></a>', $query, $menuActive == 'SPs' ? '' : '-outline', $federation['displayName']);
-  printf('<a href="./?show=InterIdP"><button type="button" class="btn btn%s-primary">IdP via interfederation</button></a>', $menuActive == 'fedIdPs' ? '' : '-outline');
-  printf('<a href="./?show=InterSP"><button type="button" class="btn btn%s-primary">SP via interfederation</button></a>', $menuActive == 'fedSPs' ? '' : '-outline');
-  printf('<a href="./?show=Info%s"><button type="button" class="btn btn%s-primary">Info</button></a>', $query, $menuActive == 'info' ? '' : '-outline');
+  printf('<a href="./?show=All%s"><button type="button" class="btn btn%s-primary">All in %s</button></a>', $query, $menuActive == 'all' ? '' : HTML_OUTLINE, $federation['displayName']);
+  printf('<a href="./?show=IdP%s"><button type="button" class="btn btn%s-primary">IdP in %s</button></a>', $query, $menuActive == 'IdPs' ? '' : HTML_OUTLINE, $federation['displayName']);
+  printf('<a href="./?show=SP%s"><button type="button" class="btn btn%s-primary">SP in %s</button></a>', $query, $menuActive == 'SPs' ? '' : HTML_OUTLINE, $federation['displayName']);
+  printf('<a href="./?show=InterIdP"><button type="button" class="btn btn%s-primary">IdP via interfederation</button></a>', $menuActive == 'fedIdPs' ? '' : HTML_OUTLINE);
+  printf('<a href="./?show=InterSP"><button type="button" class="btn btn%s-primary">SP via interfederation</button></a>', $menuActive == 'fedSPs' ? '' : HTML_OUTLINE);
+  printf('<a href="./?show=Info%s"><button type="button" class="btn btn%s-primary">Info</button></a>', $query, $menuActive == 'info' ? '' : HTML_OUTLINE);
   print "\n";
 }
 
@@ -564,8 +566,9 @@ function showFeed($id) {
       default :
         printf ("%s\n", $federation['localFeed']);
     }
-  } else
+  } else {
     printf ("%s\n", $federation['localFeed']);
+  }
   exit;
 }
 

@@ -100,8 +100,7 @@ class ParseXMLSWAMID extends ParseXML {
    */
   private function cleanOutAssertionConsumerServiceHTTPRedirect() {
     $removed = false;
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
+    $child = $this->entityDescriptor->firstChild;
     while ($child) {
       if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR) {
         $subchild = $child->firstChild;

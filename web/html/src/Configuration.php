@@ -5,15 +5,59 @@ use PDO;
 use PDOException;
 
 class Configuration {
-  private bool $smtpAuth = false; // Used while sending out in PHPMailer
+  /**
+   * SMTP configuration
+   */
   private array $smtp = array();
+
+  /**
+   * If we use SMTP AUTH
+   */
+  private bool $smtpAuth = false; // Used while sending out in PHPMailer
+
+  /**
+   * Information for IMPS
+   */
   private $imps = false;
+
+  /**
+   * Mode of application
+   *
+   * Prod / QA or Lab
+   */
   private string $mode = 'Lab';
+
+  /**
+   * BaseURL of the application
+   *
+   * Should be the hostname including htt(s)://
+   *
+   */
   private string $baseURL = '';
+
+  /**
+   * Profiles for entitySelectionProfiles
+   *
+   * https://wiki.refeds.org/display/GROUPS/Entity+Selection+Profile+entity+attribute
+   */
   private array $entitySelectionProfiles = array();
+
+  /**
+   * The database connection
+   */
   private PDO $db;
-  private array $userLevels = array(); // indexed by username, maps to user privilege level
-  private array $federation = array(); // hash of federation parameters
+
+  /**
+   * maps to user privilege level
+   *
+   * indexed by username,
+   */
+  private array $userLevels = array();
+
+  /**
+   * Informatiom about the federation running the application
+   */
+  private array $federation = array();
 
   /**
    * Setup the class
@@ -49,27 +93,10 @@ class Configuration {
       }
     }
 
-    foreach ($reqParamsDB as $param) {
-      if (! isset($db[$param])) {
-        printf ('Missing $db[%s] in config.php<br>', $param);
-        exit;
-      }
-    }
+    $this->checkParams($db, $reqParamsDB, 'db');
+    $this->checkParams($smtp, $reqParamsSmtp, 'smtp');
 
-    foreach ($reqParamsSmtp as $param) {
-      if (! isset($smtp[$param])) {
-        printf ('Missing $smtp[%s] in config.php<br>', $param);
-        exit;
-      }
-    }
-
-    foreach ($reqParamsFederation as $param) {
-      if (! isset($federation[$param])) {
-        printf ('Missing $federation[%s] in config.php<br>', $param);
-        exit;
-      }
-    }
-
+    $this->checkParams($federation, $reqParamsFederation, 'federation');
     if (! isset($federation['extend'])) {
       $federation['extend'] = '';
     }
@@ -85,20 +112,17 @@ class Configuration {
       # Default to port 587 for Auth
       # Overrided by port in $smtp in config
       $this->smtp['port'] = 587;
-      foreach ($reqParamsSmtpSasl as $param) {
-        if (! isset($smtp['sasl'][$param])) {
-          printf ('Missing $smtp[sasl][%s] in config.php<br>', $param);
-          exit;
-        }
-      }
+      $this->checkParams($smtp['sasl'], $reqParamsSmtpSasl, 'smtp[sasl]');
     } else {
       # Default to port 25
       # Overrided by port in $smtp in config
       $this->smtp['port'] = 25;
     }
+    # Overide default 25/587 if configured
     if (isset($smtp['port'])) {
       $this->smtp['port'] = $smtp['port'];
     }
+    # Defaults to false if not set
     if (! isset($smtp['bcc'])) {
       $this->smtp['bcc'] = false;
     }
@@ -128,16 +152,39 @@ class Configuration {
 
     # IMPS
     if (isset($imps)) {
+      $this->checkParams($imps, array('oldDate', 'warn1', 'warn2', 'error'), 'imps');
+
       $this->imps = $imps;
-      foreach (array('oldDate', 'warn1', 'warn2', 'error') as $param) {
-        if (! isset($imps[$param])) {
-          printf ('Missing $imps[%s] in config.php<br>', $param);
-          exit;
-        }
+    }
+  }
+
+  /**
+   * Check if all requied parameters is present
+   *
+   * @param array $checkParam Parameter array to check
+   *
+   * @param array $reqParams Requierd parameters in checkParam
+   *
+   * @param string Name of array in config
+   *
+   * @return void
+   */
+  private function checkParams($checkParam, $reqParams, $nameOfParam) {
+    foreach ($reqParams as $param) {
+      if (! isset($checkParam[$param])) {
+        printf ('Missing $%s[%s] in config.php<br>', $nameOfParam, $param);
+        exit;
       }
     }
   }
 
+  /**
+   * Check Database version
+   *
+   * Check and upgrade if needed
+   *
+   * @return void
+   */
   private function checkDBVersion() {
     try {
       $dbVersionHandler = $this->db->query("SELECT `value` FROM `params` WHERE `id` = 'dbVersion';");
@@ -546,38 +593,96 @@ class Configuration {
     return $this->smtp;
   }
 
+  /**
+   * Return base URL
+   *
+   * Return a string with the base URL
+   *
+   * @return string
+   */
   public function baseURL() {
     return $this->baseURL;
   }
 
+  /**
+   * Return entitySelectionProfiles
+   *
+   * Return an array with entitySelectionProfiles
+   *
+   * @return array
+   */
   public function entitySelectionProfiles() {
     return $this->entitySelectionProfiles;
   }
 
+  /**
+   * Return smtpAuth
+   *
+   * Return if we should use SMTPAUTH or not
+   *
+   * @return bool
+   */
   public function smtpAuth() {
     return $this->smtpAuth;
   }
 
+  /**
+   * Return sendOut
+   *
+   * Return if we should send out mails or not
+   *
+   * @return bool
+   */
   public function sendOut() {
     return $this->smtp['sendOut'];
   }
 
+  /**
+   * Return database
+   *
+   * Return a database pointer
+   *
+   * @return PDO
+   */
   public function getDb() {
     return $this->db;
   }
 
+  /**
+   * Return Userlevels
+   *
+   * Return an array with usres and their userlevel
+   *
+   * @return array
+   */
   public function getUserLevels() {
     return $this->userLevels;
   }
 
+  /**
+   * Return federation
+   *
+   * Return an array with the federation configuration
+   *
+   * @return array
+   */
   public function getFederation() {
     return $this->federation;
   }
 
+  /**
+   * Return IMPS configuration
+   *
+   * Return an array with configuration values for IMPS
+   *
+   */
   public function getIMPS() {
     return $this->imps;
   }
 
+  /**
+   * Return mode of application
+   */
   public function getMode() {
     return $this->mode;
   }

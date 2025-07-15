@@ -30,7 +30,7 @@ if (isset($_SERVER['displayName'])) {
 }
 
 $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
-if ($userLevel < 20) { exit; };
+if ($userLevel < 20) { exit; }
 $displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
 $html->setDisplayName($displayName);
 
@@ -95,7 +95,7 @@ function showShadowEntities() {
 }
 
 function showSoftDeletedEntities() {
-  global $config;;
+  global $config;
   $entityHandler = $config->getDb()->prepare('SELECT id, `entityID`, `lastUpdated` FROM Entities WHERE status = 4;');
   $entityHandler->execute();
   printf ('        <h5>Entities in Soft Delete</h5>%s        <table id="softDel-table" class="table table-striped table-bordered">%s          <thead><tr><th>Action</th><th>EntityID</th><th>Removed</th></tr></thead>%s', "\n", "\n", "\n");
@@ -106,7 +106,7 @@ function showSoftDeletedEntities() {
 }
 
 function showPublishedPendingEntities() {
-  global $config;;
+  global $config;
   $entityHandler = $config->getDb()->prepare(
     'SELECT `Entities`.`id`, `entityID`, `lastUpdated`, `email`, `Users`.`lastSeen`
     FROM `Entities`, `EntityUser`, `Users`
@@ -129,7 +129,7 @@ function showPublishedPendingEntities() {
 }
 
 function showUsers(){
-  global $config;;
+  global $config;
   if (isset($_GET['user'])) {
     $userHandler = $config->getDb()->prepare('SELECT `userID`, `fullName` FROM Users WHERE id = :Id');
     $userHandler->bindValue(':Id', $_GET['user']);
@@ -189,7 +189,7 @@ function showUsers(){
 }
 
 function showValidationOutput() {
-  global $config;;
+  global $config;
 
   $entitiesHandler = $config->getDb()->prepare('SELECT `id`, `entityID` , `validationOutput` FROM `Entities` WHERE `status` < 4 AND `validationOutput` != ""');
   $entitiesHandler->execute();
@@ -208,7 +208,7 @@ function showValidationOutput() {
  * @return void
  */
 function showOrganizationDifference() {
-  global $config;;
+  global $config;
 
   $organizationHandler = $config->getDb()->prepare(
     "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
@@ -249,32 +249,17 @@ function showOrganizationDifference() {
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($organization['OrganizationName'] != '' && $organization['OrganizationDisplayName'] != '' &&
         $organization['OrganizationURL'] != '') {
+        $orgString = $organization['OrganizationName'] . $organization['OrganizationDisplayName'] . $organization['OrganizationURL'];
         $newOrgInfo = true;
         $orgsSame = false;
         while($newOrgInfo && !$orgsSame && $orgInfo) {
-          if ($orgInfo['OrganizationName'] < $organization['OrganizationName']) {
+          $orgInfoString = $orgInfo['OrganizationName'] . $orgInfo['OrganizationDisplayName'] . $orgInfo['OrganizationURL'];
+          if ($orgInfoString < $orgString) {
             printNewOrgInfo($orgInfo);
             $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
-          } elseif ($orgInfo['OrganizationName'] == $organization['OrganizationName']) {
-            #OrganizationName Same
-            if ($orgInfo['OrganizationDisplayName'] < $organization['OrganizationDisplayName']) {
-              printNewOrgInfo($orgInfo);
-              $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
-            } elseif ($orgInfo['OrganizationDisplayName'] == $organization['OrganizationDisplayName']) {
-              # OrganizationDisplayName Same
-              if ($orgInfo['OrganizationURL'] < $organization['OrganizationURL']) {
-                printNewOrgInfo($orgInfo);
-                $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
-              } elseif ($orgInfo['OrganizationURL'] == $organization['OrganizationURL']) {
-                # OrganizationURL Same
-                $orgsSame = true;
-                $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
-              } else {
-                $newOrgInfo = false;
-              }
-            } else {
-              $newOrgInfo = false;
-            }
+          } elseif ($orgInfoString == $orgString) {
+            $orgsSame = true;
+            $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
           } else {
             $newOrgInfo = false;
           }

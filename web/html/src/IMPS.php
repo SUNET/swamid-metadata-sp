@@ -207,7 +207,7 @@ class IMPS {
    *
    * @return void
    */
-  public function BindIdP2IMPS($entity_Id, $imps_Id) {
+  public function bindIdP2IMPS($entity_Id, $imps_Id) {
     $impsHandler = $this->config->getDb()->prepare('INSERT INTO `IdpIMPS`
       (`entity_id`, `IMPS_id`) VALUES
       (:Entity_id, :IMPS_id);');
@@ -472,8 +472,8 @@ class IMPS {
           WHERE `id` = :Id;');
     }
     $updatedArray = array(
-      'memberSince' => $_POST['memberSince'] == '' ? NULL : $_POST['memberSince'],
-      'notMemberAfter' => $_POST['notMemberAfter'] == '' ? NULL : $_POST['notMemberAfter']);
+      'memberSince' => $_POST['memberSince'] == '' ? null : $_POST['memberSince'],
+      'notMemberAfter' => $_POST['notMemberAfter'] == '' ? null : $_POST['notMemberAfter']);
     if ($id > 0) {
       $updatedArray[self::BIND_ID] = $id;
       $result =  $organizationsHandler->execute($updatedArray);
@@ -616,6 +616,13 @@ class IMPS {
       $lang, htmlspecialchars($orgURL), $readOnlyHTML, "\n");
   }
 
+  /**
+   * Create a new Organization
+   *
+   * @param int $entitiesId Id of Entity top copy Organization info from
+   *
+   * @return void
+   */
   public function createOrganizationFromEntity($entitiesId) {
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `data`
       FROM `Organization` WHERE `entity_id` = :Id AND `lang` = :Lang;');

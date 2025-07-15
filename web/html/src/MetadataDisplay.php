@@ -27,6 +27,7 @@ class MetadataDisplay extends Common {
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
+  const HTML_SHOWALLORGS = '&showAllOrgs';
   const HTML_SPACER = '      ';
   const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_TABLE_END = "    </table>\n";
@@ -36,10 +37,17 @@ class MetadataDisplay extends Common {
 
   const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
 
-
-  ####
-  # Shows menu row
-  ####
+  /**
+   * Shows menu row
+   *
+   * Return found errors
+   *
+   * @param int $entityId Id of Entity
+   *
+   * @param bool $admin if user is admin in tool
+   *
+   * @return array
+   */
   public function showStatusbar($entityId, $admin = false){
     $entityHandler = $this->config->getDb()->prepare('
       SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `validationOutput`, `warnings`, `errors`, `errorsNB`, `status`, `OrganizationInfo_id`
@@ -307,9 +315,27 @@ class MetadataDisplay extends Common {
     return $entityError;
   }
 
-  ####
-  # Shows CollapseHeader
-  ####
+  /**
+   * Shows Collapsable Header
+   *
+   * @param string $title Title of header
+   *
+   * @param string $name Name of header
+   *
+   * @param bool $haveSub If header have subheaders
+   *
+   * @param int $step Steps to indent
+   *
+   * @param bool $expanded If expanded by default
+   *
+   * @param bool|string $extra if we have extra info
+   *
+   * @param int $entityId Id of current Entity
+   *
+   * @param int $oldEntityId Id of old Entity
+   *
+   * @return void
+   */
   private function showCollapse($title, $name, $haveSub=true, $step=0, $expanded=true,
     $extra = false, $entityId=0, $oldEntityId=0) {
     $spacer = '';
@@ -361,6 +387,14 @@ class MetadataDisplay extends Common {
     printf('%s        <div class="col%s">', $spacer, $oldEntityId > 0 ? '-6' : '');
     $this->collapseIcons[] = $name;
   }
+
+  /**
+   * Creates a new column below header
+   *
+   * @param int $step Steps to indent
+   *
+   * @return void
+   */
   private function showNewCol($step) {
     $spacer = '';
     while ($step > 0 ) {
@@ -372,9 +406,15 @@ class MetadataDisplay extends Common {
         <?=$spacer?><div class="col-6"><?php
   }
 
-  ####
-  # Shows CollapseEnd
-  ####
+  /**
+   * Shows end of Collapseble header
+   *
+   * @param string $name Name of header to close
+   *
+   * @param int $step Steps to indent
+   *
+   * @return void
+   */
   private function showCollapseEnd($name, $step = 0){
     $spacer = '';
     while ($step > 0 ) {
@@ -391,6 +431,8 @@ class MetadataDisplay extends Common {
    * Shows a formular to connect entiy to an organization
    *
    * @param int $entitiesId id of entity
+   *
+   * @param int $currentOrgId Current OrgId for Entity
    *
    * @return void
    */
@@ -437,6 +479,16 @@ class MetadataDisplay extends Common {
 
   /**
    * Show OrganizationInfo for an entity
+   *
+   * @param int $entitiesId $entitiesId id of entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @param bool $admin If current user is Admin
+   *
+   * @param bool $organizationErrors If there are any errors for Organization values
+   *
+   * @return void
    */
   public function showOrganizationInfo($entitiesId, $allowEdit = false, $admin = false, $organizationErrors = false) {
     $entityHandler = $this->config->getDb()->prepare(
@@ -537,9 +589,17 @@ class MetadataDisplay extends Common {
     printf('          </ul>%s', "\n",);
   }
 
-  ####
-  # Shows Info about IMPS connected to this entity
-  ####
+  /**
+   * Shows Info about IMPS connected to this entity
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @param bool $expanded If expanded from start
+   *
+   * @return void
+   */
   public function showIMPS($entityId, $allowEdit = false, $expanded = false) {
     $impsListHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `name`, `maximumAL`
@@ -619,9 +679,17 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('IMPS', 0);
   }
 
-  ####
-  # Shows EntityAttributes if exists
-  ####
+  /**
+   * Shows EntityAttributes if exists
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $oldEntityId Id of old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @return void
+   */
   public function showEntityAttributes($entityId, $oldEntityId=0, $allowEdit = false) {
     if ($allowEdit) {
       $this->showCollapse('EntityAttributes', 'Attributes', false, 0, true, 'EntityAttributes',
@@ -636,6 +704,16 @@ class MetadataDisplay extends Common {
     }
     $this->showCollapseEnd('Attributes', 0);
   }
+
+  /**
+   * Show EntityAttributes for one of the Entities
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   */
   private function showEntityAttributesPart($entityId, $otherEntityId, $added) {
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
       FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
@@ -698,9 +776,19 @@ class MetadataDisplay extends Common {
     }
   }
 
-  ####
-  # Shows IdP info
-  ####
+  /**
+   * Shows IdP info
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $oldEntityId Id of old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @param bool $removable If IDPSSODescriptor is allowed to be removed
+   *
+   * @return void
+   */
   public function showIdP($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
     if ($removable) {
       $removable = 'SSO';
@@ -746,9 +834,19 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('IdP', 0);
   }
 
-  ####
-  # Shows SP info
-  ####
+  /**
+   * Shows SP info
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $oldEntityId Id of old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @param bool $removable If the SPSSODescriptor is allowed to be removed
+   *
+   * @return void
+   */
   public function showSp($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
     if ($removable) {
       $removable = 'SSO';
@@ -789,6 +887,19 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('SP', 0);
   }
 
+  /**
+   * Show AttributeAuthority info
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $oldEntityId Id of old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @param bool $removable If the AttributeAuthorityDescriptor is allowed to be removed
+   *
+   * @return void
+   */
   public function showAA($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
     if ($removable) {
       $removable = 'SSO';
@@ -805,9 +916,19 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('AttributeAuthority', 0);
   }
 
-  ####
-  # Shows erroURL
-  ####
+  /**
+   * Shows erroURL
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @return void
+   */
   private function showErrorURL($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
     $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
       FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
@@ -850,9 +971,19 @@ class MetadataDisplay extends Common {
     print '</p></li></ul>';
   }
 
-  ####
-  # Shows showScopes
-  ####
+  /**
+   * Shows showScopes
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @return void
+   */
   private function showScopes($entityId, $otherEntityId=0, $added = false, $allowEdit = false) {
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     if ($otherEntityId) {
@@ -883,9 +1014,19 @@ class MetadataDisplay extends Common {
     print '              </ul>';
   }
 
-  ####
-  # Shows mdui:UIInfo for IdP or SP
-  ####
+  /**
+   * Shows mdui:UIInfo for IdP or SP
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param $type if SP or Idp
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
   private function showMDUI($entityId, $type, $otherEntityId = 0, $added = false) {
     $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data`
       FROM `Mdui` WHERE `entity_id` = :Id AND `type` = :Type ORDER BY `lang`, `element`;');
@@ -988,9 +1129,17 @@ class MetadataDisplay extends Common {
     }
   }
 
-  ####
-  # Shows mdui:DiscoHints for IdP
-  ####
+  /**
+   * Shows mdui:DiscoHints for IdP
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
   private function showDiscoHints($entityId, $otherEntityId=0, $added = false) {
     $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data`
       FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
@@ -1034,9 +1183,20 @@ class MetadataDisplay extends Common {
     }
   }
 
-  ####
-  # Shows KeyInfo for IdP or SP
-  ####
+  /**
+   * Shows KeyInfo for AttributeAuthority, IdP or SP
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param $type if AttributeAuthority, SP or Idp
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
+
   private function showKeyInfo($entityId, $type, $otherEntityId=0, $added = false) {
     $keyInfoStatusHandler = $this->config->getDb()->prepare('SELECT `use`, `notValidAfter`
       FROM `KeyInfo` WHERE `entity_id` = :Id AND `type` = :Type;');
@@ -1142,9 +1302,17 @@ class MetadataDisplay extends Common {
     }
   }
 
-  ####
-  # Shows AttributeConsumingService for a SP
-  ####
+  /**
+   * Shows AttributeConsumingService for a SP
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
   private function showAttributeConsumingService($entityId, $otherEntityId=0, $added = false) {
     $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index`
       FROM `AttributeConsumingService` WHERE `entity_id` = :Id;');
@@ -1248,6 +1416,12 @@ class MetadataDisplay extends Common {
   /**
    * Show DiscoveryResponse
    *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
    * @return void
    */
   private function showDiscoveryResponse($entityId, $otherEntityId=0, $added = false) {
@@ -1279,9 +1453,17 @@ class MetadataDisplay extends Common {
     printf ('                </ul>');
   }
 
-  ####
-  # Shows Organization information if exists
-  ####
+  /**
+   * Shows Organization information if exists
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $oldEntityId Id of old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @return void
+   */
   public function showOrganization($entityId, $oldEntityId=0, $allowEdit = false) {
     if ($allowEdit) {
       $this->showCollapse('Organization', 'Organization', false, 0, true, 'Organization', $entityId, $oldEntityId);
@@ -1295,6 +1477,16 @@ class MetadataDisplay extends Common {
     }
     $this->showCollapseEnd('Organization', 0);
   }
+
+  /**
+   * Shows Organization information for one of the Entities
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   */
   private function showOrganizationPart($entityId, $otherEntityId, $added) {
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
@@ -1332,9 +1524,17 @@ class MetadataDisplay extends Common {
     print "\n        </ul>";
   }
 
-  ####
-  # Shows Contact information if exists
-  ####
+  /**
+   * Shows Contact information if exists
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $oldEntityId Id of old entity
+   *
+   * @param bool $allowEdit If current user is allowed to edit Entity
+   *
+   * @return void
+   */
   public function showContacts($entityId, $oldEntityId=0, $allowEdit = false) {
     if ($allowEdit) {
       $this->showCollapse('ContactPersons', 'ContactPersons',
@@ -1350,6 +1550,18 @@ class MetadataDisplay extends Common {
     }
     $this->showCollapseEnd('ContactPersons', 0);
   }
+
+  /**
+   * Shows Contact information for one of the Entities
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
   private function showContactsPart($entityId, $otherEntityId, $added) {
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT *
       FROM `ContactPerson` WHERE `entity_id` = :Id ORDER BY `contactType`;');
@@ -1473,9 +1685,15 @@ class MetadataDisplay extends Common {
     }
   }
 
-  ####
-  # Shows XML for entiry
-  ####
+  /**
+   * Shows MDQ Url for Entity
+   *
+   * @param int $entityId EntityId of entity
+   *
+   * @param string $mode mode
+   *
+   * @return void
+   */
   public function showMdqUrl($entityID, $mode) {
     $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, 0, 0);
     $url = sprintf('https://mds.swamid.se/%sentities/%s', $mode == 'QA' ? 'qa/' : '', urlencode($entityID));
@@ -1484,6 +1702,13 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('MDQ', 0);
   }
 
+  /**
+   * Show XMLHeader for Entity
+   *
+   * @param int $entityId Id of entity
+   *
+   * @return void
+   */
   public function showXML($entityId) {
     printf ('
     <h4>
@@ -1497,6 +1722,15 @@ class MetadataDisplay extends Common {
       $entityId, $entityId, "\n");
   }
 
+  /**
+   * Show XML of Entity as application/xml
+   *
+   * @param string|int $entityId Id or EntityId of entity
+   *
+   * @param bool $urn if $entityId is Id in database or EntityId
+   *
+   * @return void
+   */
   public function showRawXML($entityId, $urn = false) {
     $entityHandler = $urn
       ? $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `entityID` = :Id AND `status` = 1;')
@@ -1515,12 +1749,28 @@ class MetadataDisplay extends Common {
     exit;
   }
 
+  /**
+   * Show Header and diff in XML betwen 2 entitiesId:s
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @param int $otherEntityId Id of other entity
+   *
+   * @return void
+   */
   public function showDiff($entityId, $otherEntityId) {
     $this->showCollapse('XML Diff', 'XMLDiff', false, 0, false);
     $this->showXMLDiff($entityId, $otherEntityId);
     $this->showCollapseEnd('XMLDiff');
   }
 
+  /**
+   * Show Header and editors for an Entity
+   *
+   * @param int $entitiesId Id of entity
+   *
+   * @return void
+   */
   public function showEditors($entityId){
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
     $usersHandler = $this->config->getDb()->prepare('SELECT `userID`, `email`, `fullName`
@@ -1536,6 +1786,13 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('Editors', 0);
   }
 
+  /**
+   * Show status for URL:s in database with an error
+   *
+   * @param string $url Specific URL to show status for
+   *
+   * @return void
+   */
   public function showURLStatus($url = false){
     if($url) {
       $urlHandler = $this->config->getDb()->prepare('SELECT `type`, `validationOutput`, `lastValidated`, `height`, `width`
@@ -1613,16 +1870,10 @@ class MetadataDisplay extends Common {
             }
           }
         }
-        switch ($entity['element']) {
-          case 'Logo' :
-          case 'InformationURL' :
-          case 'PrivacyStatementURL' :
-            printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
-              $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
-              substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
-            break;
-          default :
-            # Skip other elements
+        if ($entity['element'] == 'Logo' || $entity['element'] == 'InformationURL' || $entity['element'] == 'PrivacyStatementURL') {
+          printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
+            $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
+            substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
         }
       }
       while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -1696,6 +1947,13 @@ class MetadataDisplay extends Common {
     }
   }
 
+  /**
+   * Return status as text
+   *
+   * @param int $status Status
+   *
+   * @return string
+   */
   private function getEntityStatusType($status) {
     switch ($status) {
       case 1 :
@@ -1722,6 +1980,13 @@ class MetadataDisplay extends Common {
     return $returnStatus;
   }
 
+  /**
+   * Show tabs and Error list for Entities
+   *
+   * @param bool $download If download as CSV or display as HTML
+   *
+   * @return void
+   */
   public function showErrorList($download = false) {
     if (! $download) {
       # Default values
@@ -1811,6 +2076,14 @@ class MetadataDisplay extends Common {
         "\n", "\n", "\n");
     }
   }
+
+  /**
+   * Return Error list for Entities
+   *
+   * @param bool $download If download as CSV or display as HTML
+   *
+   * @return void
+   */
   private function showErrorEntitiesList($download) {
     $emails = array();
     $entityHandler = $this->config->getDb()->prepare(
@@ -1898,6 +2171,14 @@ class MetadataDisplay extends Common {
     }
     if (!$download) {print "    " . self::HTML_TABLE_END; }
   }
+
+  /**
+   * Show Errors from MailReminders
+   *
+   * @param bool $showAll if we should show all or only those needing to be contacted
+   *
+   * @return void
+   */
   private function showErrorMailReminders($showAll=true) {
     $impsDates = $this->config->getIMPS();
     $entityHandler = $this->config->getDb()->prepare(
@@ -2026,6 +2307,12 @@ class MetadataDisplay extends Common {
     }
     printf ('    %s', self::HTML_TABLE_END);
   }
+
+  /**
+   * Show IdPs Missing IMPS
+   *
+   * @return void
+   */
   private function showIdPsMissingIMPS() {
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT `id`, `entityID`, `publishIn`
@@ -2059,6 +2346,15 @@ class MetadataDisplay extends Common {
         </div><!-- end row -->');
   }
 
+  /**
+   * Show diff in XML betwen 2 entities
+   *
+   * @param int $entityId1 Id of Entity 1
+   *
+   * @param int $entityId2 Id of Entity 2
+   *
+   * @return void
+   */
   public function showXMLDiff($entityId1, $entityId2) {
     $entityHandler = $this->config->getDb()->prepare('SELECT `id`, `entityID`, `xml` FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->bindValue(self::BIND_ID, $entityId1);
@@ -2152,6 +2448,11 @@ class MetadataDisplay extends Common {
     }
   }
 
+  /**
+   * Show list of pending Entites
+   *
+   * @return void
+   */
   public function showPendingList() {
     $entitiesHandler = $this->config->getDb()->prepare(
       'SELECT `Entities`.`id`, `entityID`, `xml`, `lastUpdated`, `email`, `lastChanged`
@@ -2203,6 +2504,11 @@ class MetadataDisplay extends Common {
     print self::HTML_TABLE_END;
   }
 
+  /**
+   * Show EcsStatistics
+   *
+   * @return void
+   */
   public function showEcsStatistics() {
     $ecsTagged = array(
       self::SAML_EC_RANDS => 'rands',
@@ -2364,6 +2670,15 @@ class MetadataDisplay extends Common {
    print "    </script>\n";
   }
 
+  /**
+   * Shows row for Assurance
+   *
+   * @param string $idp EntityId of IdP
+   *
+   * @param array $assurance array with Assurance info
+   *
+   * @return void
+   */
   private function printAssuranceRow($idp, $assurance) {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     printf('      <tr>
@@ -2385,6 +2700,11 @@ class MetadataDisplay extends Common {
       $assurance['None'], "\n");
   }
 
+  /**
+   * Show RAFStatistics for all seen IdP:s
+   *
+   * @return void
+   */
   public function showRAFStatistics() {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     $idpCountHandler = $this->config->getDb()->prepare(
@@ -2607,6 +2927,11 @@ class MetadataDisplay extends Common {
       $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2']); # NOSONAR Should be http://
   }
 
+  /**
+   * Show EntityStatistics over time
+   *
+   * @return void
+   */
   public function showEntityStatistics() {
     $labelsArray = array();
     $spArray = array();
@@ -2696,6 +3021,11 @@ class MetadataDisplay extends Common {
       $labels, $idps, $sps, "\n", "\n");
   }
 
+  /**
+   * Show list of Organizations
+   *
+   * @return void
+   */
   public function showOrganizationLists() {
     $organizationHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(id) AS count, `Org1`.`data` AS `OrganizationName`,
@@ -2787,6 +3117,16 @@ class MetadataDisplay extends Common {
     }
 
   }
+
+  /**
+   * Show list of Organizations in one language
+   *
+   * @param PDOStatement $organizationHandler prepared statemt for Organizations in one langage
+   *
+   * @param string $lang Langage to show
+   *
+   * @return void
+   */
   private function printOrgList($organizationHandler, $lang){
     printf ('
           <table id="Organization%s-table" class="table table-striped table-bordered">
@@ -2818,6 +3158,13 @@ class MetadataDisplay extends Common {
     printf ('      %s', self::HTML_TABLE_END);
   }
 
+  /**
+   * Show Members tab
+   *
+   * @param $userLevel Userlevel for user
+   *
+   * @return void
+   */
   public function showMembers($userLevel) {
     # Default values
     $impsActive = '';
@@ -2892,6 +3239,11 @@ class MetadataDisplay extends Common {
     </div><!-- End tab-content -->%s',"\n", "\n");
   }
 
+  /**
+   * show List of IMPS
+   *
+   * @return void
+   */
   private function showIMPSList($id, $userLevel) {
     $impsHandler = $this->config->getDb()->prepare(
       "SELECT `IMPS`.`id`,`name`, `maximumAL`, `lastUpdated`, `lastValidated`,
@@ -2957,6 +3309,15 @@ class MetadataDisplay extends Common {
     }
   }
 
+  /**
+   * Show List of IMPS:es
+   *
+   * @param $id Id of IMPS to expand
+   *
+   * @param $userLevel Userlevel for user
+   *
+   * @return void
+   */
   private function showOrganizationInfoLists($id, $userLevel) {
     $organizationHandler = $this->config->getDb()->prepare(
       "SELECT `OrganizationInfo`.`id` AS orgId,
@@ -2988,10 +3349,10 @@ class MetadataDisplay extends Common {
 
     $showAllOrgs = isset($_GET['showAllOrgs']);
     printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
-      $id, $showAllOrgs ? '' : '&showAllOrgs', $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
+      $id, $showAllOrgs ? '' : self::HTML_SHOWALLORGS, $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
     if ($userLevel > 10) {
       printf('%s          <a href=".?action=Members&subAction=editOrganization&id=0%s"><button type="button" class="btn btn-outline-primary">Add new Organization</button></a>',
-        "\n", $showAllOrgs ? '&showAllOrgs' : '');
+        "\n", $showAllOrgs ? self::HTML_SHOWALLORGS : '');
     }
     $organizationHandler->execute();
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -3006,8 +3367,8 @@ class MetadataDisplay extends Common {
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeOrganization&id=%d%s"><i class="fas fa-trash"></i></a>',
-                "\n", $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '',
-                $organization['orgId'], $showAllOrgs ? '&showAllOrgs' : '');
+                "\n", $organization['orgId'], $showAllOrgs ? self::HTML_SHOWALLORGS : '',
+                $organization['orgId'], $showAllOrgs ? self::HTML_SHOWALLORGS : '');
       }
       printf('%s                <ul>%s', "\n", "\n");
       while ($orgInfoData = $organizationDataHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -3044,6 +3405,11 @@ class MetadataDisplay extends Common {
     }
   }
 
+  /**
+   * Show a list of Scopes
+   *
+   * @return void
+   */
   private function showScopeList() {
     printf ('%s        <table id="scope-table" class="table table-striped table-bordered">
           <thead><tr><th>Scope</th><th>EntityID</th><th>OrganizationName</th></tr></thead>%s', "\n", "\n");
@@ -3067,6 +3433,11 @@ class MetadataDisplay extends Common {
     printf ('    %s', self::HTML_TABLE_END);
   }
 
+  /**
+   * Show Help instructions
+   *
+   * @return void
+   */
   public function showHelp() {
     $federation = $this->config->getFederation();
     $federation_display_name = $federation['displayName'];
@@ -3199,9 +3570,11 @@ class MetadataDisplay extends Common {
     $this->showCollapseEnd('WithdrawPublicationRequest', 0);
   }
 
-  #############
-  # Return collapseIcons
-  #############
+  /**
+   * Returns an array of HeadersIcons that should be collapsable
+   *
+   * @return array
+   */
   public function getCollapseIcons() {
     return $this->collapseIcons;
   }

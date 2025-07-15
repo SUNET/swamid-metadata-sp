@@ -3,6 +3,8 @@ namespace metadata;
 
 use PDO;
 use DOMDocument;
+use DOMElement;
+use CurlHandle;
 
 /**
  * Class to collect common functions for Validate and ParseXML
@@ -29,6 +31,7 @@ class Common {
   protected int $organizationInfoId = 0;
 
   protected DOMDocument $xml;
+  protected DOMElement $entityDescriptor;
   private bool $handleXML = true;
 
   const BIND_BITS = ':Bits';
@@ -115,6 +118,7 @@ class Common {
           $this->xml->formatOutput = true;
           $this->xml->loadXML($entity['xml']);
           $this->xml->encoding = 'UTF-8';
+          $this->getEntityDescriptor($this->xml);
         }
       }
     }
@@ -206,116 +210,120 @@ class Common {
       SET `lastValidated` = NOW(), `status` = :Status, `cocov1Status` = :Cocov1Status,
         `height` = :Height, `width` = :Width, `nosize` = :NoSize, `validationOutput` = :Result
       WHERE `URL` = :URL;");
-    if ($limit > 10) {
-      $sql = "SELECT `URL`, `type` FROM `URLs`
+    $sql = ($limit > 10) ?
+      "SELECT `URL`, `type` FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-7 0:0:0')
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-6:0:0'))
-        ORDER BY `lastValidated` LIMIT $limit;";
-    } else {
-      $sql = "SELECT `URL`, `type`
+        ORDER BY `lastValidated` LIMIT $limit;"
+    :
+      "SELECT `URL`, `type`
         FROM `URLs`
         WHERE `lastValidated` < ADDTIME(NOW(), '-20 0:0:0')
           OR ((`status` > 0 OR `cocov1Status` > 0) AND `lastValidated` < ADDTIME(NOW(), '-8:0:0'))
         ORDER BY `lastValidated` LIMIT $limit;";
-    }
     $urlHandler = $this->config->getDb()->prepare($sql);
     $urlHandler->execute();
     $count = 0;
-    if ($verbose) {
-      printf ('    <table class="table table-striped table-bordered">%s', "\n");
-    }
     while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
-      $urlUpdateHandler->bindValue(self::BIND_URL, $url['URL']);
+      $updateArray = array(
+        self::BIND_URL => $url['URL'],
+        self::BIND_HEIGHT => 0,
+        self::BIND_WIDTH => 0,
+        self::BIND_NOSIZE => 0
+      );
 
       curl_setopt($ch, CURLOPT_URL, $url['URL']);
-      $height = 0;
-      $width = 0;
-      $nosize = 0;
       $verboseInfo = sprintf('<tr><td>%s</td><td>', $url['URL']);
       $output = curl_exec($ch);
       if (curl_errno($ch)) {
         $verboseInfo .= 'Curl error';
-        $urlUpdateHandler->bindValue(self::BIND_RESULT, curl_error($ch));
-        $urlUpdateHandler->bindValue(self::BIND_STATUS, 3);
-        $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
+        $updateArray[self::BIND_RESULT] = curl_error($ch);
+        $updateArray[self::BIND_STATUS] = 3;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
       } else {
-        switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
-          case 200 :
-            $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-            if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
-              if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
-                $nosize = 1;
-              } else {
-                $size = getimagesizefromstring($output);
-                $width = $size[0];
-                $height = $size[1];
-              }
-            }
-            switch ($url['type']) {
-              case 1 :
-              case 2 :
-                $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Reachable');
-                $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
-                break;
-              case 3 :
-                if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
-                  $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Policy OK');
-                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 0);
-                } else {
-                  $urlUpdateHandler->bindValue(self::BIND_RESULT,
-                    'Policy missing link to ' . self::SAML_EC_COCOV1);
-                  $urlUpdateHandler->bindValue(self::BIND_STATUS, 0);
-                  $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-                }
-                break;
-              default :
-                break;
-            }
-            break;
-          case 403 :
-            $verboseInfo .= '403';
-            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Access denied. Can't check URL.");
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-            break;
-          case 404 :
-            $verboseInfo .= '404';
-            $urlUpdateHandler->bindValue(self::BIND_RESULT, 'Page not found.');
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-            break;
-          case 503 :
-            $verboseInfo .= '503';
-            $urlUpdateHandler->bindValue(self::BIND_RESULT, "Service Unavailable. Can't check URL.");
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-            break;
-          default :
-            $verboseInfo .= $http_code;
-            $urlUpdateHandler->bindValue(self::BIND_RESULT,
-              "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(");
-            $urlUpdateHandler->bindValue(self::BIND_STATUS, 2);
-            $urlUpdateHandler->bindValue(self::BIND_COCOV1STATUS, 1);
-        }
+        $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
       }
       $this->checkURLStatus($url['URL'], $verbose);
-      $urlUpdateHandler->bindValue(self::BIND_HEIGHT, $height);
-      $urlUpdateHandler->bindValue(self::BIND_WIDTH, $width);
-      $urlUpdateHandler->bindValue(self::BIND_NOSIZE, $nosize);
-      $urlUpdateHandler->execute();
+      $urlUpdateHandler->execute($updateArray);
       $count ++;
-      if ($verbose) {
-        printf ('      %s</td></tr>%s', $verboseInfo, "\n");
-      }
+      $verboseInfo .= sprintf ('      </td></tr>%s', "\n");
     }
     if ($verbose) {
-      printf ('    </table>%s', "\n");
+      printf('    <table class="table table-striped table-bordered">%s%s    </table>%s', "\n", $verboseInfo, "\n");
     }
     curl_close($ch);
     if ($limit > 10) {
       printf ("Checked %d URL:s\n", $count);
+    }
+  }
+
+  /**
+   * Checks return Code for an Curl request
+   *
+   * @param CurlHandle $ch
+   *
+   * @param string $output Text result from curl
+   *
+   * @param int $type Type of URL
+   *
+   * @param &$updateArray Array sent back to update DB
+   *
+   * @param bool &$verboseInfo Verbose info to be displayed
+   *
+   * @return void
+   */
+  private function checkCurlReturnCode($ch, $output, $type, &$updateArray, &$verboseInfo) {
+    switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
+      case 200 :
+        $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
+          if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
+            $updateArray[self::BIND_NOSIZE] = 1;
+          } else {
+            $size = getimagesizefromstring($output);
+            $updateArray[self::BIND_WIDTH] = $size[0];
+            $updateArray[self::BIND_HEIGHT] = $size[1];
+          }
+        }
+        if ($type == 3) {
+          if (strpos ( $output, self::SAML_EC_COCOV1) > 1 ) {
+            $updateArray[self::BIND_RESULT] = 'Policy OK';
+            $updateArray[self::BIND_STATUS] = 0;
+            $updateArray[self::BIND_COCOV1STATUS] = 0;
+          } else {
+            $updateArray[self::BIND_RESULT] = 'Policy missing link to ' . self::SAML_EC_COCOV1;
+            $updateArray[self::BIND_STATUS] = 0;
+            $updateArray[self::BIND_COCOV1STATUS] = 1;
+          }
+        } else {
+          $updateArray[self::BIND_RESULT] = 'Reachable';
+          $updateArray[self::BIND_STATUS] = 0;
+          $updateArray[self::BIND_COCOV1STATUS] = 0;
+        }
+        break;
+      case 403 :
+        $verboseInfo .= '403';
+        $updateArray[self::BIND_RESULT] = "Access denied. Can't check URL.";
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+        break;
+      case 404 :
+        $verboseInfo .= '404';
+        $updateArray[self::BIND_RESULT] = 'Page not found.';
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+        break;
+      case 503 :
+        $verboseInfo .= '503';
+        $updateArray[self::BIND_RESULT] = "Service Unavailable. Can't check URL.";
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+        break;
+      default :
+        $verboseInfo .= $http_code;
+        $updateArray[self::BIND_RESULT] = "Contact operation@swamid.se. Got code $http_code from web-server. Cant handle :-(";
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
   }
 
@@ -326,7 +334,7 @@ class Common {
    * Run a curl agains the URL:s up for validation.
    * Start by those with oldest lastValidated
    *
-   * @param int $limit Number of URL:s to validate
+   * @param int $age age in days for URLS lastSeen to check
    *
    * @param bool $verbose if we should be verbose during validation
    *
@@ -345,11 +353,9 @@ class Common {
   /**
    * Check URL:s status
    *
-   * Checks URL:s not seen in age number of days.
-   * Run a curl agains the URL:s up for validation.
-   * Start by those with oldest lastValidated
+   * Print all places an URL exists
    *
-   * @param int $limit Number of URL:s to validate
+   * @param string $url URL to check
    *
    * @param bool $verbose if we should be verbose during validation
    *
@@ -517,16 +523,165 @@ class Common {
    *
    * @param DOMNode $xml DOMNode in a XML object
    *
-   * @return DOMNode
+   * @return DOMElement
    */
   protected function getEntityDescriptor($xml) {
     $child = $xml->firstChild;
     while ($child) {
       if ($child->nodeName == self::SAML_MD_ENTITYDESCRIPTOR) {
+        $this->entityDescriptor = $child;
         return $child;
       }
       $child = $child->nextSibling;
     }
-    return false;
+    return null;
+  }
+
+  /**
+   * Find Extensions below EntityDescriptor
+   *
+   * Return DOM of XML if found / created in other cases return null
+   *
+   * @param DOMNode $xml DOMNode in a XML object
+   *
+   * @param bool $create If we should create missing Extensions
+   *
+   * @return DOMElement
+   */
+  protected function getExtensions($create = true) {
+    # Find md:Extensions in XML
+    $child = $this->entityDescriptor->firstChild;
+    $extensions = null;
+    while ($child && ! $extensions) {
+      switch ($child->nodeName) {
+        case self::SAML_MD_EXTENSIONS :
+          $extensions = $child;
+          break;
+        case self::SAML_MD_SPSSODESCRIPTOR :
+        case self::SAML_MD_IDPSSODESCRIPTOR :
+        case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
+        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
+        case self::SAML_MD_PDPDESCRIPTOR :
+        case self::SAML_MD_AFFILIATIONDESCRIPTOR :
+        case self::SAML_MD_ORGANIZATION :
+        case self::SAML_MD_CONTACTPERSON :
+        case self::SAML_MD_ADDITIONALMETADATALOCATION :
+        default :
+          if ($create) {
+            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+            $this->entityDescriptor->insertBefore($extensions, $child);
+          }
+          # Leave switch and while loop
+          break 2;
+      }
+      $child = $child->nextSibling;
+    }
+    if (! $extensions && $create) {
+      # Add if missing
+      $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+      $this->entityDescriptor->appendChild($extensions);
+    }
+    return $extensions;
+  }
+
+  /**
+   * Find SSODescriptor below EntityDescriptor
+   *
+   * Return DOM of XML if found in other cases return null
+   *
+   * @param string $type Type of SSODescript to look for
+   *
+   * @return DOMNode|bool
+   */
+  protected function getSSODecriptor($type) {
+    switch ($type) {
+      case 'SPSSO' :
+        $ssoDescriptorName = self::SAML_MD_SPSSODESCRIPTOR;
+        break;
+      case 'IDPSSO' :
+        $ssoDescriptorName = self::SAML_MD_IDPSSODESCRIPTOR;
+        break;
+      case 'AttributeAuthority' :
+        $ssoDescriptorName = self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR;
+        break;
+      default:
+    }
+    # Find md:xxxSSODescriptor in XML
+    $child = $this->entityDescriptor->firstChild;
+    $ssoDescriptor = null;
+    while ($child && ! $ssoDescriptor) {
+      $ssoDescriptor = $child->nodeName == $ssoDescriptorName ? $child : null;
+      $child = $child->nextSibling;
+    }
+    return $ssoDescriptor;
+  }
+
+  /**
+   * Find Extensions below a SSODescriptor
+   *
+   * Return DOM of XML if found / created in other cases return null
+   *
+   * @param DOMNode $ssoDescriptor DOMNode of a SSODescriptor as a XML object
+   *
+   * @param bool $create If we should create missing Extensions
+   *
+   * @return DOMNode|bool
+   */
+  protected function getSSODescriptorExtensions($ssoDescriptor, $create = true) {
+    $child = $ssoDescriptor->firstChild;
+    $extensions = null;
+    if ($child) {
+      if ($child->nodeName == self::SAML_MD_EXTENSIONS) {
+        $extensions = $child;
+      } elseif ($create) {
+        $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+        $ssoDescriptor->insertBefore($extensions, $child);
+      }
+    } elseif($create) {
+      $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
+      $ssoDescriptor->appendChild($extensions);
+    }
+    return $extensions;
+  }
+
+  /**
+   * Find UUInfo below a SSODescriptor
+   *
+   * Return DOM of XML if found / created in other cases return null
+   *
+   * @param DOMNode $ssoDescriptor DOMNode of a SSODescriptor as a XML object
+   *
+   * @param bool $create If we should create missing UUInfo
+   *
+   * @return DOMNode|bool
+   */
+  protected function getUUInfo($extensions, $create = true) {
+    $child = $extensions->firstChild;
+    $uuInfo = null;
+    $mduiFound = false;
+    while ($child && ! $uuInfo) {
+      switch ($child->nodeName) {
+        case self::SAML_MDUI_UIINFO :
+          $mduiFound = true;
+          $uuInfo = $child;
+          break;
+        case self::SAML_MDUI_DISCOHINTS :
+          $mduiFound = true;
+          if ($create) {
+            $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
+            $extensions->insertBefore($uuInfo, $child);
+          }
+          break;
+        default :
+          $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
+          $extensions->appendChild($uuInfo);
+      }
+      $child = $child->nextSibling;
+    }
+    if (! $mduiFound) {
+      $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI,
+        self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+    }
+    return $uuInfo;
   }
 }

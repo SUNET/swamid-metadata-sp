@@ -6,8 +6,13 @@ use PDO;
 class Metadata extends Common {
   use CommonTrait;
 
-  # Setup
+  /**
+   * DisplayName of Entity
+   */
   private string $entityDisplayName = '';
+  /**
+   * Info about logged in user
+   */
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
 
   const BIND_APPROVEDBY = ':ApprovedBy';
@@ -20,6 +25,15 @@ class Metadata extends Common {
   const BIND_PUBLISHEDID = ':PublishedId';
   const BIND_USER_ID = ':User_id';
 
+  /**
+   * Setup the class
+   *
+   * @param int $id id in database for entity
+   *
+   * @param string $status as a string (prod , shadow or new)
+   *
+   * @return void
+   */
   public function __construct($id = 0, $status = '') {
     $i = func_num_args();
     if ($i == 1) {
@@ -66,7 +80,13 @@ class Metadata extends Common {
     }
   }
 
-  # Import an XML  -> metadata.db
+  /**
+   * Import XML into database
+   *
+   * @param string $xml xml to import
+   *
+   * @return void
+   */
   public function importXML($xml) {
     $this->xml = new DOMDocument;
     $this->xml->preserveWhiteSpace = false;
@@ -104,7 +124,11 @@ class Metadata extends Common {
     $this->isAA = false;
   }
 
-  # Creates / updates XML from Published into Draft
+  /**
+   * Creates a draft from existing current entity
+   *
+   * @return int Id of new draft
+   */
   public function createDraft() {
     if ($this->entityExists && ($this->status == 1 || $this->status == 4)) {
       # Add new entity into database
@@ -130,41 +154,40 @@ class Metadata extends Common {
     }
   }
 
-  #############
-  # Removes Attribues from IDPSSODescriptor.
-  # swamid5131error
-  #############
+  /**
+   * Removes Attribues from IDPSSODescriptor.
+   *
+   * @return void
+   */
   private function cleanOutAttribuesInIDPSSODescriptor() {
     $removed = false;
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR) {
-        $subchild = $child->firstChild;
-        while ($subchild) {
-          if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {
-            $remChild = $subchild;
-            $subchild = $subchild->nextSibling;
-            $child->removeChild($remChild);
-            $removed = true;
-          } else {
-            $subchild = $subchild->nextSibling;
-          }
+    if ($ssoDescriptor = $this->getSSODecriptor('IDPSSO')) {
+      $subchild = $ssoDescriptor->firstChild;
+      while ($subchild) {
+        if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {
+          $remChild = $subchild;
+          $subchild = $subchild->nextSibling;
+          $ssoDescriptor->removeChild($remChild);
+          $removed = true;
+        } else {
+          $subchild = $subchild->nextSibling;
         }
       }
-      $child = $child->nextSibling;
     }
     if ($removed) {
       $this->error .= 'SWAMID Tech 5.1.31: The Identity Provider IDPSSODescriptor element in metadata';
       $this->error .= " MUST NOT include any Attribute elements. Have been removed.\n";
     }
-    return $entityDescriptor->hasAttribute('entityID') ? $entityDescriptor->getAttribute('entityID') : false;
+    return $this->entityDescriptor->hasAttribute('entityID') ? $this->entityDescriptor->getAttribute('entityID') : false;
   }
 
-  # Removed SAML1 support from an entity
+  /**
+   * Removed SAML1 support from an entity
+   *
+   * @return void
+   */
   public function removeSaml1Support() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
+    $child = $this->entityDescriptor->firstChild;
     while ($child) {
       $checkProtocol = 0;
       switch ($child->nodeName) {
@@ -248,7 +271,7 @@ class Metadata extends Common {
           $this->result .= sprintf("Removed %s since protocolSupportEnumeration was empty\n", $child->nodeName);
           $remChild = $child;
           $child = $child->nextSibling;
-          $entityDescriptor->removeChild($remChild);
+          $this->entityDescriptor->removeChild($remChild);
         }
       } else {
         $child = $child->nextSibling;
@@ -257,10 +280,13 @@ class Metadata extends Common {
     $this->saveResults();
   }
 
-  # Remove Obsolete Algorithms
+  /**
+   * Remove Obsolete Algorithms in Extentions and KeyDescriptors
+   *
+   * @return void
+   */
   public function removeObsoleteAlgorithms() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    $child = $entityDescriptor->firstChild;
+    $child = $this->entityDescriptor->firstChild;
     while ($child) {
       switch ($child->nodeName) {
         case self::SAML_MD_EXTENSIONS :
@@ -277,6 +303,14 @@ class Metadata extends Common {
     }
     $this->saveResults();
   }
+
+  /**
+   * Remove Obsolete Algorithms in Extentions
+   *
+   * @param DOMNode $data node to check/remove from
+   *
+   * @return void
+   */
   private function removeObsoleteAlgorithmsExtensions($data) {
     $child = $data->firstChild;
     while ($child) {
@@ -308,6 +342,14 @@ class Metadata extends Common {
       }
     }
   }
+
+  /**
+   * Remove Obsolete Algorithms in KeyDescriptors
+   *
+   * @param DOMNode $data node to check/remove from
+   *
+   * @return void
+   */
   private function removeObsoleteAlgorithmsSSODescriptor($data) {
     $child = $data->firstChild;
     $remChild = false;
@@ -369,9 +411,13 @@ class Metadata extends Common {
     $this->feedValue = $publishIn;
   }
 
-  #############
-  # Updates which feeds by value
-  #############
+  /**
+   * Updates which feeds by value
+   *
+   * @param int $publishIn feedValue to update to
+   *
+   * @return void
+   */
   public function updateFeedByValue($publishIn) {
     $publishedHandler = $this->config->getDb()->prepare('UPDATE `Entities` SET `publishIn` = :PublishIn WHERE `id` = :Id;');
     $publishedHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -380,9 +426,14 @@ class Metadata extends Common {
     $this->feedValue = $publishIn;
   }
 
-  #############
-  # Updates which user that is responsible for an entity
-  #############
+  /**
+   * Updates which user that is responsible for an entity
+   *
+   * @param int $approvedBy user to set as responsible
+   *
+   * @return void
+   */
+
   public function updateResponsible($approvedBy) {
     $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO `EntityUser` (`entity_id`, `user_id`, `approvedBy`, `lastChanged`) VALUES(:Entity_id, :User_id, :ApprovedBy, NOW()) ON DUPLICATE KEY UPDATE `lastChanged` = NOW();');
     $entityUserHandler->bindParam(self::BIND_ENTITY_ID, $this->dbIdNr);
@@ -391,9 +442,13 @@ class Metadata extends Common {
     $entityUserHandler->execute();
   }
 
-  #############
-  # Copies which user that is responsible for an entity from another entity
-  #############
+  /**
+   * Copies which user that is responsible for an entity from another entity
+   *
+   * @param int $otherEntity_id id of other Entity to copy responsible users from
+   *
+   * @return void
+   */
   public function copyResponsible($otherEntity_id) {
     $entityUserHandler = $this->config->getDb()->prepare(
       'INSERT INTO `EntityUser` (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
@@ -415,12 +470,24 @@ class Metadata extends Common {
     }
   }
 
-  #############
-  # Removes an entity from database
-  #############
+  /**
+   * Removes an entity from database
+   *
+   * Removed the id of current Entity
+   *
+   * @return void
+   */
   public function removeEntity() {
     $this->removeEntityReal($this->dbIdNr);
   }
+
+  /**
+   * Removes an entity from database
+   *
+   * @param int $dbIdNr Id of Entity to remove
+   *
+   * @return void
+   */
   private function removeEntityReal($dbIdNr) {
     $entityHandler = $this->config->getDb()->prepare('SELECT `publishedId` FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $dbIdNr);
@@ -460,9 +527,11 @@ class Metadata extends Common {
     }
   }
 
-  #############
-  # Check if an entity from pendingQueue exists with same XML in published
-  #############
+  /**
+   * Check if an entity from pendingQueue exists with same XML in published
+   *
+   * @return bool
+   */
   public function checkPendingIfPublished() {
     $pendingHandler = $this->config->getDb()->prepare('SELECT `entityID`, `xml`, `lastUpdated`
       FROM `Entities` WHERE `status` = 2 AND `id` = :Id;');
@@ -493,9 +562,11 @@ class Metadata extends Common {
     return false;
   }
 
-  #############
-  # Moves an entity from Published to SoftDelete state
-  #############
+  /**
+   * Moves current entity from Published to SoftDelete state
+   *
+   * @return void
+   */
   public function move2SoftDelete() {
     $entityHandler = $this->config->getDb()->prepare('UPDATE `Entities`
       SET `status` = 4, `lastUpdated` = NOW() WHERE `status` = 1 AND `id` = :Id;');
@@ -503,9 +574,12 @@ class Metadata extends Common {
     $entityHandler->execute();
   }
 
-  #############
-  # Moves an entity from pendingQueue to publishedPending state
-  #############
+  /**
+   * Moves current entity from pendingQueue to publishedPending state
+   *
+   * @return void
+   */
+
   public function movePublishedPending() {
     # Check if entity id exist as status pending
     if ($this->status == 2) {
@@ -565,51 +639,67 @@ class Metadata extends Common {
     }
   }
 
-  #############
-  # Return Warning
-  #############
+  /**
+   * Return Warnings
+   *
+   * @return string
+   */
   public function getWarning() {
     return $this->warning;
   }
 
-  #############
-  # Return Error
-  #############
+  /**
+   * Return Error
+   *
+   * @return string
+   */
   public function getError() {
     return $this->error . $this->errorNB;
   }
 
-  #############
-  # Return entityID for this entity
-  #############
+  /**
+   * Return EntityID of current Entity
+   *
+   * @return string
+   */
   public function entityID() {
     return $this->entityID;
   }
 
-  #############
-  # Return if this entity is an IdP
-  #############
+  /**
+   * Return if this entity is an IdP
+   *
+   * @return bool
+   */
   public function isIdP() {
     return $this->isIdP;
   }
 
-  #############
-  # Return if this entity is an SP
-  #############
+  /**
+   * Return if this entity is an SP
+   *
+   * @return bool
+   */
   public function isSP() {
     return $this->isSP;
   }
 
-  #############
-  # Return if this entity is an AA
-  #############
+  /**
+   * Return if this entity is an AA
+   *
+   * @return bool
+   */
   public function isAA() {
     return $this->isAA;
   }
 
-  #############
-  # Moves a Draft into Pending state
-  #############
+  /**
+   * Moves a Draft into Pending state
+   *
+   * @param int $publishedEntity_id Id of published Entity
+   *
+   * @return void
+   */
   public function moveDraftToPending($publishedEntity_id) {
     $this->addRegistrationInfo();
     $entityHandler = $this->config->getDb()->prepare('UPDATE `Entities`
@@ -622,37 +712,13 @@ class Metadata extends Common {
     $entityHandler->execute();
   }
 
+  /**
+   * Add RegistrationInfo to XML of current Entity
+   *
+   * @return void
+   */
   private function addRegistrationInfo() {
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-    # Find md:Extensions in XML
-    $child = $entityDescriptor->firstChild;
-    $extensions = false;
-    while ($child && ! $extensions) {
-      switch ($child->nodeName) {
-        case self::SAML_MD_EXTENSIONS :
-          $extensions = $child;
-          break;
-        case self::SAML_MD_SPSSODESCRIPTOR :
-        case self::SAML_MD_IDPSSODESCRIPTOR :
-        case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-        case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-        case self::SAML_MD_PDPDESCRIPTOR :
-        case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-        case self::SAML_MD_ORGANIZATION :
-        case self::SAML_MD_CONTACTPERSON :
-        case self::SAML_MD_ADDITIONALMETADATALOCATION :
-        default :
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $entityDescriptor->insertBefore($extensions, $child);
-          break;
-      }
-      $child = $child->nextSibling;
-    }
-    if (! $extensions) {
-      # Add if missing
-      $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-      $entityDescriptor->appendChild($extensions);
-    }
+    $extensions = $this->getExtensions();
     # Find mdattr:EntityAttributes in XML
     $child = $extensions->firstChild;
     $registrationInfo = false;
@@ -665,7 +731,7 @@ class Metadata extends Common {
     if (! $registrationInfo) {
       # Add if missing
       $ts=date("Y-m-d\TH:i:s\Z");
-      $entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
+      $this->entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
         'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
       $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
       $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
@@ -689,35 +755,47 @@ class Metadata extends Common {
     }
   }
 
-  #############
-  # Return status # for this entity
-  #############
+  /**
+   * Return status # for this entity
+   *
+   * @return int
+   */
   public function status() {
     return $this->status;
   }
 
-
-  #############
-  # Return if this entity exists in the database
-  #############
+  /**
+   * Return if this entity exists in the database
+   *
+   * @return bool
+   */
   public function entityExists() {
     return $this->entityExists;
   }
 
-  #############
-  # Return ID for this entity in the database
-  #############
+  /**
+   * Return ID for this entity in the database
+   *
+   * @return int
+   */
   public function id() {
     return $this->dbIdNr;
   }
 
-  #############
-  # Return feed value for this entity in the database
-  #############
+  /**
+   * Return feed value for this entity in the database
+   *
+   * @return int
+   */
   public function feedValue() {
     return $this->feedValue;
   }
 
+  /**
+   * Return entityDisplayName for this entity
+   *
+   * @return string
+   */
   public function entityDisplayName() {
     if ($this->entityDisplayName == '' ) {
       $displayHandler = $this->config->getDb()->prepare(
@@ -734,6 +812,11 @@ class Metadata extends Common {
     return $this->entityDisplayName;
   }
 
+  /**
+   * Return emailadresses of Technical and Administrative Contacts
+   *
+   * @return array
+   */
   public function getTechnicalAndAdministrativeContacts() {
     $addresses = array();
 
@@ -754,13 +837,20 @@ class Metadata extends Common {
     return $addresses;
   }
 
-  #############
-  # Return XML for this entity in the database
-  #############
+  /**
+   * Return XML for current Entity
+   *
+   * return string
+   */
   public function xml() {
     return $this->xml->saveXML();
   }
 
+  /**
+   * Confirmes status for the current Entity
+   *
+   * @return void
+   */
   public function confirmEntity($userId) {
     $entityConfirmHandler = $this->config->getDb()->prepare('INSERT INTO `EntityConfirmation`
       (`entity_id`, `user_id`, `lastConfirmed`)
@@ -771,6 +861,19 @@ class Metadata extends Common {
     $entityConfirmHandler->execute();
   }
 
+  /**
+   * Return info about current user from database
+   *
+   * @param string $userID Id of user
+   *
+   * @param string $email Email of user
+   *
+   * @param string $fullName Fullname of user
+   *
+   * @param bool $add If we should add user if missing
+   *
+   * @return array
+   */
   public function getUser($userID, $email = '', $fullName = '', $add = false) {
     if ($this->user['id'] == 0) {
       $userHandler = $this->config->getDb()->prepare('SELECT `id`, `email`, `fullName` FROM `Users` WHERE `userID` = :Id;');
@@ -808,6 +911,19 @@ class Metadata extends Common {
     return $this->user;
   }
 
+  /**
+   * Return id of current user in database
+   *
+   * @param string $userID Id of user
+   *
+   * @param string $email Email of user
+   *
+   * @param string $fullName Fullname of user
+   *
+   * @param bool $add If we should add user if missing
+   *
+   * @return int
+   */
   public function getUserId($userID, $email = '', $fullName = '', $add = false) {
     if ($this->user['id'] == 0) {
       $this->getUser($userID, $email, $fullName, $add);
@@ -815,6 +931,17 @@ class Metadata extends Common {
     return $this->user['id'];
   }
 
+  /**
+   * Update info for user in database
+   *
+   * @param string $userID Id of user
+   *
+   * @param string $email Email of user
+   *
+   * @param string $fullName Fullname of user
+   *
+   * @return void
+   */
   public function updateUser($userID, $email, $fullName) {
     $userHandler = $this->config->getDb()->prepare('UPDATE `Users`
       SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id;');
@@ -824,9 +951,11 @@ class Metadata extends Common {
     $userHandler->execute();
   }
 
-  #############
-  # Check if userID is responsible for this entityID
-  #############
+  /**
+   * Check if userID is responsible for this entityID
+   *
+   * @return bool
+   */
   public function isResponsible() {
     if ($this->user['id'] > 0) {
       $userHandler = $this->config->getDb()->prepare('SELECT *
@@ -840,6 +969,11 @@ class Metadata extends Common {
     }
   }
 
+  /**
+   * Get list of responsible users for currentr Entity
+   *
+   * @return array
+   */
   public function getResponsibles() {
     $usersHandler = $this->config->getDb()->prepare('SELECT `id`, `userID`, `email`, `fullName`
       FROM `EntityUser`, `Users` WHERE `entity_id` = :Entity_id AND id = user_id ORDER BY `userID`;');
@@ -848,6 +982,13 @@ class Metadata extends Common {
     return $usersHandler->fetchAll(PDO::FETCH_ASSOC);
   }
 
+  /**
+   * Creates an access request in the database for current Entity
+   *
+   * @param int $userId Id of user requesting access
+   *
+   * @return string code for access
+   */
   public function createAccessRequest($userId) {
     $hash = hash_hmac('md5',$this->entityID(),time());
     $code = base64_encode(sprintf ('%d:%d:%s', $this->dbIdNr, $userId, $hash));
@@ -862,6 +1003,19 @@ class Metadata extends Common {
     return $code;
   }
 
+  /**
+   * Validate code from Accessrequest
+   *
+   * Resturns an array with the result
+   *
+   * @param int $userId Id of user to give access
+   *
+   * @param string $hash Hash of Code to compare
+   *
+   * @param string $approvedBy Person approving this request
+   *
+   * @return array
+   */
   public function validateCode($userId, $hash, $approvedBy) {
     if ($userId > 0) {
       $userHandler = $this->config->getDb()->prepare('SELECT *
@@ -908,6 +1062,15 @@ class Metadata extends Common {
     return $result;
   }
 
+  /**
+   * Add access to current Entity
+   *
+   * @param int $userId Id of user to give access
+   *
+   * @param string $approvedBy Person approving this request
+   *
+   * @return void
+   */
   public function addAccess2Entity($userId, $approvedBy) {
     $entityUserHandler = $this->config->getDb()->prepare('INSERT INTO `EntityUser`
       (`entity_id`, `user_id`, `approvedBy`, `lastChanged`)
@@ -919,6 +1082,13 @@ class Metadata extends Common {
     $entityUserHandler->execute();
   }
 
+  /**
+   * Remove access from current Entity for a user
+   *
+   * @param @userId Id of user to remove access for
+   *
+   * @return void
+   */
   public function removeAccessFromEntity($userId) {
     $entityUserHandler = $this->config->getDb()->prepare('DELETE FROM `EntityUser`
       WHERE `entity_id` = :Entity_id AND `user_id` = :User_id;');
@@ -927,6 +1097,11 @@ class Metadata extends Common {
     $entityUserHandler->execute();
   }
 
+  /**
+   * Save statistics into database
+   *
+   * @return void
+   */
   public function saveEntitiesStatistics($date = '') {
     if ($date == '') {
       $date = gmdate('Y-m-d');

@@ -9,6 +9,15 @@ class MetadataMerge extends Common {
   private bool $oldExists = false;
   private bool $oldentityID = false;
 
+  /**
+   * Setup the class
+   *
+   * @param int $id id in database for new entity
+   *
+   * @param int $oldID id in database for entity to merge from
+   *
+   * @return void
+   */
   public function __construct($id, $oldID = 0) {
     parent::__construct($id);
     $this->dbOldIdNr = is_numeric($oldID) ? $oldID : 0;
@@ -24,9 +33,14 @@ class MetadataMerge extends Common {
     }
   }
 
+  /**
+   * Merge infro from Old -> New
+   */
   public function mergeFrom() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
+    $this->getEntityDescriptor($this->xml);
     $this->mergeRegistrationInfo();
     $this->mergeEntityAttributes();
     if ($this->isIdP) {
@@ -44,6 +58,11 @@ class MetadataMerge extends Common {
     $this->saveResults();
   }
 
+  /**
+   * Merge RegistrationInfo
+   *
+   * @return void
+   */
   public function mergeRegistrationInfo() {
     # Skip if not same entityID. Only migrate if same!!!!
     if ( !$this->oldExists || $this->entityID <> $this->oldentityID ) {
@@ -55,71 +74,49 @@ class MetadataMerge extends Common {
     $registrationInstantHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $registrationInstantHandler->execute();
     if ($instant = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
-      if (! $extensions) {
-        # Add if missing
-        $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-        $entityDescriptor->appendChild($extensions);
-      }
+      $extensions = $this->getExtensions();
       # Find mdattr:EntityAttributes in XML
       $child = $extensions->firstChild;
       $registrationInfo = false;
       while ($child && ! $registrationInfo) {
         if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONINFO) {
           $registrationInfo = $child;
-        } else
+        } else {
           $child = $child->nextSibling;
+        }
       }
       if (! $registrationInfo) {
         # Add if missing
-        $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
+        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
         $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
         $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
         $registrationInfo->setAttribute('registrationInstant', $instant['ts']);
         $extensions->appendChild($registrationInfo);
       }
 
-      # Find samla:Attribute in XML
+      # Find mdrpi:RegistrationPolicy in XML
       $child = $registrationInfo->firstChild;
       $registrationPolicy = false;
       while ($child && ! $registrationPolicy) {
-        if ($child->nodeName == 'mdrpi:RegistrationPolicy' && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
+        if ($child->nodeName == self::SAML_MDRPI_REGISTRATIONPOLICY && $child->getAttribute(self::SAMLXML_LANG) == 'en') {
           $registrationPolicy = $child;
         } else {
           $child = $child->nextSibling;
         }
       }
       if (!$registrationPolicy) {
-        $registrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
+        $registrationPolicy = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONPOLICY, 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
         $registrationPolicy->setAttribute(self::SAMLXML_LANG, 'en');
         $registrationInfo->appendChild($registrationPolicy);
       }
     }
   }
+
+  /**
+   * Merge EntityAttributes
+   *
+   * @return void
+   */
   private function mergeEntityAttributes() {
     if ( !$this->oldExists) {
       return;
@@ -159,36 +156,7 @@ class MetadataMerge extends Common {
       $oldAttributeValues[$attributeType][$attribute['attribute']] = $attribute['attribute'];
     }
     if(isset($oldAttributeValues)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
-      $extensions = false;
-      while ($child && ! $extensions) {
-        switch ($child->nodeName) {
-          case self::SAML_MD_EXTENSIONS :
-            $extensions = $child;
-            break;
-          case self::SAML_MD_SPSSODESCRIPTOR :
-          case self::SAML_MD_IDPSSODESCRIPTOR :
-          case self::SAML_MD_AUTHNAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_ATTRIBUTEAUTHORITYDESCRIPTOR :
-          case self::SAML_MD_PDPDESCRIPTOR :
-          case self::SAML_MD_AFFILIATIONDESCRIPTOR :
-          case self::SAML_MD_ORGANIZATION :
-          case self::SAML_MD_CONTACTPERSON :
-          case self::SAML_MD_ADDITIONALMETADATALOCATION :
-          default :
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $entityDescriptor->insertBefore($extensions, $child);
-            break;
-        }
-        $child = $child->nextSibling;
-      }
-      if (! $extensions) {
-        # Add if missing
-        $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-        $entityDescriptor->appendChild($extensions);
-      }
+      $extensions = $this->getExtensions();
 
       # Find mdattr:EntityAttributes in XML
       $child = $extensions->firstChild;
@@ -196,12 +164,13 @@ class MetadataMerge extends Common {
       while ($child && ! $entityAttributes) {
         if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTES) {
           $entityAttributes = $child;
-        } else
+        } else {
           $child = $child->nextSibling;
+        }
       }
       if (! $entityAttributes) {
         # Add if missing
-        $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
+        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdattr', 'urn:oasis:names:tc:SAML:metadata:attribute');
         $entityAttributes = $this->xml->createElement(self::SAML_MDATTR_ENTITYATTRIBUTES);
         $extensions->appendChild($entityAttributes);
       }
@@ -213,8 +182,9 @@ class MetadataMerge extends Common {
         $type = $attribute->getAttribute('Name');
         while($attributeValue) {
           $value = $attributeValue->textContent;
-          if (isset($oldAttributeValues[$type][$value]))
+          if (isset($oldAttributeValues[$type][$value])) {
             unset($oldAttributeValues[$type][$value]);
+          }
           $attributeValue = $attributeValue->nextSibling;
         }
         foreach ($oldAttributeValues[$type] as $value) {
@@ -227,7 +197,7 @@ class MetadataMerge extends Common {
       }
       foreach ($oldAttributeValues as $type => $values) {
         if (! empty($values)) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:samla', 'urn:oasis:names:tc:SAML:2.0:assertion');
           $attribute = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTE);
           $attribute->setAttribute('Name', $type);
           $attribute->setAttribute('NameFormat', self::SAMLNF_URI);
@@ -241,27 +211,24 @@ class MetadataMerge extends Common {
       }
     }
   }
+
+  /**
+   * Merge IdpErrorURL
+   *
+   * @return void
+   */
   private function mergeIdpErrorURL () {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $errorURLHandler = $this->config->getDb()->prepare(
       "SELECT DISTINCT URL FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
     $errorURLHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $errorURLHandler->execute();
     if ($errorURL = $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $idpSSODescriptor = $child;
-        $child = $child->nextSibling;
-      }
-
-      if ($idpSSODescriptor  && $idpSSODescriptor->getAttribute('errorURL') == '') {
-        $idpSSODescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
+      $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
+      if ($ssoDescriptor  && $ssoDescriptor->getAttribute('errorURL') == '') {
+        $ssoDescriptor->setAttribute('errorURL', htmlspecialchars($errorURL['URL']));
         $errorURLUpdateHandler = $this->config->getDb()->prepare(
           "INSERT INTO `EntityURLs` (`entity_id`, `URL`, `type` )
           VALUES (:Id, :URL, 'error')
@@ -272,9 +239,16 @@ class MetadataMerge extends Common {
       }
     }
   }
+
+  /**
+   * Merge IdPScopes
+   *
+   * @return void
+   */
   private function mergeIdPScopes() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $scopesHandler = $this->config->getDb()->prepare('SELECT `scope`, `regexp` FROM `Scopes` WHERE `entity_id` = :Id;');
     $scopesHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $scopesHandler->execute();
@@ -283,75 +257,57 @@ class MetadataMerge extends Common {
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $oldScopes[$scope['scope']] = $scope['regexp'];
     }
-    if ($oldScopes) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $idpSSODescriptor = false;
-      while ($child && ! $idpSSODescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $idpSSODescriptor = $child;
+    if ($oldScopes && $ssoDescriptor = $this->getSSODecriptor('IDPSSO')) {
+      $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
+      $child = $extensions->firstChild;
+      $beforeChild = false;
+      $shibmdFound = false;
+      while ($child) {
+        switch ($child->nodeName) {
+          case self::SAML_SHIBMD_SCOPE :
+            $shibmdFound = true;
+            if (isset ($oldScopes[$child->textContent])) {
+              unset ($oldScopes[$child->textContent]);
+            }
+            break;
+          case self::SAML_MDUI_UIINFO :
+          case self::SAML_MDUI_DISCOHINTS :
+            $beforeChild = $beforeChild ? $beforeChild : $child;
+            break;
+          default :
+        }
         $child = $child->nextSibling;
       }
+      foreach ($oldScopes as $scopevalue => $value) {
+        $scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, htmlspecialchars($scopevalue));
+        $scope->setAttribute('regexp', $value);
+        if ($beforeChild) {
+          $extensions->insertBefore($scope, $beforeChild);
+        } else {
+          $extensions->appendChild($scope);
+        }
+        $scopesInsertHandler->bindParam(self::BIND_SCOPE, $scopevalue);
+        $scopesInsertHandler->bindParam(self::BIND_REGEXP, $value);
+        $scopesInsertHandler->execute();
+      }
 
-      if ($idpSSODescriptor) {
-        $child = $idpSSODescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $idpSSODescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $idpSSODescriptor->appendChild($extensions);
-        }
-        $child = $extensions->firstChild;
-        $beforeChild = false;
-        $Scope = false;
-        $shibmdFound = false;
-        while ($child && ! $Scope) {
-          switch ($child->nodeName) {
-            case self::SAML_SHIBMD_SCOPE :
-              $shibmdFound = true;
-              if (isset ($oldScopes[$child->textContent]))
-                unset ($oldScopes[$child->textContent]);
-              break;
-            case self::SAML_MDUI_UIINFO :
-            case self::SAML_MDUI_DISCOHINTS :
-              $beforeChild = $beforeChild ? $beforeChild : $child;
-              break;
-          }
-          $child = $child->nextSibling;
-        }
-        foreach ($oldScopes as $scopevalue => $value) {
-          $Scope = $this->xml->createElement(self::SAML_SHIBMD_SCOPE, htmlspecialchars($scopevalue));
-          $Scope->setAttribute('regexp', $value);
-          if ($beforeChild)
-            $extensions->insertBefore($Scope, $beforeChild);
-          else
-            $extensions->appendChild($Scope);
-          $scopesInsertHandler->bindParam(self::BIND_SCOPE, $scopevalue);
-          $scopesInsertHandler->bindParam(self::BIND_REGEXP, $value);
-          $scopesInsertHandler->execute();
-        }
-
-        if (! $shibmdFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
-        }
+      if (! $shibmdFound) {
+        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:shibmd', 'urn:mace:shibboleth:metadata:1.0');
       }
     }
   }
+
+  /**
+   * Merge UIInfo
+   *
+   * @param string $type SSODescript to merge in
+   *
+   * @return void
+   */
   private function mergeUIInfo($type) {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $mduiHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `height`, `width`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND type = :Type ORDER BY `element`, `lang`;');
     $mduiHandler->bindParam(self::BIND_TYPE, $type);
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -360,155 +316,114 @@ class MetadataMerge extends Common {
       $mdelement = self::SAML_MDUI.$mdui['element'];
       $size = $mdui['height'].'x'.$mdui['width'];
       $lang = $mdui['lang'];
-      if (! isset($oldMDUIElements[$mdelement]) )
+      if (! isset($oldMDUIElements[$mdelement]) ) {
         $oldMDUIElements[$mdelement] = array();
-      if (! isset($oldMDUIElements[$mdelement][$lang]) )
+      }
+      if (! isset($oldMDUIElements[$mdelement][$lang]) ) {
         $oldMDUIElements[$mdelement][$lang] = array();
+      }
       $oldMDUIElements[$mdelement][$lang][$size] = array('value' => $mdui['data'], 'height' => $mdui['height'], 'width' => $mdui['width']);
     }
-    if (isset($oldMDUIElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $ssoDescriptor = false;
-      while ($child && ! $ssoDescriptor) {
-        if ($child->nodeName == 'md:'.$type.'Descriptor')
-          $ssoDescriptor = $child;
+    if (isset($oldMDUIElements) && $ssoDescriptor = $this->getSSODecriptor($type)) {
+      $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
+      $child = $extensions->firstChild;
+      $beforeChild = false;
+      $uuInfo = false;
+      $mduiFound = false;
+      while ($child && ! $uuInfo) {
+        switch ($child->nodeName) {
+          case self::SAML_MDUI_UIINFO :
+            $mduiFound = true;
+            $uuInfo = $child;
+            break;
+          case self::SAML_MDUI_DISCOHINTS :
+            $beforeChild = $beforeChild ? $beforeChild : $child;
+            $mduiFound = true;
+            break;
+          default :
+        }
         $child = $child->nextSibling;
       }
-      if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
+      if (! $uuInfo ) {
+        $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
+        if ($beforeChild) {
+          $extensions->insertBefore($uuInfo, $beforeChild);
+        } else {
+          $extensions->appendChild($uuInfo);
         }
-        if (! $extensions) {
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
-        $child = $extensions->firstChild;
-        $beforeChild = false;
-        $uuInfo = false;
-        $mduiFound = false;
-        while ($child && ! $uuInfo) {
-          switch ($child->nodeName) {
-            case self::SAML_MDUI_UIINFO :
-              $mduiFound = true;
-              $uuInfo = $child;
-              break;
-            case self::SAML_MDUI_DISCOHINTS :
-              $beforeChild = $beforeChild ? $beforeChild : $child;
-              $mduiFound = true;
-              break;
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $uuInfo ) {
-          $uuInfo = $this->xml->createElement(self::SAML_MDUI_UIINFO);
-          if ($beforeChild)
-            $extensions->insertBefore($uuInfo, $beforeChild);
-          else
-            $extensions->appendChild($uuInfo);
-        }
-        if (! $mduiFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
-        }
-        # Find mdui:* in XML
-        $child = $uuInfo->firstChild;
-        while ($child) {
-          if ($child->nodeType != 8) {
-            $lang = $child->getAttribute(self::SAMLXML_LANG);
-            $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-            $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
-            $element = $child->nodeName;
-            if (isset($oldMDUIElements[$element][$lang])) {
-              $size = $height.'x'.$width;
-              if (isset($oldMDUIElements[$element][$lang][$size])) {
-                unset($oldMDUIElements[$element][$lang][$size]);
-              }
+      }
+      if (! $mduiFound) {
+        $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+      }
+      # Find mdui:* in XML
+      $child = $uuInfo->firstChild;
+      while ($child) {
+        if ($child->nodeType != 8) {
+          $lang = $child->getAttribute(self::SAMLXML_LANG);
+          $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
+          $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
+          $element = $child->nodeName;
+          if (isset($oldMDUIElements[$element][$lang])) {
+            $size = $height.'x'.$width;
+            if (isset($oldMDUIElements[$element][$lang][$size])) {
+              unset($oldMDUIElements[$element][$lang][$size]);
             }
           }
-          $child = $child->nextSibling;
         }
-        $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO `Mdui` (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
-        $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-        $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
-        foreach ($oldMDUIElements as $element => $data) {
-          foreach ($data as $lang => $sizeValue) {
-            foreach ($sizeValue as $size => $value) {
-              # Add if missing
-              $mduiElement = $this->xml->createElement($element, htmlspecialchars($value['value']));
-              if ($lang != '') {
-                $mduiElement->setAttribute(self::SAMLXML_LANG, $lang);
-              }
-              if ($size != '0x0') {
-                $mduiElement->setAttribute('height', $value['height']);
-                $mduiElement->setAttribute('width', $value['width']);
-              }
-              $uuInfo->appendChild($mduiElement);
-              $mduiAddHandler->bindParam(self::BIND_LANG, $lang);
-              $mduiAddHandler->bindParam(self::BIND_HEIGHT, $value['height']);
-              $mduiAddHandler->bindParam(self::BIND_WIDTH, $value['width']);
-              $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
-              $mduiAddHandler->bindParam(self::BIND_DATA, $value['value']);
-              $mduiAddHandler->execute();
+        $child = $child->nextSibling;
+      }
+      $mduiAddHandler = $this->config->getDb()->prepare('INSERT INTO `Mdui` (`entity_id`, `type`, `lang`, `height`, `width`, `element`, `data`) VALUES (:Id, :Type, :Lang, :Height, :Width, :Element, :Data);');
+      $mduiAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+      $mduiAddHandler->bindParam(self::BIND_TYPE, $type);
+      foreach ($oldMDUIElements as $element => $data) {
+        foreach ($data as $lang => $sizeValue) {
+          foreach ($sizeValue as $size => $value) {
+            # Add if missing
+            $mduiElement = $this->xml->createElement($element, htmlspecialchars($value['value']));
+            if ($lang != '') {
+              $mduiElement->setAttribute(self::SAMLXML_LANG, $lang);
             }
+            if ($size != '0x0') {
+              $mduiElement->setAttribute('height', $value['height']);
+              $mduiElement->setAttribute('width', $value['width']);
+            }
+            $uuInfo->appendChild($mduiElement);
+            $mduiAddHandler->bindParam(self::BIND_LANG, $lang);
+            $mduiAddHandler->bindParam(self::BIND_HEIGHT, $value['height']);
+            $mduiAddHandler->bindParam(self::BIND_WIDTH, $value['width']);
+            $mduiAddHandler->bindParam(self::BIND_ELEMENT, $element);
+            $mduiAddHandler->bindParam(self::BIND_DATA, $value['value']);
+            $mduiAddHandler->execute();
           }
         }
       }
     }
   }
+
+  /**
+   * Merge DiscoHints
+   *
+   * @return void
+   */
   private function mergeDiscoHints() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $mduiHandler = $this->config->getDb()->prepare("SELECT `element`, `data` FROM `Mdui` WHERE `entity_id` = :Id AND `type` = 'IDPDisco' ORDER BY `element`;");
     $mduiHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $mduiHandler->execute();
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $mdelement = self::SAML_MDUI.$mdui['element'];
       $value = $mdui['data'];
-      if (! isset($oldMDUIElements[$mdelement]) )
+      if (! isset($oldMDUIElements[$mdelement]) ) {
         $oldMDUIElements[$mdelement] = array();
+      }
       $oldMDUIElements[$mdelement][$value] = true;
     }
     if (isset($oldMDUIElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:IDPSSODescriptor in XML
-      $child = $entityDescriptor->firstChild;
-      $ssoDescriptor = false;
-      while ($child && ! $ssoDescriptor) {
-        if ($child->nodeName == self::SAML_MD_IDPSSODESCRIPTOR)
-          $ssoDescriptor = $child;
-        $child = $child->nextSibling;
-      }
+      $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
       if ($ssoDescriptor) {
-        $child = $ssoDescriptor->firstChild;
-        $extensions = false;
-        while ($child && ! $extensions) {
-          switch ($child->nodeName) {
-            case self::SAML_MD_EXTENSIONS :
-              $extensions = $child;
-              break;
-            default :
-              $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-              $ssoDescriptor->insertBefore($extensions, $child);
-          }
-          $child = $child->nextSibling;
-        }
-        if (! $extensions) {
-          $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-          $ssoDescriptor->appendChild($extensions);
-        }
+        $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
         $child = $extensions->firstChild;
         $discoHints = false;
         $mduiFound = false;
@@ -529,7 +444,7 @@ class MetadataMerge extends Common {
           $extensions->appendChild($discoHints);
         }
         if (! $mduiFound) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, self::SAMLXMLNS_MDUI, self::SAMLXMLNS_MDUI_URL);
         }
         # Find mdui:* in XML
         $child = $discoHints->firstChild;
@@ -556,10 +471,16 @@ class MetadataMerge extends Common {
       }
     }
   }
-  private function mergeAttributeConsumingService() {
-    if ( !$this->oldExists)
-      return;
 
+  /**
+   * Merge AttributeConsumingService
+   *
+   * @return void
+   */
+  private function mergeAttributeConsumingService() {
+    if ( !$this->oldExists) {
+      return;
+    }
     $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index` FROM `AttributeConsumingService` WHERE `entity_id` = :Id ORDER BY `Service_index`;');
     $serviceIndexHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
 
@@ -588,16 +509,8 @@ class MetadataMerge extends Common {
       }
     }
 
-    $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-    # Find md:IDPSSODescriptor in XML
-    $child = $entityDescriptor->firstChild;
-    $ssoDescriptor = false;
-    while ($child && ! $ssoDescriptor) {
-      if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR)
-        $ssoDescriptor = $child;
-      $child = $child->nextSibling;
-    }
+    $this->getEntityDescriptor($this->xml);
+    $ssoDescriptor = $this->getSSODecriptor('SPSSO');
     if ($ssoDescriptor && isset($oldServiceIndexes)) {
       $addServiceIndexHandler = $this->config->getDb()->prepare('INSERT INTO `AttributeConsumingService` (`entity_id`, `Service_index`) VALUES (:Id, :Index);');
       $addServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -629,8 +542,9 @@ class MetadataMerge extends Common {
             switch ($servicechild->nodeName) {
               case self::SAML_MD_SERVICENAME :
                 $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
-                if (isset($oldServiceElements[$index]['ServiceName'][$lang]))
+                if (isset($oldServiceElements[$index]['ServiceName'][$lang])) {
                   unset ($oldServiceElements[$index]['ServiceName'][$lang]);
+                }
                 break;
               case self::SAML_MD_SERVICEDESCRIPTION :
                 if ($nextOrder < 2) {
@@ -646,8 +560,9 @@ class MetadataMerge extends Common {
                   $nextOrder = 2;
                 }
                 $lang = $servicechild->getAttribute(self::SAMLXML_LANG);
-                if (isset($oldServiceElements[$index]['ServiceDescription'][$lang]))
+                if (isset($oldServiceElements[$index]['ServiceDescription'][$lang])) {
                   unset ($oldServiceElements[$index]['ServiceDescription'][$lang]);
+                }
                 break;
               case self::SAML_MD_REQUESTEDATTRIBUTE :
                 if ($nextOrder < 3) {
@@ -676,8 +591,9 @@ class MetadataMerge extends Common {
                   $nextOrder = 3;
                 }
                 $name = $servicechild->getAttribute('Name');
-                if (isset($oldRequestedAttributes[$index][$name]))
+                if (isset($oldRequestedAttributes[$index][$name])) {
                   unset ($oldRequestedAttributes[$index][$name]);
+                }
                 break;
               default :
                 printf('%s<br>', $servicechild->nodeName);
@@ -711,11 +627,13 @@ class MetadataMerge extends Common {
             $isRequired = $data['isRequired'];
 
             $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-            if ($friendlyName != '' )
+            if ($friendlyName != '' ) {
               $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
+            }
             $attributeConsumingServiceElement->setAttribute('Name', $name);
-            if ($nameFormat != '' )
+            if ($nameFormat != '' ) {
               $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+            }
             $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
             $attributeConsumingService->appendChild($attributeConsumingServiceElement);
             $requestedAttributeAddHandler->execute();
@@ -757,11 +675,13 @@ class MetadataMerge extends Common {
           $isRequired = $data['isRequired'];
 
           $attributeConsumingServiceElement = $this->xml->createElement(self::SAML_MD_REQUESTEDATTRIBUTE);
-          if ($friendlyName != '' )
+          if ($friendlyName != '' ) {
             $attributeConsumingServiceElement->setAttribute('FriendlyName', $friendlyName);
+          }
           $attributeConsumingServiceElement->setAttribute('Name', $name);
-          if ($nameFormat != '' )
+          if ($nameFormat != '' ) {
             $attributeConsumingServiceElement->setAttribute('NameFormat', $nameFormat);
+          }
           $attributeConsumingServiceElement->setAttribute('isRequired', $isRequired ? 'true' : 'false');
           $attributeConsumingService->appendChild($attributeConsumingServiceElement);
           $requestedAttributeAddHandler->execute();
@@ -772,9 +692,15 @@ class MetadataMerge extends Common {
     }
   }
 
+  /**
+   * Merge Organization
+   *
+   * @return void
+   */
   private function mergeOrganization() {
-    if ( !$this->oldExists)
+    if ( !$this->oldExists) {
       return;
+    }
     $organizationHandler = $this->config->getDb()->prepare(
       'SELECT element, lang, data FROM `Organization` WHERE entity_id = :Id ORDER BY element, lang;');
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
@@ -784,10 +710,8 @@ class MetadataMerge extends Common {
       $oldElements[$order][] = $organization;
     }
     if (isset($oldElements)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
+      # Find md:Organization in XML
+      $child = $this->entityDescriptor->firstChild;
       $organization = false;
       while ($child && ! $organization) {
         switch ($child->nodeName) {
@@ -797,7 +721,7 @@ class MetadataMerge extends Common {
           case self::SAML_MD_CONTACTPERSON :
           case self::SAML_MD_ADDITIONALMETADATALOCATION :
             $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
-            $entityDescriptor->insertBefore($organization, $child);
+            $this->entityDescriptor->insertBefore($organization, $child);
             break;
           default :
         }
@@ -807,7 +731,7 @@ class MetadataMerge extends Common {
       if (! $organization) {
         # Add if missing
         $organization = $this->xml->createElement(self::SAML_MD_ORGANIZATION);
-        $entityDescriptor->appendChild($organization);
+        $this->entityDescriptor->appendChild($organization);
       }
 
       # Find md:Organization* in XML
@@ -859,6 +783,12 @@ class MetadataMerge extends Common {
       }
     }
   }
+
+  /**
+   * Merge ContactsPersons
+   *
+   * @return void
+   */
   private function mergeContactPersons() {
     if ( !$this->oldExists) {
       return;
@@ -881,10 +811,8 @@ class MetadataMerge extends Common {
         6 => array('part' => self::SAML_MD_EXTENSIONS,  'value' => $contactPerson['extensions']));
     }
     if (isset($oldContactPersons)) {
-      $entityDescriptor = $this->getEntityDescriptor($this->xml);
-
-      # Find md:Extensions in XML
-      $child = $entityDescriptor->firstChild;
+      # Find md:Contacts in XML
+      $child = $this->entityDescriptor->firstChild;
       $contactPerson = false;
       while ($child) {
         switch ($child->nodeName) {
@@ -923,10 +851,10 @@ class MetadataMerge extends Common {
               $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
               $contactPerson->setAttribute('contactType', $type);
               if ($oldContactPerson['subcontactType']) {
-                $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
+                $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
                 $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
               }
-              $entityDescriptor->insertBefore($contactPerson, $child);
+              $this->entityDescriptor->insertBefore($contactPerson, $child);
               $nextOrder = 1;
               while ($nextOrder < 7) {
                 if (!empty($oldContactPerson[$nextOrder]['value'])) {
@@ -946,10 +874,10 @@ class MetadataMerge extends Common {
         $contactPerson = $this->xml->createElement(self::SAML_MD_CONTACTPERSON);
         $contactPerson->setAttribute('contactType', $type);
         if ($oldContactPerson['subcontactType']) {
-          $entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
+          $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:remd', 'http://refeds.org/metadata'); # NOSONAR Should be http://
           $contactPerson->setAttribute('remd:contactType', $oldContactPerson['subcontactType']);
         }
-        $entityDescriptor->appendChild($contactPerson);
+        $this->entityDescriptor->appendChild($contactPerson);
         $nextOrder = 1;
         while ($nextOrder < 7) {
           if (!empty($oldContactPerson[$nextOrder]['value'])) {
