@@ -93,6 +93,7 @@ class Metadata extends Common {
     $this->xml->formatOutput = true;
     $this->xml->loadXML($xml);
     $this->xml->encoding = 'UTF-8';
+    $this->getEntityDescriptor($this->xml);
     $newEntityID = $this->cleanOutAttribuesInIDPSSODescriptor();
     if ($this->entityExists && $this->status == 1) {
       # Update entity in database
