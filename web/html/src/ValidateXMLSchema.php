@@ -85,7 +85,7 @@ class ValidateXMLSchema {
    *
    * @return void
    */
-   private function libxmlDisplayErrors() {
+  private function libxmlDisplayErrors() {
     $errors = libxml_get_errors();
     foreach ($errors as $error) {
       $this->error .= $this->libxmlDisplayError($error);

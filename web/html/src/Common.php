@@ -4,6 +4,7 @@ namespace metadata;
 use PDO;
 use DOMDocument;
 use DOMElement;
+use CurlHandle;
 
 /**
  * Class to collect common functions for Validate and ParseXML
@@ -256,6 +257,21 @@ class Common {
     }
   }
 
+  /**
+   * Checks return Code for an Curl request
+   *
+   * @param CurlHandle $ch
+   *
+   * @param string $output Text result from curl
+   *
+   * @param int $type Type of URL
+   *
+   * @param &$updateArray Array sent back to update DB
+   *
+   * @param bool &$verboseInfo Verbose info to be displayed
+   *
+   * @return void
+   */
   private function checkCurlReturnCode($ch, $output, $type, &$updateArray, &$verboseInfo) {
     switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
       case 200 :
@@ -318,7 +334,7 @@ class Common {
    * Run a curl agains the URL:s up for validation.
    * Start by those with oldest lastValidated
    *
-   * @param int $limit Number of URL:s to validate
+   * @param int $age age in days for URLS lastSeen to check
    *
    * @param bool $verbose if we should be verbose during validation
    *
@@ -337,11 +353,9 @@ class Common {
   /**
    * Check URL:s status
    *
-   * Checks URL:s not seen in age number of days.
-   * Run a curl agains the URL:s up for validation.
-   * Start by those with oldest lastValidated
+   * Print all places an URL exists
    *
-   * @param int $limit Number of URL:s to validate
+   * @param string $url URL to check
    *
    * @param bool $verbose if we should be verbose during validation
    *
@@ -575,8 +589,6 @@ class Common {
    *
    * Return DOM of XML if found in other cases return null
    *
-   * @param DOMNode $xml DOMNode in a XML object
-   *
    * @param string $type Type of SSODescript to look for
    *
    * @return DOMNode|bool
@@ -609,7 +621,7 @@ class Common {
    *
    * Return DOM of XML if found / created in other cases return null
    *
-   * @param DOMNode $xml DOMNode of a SSODescriptor as a XML object
+   * @param DOMNode $ssoDescriptor DOMNode of a SSODescriptor as a XML object
    *
    * @param bool $create If we should create missing Extensions
    *
@@ -632,6 +644,17 @@ class Common {
     return $extensions;
   }
 
+  /**
+   * Find UUInfo below a SSODescriptor
+   *
+   * Return DOM of XML if found / created in other cases return null
+   *
+   * @param DOMNode $ssoDescriptor DOMNode of a SSODescriptor as a XML object
+   *
+   * @param bool $create If we should create missing UUInfo
+   *
+   * @return DOMNode|bool
+   */
   protected function getUUInfo($extensions, $create = true) {
     $child = $extensions->firstChild;
     $uuInfo = null;

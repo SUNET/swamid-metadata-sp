@@ -710,15 +710,6 @@ class ValidateSWAMID extends Validate {
     }
   }
 
-  /* This needs to be checked !!!
-  // 6.1.16
-  private function checkAssertionConsumerService($data) {
-    $binding = $data->getAttribute('Binding');
-    if ($binding == self::SAML_BINDING_HTTP_REDIRECT) {
-      $this->swamid6116error = true;
-    }
-  }*/
-
   /**
    * Validate Required Organization Elements
    *

@@ -35,6 +35,15 @@ class MetadataEdit extends Common {
   const TEXT_ENC_SIGN = 'encryption & signing';
   const TEXT_MAILTO = 'mailto:';
 
+  /**
+   * Setup the class
+   *
+   * @param int $id id in database for new entity
+   *
+   * @param int $oldID id in database for entity to copy/compare from
+   *
+   * @return void
+   */
   public function __construct($id, $oldID = 0) {
     parent::__construct($id);
     $this->dbOldIdNr = is_numeric($oldID) ? $oldID : 0;
@@ -50,6 +59,13 @@ class MetadataEdit extends Common {
     }
   }
 
+  /**
+   * Edit part of XML
+   *
+   * @param $part Part to edit
+   *
+   * @return void
+   */
   public function edit($part) {
     printf('    <div class="row">
       <div class="col">
@@ -118,6 +134,11 @@ class MetadataEdit extends Common {
     }
   }
 
+  /**
+   * Edit EntityAttributes
+   *
+   * @return void
+   */
   private function editEntityAttributes() {
     $entityAttributesHandler = $this->config->getDb()->prepare(
       'SELECT type, attribute FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
@@ -498,6 +519,12 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+
+  /**
+   * Edit IdPErrorURL
+   *
+   * @return void
+   */
   private function editIdPErrorURL() {
     if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
       $errorURLValue = trim(urldecode($_GET['errorURL']));
@@ -603,6 +630,12 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+
+  /**
+   * Edit IdPScopes
+   *
+   * @return void
+   */
   private function editIdPScopes() {
     if (isset($_GET['action']) && isset($_GET['value']) && trim($_GET['value']) != '') {
       $changed = false;
@@ -754,6 +787,14 @@ class MetadataEdit extends Common {
     }
     printf ('%s      </div><!-- end col -->%s    </div><!-- end row -->%s', "\n", "\n", "\n");
   }
+
+  /**
+   * Edit MDUI
+   *
+   * @param string $type SSODescriptor to edit
+   *
+   * @return void
+   */
   private function editMDUI($type) {
     printf (self::HTML_START_DIV_ROW_COL.'%s', "\n", "\n", "\n");
     $edit = $type == 'IDPSSO' ? 'IdPMDUI' : 'SPMDUI';
@@ -1171,6 +1212,7 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+
   /**
    * Edit DiscoveryResponse
    *
@@ -1383,6 +1425,11 @@ class MetadataEdit extends Common {
     print self::HTML_END_DIV_COL_ROW;
   }
 
+  /**
+   * Edit DiscoHints
+   *
+   * @return void
+   */
   private function editDiscoHints() {
     printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
     if (isset($_GET['action'])) {
@@ -1608,6 +1655,14 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+
+  /**
+   * Add KeyInfo
+   *
+   * @param string $type SSODescriptor to edit
+   *
+   * @return void
+   */
   private function addKeyInfo($type) {
     $edit = $type == 'IDPSSO' ? 'IdPKeyInfo' : 'SPKeyInfo';
     $edit = $type == 'AttributeAuthority' ? 'AAKeyInfo' : $edit;
@@ -1778,6 +1833,12 @@ class MetadataEdit extends Common {
         $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
     }
   }
+
+  /**
+   * Edit KeyInfo
+   *
+   * @return void
+   */
   private function editKeyInfo($type) {
     $timeNow = date('Y-m-d H:i:00');
     $timeWarn = date('Y-m-d H:i:00', time() + 7776000);  // 90 * 24 * 60 * 60 = 90 days / 3 month
@@ -2310,6 +2371,12 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+
+  /**
+   * Edit AttributeConsumingService
+   *
+   * @return void
+   */
   private function editAttributeConsumingService() {
     if (isset($_GET['action'])) {
       $name = '';
@@ -2986,6 +3053,12 @@ class MetadataEdit extends Common {
     }
     print self::HTML_END_DIV_COL_ROW;
   }
+
+  /**
+   * Edit Organization
+   *
+   * @return void
+   */
   private function editOrganization() {
     $organizationHandler = $this->config->getDb()->prepare(
       'SELECT `element`, `lang`, `data` FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
@@ -3227,6 +3300,12 @@ class MetadataEdit extends Common {
     print "\n        <ul>";
     print self::HTML_END_DIV_COL_ROW;
   }
+
+  /**
+   * Edit ContactPersons
+   *
+   * @return void
+   */
   private function editContactPersons(){
     $contactPersonHandler = $this->config->getDb()->prepare(
       'SELECT * FROM `ContactPerson` WHERE `entity_id` = :Id ORDER BY `contactType`;');
@@ -3550,7 +3629,7 @@ class MetadataEdit extends Common {
 
   /**
    * Copy default values to Organization
-  */
+   */
   public function copyDefaultOrganization() {
     $organizationInfoHandler = $this->config->getDb()->prepare(
       'SELECT `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`, `lang`
@@ -3598,6 +3677,13 @@ class MetadataEdit extends Common {
     $this->saveXML();
   }
 
+  /**
+   * Remove SSODescriptor
+   *
+   * @param string $type SSODescriptor to remove
+   *
+   * @return void
+   */
   public function removeSSO($type) {
     switch ($type) {
       case 'SP' :
@@ -3619,6 +3705,11 @@ class MetadataEdit extends Common {
     $this->saveXML();
   }
 
+  /**
+   * Save XML into database
+   *
+   * @return void
+   */
   public function saveXML() {
     $entityHandler = $this->config->getDb()->prepare('UPDATE `Entities` SET `xml` = :Xml WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -3626,6 +3717,13 @@ class MetadataEdit extends Common {
     $entityHandler->execute();
   }
 
+  /**
+   * Show Language Selector
+   *
+   * @param $langValue Current Language
+   *
+   * @return void
+   */
   private function showLangSelector($langValue) {
     print "\n".'              <select name="lang">';
     foreach (self::LANG_CODES as $lang => $descr) {
@@ -3635,6 +3733,17 @@ class MetadataEdit extends Common {
     print "\n              </select>\n";
   }
 
+  /**
+   * Update user Email and Fullname
+   *
+   * @param int $userID Id of User
+   *
+   * @param string $email Email of User
+   *
+   * @param string $fullName Fullname of User
+   *
+   * @return void
+   */
   public function updateUser($userID, $email, $fullName) {
     $userHandler = $this->config->getDb()->prepare(
       'UPDATE `Users` SET `email` = :Email, `fullName` = :FullName WHERE `userID` = :Id;');

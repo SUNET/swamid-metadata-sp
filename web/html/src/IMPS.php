@@ -616,6 +616,13 @@ class IMPS {
       $lang, htmlspecialchars($orgURL), $readOnlyHTML, "\n");
   }
 
+  /**
+   * Create a new Organization
+   *
+   * @param int $entitiesId Id of Entity top copy Organization info from
+   *
+   * @return void
+   */
   public function createOrganizationFromEntity($entitiesId) {
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `data`
       FROM `Organization` WHERE `entity_id` = :Id AND `lang` = :Lang;');

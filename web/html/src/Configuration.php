@@ -626,6 +626,13 @@ class Configuration {
     return $this->smtpAuth;
   }
 
+  /**
+   * Return sendOut
+   *
+   * Return if we should send out mails or not
+   *
+   * @return bool
+   */
   public function sendOut() {
     return $this->smtp['sendOut'];
   }
