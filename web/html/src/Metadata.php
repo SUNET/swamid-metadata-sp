@@ -70,6 +70,7 @@ class Metadata extends Common {
         $this->xml->formatOutput = true;
         $this->xml->loadXML($entity['xml']);
         $this->xml->encoding = 'UTF-8';
+        $this->getEntityDescriptor($this->xml);
         $this->dbIdNr = $entity['id'];
         $this->entityID = $entity['entityID'];
         $this->isIdP = $entity['isIdP'];

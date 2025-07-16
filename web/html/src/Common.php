@@ -78,13 +78,13 @@ class Common {
    *
    * @param int $id id in database for entity
    *
-   * @param bool $xml if we should setup xml handling
+   * @param bool $handleXML if we should setup xml handling
    *
    * @return void
    */
-  public function __construct($id = 0, $xml = true) {
+  public function __construct($id = 0, $handleXML = true) {
     global $config;
-    $this->handleXML = $xml;
+    $this->handleXML = $handleXML;
     if (isset($config)) {
       $this->config = $config;
     } else {
