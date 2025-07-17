@@ -2046,16 +2046,19 @@ class MetadataDisplay extends Common {
           <li class="nav-item">
             <a class="nav-link%s" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
               aria-controls="errors" aria-selected="%s">Errors</a>
-          </li>
-          <li class="nav-item">
+          </li>%s',
+        $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected,
+        $errorsActive, $errorsSelected, "\n");
+      if ($this->config->getIMPS()) {
+        printf('          <li class="nav-item">
             <a class="nav-link%s" id="idps-tab" data-toggle="tab" href="#idps" role="tab"
               aria-controls="idps" aria-selected="%s">IdP:s missing IMPS</a>
-          </li>
-        </ul>
+          </li>%s', $idPsActive, $idPsSelected, "\n");
+      }
+      printf('        </ul>
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="reminders-urgent" role="tabpanel" aria-labelledby="reminders-urgent-tab">%s',
-        $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected,
-        $errorsActive, $errorsSelected, $idPsActive, $idPsSelected, "\n", "\n",
+        "\n", "\n",
         $remindersUrgentShow, $remindersUrgentActive, "\n");
       $this->showErrorMailReminders(false);
       printf('      </div><!-- End tab-pane reminders-urgent -->
@@ -2068,12 +2071,14 @@ class MetadataDisplay extends Common {
     }
     $this->showErrorEntitiesList($download);
     if (! $download) {
-      printf('      </div><!-- End tab-pane errors -->
-      <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
-        $idPsShow, $idPsActive, "\n");
-      $this->showIdPsMissingIMPS($idPsId);
-      printf('%s      </div><!-- End tab-pane idps -->%s    </div><!-- End tab-content -->%s',
-        "\n", "\n", "\n");
+      printf('      </div><!-- End tab-pane errors -->%s', "\n");
+      if ($this->config->getIMPS()) {
+        printf('      <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
+          $idPsShow, $idPsActive, "\n");
+        $this->showIdPsMissingIMPS($idPsId);
+        printf('%s      </div><!-- End tab-pane idps -->%s', "\n", "\n");
+      }
+      printf('    </div><!-- End tab-content -->%s', "\n");
     }
   }
 
@@ -2180,7 +2185,9 @@ class MetadataDisplay extends Common {
    * @return void
    */
   private function showErrorMailReminders($showAll=true) {
-    $impsDates = $this->config->getIMPS();
+    if( ! $impsDates = $this->config->getIMPS()) {
+      $impsDates = array('warn1' => '10', 'warn2' => '11', 'error' => '12');
+    }
     $entityHandler = $this->config->getDb()->prepare(
       'SELECT MailReminders.*, `entityID`, `lastConfirmed`, `lastValidated`
       FROM `MailReminders`, `Entities`
@@ -3357,8 +3364,12 @@ class MetadataDisplay extends Common {
         AND `OrganizationInfo_id` = :Id;');
 
     $showAllOrgs = isset($_GET['showAllOrgs']);
-    printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
+    if ($this->config->getIMPS()) {
+      printf('%s          <a href=".?action=Members&tab=organizations&id=%d%s#org-%d"><button type="button" class="btn btn-outline-primary">%s</button></a>', "\n",
       $id, $showAllOrgs ? '' : self::HTML_SHOWALLORGS, $id, $showAllOrgs ? 'Show only Organizations with an IMPS' : 'Show All Organizations');
+    } else {
+      $showAllOrgs = true;
+    }
     if ($userLevel > 10) {
       printf('%s          <a href=".?action=Members&subAction=editOrganization&id=0%s"><button type="button" class="btn btn-outline-primary">Add new Organization</button></a>',
         "\n", $showAllOrgs ? self::HTML_SHOWALLORGS : '');
@@ -3370,7 +3381,11 @@ class MetadataDisplay extends Common {
       $entitiesHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $organizationDataHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $name = $organization['OrganizationDisplayName'];
-      $name .= '(' . $organization['impsCount'] . '/' . $organization['entitiesCount'] . ')';
+      if ($this->config->getIMPS()) {
+        $name .= '(' . $organization['impsCount'] . '/' . $organization['entitiesCount'] . ')';
+      } else {
+        $name .= '(' . $organization['entitiesCount'] . ')';
+      }
       $name .= $organization['notMemberAfter'] ? '- Not member any more' : '';
       $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
       if ($userLevel > 10) {
