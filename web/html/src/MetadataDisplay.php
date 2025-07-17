@@ -3183,11 +3183,11 @@ class MetadataDisplay extends Common {
 
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
-        case 'organizations' :
-          $organizationsActive = self::HTML_ACTIVE;
-          $organizationsSelected = self::HTML_TRUE;
-          $organizationsShow = self::HTML_SHOW;
-          $orgId = isset($_GET['id']) ? $_GET['id'] : 0;
+        case 'imps' :
+          $impsActive = self::HTML_ACTIVE;
+          $impsSelected = self::HTML_TRUE;
+          $impsShow = self::HTML_SHOW;
+          $impsId = isset($_GET['id']) ? $_GET['id'] : 0;
           break;
         case 'scopes' :
           $scopesActive = self::HTML_ACTIVE;
@@ -3195,25 +3195,32 @@ class MetadataDisplay extends Common {
           $scopesShow = self::HTML_SHOW;
           break;
         default :
-          $impsActive = self::HTML_ACTIVE;
-          $impsSelected = self::HTML_TRUE;
-          $impsShow = self::HTML_SHOW;
-          $impsId = isset($_GET['id']) ? $_GET['id'] : 0;
+          $organizationsActive = self::HTML_ACTIVE;
+          $organizationsSelected = self::HTML_TRUE;
+          $organizationsShow = self::HTML_SHOW;
+          $orgId = isset($_GET['id']) ? $_GET['id'] : 0;
+          break;
       }
-    } else {
+    } elseif ($this->config->getIMPS()) {
       $impsActive = self::HTML_ACTIVE;
       $impsSelected = self::HTML_TRUE;
       $impsShow = self::HTML_SHOW;
+    } else {
+      $organizationsActive = self::HTML_ACTIVE;
+      $organizationsSelected = self::HTML_TRUE;
+      $organizationsShow = self::HTML_SHOW;
     }
 
     printf('    <div class="row">
       <div class="col">
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">%s', "\n");
+    if ($this->config->getIMPS()) {
+      printf('          <li class="nav-item">
             <a class="nav-link%s" id="scope-tab" data-toggle="tab" href="#IMPS" role="tab"
               aria-controls="IMPS" aria-selected="%s">IMPS</a>
-          </li>
-          <li class="nav-item">
+          </li>%s', $impsActive, $impsSelected, "\n");
+    }
+    printf('          <li class="nav-item">
             <a class="nav-link%s" id="organizations-tab" data-toggle="tab" href="#organizations" role="tab"
               aria-controls="organizations" aria-selected="%s">Organizations</a>
           </li>
@@ -3222,14 +3229,16 @@ class MetadataDisplay extends Common {
               aria-controls="scopes" aria-selected="%s">Scopes</a>
           </li>
         </ul>
-      </div>%s    </div>%s    <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',
-      $impsActive, $impsSelected, $organizationsActive, $organizationsSelected, $scopesActive, $scopesSelected, "\n", "\n",
-      $impsShow, $impsActive);
-    $this->showIMPSList($impsId, $userLevel);
-    printf('%s      </div><!-- End tab-pane IMPS -->
-      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">',
-        "\n", $organizationsShow, $organizationsActive);
+      </div>%s    </div>%s    <div class="tab-content" id="myTabContent">%s',
+      $organizationsActive, $organizationsSelected, $scopesActive, $scopesSelected, "\n", "\n", "\n");
+    if ($this->config->getIMPS()) {
+      printf('      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',  
+        $impsShow, $impsActive);
+      $this->showIMPSList($impsId, $userLevel);
+      printf('%s      </div><!-- End tab-pane IMPS -->%s', "\n", "\n");
+    }
+    printf('      <div class="tab-pane fade%s%s" id="organizations" role="tabpanel" aria-labelledby="organizations-tab">',
+        $organizationsShow, $organizationsActive);
     $this->showOrganizationInfoLists($orgId, $userLevel);
     printf('%s      </div><!-- End tab-pane organizations -->
       <div class="tab-pane fade%s%s" id="scopes" role="tabpanel" aria-labelledby="scopes-tab">',
@@ -3384,15 +3393,19 @@ class MetadataDisplay extends Common {
 
       }
       printf('                  <li>memberSince : %s</li>
-                  <li>IMPS:s
-                    <ul>%s', $organization['memberSince'], "\n");
-      while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
+                  <li>', $organization['memberSince']);
+      if ($this->config->getIMPS()) {
+        printf('IMPS:s
+                    <ul>%s', "\n");
+        while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+          printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
           $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
-      }
-      printf ('                    </ul>
+        }
+        printf ('                    </ul>
                   </li>
-                  <li>Entities
+                  <li>');
+      }
+      printf('Entities
                     <ul>%s', "\n");
       while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('                      <li><a href="?showEntity=%d">%s</a></li>%s',
