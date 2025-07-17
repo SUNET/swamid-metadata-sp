@@ -1988,50 +1988,49 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showErrorList($download = false) {
+    # Default values
+    $remindersUrgentActive='';
+    $remindersUrgentSelected='false';
+    $remindersUrgentShow='';
+    #
+    $remindersActive='';
+    $remindersSelected='false';
+    $remindersShow='';
+    #
+    $errorsActive='';
+    $errorsSelected='false';
+    $errorsShow='';
+    #
+    $idPsActive = '';
+    $idPsSelected = 'false';
+    $idPsShow = '';
+    $idPsId = 0;
+
+    if (isset($_GET["tab"])) {
+      switch ($_GET["tab"]) {
+        case 'reminders' :
+          $remindersActive = self::HTML_ACTIVE;
+          $remindersSelected = self::HTML_TRUE;
+          $remindersShow = self::HTML_SHOW;
+          break;
+        case 'IdPs' :
+          $idPsActive = self::HTML_ACTIVE;
+          $idPsSelected = self::HTML_TRUE;
+          $idPsShow = self::HTML_SHOW;
+          $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
+          break;
+        case 'reminders-urgent' :
+        default :
+          $remindersUrgentActive = self::HTML_ACTIVE;
+          $remindersUrgentSelected = self::HTML_TRUE;
+          $remindersUrgentShow = self::HTML_SHOW;
+        }
+    } else {
+      $remindersUrgentActive = self::HTML_ACTIVE;
+      $remindersUrgentSelected = self::HTML_TRUE;
+      $remindersUrgentShow = self::HTML_SHOW;
+    }
     if (! $download) {
-      # Default values
-      $remindersUrgentActive='';
-      $remindersUrgentSelected='false';
-      $remindersUrgentShow='';
-      #
-      $remindersActive='';
-      $remindersSelected='false';
-      $remindersShow='';
-      #
-      $errorsActive='';
-      $errorsSelected='false';
-      $errorsShow='';
-      #
-      $idPsActive = '';
-      $idPsSelected = 'false';
-      $idPsShow = '';
-      $idPsId = 0;
-
-      if (isset($_GET["tab"])) {
-        switch ($_GET["tab"]) {
-          case 'reminders' :
-            $remindersActive = self::HTML_ACTIVE;
-            $remindersSelected = self::HTML_TRUE;
-            $remindersShow = self::HTML_SHOW;
-            break;
-          case 'IdPs' :
-            $idPsActive = self::HTML_ACTIVE;
-            $idPsSelected = self::HTML_TRUE;
-            $idPsShow = self::HTML_SHOW;
-            $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
-            break;
-          case 'reminders-urgent' :
-          default :
-            $remindersUrgentActive = self::HTML_ACTIVE;
-            $remindersUrgentSelected = self::HTML_TRUE;
-            $remindersUrgentShow = self::HTML_SHOW;
-          }
-      } else {
-        $remindersUrgentActive = self::HTML_ACTIVE;
-        $remindersUrgentSelected = self::HTML_TRUE;
-        $remindersUrgentShow = self::HTML_SHOW;
-      }
-
       printf('    <div class="row">
       <div class="col">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -3239,7 +3238,7 @@ class MetadataDisplay extends Common {
       </div>%s    </div>%s    <div class="tab-content" id="myTabContent">%s',
       $organizationsActive, $organizationsSelected, $scopesActive, $scopesSelected, "\n", "\n", "\n");
     if ($this->config->getIMPS()) {
-      printf('      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',  
+      printf('      <div class="tab-pane fade%s%s" id="IMPS" role="tabpanel" aria-labelledby="IMPS-tab">',
         $impsShow, $impsActive);
       $this->showIMPSList($impsId, $userLevel);
       printf('%s      </div><!-- End tab-pane IMPS -->%s', "\n", "\n");
