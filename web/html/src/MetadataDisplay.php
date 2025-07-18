@@ -507,12 +507,12 @@ class MetadataDisplay extends Common {
       if ($allowEdit || $admin) {
         if ($entity['OrganizationInfo_id'] > 0 && $entity['status'] == 3 && $organizationErrors) {
           printf('          <a href="./?action=copyDefaultOrganization&Entity=%d"><button>%s</button></a>%s',
-            $entitiesId, 'Import the default organization information to this Draft', "\n");
+            $entitiesId, 'Import the selected organization information to this Draft', "\n");
+        } elseif ($entity['OrganizationInfo_id'] == 0) {
           if ($admin) {
             printf('          <br><br><a href="./?action=createOrganizationFromEntity&Entity=%d"><button>%s</button></a><br><br>%s',
               $entitiesId, 'Create new organization based on this entity', "\n");
           }
-        } elseif ($entity['OrganizationInfo_id'] == 0) {
           printf('          Please select your organization.<br>
           If this is a organization not already existing in SWAMID, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
             $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
@@ -544,7 +544,7 @@ class MetadataDisplay extends Common {
       WHERE `OrganizationInfo_id`= :Id
       ORDER BY `lang`;');
     $organizationInfoHandler->execute(array(self::BIND_ID => $id));
-    printf ('%s          <b>Default information for your organization :</b>
+    printf ('%s          <b>Information for your organization :</b>
           <ul>%s', "\n", "\n");
     while ($organizationInfo = $organizationInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       $organizationDefaults['OrganizationDisplayName'][$organizationInfo['lang']] = $organizationInfo['OrganizationDisplayName'];
