@@ -84,7 +84,8 @@ class Configuration {
       'rulesName', 'rulesURL',
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
-      'swamid_assurance', 'checkOrganization');
+      'swamid_assurance', 'checkOrganization',
+      'releaseCheckResultsURL');
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {

@@ -113,6 +113,8 @@ $federation = array(
   'swamid_assurance' => true,
   # If we should check/force a organization connected to each entity
   'checkOrganization' => false,
+  # URL to get release-check test results from - or empty string if not used
+  'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
