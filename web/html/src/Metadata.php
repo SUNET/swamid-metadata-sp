@@ -398,10 +398,10 @@ class Metadata extends Common {
     foreach (explode(' ', $feeds) as $feed ) {
       switch (strtolower($feed)) {
         case $federation['localFeed'] :
-          $publishIn += 2;
+          $publishIn = 2;
           break;
         case $federation['eduGAINFeed'] :
-          $publishIn += 4;
+          $publishIn = 6; // localFeed + eduGAIN
           break;
         default :
       }
