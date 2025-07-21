@@ -399,7 +399,7 @@ class IMPS {
             <div class="col-2">Left</div>
             <div class="col"><input type="text" name="notMemberAfter" value="%s" size="10"></div>
           </div>
-          <input type="submit">
+          <input type="submit" name="action" value="Add/Update">
         </form>
         <a href="./?action=Members&tab=organizations&id=%d%s#org-%d"><button>Back</button></a>%s',
         htmlspecialchars($memberSince), htmlspecialchars($notMemberAfter),
