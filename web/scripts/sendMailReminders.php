@@ -480,7 +480,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   try {
     $mailContacts->send();
   } catch (Exception $e) {
-    echo 'Message could not be sent to contacts.<br>';
+    echo 'Message could not be sent to contacts.<br>' . "\n";
   }
 }
 
@@ -532,7 +532,7 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
   try {
     $mailContacts->send();
   } catch (Exception $e) {
-    echo 'Message could not be sent to contacts.<br>';
+    echo 'Message could not be sent to contacts.<br>' . "\n";
   }
 }
 
@@ -587,7 +587,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
   try {
     $mailContacts->send();
   } catch (Exception $e) {
-    echo 'Message could not be sent to contacts.<br>';
+    echo 'Message could not be sent to contacts.<br>' . "\n";
   }
 }
 
@@ -667,7 +667,7 @@ function sendImpsReminder($id, $name, $months) {
   try {
     $mailContacts->send();
   } catch (Exception $e) {
-    echo 'Message could not be sent to contacts.<br>';
+    echo 'Message could not be sent to contacts.<br>' . "\n";
   }
 }
 
