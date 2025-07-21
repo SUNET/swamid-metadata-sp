@@ -2630,11 +2630,11 @@ class MetadataDisplay extends Common {
     <p>
       Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.
       <br>
-      Out of %d IdPs in swamid:
+      Out of %d IdPs in %s:
     </p>
     <table class="table table-striped table-bordered">
       <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
-      $nrOfIdPs, "\n");
+      $nrOfIdPs, $this->config->getFederation()['displayName'], "\n");
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
       $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
