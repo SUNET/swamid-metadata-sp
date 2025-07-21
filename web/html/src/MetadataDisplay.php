@@ -514,8 +514,8 @@ class MetadataDisplay extends Common {
               $entitiesId, 'Create new organization based on this entity', "\n");
           }
           printf('          Please select your organization.<br>
-          If this is a organization not already existing in SWAMID, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
-            $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
+          If this is a organization not already existing in %s, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
+            $this->config->getFederation()['displayName'], $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
         }
         $this->showAddOrganizationIdForm($entitiesId, $entity['OrganizationInfo_id']);
       } else {
