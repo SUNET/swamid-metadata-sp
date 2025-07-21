@@ -81,7 +81,7 @@ class Configuration {
       'aboutURL', 'contactURL', 'toolName', 'teamName',
       'teamMail', 'logoURL', 'logoWidth', 'logoHeight', 'languages',
       'metadata_main_path', 'metadata_registration_authority_exclude',
-      'rulesName', 'rulesURL',
+      'rulesName', 'rulesURL', 'roloverDocURL',
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
       'swamid_assurance', 'checkOrganization',

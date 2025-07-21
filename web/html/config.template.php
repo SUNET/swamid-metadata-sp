@@ -79,6 +79,7 @@ $federation = array(
 
   'rulesName' => 'SWAMID SAML WebSSO Technology Profile',
   'rulesURL' => 'https://www.swamid.se/policy/technology/saml-websso',
+  'roloverDocURL' => 'https://wiki.sunet.se/display/SWAMID/Key+rollover',
 
   'rulesSectsBoth' => '4.1.1, 4.1.2, 4.2.1 and 4.2.2',
   'rulesSectsIdP' => '4.1.1 and 4.1.2',
