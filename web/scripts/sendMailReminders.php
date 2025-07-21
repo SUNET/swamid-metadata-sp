@@ -429,6 +429,7 @@ function checkOldIMPS() {
 
 function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   global $config, $mailContacts;
+  $federation = $config->getFederation();
 
   setupMail();
 
@@ -450,32 +451,44 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
   $mailContacts->Body    = sprintf("<html>\n  <body>
     <p>Hi.</p>
     <p>The entity \"%s\" (%s) has not been validated/confirmed for %d months.
-    The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational
+    The %s requires an annual confirmation that the entity is operational
     and fulfils the Technology Profile.</p>
-    <p>If the entity should no longer be used within SWAMID please remove it from the metadata registry.</p>
-    <p>If not annually confirmed the Operations team will start the process to remove the entity from the SWAMID metadata registry.</p>
+    <p>If the entity should no longer be used within %s please remove it from the metadata registry.</p>
+    <p>If not annually confirmed the %s team will start the process to remove the entity from the %s metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact.</p>
     <p>You can confirm, update or remove your entity at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>
+    On behalf of %s</p>
   </body>\n</html>",
-  $displayName, $entityID, $months, $config->baseURL(), $id, $config->baseURL(), $id);
+  $displayName, $entityID, $months,
+  $federation['rulesName'],
+  $federation['displayName'],
+  $federation['teamName'], $federation['displayName'],
+  $config->baseURL(), $id, $config->baseURL(), $id,
+  $federation['toolName'],
+  $federation['teamName']);
   $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has not been validated/confirmed for %d months.
-    The SWAMID SAML WebSSO Technology Profile requires an annual confirmation that the entity is operational and fulfils
+    The %s requires an annual confirmation that the entity is operational and fulfils
     the Technology Profile.
-    \nIf the entity should no longer be used within SWAMID please remove it from the metadata registry.
-    \nIf not annually confirmed the Operations team will start the process to remove the entity from the SWAMID metadata registry.
+    \nIf the entity should no longer be used within %s please remove it from the metadata registry.
+    \nIf not annually confirmed the %s team will start the process to remove the entity from the %s metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact.
     \nYou can confirm, update or remove your entity at %sadmin/?showEntity=%d .
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
-    $displayName, $entityID, $months, $config->baseURL(), $id);
+    On behalf of %s",
+    $displayName, $entityID, $months,
+    $federation['rulesName'],
+    $federation['displayName'],
+    $federation['teamName'], $federation['displayName'],
+    $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
-  $mailContacts->Subject  = 'Warning : SWAMID metadata for ' . $shortEntityid . ' needs to be validated';
+  $mailContacts->Subject  = 'Warning : ' . $federation['displayName'] . ' metadata for ' . $shortEntityid . ' needs to be validated';
 
   try {
     $mailContacts->send();
@@ -486,6 +499,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
 
 function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
   global $config, $mailContacts;
+  $federation = $config->getFederation();
 
   setupMail();
 
@@ -505,29 +519,39 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
   $mailContacts->isHTML(true);
   $mailContacts->Body    = sprintf("<html>\n  <body>
     <p>Hi.</p>
-    <p>The SAML certificate in your metadata registered in SWAMID \"%s\" (%s)%s.</p>
-    <p>The SWAMID SAML WebSSO Technology Profile requires that signing and
+    <p>The SAML certificate in your metadata registered in %s \"%s\" (%s)%s.</p>
+    <p>The %s requires that signing and
     encryption certificates MUST NOT be expired.<p>
     <p>You have received this email because you are either the technical and/or administrative contact.</p>
     <p>You can view your entity at <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>See our wiki on how you can roll the certificate without any disturbances on the service.</p>
-    <p><a href=\"https://wiki.sunet.se/display/SWAMID/Key+rollover\">https://wiki.sunet.se/display/SWAMID/Key+rollover</a>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>See our documentation on how you can roll the certificate without any disturbances on the service.</p>
+    <p><a href=\"%s\">%s</a>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>
+    On behalf of %s</p>
   </body>\n</html>",
-  $displayName, $entityID, $expireStatus, $config->baseURL(), $id, $config->baseURL(), $id);
+  $federation['displayName'], $displayName, $entityID, $expireStatus,
+  $federation['rulesName'],
+  $config->baseURL(), $id, $config->baseURL(), $id,
+  $federation['roloverDocURL'], $federation['roloverDocURL'],
+  $federation['toolName'],
+  $federation['teamName']);
   $mailContacts->AltBody = sprintf("Hi.\n
-    \nThe SAML certificate in your metadata registered in SWAMID \"%s\" (%s)%s.
-    \nThe SWAMID SAML WebSSO Technology Profile requires that signing and encryption certificates MUST NOT be expired.
+    \nThe SAML certificate in your metadata registered in %s \"%s\" (%s)%s.
+    \nThe %s requires that signing and encryption certificates MUST NOT be expired.
     \nYou have received this email because you are either the technical and/or administrative contact.
     \nYou can view your entity at %sadmin/?showEntity=%d .
-    \nSee our wiki on how you can roll the certificate without any disturbances on the service.
-    \nhttps://wiki.sunet.se/display/SWAMID/Key+rollover
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nSee our documentation on how you can roll the certificate without any disturbances on the service.
+    \n%s
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
-    $displayName, $entityID, $expireStatus, $config->baseURL(), $id);
+    On behalf of %s",
+    $federation['displayName'], $displayName, $entityID, $expireStatus,
+    $federation['rulesName'],
+    $config->baseURL(), $id,
+    $federation['roloverDocURL'],
+    $federation['toolName'],
+    $federation['teamName']);
 
   try {
     $mailContacts->send();
@@ -538,6 +562,7 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
 
 function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pending = true) {
   global $config, $mailContacts;
+  $federation = $config->getFederation();
 
   setupMail();
 
@@ -558,30 +583,33 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
     <p>You have received this email because you are the last person updating this entity.</p>
     %s<p>You can view or cancel your %s at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>
+    On behalf of %s</p>
   </body>\n</html>",
   $displayName, $entityID, $pending ? 'Pending' : 'Drafts', $weeks,
   $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
-  $pending ? '<p>To get a change published forward this mail to operations@swamid.se</p>' : '',
+  $pending ? '<p>To get a change published forward this mail to ' . $federation['teamMail'] . '</p>' : '',
   $pending ? 'request' : 'draft',
-  $config->baseURL(), $id, $config->baseURL(), $id);
+  $config->baseURL(), $id, $config->baseURL(), $id,
+  $federation['toolName'], $federation['teamName']);
   $mailContacts->AltBody = sprintf("Hi.\n\nThe entity \"%s\" (%s) has been in %s for %d week(s).
     If nothing happens your %s will be removed short after %s.
     \nYou have received this email because you are the last person updating this entity.
     %s\nYou can view or cancel your %s at %sadmin/?showEntity=%d .
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
+    On behalf of %s",
     $displayName, $entityID, $pending ? 'Pending' : 'Drafts', $weeks,
     $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
-    $pending ? "\nTo get a change published forward this mail to operations@swamid.se" : '',
+    $pending ? "\nTo get a change published forward this mail to " . $federation['teamMail'] : '',
     $pending ? 'request' : 'draft',
-    $config->baseURL(), $id);
+    $config->baseURL(), $id,
+    $federation['toolName'], $federation['teamName']);
 
   $shortEntityid = preg_replace('/^https?:\/\/([^:\/]*)\/.*/', '$1', $entityID);
-  $mailContacts->Subject  = sprintf ('Warning : SWAMID %s metadata for %s needs to be acted on',
+  $mailContacts->Subject  = sprintf ('Warning : %s %s metadata for %s needs to be acted on',
+    $federation['displayName'],
     $pending ? 'pending' : 'draft', $shortEntityid );
 
   try {
