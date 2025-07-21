@@ -115,6 +115,8 @@ $federation = array(
   'checkOrganization' => false,
   # URL to get release-check test results from - or empty string if not used
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
+  # Base URL for MDQ - or empty string if not available
+  'mdqBaseURL' => 'https://mds.swamid.se/entities/',
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',

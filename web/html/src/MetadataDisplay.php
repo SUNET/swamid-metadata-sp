@@ -1697,8 +1697,9 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showMdqUrl($entityID, $mode) {
-    $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, 0, 0);
-    $url = sprintf('https://mds.swamid.se/%sentities/%s', $mode == 'QA' ? 'qa/' : '', urlencode($entityID));
+    $federation = $this->config->getFederation();
+    $this->showCollapse('Signed XML in ' . $federation['displayName'], 'MDQ', false, 0, true, false, 0, 0);
+    $url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
     printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
       $url, $url, "\n");
     $this->showCollapseEnd('MDQ', 0);

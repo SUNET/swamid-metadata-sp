@@ -898,7 +898,7 @@ function showEntity($entitiesId, $showHeader = true)  {
     if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, $allowEdit); }
     $display->showOrganization($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
-    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
+    if ($entity['status'] == 1 && $federation['mdqBaseURL']) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
     $display->showXML($entitiesId);
     if ($oldEntitiesId > 0 && $userLevel > 10) {
       $display->showDiff($entitiesId, $oldEntitiesId);

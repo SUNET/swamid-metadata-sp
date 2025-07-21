@@ -85,7 +85,7 @@ class Configuration {
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
       'swamid_assurance', 'checkOrganization',
-      'releaseCheckResultsURL');
+      'releaseCheckResultsURL', 'mdqBaseURL');
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
