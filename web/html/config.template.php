@@ -76,6 +76,8 @@ $federation = array(
       'http://www.swamid.se/',     # NOSONAR Should be http://
       'http://www.swamid.se/loop', # NOSONAR Should be http://
   ),
+  'metadata_registration_authority' => 'http://www.swamid.se/',      # NOSONAR Should be http://
+  'metadata_registration_policy' => 'http://swamid.se/policy/mdrps', # NOSONAR Should be http://
 
   'rulesName' => 'SWAMID SAML WebSSO Technology Profile',
   'rulesURL' => 'https://www.swamid.se/policy/technology/saml-websso',

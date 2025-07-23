@@ -64,6 +64,8 @@ class MetadataMerge extends Common {
    * @return void
    */
   public function mergeRegistrationInfo() {
+    $federation = $this->config->getFederation();
+
     # Skip if not same entityID. Only migrate if same!!!!
     if ( !$this->oldExists || $this->entityID !== $this->oldentityID ) {
       return;
@@ -89,7 +91,7 @@ class MetadataMerge extends Common {
         # Add if missing
         $this->entityDescriptor->setAttributeNS(self::SAMLXMLNS_URI, 'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
         $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
-        $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
+        $registrationInfo->setAttribute('registrationAuthority', $federation['metadata_registration_authority']);
         $registrationInfo->setAttribute('registrationInstant', $instant['ts']);
         $extensions->appendChild($registrationInfo);
       }
@@ -105,7 +107,7 @@ class MetadataMerge extends Common {
         }
       }
       if (!$registrationPolicy) {
-        $registrationPolicy = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONPOLICY, 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
+        $registrationPolicy = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONPOLICY, $federation['metadata_registration_policy']);
         $registrationPolicy->setAttribute(self::SAMLXML_LANG, 'en');
         $registrationInfo->appendChild($registrationPolicy);
       }

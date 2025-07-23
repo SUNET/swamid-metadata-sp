@@ -81,6 +81,7 @@ class Configuration {
       'aboutURL', 'contactURL', 'toolName', 'teamName',
       'teamMail', 'logoURL', 'logoWidth', 'logoHeight', 'languages',
       'metadata_main_path', 'metadata_registration_authority_exclude',
+      'metadata_registration_authority', 'metadata_registration_policy',
       'rulesName', 'rulesURL', 'roloverDocURL',
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
