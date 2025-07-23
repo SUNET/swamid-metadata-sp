@@ -7,7 +7,7 @@ class MetadataMerge extends Common {
   # Setup
   private int $dbOldIdNr = 0;
   private bool $oldExists = false;
-  private bool $oldentityID = false;
+  private string $oldentityID = '';
 
   /**
    * Setup the class
@@ -65,7 +65,7 @@ class MetadataMerge extends Common {
    */
   public function mergeRegistrationInfo() {
     # Skip if not same entityID. Only migrate if same!!!!
-    if ( !$this->oldExists || $this->entityID <> $this->oldentityID ) {
+    if ( !$this->oldExists || $this->entityID !== $this->oldentityID ) {
       return;
     }
 
