@@ -1692,11 +1692,9 @@ class MetadataDisplay extends Common {
    *
    * @param int $entityId EntityId of entity
    *
-   * @param string $mode mode
-   *
    * @return void
    */
-  public function showMdqUrl($entityID, $mode) {
+  public function showMdqUrl($entityID) {
     $federation = $this->config->getFederation();
     $this->showCollapse('Signed XML in ' . $federation['displayName'], 'MDQ', false, 0, true, false, 0, 0);
     $url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
