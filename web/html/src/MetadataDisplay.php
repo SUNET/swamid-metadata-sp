@@ -121,7 +121,7 @@ class MetadataDisplay extends Common {
           $ecsTagged[$attribute['attribute']] = true;
         }
 
-        if ($this->config->getFederation['releaseCheckResultsURL']) {
+        if ($this->config->getFederation()['releaseCheckResultsURL']) {
           $testResults->execute(array(self::BIND_ENTITYID => $entity['entityID']));
           while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
             $ecsTested[$testResult['test']] = true;
