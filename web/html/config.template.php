@@ -56,7 +56,6 @@ $userLevels = array(
 $federation = array(
   'displayName' => 'SWAMID',
   'longName' => 'Academic Identity Federation SWAMID',
-  'displayNameQA' => 'SWAMID QA',
   'noAccountHtml' => 'you can create an eduID account at <a href="https://eduid.se">eduID.se</a>',
   'name' => 'swamid',
   'localFeed' => 'swamid-2.0',

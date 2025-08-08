@@ -1403,7 +1403,7 @@ function move2Pending($entitiesId) {
           $entitiesId,"\n");
         if ($config->getMode() == 'QA') {
           printf('      <input type="radio" id="SWAMID" name="publishedIn" value="2" checked>
-      <label for="SWAMID">' . $federation['displayNameQA'] . '</label>%s',"\n");
+      <label for="SWAMID">' . $federation['displayName'] . ' ' . $config->getMode() . '</label>%s',"\n");
         } else {
           printf('      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
       <label for="SWAMID_eduGAIN">' . $federation['displayName'] . ' and eduGAIN</label><br>
