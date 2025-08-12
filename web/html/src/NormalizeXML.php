@@ -93,7 +93,7 @@ class NormalizeXML {
             // COMMENT_NODE
             break;
           default :
-            printf ('-----> Okänd typ %s<br>%s', $child->nodeType, $child->nodeValue);
+            printf ('-----> Unknown type %s<br>%s', $child->nodeType, $child->nodeValue);
         }
       }
     }
@@ -298,7 +298,7 @@ class NormalizeXML {
       $this->error = '';
       $this->status = true;
     } else {
-      $this->error = 'Cant find entityID in EntityDescriptor';
+      $this->error = "Can't find entityID in EntityDescriptor";
       $this->status = false;
     }
   }

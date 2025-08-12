@@ -16,5 +16,5 @@ if [ -r $file ]; then
 
   php /var/www/scripts/importAndValidateXML.php $file "$feed"
 else
-  echo "Cant read $file"
+  echo "Can't read $file"
 fi

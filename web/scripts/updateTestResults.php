@@ -84,7 +84,7 @@ function fetchJson() {
           $continue = false;
           break;
         default :
-          print "Got code $http_code from web-server. Cant handle :-(";
+          print "Got code $http_code from web-server. Can't handle :-(";
           $continue = false;
       }
     }

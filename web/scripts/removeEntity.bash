@@ -8,5 +8,5 @@ if [ -r $file ]; then
   echo "Removing $entityID"
   php /var/www/scripts/removeEntity.php $entityID Prod && rm $file
 else
-  echo "Cant read $file"
+  echo "Can't read $file"
 fi

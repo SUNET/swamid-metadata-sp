@@ -322,7 +322,7 @@ class Common {
         break;
       default :
         $verboseInfo .= $http_code;
-        $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from web-server. Cant handle :-(", $config->getFederation()['teamMail'], $http_code);
+        $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from web-server. Can't handle :-(", $config->getFederation()['teamMail'], $http_code);
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
