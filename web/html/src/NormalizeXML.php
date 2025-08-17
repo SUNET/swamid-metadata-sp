@@ -18,6 +18,7 @@ class NormalizeXML {
     'urn:oasis:names:tc:SAML:metadata:ui' => 'mdui',
     'urn:mace:shibboleth:metadata:1.0' => 'shibmd',
     'http://refeds.org/metadata' => 'remd', # NOSONAR Should be http://
+    'urn:oasis:names:tc:SAML:protocol:ext:req-attr' => 'req-attr',
     'http://www.w3.org/2000/09/xmldsig#' => 'ds', # NOSONAR Should be http://
     'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
     'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
