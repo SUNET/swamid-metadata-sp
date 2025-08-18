@@ -224,6 +224,7 @@ class Common {
     $urlHandler = $this->config->getDb()->prepare($sql);
     $urlHandler->execute();
     $count = 0;
+    $verboseInfo = '';
     while ($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
       $updateArray = array(
         self::BIND_URL => $url['URL'],
@@ -322,7 +323,8 @@ class Common {
         break;
       default :
         $verboseInfo .= $http_code;
-        $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from web-server. Can't handle :-(", $config->getFederation()['teamMail'], $http_code);
+        $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from final URL %s. Can't handle :-(",
+          $config->getFederation()['teamMail'], $http_code, curl_getinfo($ch, CURLINFO_EFFECTIVE_URL));
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
