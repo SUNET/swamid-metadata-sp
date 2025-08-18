@@ -58,6 +58,14 @@ class IMPS {
       WHERE `IMPS`.`id` = :Id;');
     $impsHandler->execute(array(self::BIND_ID => $id));
     if ($id == 0 || $imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($id == 0) {
+        $imps['id'] = 0;
+        $imps['name'] =  '';
+        $imps['maximumAL'] = 0;
+        $imps['lastUpdated'] =  '';
+        $imps['sharedIdp'] = false;
+        $imps['OrganizationInfo_id'] = 0;
+      }
       $name = isset($_POST['name']) ? $_POST['name'] : $imps['name'];
       $maximumAL = isset($_POST['maximumAL']) ? $_POST['maximumAL'] : $imps['maximumAL'];
       $lastUpdated = isset($_POST['lastUpdated']) ? $_POST['lastUpdated'] : $imps['lastUpdated'];
