@@ -898,7 +898,7 @@ function showEntity($entitiesId, $showHeader = true)  {
     if ($entity['isAA'] ) { $display->showAA($entitiesId, $oldEntitiesId, $allowEdit, $allowEdit); }
     $display->showOrganization($entitiesId, $oldEntitiesId, $allowEdit);
     $display->showContacts($entitiesId, $oldEntitiesId, $allowEdit);
-    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
+    if ($entity['status'] == 1 && $federation['mdqBaseURL']) { $display->showMdqUrl($entity['entityID']); }
     $display->showXML($entitiesId);
     if ($oldEntitiesId > 0 && $userLevel > 10) {
       $display->showDiff($entitiesId, $oldEntitiesId);
@@ -1403,7 +1403,7 @@ function move2Pending($entitiesId) {
           $entitiesId,"\n");
         if ($config->getMode() == 'QA') {
           printf('      <input type="radio" id="SWAMID" name="publishedIn" value="2" checked>
-      <label for="SWAMID">' . $federation['displayNameQA'] . '</label>%s',"\n");
+      <label for="SWAMID">' . $federation['displayName'] . ' ' . $config->getMode() . '</label>%s',"\n");
         } else {
           printf('      <input type="radio" id="SWAMID_eduGAIN" name="publishedIn" value="7"%s>
       <label for="SWAMID_eduGAIN">' . $federation['displayName'] . ' and eduGAIN</label><br>

@@ -76,15 +76,17 @@ class Configuration {
       'name');
     $reqParamsSmtp = array('host', 'from', 'replyTo', 'replyName', 'sendOut');
     $reqParamsSmtpSasl = array('user', 'user');
-    $reqParamsFederation = array('displayName', 'longName', 'displayNameQA',
-      'noAccountHtml', 'name', 'localFeed', 'eduGAINFeed',
+    $reqParamsFederation = array('displayName', 'longName',
+      'noAccountHtml', 'localFeed', 'eduGAINFeed',
       'aboutURL', 'contactURL', 'toolName', 'teamName',
       'teamMail', 'logoURL', 'logoWidth', 'logoHeight', 'languages',
       'metadata_main_path', 'metadata_registration_authority_exclude',
-      'rulesName', 'rulesURL',
+      'metadata_registration_authority', 'metadata_registration_policy',
+      'rulesName', 'rulesURL', 'roloverDocURL',
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
-      'swamid_assurance', 'checkOrganization');
+      'swamid_assurance', 'checkOrganization',
+      'releaseCheckResultsURL', 'mdqBaseURL');
 
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {

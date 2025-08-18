@@ -238,7 +238,7 @@ function showEntity($entity_id, $urn = false)  {
     if ($entity['isAA'] ) { $display->showAA($entities_id, $oldEntity_id); }
     $display->showOrganization($entities_id, $oldEntity_id);
     $display->showContacts($entities_id, $oldEntity_id);
-    if ($entity['status'] == 1) { $display->showMdqUrl($entity['entityID'], $config->getMode()); }
+    if ($entity['status'] == 1 && $federation['mdqBaseURL']) { $display->showMdqUrl($entity['entityID']); }
     $display->showXML($entities_id);
   } else {
     $html->showHeaders('NotFound');

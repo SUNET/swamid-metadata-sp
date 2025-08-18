@@ -398,10 +398,10 @@ class Metadata extends Common {
     foreach (explode(' ', $feeds) as $feed ) {
       switch (strtolower($feed)) {
         case $federation['localFeed'] :
-          $publishIn += 2;
+          $publishIn = 2;
           break;
         case $federation['eduGAINFeed'] :
-          $publishIn += 4;
+          $publishIn = 6; // localFeed + eduGAIN
           break;
         default :
       }
@@ -720,6 +720,8 @@ class Metadata extends Common {
    * @return void
    */
   private function addRegistrationInfo() {
+    $federation = $this->config->getFederation();
+
     $extensions = $this->getExtensions();
     # Find mdattr:EntityAttributes in XML
     $child = $extensions->firstChild;
@@ -736,7 +738,7 @@ class Metadata extends Common {
       $this->entityDescriptor->setAttributeNS('http://www.w3.org/2000/xmlns/', # NOSONAR Should be http://
         'xmlns:mdrpi', 'urn:oasis:names:tc:SAML:metadata:rpi');
       $registrationInfo = $this->xml->createElement(self::SAML_MDRPI_REGISTRATIONINFO);
-      $registrationInfo->setAttribute('registrationAuthority', 'http://www.swamid.se/'); # NOSONAR Should be http://
+      $registrationInfo->setAttribute('registrationAuthority', $federation['metadata_registration_authority']);
       $registrationInfo->setAttribute('registrationInstant', $ts);
       $extensions->appendChild($registrationInfo);
     }
@@ -751,7 +753,7 @@ class Metadata extends Common {
       $child = $child->nextSibling;
     }
     if (!$registrationPolicy) {
-      $registrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', 'http://swamid.se/policy/mdrps'); # NOSONAR Should be http://
+      $registrationPolicy = $this->xml->createElement('mdrpi:RegistrationPolicy', $federation['metadata_registration_policy']);
       $registrationPolicy->setAttribute('xml:lang', 'en');
       $registrationInfo->appendChild($registrationPolicy);
     }

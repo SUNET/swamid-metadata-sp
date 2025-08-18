@@ -56,9 +56,7 @@ $userLevels = array(
 $federation = array(
   'displayName' => 'SWAMID',
   'longName' => 'Academic Identity Federation SWAMID',
-  'displayNameQA' => 'SWAMID QA',
   'noAccountHtml' => 'you can create an eduID account at <a href="https://eduid.se">eduID.se</a>',
-  'name' => 'swamid',
   'localFeed' => 'swamid-2.0',
   'eduGAINFeed' => 'swamid-edugain',
   'aboutURL' => 'https://www.sunet.se/swamid/',
@@ -76,9 +74,12 @@ $federation = array(
       'http://www.swamid.se/',     # NOSONAR Should be http://
       'http://www.swamid.se/loop', # NOSONAR Should be http://
   ),
+  'metadata_registration_authority' => 'http://www.swamid.se/',      # NOSONAR Should be http://
+  'metadata_registration_policy' => 'http://swamid.se/policy/mdrps', # NOSONAR Should be http://
 
   'rulesName' => 'SWAMID SAML WebSSO Technology Profile',
   'rulesURL' => 'https://www.swamid.se/policy/technology/saml-websso',
+  'roloverDocURL' => 'https://wiki.sunet.se/display/SWAMID/Key+rollover',
 
   'rulesSectsBoth' => '4.1.1, 4.1.2, 4.2.1 and 4.2.2',
   'rulesSectsIdP' => '4.1.1 and 4.1.2',
@@ -113,6 +114,10 @@ $federation = array(
   'swamid_assurance' => true,
   # If we should check/force a organization connected to each entity
   'checkOrganization' => false,
+  # URL to get release-check test results from - or empty string if not used
+  'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
+  # Base URL for MDQ - or empty string if not available
+  'mdqBaseURL' => 'https://mds.swamid.se/entities/',
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',

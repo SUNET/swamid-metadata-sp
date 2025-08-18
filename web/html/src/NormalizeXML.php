@@ -18,6 +18,7 @@ class NormalizeXML {
     'urn:oasis:names:tc:SAML:metadata:ui' => 'mdui',
     'urn:mace:shibboleth:metadata:1.0' => 'shibmd',
     'http://refeds.org/metadata' => 'remd', # NOSONAR Should be http://
+    'urn:oasis:names:tc:SAML:protocol:ext:req-attr' => 'req-attr',
     'http://www.w3.org/2000/09/xmldsig#' => 'ds', # NOSONAR Should be http://
     'http://www.w3.org/2001/XMLSchema' => 'xs', # NOSONAR Should be http://
     'http://www.w3.org/2001/XMLSchema-instance' => 'xsi', # NOSONAR Should be http://
@@ -93,7 +94,7 @@ class NormalizeXML {
             // COMMENT_NODE
             break;
           default :
-            printf ('-----> Okänd typ %s<br>%s', $child->nodeType, $child->nodeValue);
+            printf ('-----> Unknown type %s<br>%s', $child->nodeType, $child->nodeValue);
         }
       }
     }
@@ -298,7 +299,7 @@ class NormalizeXML {
       $this->error = '';
       $this->status = true;
     } else {
-      $this->error = 'Cant find entityID in EntityDescriptor';
+      $this->error = "Can't find entityID in EntityDescriptor";
       $this->status = false;
     }
   }

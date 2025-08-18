@@ -121,82 +121,84 @@ class MetadataDisplay extends Common {
           $ecsTagged[$attribute['attribute']] = true;
         }
 
-        $testResults->execute(array(self::BIND_ENTITYID => $entity['entityID']));
-        while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
-          $ecsTested[$testResult['test']] = true;
-          switch ($testResult['test']) {
-            case 'rands' :
-              $tag = self::SAML_EC_RANDS;
-              break;
-            case 'cocov1-1' :
-              $tag = self::SAML_EC_COCOV1;
-              break;
-            case 'anonymous':
-              $tag = self::SAML_EC_ANONYMOUS;
-              break;
-            case 'cocov2-1':
-              $tag = self::SAML_EC_COCOV2;
-              break;
-            case 'personalized':
-              $tag = self::SAML_EC_PERSONALIZED;
-              break;
-            case 'pseudonymous':
-              $tag = self::SAML_EC_PSEUDONYMOUS;
-              break;
-            case 'esi':
-              $tag = self::SAML_EC_ESI;
-              break;
-            default :
-              printf('Unknown test : %s', $testResult['test']);
+        if ($this->config->getFederation()['releaseCheckResultsURL']) {
+          $testResults->execute(array(self::BIND_ENTITYID => $entity['entityID']));
+          while ($testResult = $testResults->fetch(PDO::FETCH_ASSOC)) {
+            $ecsTested[$testResult['test']] = true;
+            switch ($testResult['test']) {
+              case 'rands' :
+                $tag = self::SAML_EC_RANDS;
+                break;
+              case 'cocov1-1' :
+                $tag = self::SAML_EC_COCOV1;
+                break;
+              case 'anonymous':
+                $tag = self::SAML_EC_ANONYMOUS;
+                break;
+              case 'cocov2-1':
+                $tag = self::SAML_EC_COCOV2;
+                break;
+              case 'personalized':
+                $tag = self::SAML_EC_PERSONALIZED;
+                break;
+              case 'pseudonymous':
+                $tag = self::SAML_EC_PSEUDONYMOUS;
+                break;
+              case 'esi':
+                $tag = self::SAML_EC_ESI;
+                break;
+              default :
+                printf('Unknown test : %s', $testResult['test']);
+            }
+            switch ($testResult['result']) {
+              case 'CoCo OK, Entity Category Support OK' :
+              case 'R&S attributes OK, Entity Category Support OK' :
+              case 'CoCo OK, Entity Category Support missing' :
+              case 'R&S attributes OK, Entity Category Support missing' :
+              case 'Anonymous attributes OK, Entity Category Support OK' :
+              case 'Personalized attributes OK, Entity Category Support OK' :
+              case 'Pseudonymous attributes OK, Entity Category Support OK' :
+              case 'Anonymous attributes OK, Entity Category Support missing' :
+              case 'Personalized attributes OK, Entity Category Support missing' :
+              case 'Pseudonymous attributes OK, Entity Category Support missing' :
+              case 'schacPersonalUniqueCode OK' :
+                if  (! $ecsTagged[$tag]) {
+                  $warnings .= sprintf('SWAMID Release-check: %s is supported according to release-check', $tag);
+                  $warnings .= " but not marked in Metadata (EntityAttributes/entity-category-support).\n";
+                }
+                break;
+              case 'Support for CoCo missing, Entity Category Support missing' :
+              case 'R&S attribute missing, Entity Category Support missing' :
+              case 'CoCo is not supported, BUT Entity Category Support is claimed' :
+              case 'R&S attributes missing, BUT Entity Category Support claimed' :
+              case 'Anonymous attribute missing, Entity Category Support missing' :
+              case 'Personalized attribute missing, Entity Category Support missing' :
+              case 'Pseudonymous attribute missing, Entity Category Support missing' :
+              case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
+              case 'Personalized attributes missing, BUT Entity Category Support claimed' :
+              case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
+              case 'Missing schacPersonalUniqueCode' :
+                $errors .= ($ecsTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n",
+                  $testResult['time'], $testResult['result']) : '';
+                break;
+              default :
+                printf('Unknown result : %s', $testResult['result']);
+            }
           }
-          switch ($testResult['result']) {
-            case 'CoCo OK, Entity Category Support OK' :
-            case 'R&S attributes OK, Entity Category Support OK' :
-            case 'CoCo OK, Entity Category Support missing' :
-            case 'R&S attributes OK, Entity Category Support missing' :
-            case 'Anonymous attributes OK, Entity Category Support OK' :
-            case 'Personalized attributes OK, Entity Category Support OK' :
-            case 'Pseudonymous attributes OK, Entity Category Support OK' :
-            case 'Anonymous attributes OK, Entity Category Support missing' :
-            case 'Personalized attributes OK, Entity Category Support missing' :
-            case 'Pseudonymous attributes OK, Entity Category Support missing' :
-            case 'schacPersonalUniqueCode OK' :
-              if  (! $ecsTagged[$tag]) {
-                $warnings .= sprintf('SWAMID Release-check: %s is supported according to release-check', $tag);
-                $warnings .= " but not marked in Metadata (EntityAttributes/entity-category-support).\n";
-              }
-              break;
-            case 'Support for CoCo missing, Entity Category Support missing' :
-            case 'R&S attribute missing, Entity Category Support missing' :
-            case 'CoCo is not supported, BUT Entity Category Support is claimed' :
-            case 'R&S attributes missing, BUT Entity Category Support claimed' :
-            case 'Anonymous attribute missing, Entity Category Support missing' :
-            case 'Personalized attribute missing, Entity Category Support missing' :
-            case 'Pseudonymous attribute missing, Entity Category Support missing' :
-            case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
-            case 'Personalized attributes missing, BUT Entity Category Support claimed' :
-            case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
-            case 'Missing schacPersonalUniqueCode' :
-              $errors .= ($ecsTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n",
-                $testResult['time'], $testResult['result']) : '';
-              break;
-            default :
-              printf('Unknown result : %s', $testResult['result']);
+          foreach ($ecsTested as $tag => $tested) {
+            if (! $ecsTested[$tag]) {
+              $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
+              $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
+                $tag, $this->config->getMode() == 'QA' ? 'qa.' : '', "\n");
+            }
           }
-        }
-        foreach ($ecsTested as $tag => $tested) {
-          if (! $ecsTested[$tag]) {
-            $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
-            $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
-              $tag, $this->config->getMode() == 'QA' ? 'qa.' : '', "\n");
-          }
-        }
-        // Error URLs
-        $urlHandler2->execute(array(self::BIND_ID => $entityId));
-        while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
-          if ($url['status'] > 0) {
-            $errors .= sprintf(self::HTML_SHOW_URL,
-              $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+          // Error URLs
+          $urlHandler2->execute(array(self::BIND_ID => $entityId));
+          while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
+            if ($url['status'] > 0) {
+              $errors .= sprintf(self::HTML_SHOW_URL,
+                $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+            }
           }
         }
 
@@ -514,8 +516,8 @@ class MetadataDisplay extends Common {
               $entitiesId, 'Create new organization based on this entity', "\n");
           }
           printf('          Please select your organization.<br>
-          If this is a organization not already existing in SWAMID, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
-            $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
+          If this is a organization not already existing in %s, keep "New Organization" in the dropdown list and inform %s (%s) during publication.<br>%s',
+            $this->config->getFederation()['displayName'], $this->config->getFederation()['teamName'], $this->config->getFederation()['teamMail'], "\n");
         }
         $this->showAddOrganizationIdForm($entitiesId, $entity['OrganizationInfo_id']);
       } else {
@@ -1690,13 +1692,12 @@ class MetadataDisplay extends Common {
    *
    * @param int $entityId EntityId of entity
    *
-   * @param string $mode mode
-   *
    * @return void
    */
-  public function showMdqUrl($entityID, $mode) {
-    $this->showCollapse('Signed XML in SWAMID', 'MDQ', false, 0, true, false, 0, 0);
-    $url = sprintf('https://mds.swamid.se/%sentities/%s', $mode == 'QA' ? 'qa/' : '', urlencode($entityID));
+  public function showMdqUrl($entityID) {
+    $federation = $this->config->getFederation();
+    $this->showCollapse('Signed XML in ' . $federation['displayName'], 'MDQ', false, 0, true, false, 0, 0);
+    $url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
     printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
       $url, $url, "\n");
     $this->showCollapseEnd('MDQ', 0);
@@ -2627,11 +2628,11 @@ class MetadataDisplay extends Common {
     <p>
       Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.
       <br>
-      Out of %d IdPs in swamid:
+      Out of %d IdPs in %s:
     </p>
     <table class="table table-striped table-bordered">
       <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
-      $nrOfIdPs, "\n");
+      $nrOfIdPs, $this->config->getFederation()['displayName'], "\n");
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
       $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']

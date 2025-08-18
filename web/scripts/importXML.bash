@@ -11,10 +11,10 @@ if [ -r $file ]; then
     feed="Testing swamid-2.0"
   fi
   if [ $SWAMIDDir = "swamid-edugain" ]; then
-    feed="Testing swamid-2.0 swamid-edugain"
+    feed="Testing swamid-edugain"
   fi
 
   php /var/www/scripts/importAndValidateXML.php $file "$feed"
 else
-  echo "Cant read $file"
+  echo "Can't read $file"
 fi

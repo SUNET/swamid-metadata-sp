@@ -43,6 +43,11 @@ function parseJson($json) {
 
 function fetchJson() {
   global $config;
+  $rcURL = $config->getFederation()['releaseCheckResultsURL'];
+  if (!$rcURL) {
+    print("No release check test results URL configured, skipping test results download.\n");
+    return;
+  }
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_HEADER, 0);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -52,11 +57,8 @@ function fetchJson() {
   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
   curl_setopt($ch, CURLINFO_HEADER_OUT, 1);
-  if ($config->getMode() == 'QA') {
-    curl_setopt($ch, CURLOPT_URL, 'https://release-check.qa.swamid.se/metaDump.php');
-  } else {
-    curl_setopt($ch, CURLOPT_URL, 'https://release-check.swamid.se/metaDump.php');
-  }
+
+  curl_setopt($ch, CURLOPT_URL, $rcURL);
   $continue = true;
   while ($continue) {
     $output = curl_exec($ch);
@@ -82,7 +84,7 @@ function fetchJson() {
           $continue = false;
           break;
         default :
-          print "Got code $http_code from web-server. Cant handle :-(";
+          print "Got code $http_code from web-server. Can't handle :-(";
           $continue = false;
       }
     }
