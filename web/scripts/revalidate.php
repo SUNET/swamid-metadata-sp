@@ -36,6 +36,7 @@ while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
   if ($parser->getResult() <> "") {
     printf ("%s\n" ,$parser->getResult());
   }
+  $parser->clearResult();
   $parser->clearWarning();
   $parser->clearError();
   $parser->parseXML();

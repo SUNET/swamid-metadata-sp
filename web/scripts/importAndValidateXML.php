@@ -28,6 +28,7 @@ if ($import->getStatus()) {
     printf ("Import -> %s\n" ,$parser->getResult());
   }
 
+  $parser->clearResult();
   $parser->clearWarning();
   $parser->clearError();
   $parser->parseXML();
