@@ -1,9 +1,4 @@
 <?php
-/* Cleanup Database and remove
-    * SoftDeleted entities lastUpdated < 3 months
-    * PublishedPending entities lastUpdated < 3 months
-    * Shadow entities lastUpdated < 4 months (Should be 3 month + 2-3 days)
-*/
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 

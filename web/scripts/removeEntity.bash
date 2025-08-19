@@ -1,12 +1,9 @@
 #!/bin/bash
 file=$1
-if [ -r $file ]; then
-  feed=""
-  fileName=$(basename $file)
-  SWAMIDDir=$(dirname $file)
-  entityID=$(head -1 $file)
+if [ -r "$file" ]; then
+  entityID=$(head -1 "$file")
   echo "Removing $entityID"
-  php /var/www/scripts/removeEntity.php $entityID Prod && rm $file
+  php /var/www/scripts/removeEntity.php "$entityID" Prod && rm "$file"
 else
   echo "Can't read $file"
 fi
