@@ -200,6 +200,7 @@ class Configuration {
         $dbVersion = 0;
       } catch(PDOException $e) {
         $this->createTables();
+        // Don't forget to update version in createTables!!!
         $dbVersion = 2;
       }
     }
@@ -291,6 +292,38 @@ class Configuration {
    * @return void
    */
   private function createTables() {
+    $this->db->query('CREATE TABLE `Entities` (
+      `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+      `publishedId` int(10) unsigned NOT NULL DEFAULT 0,
+      `entityID` varchar(256) DEFAULT NULL,
+      `registrationInstant` varchar(256) DEFAULT NULL,
+      `isIdP` tinyint(3) unsigned DEFAULT NULL,
+      `isSP` tinyint(3) unsigned DEFAULT NULL,
+      `isAA` tinyint(3) unsigned DEFAULT NULL,
+      `publishIn` tinyint(3) unsigned DEFAULT NULL,
+      `status` tinyint(3) unsigned DEFAULT NULL,
+      `removalRequestedBy` int(10) unsigned DEFAULT 0,
+      `lastUpdated` datetime DEFAULT NULL,
+      `lastValidated` datetime DEFAULT NULL,
+      `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
+      `validationOutput` text DEFAULT NULL,
+      `warnings` text DEFAULT NULL,
+      `errors` text DEFAULT NULL,
+      `errorsNB` text DEFAULT NULL,
+      `xml` text DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    );');
+
+    $this->db->query('CREATE TABLE `Users` (
+      `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+      `userID` text DEFAULT NULL,
+      `email` text DEFAULT NULL,
+      `fullName` text DEFAULT NULL,
+      `lastSeen` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `userID` (`userID`) USING HASH
+    );');
+
     $this->db->query('CREATE TABLE `AccessRequests` (
       `entity_id` int(10) unsigned NOT NULL,
       `user_id` int(10) unsigned NOT NULL,
@@ -350,28 +383,6 @@ class Configuration {
       KEY `entity_id` (`entity_id`),
       CONSTRAINT `ContactPerson_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );");
-
-    $this->db->query('CREATE TABLE `Entities` (
-      `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-      `publishedId` int(10) unsigned NOT NULL DEFAULT 0,
-      `entityID` varchar(256) DEFAULT NULL,
-      `registrationInstant` varchar(256) DEFAULT NULL,
-      `isIdP` tinyint(3) unsigned DEFAULT NULL,
-      `isSP` tinyint(3) unsigned DEFAULT NULL,
-      `isAA` tinyint(3) unsigned DEFAULT NULL,
-      `publishIn` tinyint(3) unsigned DEFAULT NULL,
-      `status` tinyint(3) unsigned DEFAULT NULL,
-      `removalRequestedBy` int(10) unsigned DEFAULT 0,
-      `lastUpdated` datetime DEFAULT NULL,
-      `lastValidated` datetime DEFAULT NULL,
-      `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
-      `validationOutput` text DEFAULT NULL,
-      `warnings` text DEFAULT NULL,
-      `errors` text DEFAULT NULL,
-      `errorsNB` text DEFAULT NULL,
-      `xml` text DEFAULT NULL,
-      PRIMARY KEY (`id`)
-    );');
 
     $this->db->query('CREATE TABLE `EntitiesStatistics` (
       `date` datetime NOT NULL,
@@ -436,6 +447,13 @@ class Configuration {
       `assurancec` text DEFAULT NULL,
       `ra` text DEFAULT NULL,
       PRIMARY KEY (`entityID`)
+    );');
+
+    $this->db->query('CREATE TABLE `OrganizationInfo` (
+      `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+      `memberSince` date DEFAULT NULL,
+      `notMemberAfter` date DEFAULT NULL,
+      PRIMARY KEY (`id`)
     );');
 
     $this->db->query('CREATE TABLE `IMPS` (
@@ -513,13 +531,6 @@ class Configuration {
       CONSTRAINT `Organization_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
 
-    $this->db->query('CREATE TABLE `OrganizationInfo` (
-      `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-      `memberSince` date DEFAULT NULL,
-      `notMemberAfter` date DEFAULT NULL,
-      PRIMARY KEY (`id`)
-    );');
-
     $this->db->query('CREATE TABLE `OrganizationInfoData` (
         `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
         `lang` char(10) DEFAULT NULL,
@@ -560,16 +571,6 @@ class Configuration {
       PRIMARY KEY (`id`)
     );');
 
-    $this->db->query('CREATE TABLE `Users` (
-      `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-      `userID` text DEFAULT NULL,
-      `email` text DEFAULT NULL,
-      `fullName` text DEFAULT NULL,
-      `lastSeen` datetime DEFAULT NULL,
-      PRIMARY KEY (`id`),
-      UNIQUE KEY `userID` (`userID`) USING HASH
-    );');
-
     $this->db->query('CREATE TABLE `assuranceLog` (
       `entityID` varchar(256) NOT NULL,
       `assurance` varchar(10) NOT NULL,
@@ -581,7 +582,15 @@ class Configuration {
       `id` varchar(20) DEFAULT NULL,
       `value` text DEFAULT NULL
     );');
-    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '1');");
+    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '2');");
+
+    $this->db->query('CREATE TABLE `DiscoveryResponse` (
+      `entity_id` int(10) unsigned NOT NULL,
+      `index` smallint(5) unsigned NOT NULL,
+      `location` text DEFAULT NULL,
+      PRIMARY KEY (`entity_id`,`index`),
+      CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+    );');
   }
 
   /**
