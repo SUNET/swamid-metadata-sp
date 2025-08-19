@@ -16,8 +16,6 @@ if (is_numeric($argv[1])) {
   exit;
 }
 
-include __DIR__ . '/../html/include/Metadata.php'; # NOSONAR
-
 $metadata = new \metadata\Metadata($id);
 $metadata->movePublishedPending();
 
