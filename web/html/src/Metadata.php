@@ -78,6 +78,8 @@ class Metadata extends Common {
         $this->isAA = $entity['isAA'];
         $this->feedValue = $entity['publishIn'];
       }
+    } else {
+      parent::__construct();
     }
   }
 
