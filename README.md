@@ -1,12 +1,12 @@
 # SWAMID Metadata Tool
 
-This is a tool for handling XML for a fedration.
-Built for having a copy of production XML and importing each file when they are changed. In SWAMID we have all files in a GIT repositary and all exaples is based on this.
-The users can then add/update the XML and request publication. Operations team will then verify and import into GIT-repositary / or automaticaly add based on installation.
+This is a tool for handling XML metadata for a federation.
+Built for having a copy of production XML and importing each file when they are changed. In SWAMID we have all files in a GIT repository and all examples are based on this.
+The users can then add/update the XML and request publication. Operations team will then verify and import into GIT-repository / or automaticaly add based on installation.
 
 ## Requirements
 
-- Webserver with some kind of login for everything below /admin, only tested with Shibboleth for the moment. We use docker image created from https://github.com/SUNET/docker-swamid-metadata-sp.
+- Webserver with some kind of login for everything below `/admin`, only tested with Shibboleth for the moment. We use docker image created from https://github.com/SUNET/docker-swamid-metadata-sp.
 - MySQL/MariaDB database. Local or on a remote server/cluster.
 - composer
 
@@ -21,10 +21,10 @@ The users can then add/update the XML and request publication. Operations team w
 - `cd /opt/swamid-metadata-sp/web/html/`
 - run composer one of the ways below
   - `composer install` (if installed on host)
-  - done autmaticaly on startup if using docker-swamid-metadata-sp
+  - done automatically on startup if using docker-swamid-metadata-sp
 - `cp config.template.php config.php`
 
-and edit config.php for your needs
+and edit `config.php` for your needs
 
 Make sure that the following 3 files exist in /etc/sslcerts if using https://github.com/SUNET/docker-swamid-metadata-sp
 - cert.pem
@@ -35,7 +35,7 @@ Make sure that the following 3 files exist in /etc/sslcerts if using https://git
 
 ## Tooling
 
-There are a bunlde of script html/scripts. We run those with `docker exec metadata-sp php /var/www/scripts/<scriptname>`
+There is a bundle of scripts in `html/scripts`. We run those with `docker exec metadata-sp php /var/www/scripts/<scriptname>`
 
 ### importAndValidateXML.php
 
@@ -66,7 +66,7 @@ Parameters :
 - \<type\> Type of entity to remove. Could be Prod, Shadow or New.
 
 Wrapper script that takes an file and parses out the first line for an entityID that should be removed.
-Output from `importAndValidateXML.php` is perfekt for this :-)
+Output from `importAndValidateXML.php` is perfect for this :-)
 
 ### revalidate.php
 
@@ -74,7 +74,7 @@ Parameters :
 - \<days\> Validate all entities with lastValidation less than this number of days
 - \<entities\> Max nr of entities to validate in this run
 
-Revalidates enties on a regular basis. Goes thrue all rules and updates found errors.
+Revalidates entities on a regular basis. Goes through all rules and updates found errors.
 
 ### checkURLs.php
 
@@ -89,17 +89,18 @@ Never check more than 100 URL:s in each run.
 Output:
 - Status if Entity was kept or (re)moved.
 
-Removes Entites in status *Pending* if same entityID exists in production with newer timestamp AND with same XML.
+Removes Entities in status *Pending* if same entityID exists in production with newer timestamp AND with same XML.
 Not actualy removed but marked as *PendingPublished* and hidden from display.
 Actual removal is done by `cleanupDatabase.php`
 
 ### updateTestResults.php
 
-Udate test result from release-check if config.php-\>federation-\>releaseCheckResultsURL is set.
+Update test result from release-check if config.php-\>federation-\>releaseCheckResultsURL is set.
 
 ### updateExternalEntities.php
 
 Update "external" entities from xmlfile configures in config.php-\>federation-\>metadata_main_path
+
 Ignores Entities that have an registrationAuthority listed in config.php-\>federation-\>metadata_registration_authority_exclude
 
 ## Tooling recommed to run on a weekly or bi-weekly schedule
@@ -113,20 +114,20 @@ Recheck status for old URL:s
 ### cleanupDatabase.php
 
 Cleanup database by removing
-- Entites markes as *softDeleted* 3 month ago
-- Entites markes as *PendingPublished* 3 month ago
-- *shadow* for entities removed 4 month ago (catch all, should normaly be removed at the samt time as the entity)
-- *pending* entities not touched / publised for 13 weeks
-- *drafts* entities not touched for 9 weeks
-- Users not logged in for 6 months and not responsible for any Entities in database
+- Entities marked as *softDeleted* 3 month ago
+- Entities marked as *PendingPublished* 3 month ago
+- *shadow* for entities removed 4 month ago (catch all, should normaly be removed at the same time as the entity)
+- *pending* entities not touched / published for 13 weeks
+- *draft* entities not touched for 9 weeks
+- Users not logged in for 6 months and not responsible for any Entities in the database
 
 ### sendMailReminders.php
 
 Send out mailreminders
  - 10, 11 and 12 month after last date of validation/confirmation that the Metadata for an Entity is correct.
  - Old certs 1 month before expiration and after expiration
- - Entites in status *pending* not touched for 1, 4 and 11 weeks
- - Entites in status *draft* not touched for 2 and 7 weeks
+ - Entities in status *pending* not touched for 1, 4 and 11 weeks
+ - Entities in status *draft* not touched for 2 and 7 weeks
 
 ## Tooling recommended to run on a monthly or quarterly schedule
 
@@ -139,9 +140,10 @@ Recomended is once per month or once per quater to not overload the page.
 
 ### handleEntityUser.php
 
-With no parameter - List all users
-With one parameter \<user\> - List all entites that *user* have access to
-With two parameters \<user\> \<entityID\> - Add access for *user* to *entityID* with status *published*
+Usage depends on number of parameters passed:
+- With no parameter - List all users
+- With one parameter \<user\> - List all entities the *user* has access to
+- With two parameters \<user\> \<entityID\> - Add access for *user* to *entityID* with status *published*
 
 ### movePublishedPending.php
 
@@ -154,8 +156,9 @@ Change status from *pending* to *PendingPublished* for an Entity in status *pend
 
 ### importXML.bash ###
 
-Not in use in SWAMID
-Used be called from cron and selecting feeds based on filepath.
+Not in use in SWAMID.
+
+Used to be called from cron and selecting feeds based on filepath.
 
 ### importXML-QA.bash
 
