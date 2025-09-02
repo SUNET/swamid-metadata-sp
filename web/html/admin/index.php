@@ -843,7 +843,8 @@ function showEntity($entitiesId, $showHeader = true)  {
           }
           printf ('%s      <form>
         <input type="hidden" name="mergeEntity" value="%d">
-        Merge from other entity : %s        <select name="oldEntity">', "\n", $entitiesId, "\n");
+        Merge from other entity : %s        <select name="oldEntity">%s', "\n", $entitiesId, "\n", "\n");
+          printf('          <option value="0">Please select an entity to merge from</option>', "\n");
           if ($entity['isIdP'] ) {
             if ($entity['isSP'] ) {
               // is both SP and IdP
