@@ -1773,15 +1773,20 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showEditors($entityId){
+    global $EPPN, $userLevel;
     $this->showCollapse('Editors', 'Editors', false, 0, true, false, $entityId, 0);
-    $usersHandler = $this->config->getDb()->prepare('SELECT `userID`, `email`, `fullName`
+    $usersHandler = $this->config->getDb()->prepare('SELECT `id`, `userID`, `email`, `fullName`
       FROM `EntityUser`, `Users` WHERE `entity_id` = :Id AND `id` = `user_id` ORDER BY `userID`;');
     $usersHandler->bindParam(self::BIND_ID, $entityId);
     $usersHandler->execute();
     print "        <ul>\n";
+    $metadata = new \metadata\Metadata($entityId);
+    $metadata->getUserId($EPPN);
+    $is_admin = ($userLevel > 19) || $metadata->isResponsible();
     while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf ('          <li>%s (Identifier : %s, Email : %s)</li>%s',
-        $user['fullName'], $user['userID'], $user['email'], "\n");
+      $extraButton = $is_admin ? sprintf(' <form action="?action=removeEditor&Entity=%d" method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $entityId, $user['id'], $user['id'], $user['id']) : '';
+      printf ('          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
+        $user['fullName'], $user['userID'], $user['email'], $extraButton, "\n");
     }
     print "        </ul>";
     $this->showCollapseEnd('Editors', 0);

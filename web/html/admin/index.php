@@ -330,6 +330,14 @@ if (isset($_FILES['XMLfile'])) {
           }
           showEntity($entitiesId);
           break;
+        case 'removeEditor' :
+          $metadata = new \metadata\Metadata($entitiesId);
+          $userIDtoRemove = $_POST['userIDtoRemove']; # request MUST be a POST
+          if (checkAccess($entitiesId, $EPPN, $userLevel, 19, true) && ($userIDtoRemove != '')) {
+            $metadata->removeAccessFromEntity($userIDtoRemove);
+          }
+          showEntity($entitiesId);
+          break;
         case 'AddImps2IdP' :
           if ($userLevel > 19 && isset($_GET['ImpsId'])) {
             $imps = new \metadata\IMPS();
