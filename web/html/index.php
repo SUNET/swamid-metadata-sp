@@ -115,7 +115,7 @@ function showEntityList($show) {
           %s
         </tr>
       </thead>%s'
-    , urlencode($query), htmlspecialchars($show), $extraTH, "\n");
+    , htmlspecialchars($query), htmlspecialchars($show), $extraTH, "\n");
   $html->addTableSort('entities-table');
   $entities->bindValue(':Query', "%".$query."%");
   showList($entities, $show);
