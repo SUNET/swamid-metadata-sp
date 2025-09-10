@@ -3338,7 +3338,7 @@ class MetadataDisplay extends Common {
     $organizationHandler = $this->config->getDb()->prepare(
       "SELECT `OrganizationInfo`.`id` AS orgId,
           `OrganizationDisplayName`, `memberSince`, `notMemberAfter`,
-          COUNT(`IMPS`.`id`) AS impsCount, COUNT(`Entities`.`id`) AS entitiesCount
+          COUNT(DISTINCT `IMPS`.`id`) AS impsCount, COUNT(DISTINCT `Entities`.`id`) AS entitiesCount
         FROM `OrganizationInfoData`, `OrganizationInfo`
         LEFT JOIN `IMPS` ON `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
         LEFT JOIN `Entities` ON `Entities`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
