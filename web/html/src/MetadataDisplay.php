@@ -3412,8 +3412,11 @@ class MetadataDisplay extends Common {
           $orgInfoData['OrganizationName'], $orgInfoData['OrganizationDisplayName'], $orgInfoData['OrganizationURL'], "\n");
 
       }
-      printf('                  <li>memberSince : %s</li>
-                  <li>', $organization['memberSince']);
+      printf('                  <li>memberSince : %s</li>%s', $organization['memberSince'], "\n");
+      if ($organization['notMemberAfter']) {
+        printf('                  <li>notMemberAfter : %s</li>%s', $organization['notMemberAfter'], "\n");
+      }
+      print('                  <li>');
       if ($this->config->getIMPS()) {
         printf('IMPS:s
                     <ul>%s', "\n");
