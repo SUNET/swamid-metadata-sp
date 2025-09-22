@@ -330,6 +330,14 @@ if (isset($_FILES['XMLfile'])) {
           }
           showEntity($entitiesId);
           break;
+        case 'removeEditor' :
+          $metadata = new \metadata\Metadata($entitiesId);
+          $userIDtoRemove = $_POST['userIDtoRemove']; # request MUST be a POST
+          if (checkAccess($entitiesId, $EPPN, $userLevel, 19, true) && ($userIDtoRemove != '')) {
+            $metadata->removeAccessFromEntity($userIDtoRemove);
+          }
+          showEntity($entitiesId);
+          break;
         case 'AddImps2IdP' :
           if ($userLevel > 19 && isset($_GET['ImpsId'])) {
             $imps = new \metadata\IMPS();
@@ -843,7 +851,8 @@ function showEntity($entitiesId, $showHeader = true)  {
           }
           printf ('%s      <form>
         <input type="hidden" name="mergeEntity" value="%d">
-        Merge from other entity : %s        <select name="oldEntity">', "\n", $entitiesId, "\n");
+        Merge from other entity : %s        <select name="oldEntity">%s', "\n", $entitiesId, "\n", "\n");
+          printf('          <option value="0">Please select an entity to merge from</option>', "\n");
           if ($entity['isIdP'] ) {
             if ($entity['isSP'] ) {
               // is both SP and IdP
