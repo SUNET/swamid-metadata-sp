@@ -3391,7 +3391,9 @@ class MetadataDisplay extends Common {
       } else {
         $name .= '(' . $organization['entitiesCount'] . ')';
       }
-      $name .= $organization['notMemberAfter'] ? '- Not member any more' : '';
+      if ($organization['notMemberAfter']) {
+        $name .= '- Not member ' . ( date("Y-m-d") > $organization['notMemberAfter'] ? 'any more' : 'after ' . $organization['notMemberAfter']);
+      }
       $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
