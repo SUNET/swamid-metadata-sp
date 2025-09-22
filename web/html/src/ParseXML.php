@@ -699,6 +699,7 @@ class ParseXML extends Common {
         #case self::SAML_MD_ASSERTIONIDREQUESTSERVICE :
           $this->checkSAMLEndpoint($child,'AttributeAuthority', $saml2found, $saml1found);
           break;
+        case self::SAML_SAMLA_ATTRIBUTE :
         case self::SAML_MD_NAMEIDFORMAT :
           break;
         #case self::SAML_MD_ATTRIBUTEPROFILE :
