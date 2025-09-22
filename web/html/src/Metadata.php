@@ -165,7 +165,7 @@ class Metadata extends Common {
    */
   private function cleanOutAttribuesInIDPSSODescriptor() {
     $removed = false;
-    if ($ssoDescriptor = $this->getSSODecriptor('IDPSSO')) {
+    if (($ssoDescriptor = $this->getSSODecriptor('IDPSSO')) && $this->config->getFederation()['cleanAttribuesFromIDPSSODescriptor']) {
       $subchild = $ssoDescriptor->firstChild;
       while ($subchild) {
         if ($subchild->nodeName == self::SAML_SAMLA_ATTRIBUTE) {

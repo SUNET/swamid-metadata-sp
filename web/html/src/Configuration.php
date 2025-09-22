@@ -85,7 +85,7 @@ class Configuration {
       'rulesName', 'rulesURL', 'roloverDocURL',
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
-      'swamid_assurance', 'checkOrganization',
+      'swamid_assurance', 'checkOrganization', 'cleanAttribuesFromIDPSSODescriptor',
       'releaseCheckResultsURL', 'mdqBaseURL');
 
     foreach ($reqParams as $param) {

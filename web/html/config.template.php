@@ -114,6 +114,8 @@ $federation = array(
   'swamid_assurance' => true,
   # If we should check/force a organization connected to each entity
   'checkOrganization' => false,
+  # Should we clean up saml:Attribute elements from IDPSSODescriptors
+  'cleanAttribuesFromIDPSSODescriptor' => true,
   # URL to get release-check test results from - or empty string if not used
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
   # Base URL for MDQ - or empty string if not available
