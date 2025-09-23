@@ -1781,10 +1781,12 @@ class MetadataDisplay extends Common {
     $usersHandler->execute();
     print "        <ul>\n";
     $metadata = new \metadata\Metadata($entityId);
-    $metadata->getUserId($EPPN);
+    $user_id = $metadata->getUserId($EPPN);
     $is_admin = ($userLevel > 19) || $metadata->isResponsible();
     while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
-      $extraButton = $is_admin ? sprintf(' <form action="?action=removeEditor&Entity=%d" method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $entityId, $user['id'], $user['id'], $user['id']) : '';
+      # only global admins can remove themselves
+      $can_remove = $is_admin && ( $user_id != $user['id'] || $userLevel > 19);
+      $extraButton = $can_remove ? sprintf(' <form action="?action=removeEditor&Entity=%d" method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $entityId, $user['id'], $user['id'], $user['id']) : '';
       printf ('          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
         $user['fullName'], $user['userID'], $user['email'], $extraButton, "\n");
     }

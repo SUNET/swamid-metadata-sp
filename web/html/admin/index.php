@@ -333,7 +333,8 @@ if (isset($_FILES['XMLfile'])) {
         case 'removeEditor' :
           $metadata = new \metadata\Metadata($entitiesId);
           $userIDtoRemove = $_POST['userIDtoRemove']; # request MUST be a POST
-          if (checkAccess($entitiesId, $EPPN, $userLevel, 19, true) && ($userIDtoRemove != '')) {
+          if (checkAccess($entitiesId, $EPPN, $userLevel, 19, true) && ($userIDtoRemove != '') &&
+              ($userLevel > 19 || $userIDtoRemove != $metadata->getUserId($EPPN)) ) {
             $metadata->removeAccessFromEntity($userIDtoRemove);
           }
           showEntity($entitiesId);
