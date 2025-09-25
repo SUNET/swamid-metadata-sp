@@ -359,6 +359,7 @@ class MetadataDisplay extends Common {
       case 'EntityAttributes' :
       case 'IdPMDUI' :
       case 'SPMDUI' :
+      case 'SPServiceInfo' :
       case 'DiscoveryResponse' :
       case 'DiscoHints' :
       case 'IdPKeyInfo' :
@@ -850,6 +851,7 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showSp($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
+    global $config;
     if ($removable) {
       $removable = 'SSO';
     }
@@ -861,6 +863,17 @@ class MetadataDisplay extends Common {
       $this->showMDUI($oldEntityId, 'SPSSO', $entityId);
     }
     $this->showCollapseEnd('UIInfo_SPSSO', 1);
+
+    if ($config->getFederation()['storeServiceInfo']) {
+        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 1, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
+
+        $this->showServiceInfo($entityId, $oldEntityId, true);
+        if ($oldEntityId != 0 ) {
+          $this->showNewCol(1);
+          $this->showServiceInfo($oldEntityId, $entityId);
+        }
+        $this->showCollapseEnd('ServiceInfo_SPSSO', 1);
+    }
 
     $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true,
       $allowEdit ? 'SPKeyInfo' : false, $entityId, $oldEntityId);
@@ -1129,6 +1142,55 @@ class MetadataDisplay extends Common {
     if ($showEndUL) {
       print "\n                </ul>";
     }
+  }
+
+  /**
+   * Shows ServiceInfo for SP
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
+  private function showServiceInfo($entityId, $otherEntityId=0, $added = false) {
+    $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled`
+      FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+
+    $otherServiceURL = '';
+    $otherEnabled = false;
+    $serviceInfoHandler->bindParam(self::BIND_ID, $otherEntityId);
+    $serviceInfoHandler->execute();
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $otherServiceURL = $srvi['ServiceURL'];
+      $otherEnabled = $srvi['enabled'];
+    }
+
+    $serviceURL = '';
+    $enabled = false;
+    $serviceInfoHandler->bindParam(self::BIND_ID, $entityId);
+    $serviceInfoHandler->execute();
+    $showEndUL = false;
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $serviceURL = $srvi['ServiceURL'];
+      $enabled = $srvi['enabled'];
+    }
+
+    if ($otherEntityId) {
+      $state = ($added) ? 'success' : 'danger';
+      if ($serviceURL == $otherServiceURL && $enabled == $otherEnabled) {
+        $state = 'dark';
+      }
+    } else {
+      $state = 'dark';
+    }
+    $data = $serviceURL ? htmlspecialchars($serviceURL) . ($enabled ? ' (active)' : ' (inactive)' ) : 'Not provided';
+    printf ('%s                <b>Service URL</b>', "\n");
+    printf ('%s                <ul>', "\n");
+    printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
+    printf ('%s                </ul>', "\n");
   }
 
   /**
