@@ -116,6 +116,8 @@ $federation = array(
   'checkOrganization' => false,
   # Should we clean up saml:Attribute elements from IDPSSODescriptors
   'cleanAttribuesFromIDPSSODescriptor' => true,
+  # Whether to offer UI to store Service Catalogue info (Service URL, ...)
+  'storeServiceInfo' => true,
   # URL to get release-check test results from - or empty string if not used
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
   # Base URL for MDQ - or empty string if not available
