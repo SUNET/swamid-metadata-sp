@@ -202,7 +202,7 @@ class Configuration {
       } catch(PDOException $e) {
         $this->createTables();
         // Don't forget to update version in createTables!!!
-        $dbVersion = 2;
+        $dbVersion = 3;
       }
     }
     if ($dbVersion < 2) {
@@ -282,6 +282,20 @@ class Configuration {
       $this->db->query('ALTER TABLE `Mdui` DROP COLUMN `id`;');
       $this->db->query(
         "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
+      $this->db->query('COMMIT;');
+    }
+
+    if ($dbVersion < 3) {
+      $this->db->query('START TRANSACTION;');
+      $this->db->query('CREATE TABLE `ServiceInfo` (
+        `entity_id` int(10) unsigned NOT NULL,
+        `ServiceURL` text NOT NULL,
+        `enabled` tinyint(3) unsigned DEFAULT NULL,
+        PRIMARY KEY (`entity_id`),
+        CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+      );');
+      $this->db->query(
+        "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';");
       $this->db->query('COMMIT;');
     }
   }
@@ -583,7 +597,7 @@ class Configuration {
       `id` varchar(20) DEFAULT NULL,
       `value` text DEFAULT NULL
     );');
-    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '2');");
+    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '3');");
 
     $this->db->query('CREATE TABLE `DiscoveryResponse` (
       `entity_id` int(10) unsigned NOT NULL,
@@ -591,6 +605,14 @@ class Configuration {
       `location` text DEFAULT NULL,
       PRIMARY KEY (`entity_id`,`index`),
       CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+    );');
+
+    $this->db->query('CREATE TABLE `ServiceInfo` (
+      `entity_id` int(10) unsigned NOT NULL,
+      `ServiceURL` text NOT NULL,
+      `enabled` tinyint(3) unsigned DEFAULT NULL,
+      PRIMARY KEY (`entity_id`),
+      CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
   }
 
