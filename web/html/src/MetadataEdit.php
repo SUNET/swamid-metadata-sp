@@ -96,6 +96,9 @@ class MetadataEdit extends Common {
       case 'SPMDUI' :
         $this->editMDUI('SPSSO');
         break;
+      case 'SPServiceInfo' :
+        $this->editServiceInfo();
+        break;
       case 'IdPKeyInfo' :
         $this->editKeyInfo('IDPSSO');
         break;
@@ -1209,6 +1212,121 @@ class MetadataEdit extends Common {
         }
       }
       print "\n" . self::HTML_END_UL;
+    }
+    print self::HTML_END_DIV_COL_ROW;
+  }
+
+  /**
+   * Edit ServiceInfo
+   *
+   * @return void
+   */
+  private function editServiceInfo() {
+    printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
+    if (isset($_POST['action'])) {
+      $error = '';
+      if (isset($_POST['ServiceURL']) && filter_var($_POST['ServiceURL'], FILTER_VALIDATE_URL) ) {
+        $serviceURL = trim($_POST['ServiceURL']);
+      } else {
+        if ($_POST['action'] == "Add" ) {
+          $error .= '<br>' . ( trim($_POST['ServiceURL']) == '' ? 'Value is empty' : 'Value is not a valid URL');
+        }
+        $serviceURL = '';
+      }
+      $enabled = $_POST['enabled'] == '1' ? 1 : 0;
+      if ($error) {
+        printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
+      } else {
+        switch ($_POST['action']) {
+          case 'Add' :
+            $strSrvInfHandler = $this->config->getDb()->prepare(
+                'INSERT INTO `ServiceInfo` ( `entity_id`, `ServiceURL`, `enabled`) ' .
+                'VALUES (:Id, :ServiceURL, :enabled) ' .
+                'ON DUPLICATE KEY UPDATE `ServiceURL` = :ServiceURL, `enabled` = :enabled;');
+            $strSrvInfHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+            $strSrvInfHandler->bindParam(':ServiceURL', $serviceURL);
+            $strSrvInfHandler->bindParam(':enabled', $enabled);
+            $strSrvInfHandler->execute();
+            $this->addURL($serviceURL, 1);
+            break;
+          case 'Delete' :
+            $delSrvInfHandler = $this->config->getDb()->prepare("DELETE FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+            $delSrvInfHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+            $delSrvInfHandler->execute();
+            break;
+          default :
+        }
+      }
+    }
+    $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled` FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+    $oldServiceURL = '';
+    $oldEnabled = 0;
+    $serviceInfoHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
+    $serviceInfoHandler->execute();
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $oldServiceURL = $srvi['ServiceURL'];
+      $oldEnabled = $srvi['enabled'];
+    }
+    $serviceURL = '';
+    $enabled = 0;
+    $serviceInfoHandler->bindParam(self::BIND_ID, $this->dbIdNr);
+    $serviceInfoHandler->execute();
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $serviceURL = $srvi['ServiceURL'];
+      $enabled = $srvi['enabled'];
+      if ($serviceURL == $oldServiceURL && $enabled == $oldEnabled) {
+        $state = 'dark';
+      } else {
+        $state = 'success';
+      }
+      $data = $serviceURL ? htmlspecialchars($serviceURL) . ($enabled ? ' (active)' : ' (inactive)' ) : 'Not provided';
+      printf ('%s        <b>Service URL</b>', "\n");
+      printf ('%s        <ul>', "\n");
+      printf ('%s          <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
+      printf ('%s        </ul>', "\n");
+    }
+    printf('
+        <form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST">
+          <div class="row">
+            <div class="col-3">Service URL: </div>
+            <div class="col-9"><input type="text" name="ServiceURL" value="%s" size="40"></div>
+          </div>
+          <div class="row">
+            <div class="col-3">Include in Service Catalogue: </div>
+            <div class="col-9"><input type="checkbox" name="enabled" value="1"%s></div>
+          </div>
+          <button type="submit" name="action" value="Add">Add/Update</button>
+          <button type="submit" name="action" value="Delete">Delete</button>
+        </form>
+        <a href="./?validateEntity=%d"><button>Back</button></a>
+      </div><!-- end col -->
+      <div class="col">',
+      $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($serviceURL), $enabled ? " checked" : '', $this->dbIdNr);
+
+    if ($oldServiceURL) {
+      if ($serviceURL == $oldServiceURL && $enabled == $oldEnabled) {
+        $state = 'dark';
+      } else {
+        $state = 'danger';
+      }
+      // no need to test again of oldServiceURL is non-empty
+      $data = htmlspecialchars($oldServiceURL) . ($oldEnabled ? ' (active)' : ' (inactive)' );
+      if ($state == 'danger') {
+        $copy_open = sprintf('<form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST" name="copyServiceInfo">' .
+            '<input type="hidden" name="action" value="Add">' .
+            '<input type="hidden" name="ServiceURL" value="%s">' .
+            '<input type="hidden" name="enabled" value="%s">' .
+            '<a href="#" onClick="document.forms.copyServiceInfo.submit();">[copy]</a> ',
+          $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($oldServiceURL), $oldEnabled);
+        $copy_close = '</form>';
+      } else {
+        $copy_open = '';
+        $copy_close = '';
+      }
+      printf ('%s        <b>Service URL</b>', "\n");
+      printf ('%s        <ul>', "\n");
+      printf ('%s          <li>%s<span class="text-%s">%s</span>%s</li>', "\n", $copy_open, $state, $data, $copy_close);
+      printf ('%s        </ul>', "\n");
     }
     print self::HTML_END_DIV_COL_ROW;
   }
