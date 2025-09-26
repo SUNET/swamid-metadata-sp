@@ -135,9 +135,9 @@ class IMPS {
     }
     if ($id == 0) {
       $impsHandler = $this->config->getDb()->prepare(
-        'INSERT INTO `IMPS`
-          (`name`,  `maximumAL`, `lastUpdated`, `sharedIdp`, `OrganizationInfo_id`)
-        VALUES (:Name, :MaximunAL, :LastUpdated, :SharedIdP, :OrganizationInfoId);');
+        "INSERT INTO `IMPS`
+          (`name`,  `maximumAL`, `lastUpdated`, `sharedIdp`, `OrganizationInfo_id`, `lastValidated`)
+        VALUES (:Name, :MaximunAL, :LastUpdated, :SharedIdP, :OrganizationInfoId, :LastUpdated);");
     } else {
       $impsHandler = $this->config->getDb()->prepare(
         'UPDATE `IMPS`
