@@ -1239,41 +1239,24 @@ class MetadataEdit extends Common {
       } else {
         switch ($_POST['action']) {
           case 'Add' :
-            $strSrvInfHandler = $this->config->getDb()->prepare(
-                'INSERT INTO `ServiceInfo` ( `entity_id`, `ServiceURL`, `enabled`) ' .
-                'VALUES (:Id, :ServiceURL, :enabled) ' .
-                'ON DUPLICATE KEY UPDATE `ServiceURL` = :ServiceURL, `enabled` = :enabled;');
-            $strSrvInfHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-            $strSrvInfHandler->bindParam(':ServiceURL', $serviceURL);
-            $strSrvInfHandler->bindParam(':enabled', $enabled);
-            $strSrvInfHandler->execute();
+            $this->storeServiceInfo($this->dbIdNr, $serviceURL, $enabled);
             $this->addURL($serviceURL, 1);
             break;
           case 'Delete' :
-            $delSrvInfHandler = $this->config->getDb()->prepare("DELETE FROM `ServiceInfo` WHERE `entity_id` = :Id;");
-            $delSrvInfHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-            $delSrvInfHandler->execute();
+            $this->removeServiceInfo($this->dbIdNr);
             break;
           default :
         }
       }
     }
-    $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled` FROM `ServiceInfo` WHERE `entity_id` = :Id;");
     $oldServiceURL = '';
     $oldEnabled = 0;
-    $serviceInfoHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
-    $serviceInfoHandler->execute();
-    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-      $oldServiceURL = $srvi['ServiceURL'];
-      $oldEnabled = $srvi['enabled'];
-    }
+    $this->getServiceInfo($this->dbOldIdNr, $oldServiceURL, $oldEnabled);
+
     $serviceURL = '';
     $enabled = 0;
-    $serviceInfoHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-    $serviceInfoHandler->execute();
-    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
-      $serviceURL = $srvi['ServiceURL'];
-      $enabled = $srvi['enabled'];
+    $this->getServiceInfo($this->dbIdNr, $serviceURL, $enabled);
+    if ($serviceURL) {
       if ($serviceURL == $oldServiceURL && $enabled == $oldEnabled) {
         $state = 'dark';
       } else {
