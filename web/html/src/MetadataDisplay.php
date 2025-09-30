@@ -867,10 +867,10 @@ class MetadataDisplay extends Common {
     if ($config->getFederation()['storeServiceInfo']) {
         $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 1, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
 
-        $this->showServiceInfo($entityId, $oldEntityId, true);
+        $this->showServiceInfo($entityId, $oldEntityId, $allowEdit, true);
         if ($oldEntityId != 0 ) {
           $this->showNewCol(1);
-          $this->showServiceInfo($oldEntityId, $entityId);
+          $this->showServiceInfo($oldEntityId, $entityId, $allowEdit);
         }
         $this->showCollapseEnd('ServiceInfo_SPSSO', 1);
     }
@@ -1151,11 +1151,15 @@ class MetadataDisplay extends Common {
    *
    * @param int $otherEntityId Id of entity to compare with
    *
+   * @param bool $allowEdit whether editing is allowed
+   *
    * @param bool $added if this is the added or Old entity
    *
    * @return void
    */
-  private function showServiceInfo($entityId, $otherEntityId=0, $added = false) {
+  private function showServiceInfo($entityId, $otherEntityId=0, $allowEdit, $added = false) {
+    global $userLevel;
+
     $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled`
       FROM `ServiceInfo` WHERE `entity_id` = :Id;");
 
@@ -1187,9 +1191,12 @@ class MetadataDisplay extends Common {
       $state = 'dark';
     }
     $data = $serviceURL ? htmlspecialchars($serviceURL) . ($enabled ? ' (active)' : ' (inactive)' ) : 'Not provided';
+    # Allow updating the ServiceInfo if the user is an admin
+    # (but not for the "old" metadata, and skip if we show the edit icon anyway)
+    $extra = !$allowEdit && $added && $userLevel > 19 ? sprintf(' <a href="./?edit=SPServiceInfo&Entity=%d&oldEntity=%d"><button>Update</button></a>', $entityId, $oldEntity) : '';
     printf ('%s                <b>Service URL</b>', "\n");
     printf ('%s                <ul>', "\n");
-    printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
+    printf ('%s                  <li><span class="text-%s">%s</span>%s</li>', "\n", $state, $data, $extra);
     printf ('%s                </ul>', "\n");
   }
 
