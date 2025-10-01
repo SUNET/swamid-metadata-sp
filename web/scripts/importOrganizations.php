@@ -28,7 +28,7 @@ $organizations = json_decode(json: $raw_json_data, flags: JSON_THROW_ON_ERROR)->
 
 // Run the import within a transaction
 if (!$config->getDb()->beginTransaction()) {
-   print("Could not start DB transaction\n");
+   print "Could not start DB transaction\n";
    exit(1);
 }
 // Prepare variables and handler for OrganizationInfo records
@@ -89,6 +89,6 @@ foreach ($organizations as $org) {
 }
 
 if (!$config->getDb()->commit()) {
-   print("Could not commit DB transaction\n");
+   print "Could not commit DB transaction\n";
    exit(1);
 }

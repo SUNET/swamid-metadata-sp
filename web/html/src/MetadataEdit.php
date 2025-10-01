@@ -1262,7 +1262,8 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $data = $serviceURL ? htmlspecialchars($serviceURL) . ($enabled ? ' (active)' : ' (inactive)' ) : 'Not provided';
+      $enabled_txt = $enabled ? ' (active)' : ' (inactive)';
+      $data = $serviceURL ? htmlspecialchars($serviceURL) .  $enabled_txt : 'Not provided';
       printf ('%s        <b>Service URL</b>', "\n");
       printf ('%s        <ul>', "\n");
       printf ('%s          <li><span class="text-%s">%s</span></li>', "\n", $state, $data);

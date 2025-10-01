@@ -25,7 +25,7 @@ $services = json_decode(json: $raw_json_data, flags: JSON_THROW_ON_ERROR)->servi
 
 // Run the import within a transaction
 if (!$config->getDb()->beginTransaction()) {
-   print("Could not start DB transaction\n");
+   print "Could not start DB transaction\n";
    exit(1);
 }
 
@@ -41,6 +41,6 @@ foreach ($services as $service) {
 }
 
 if (!$config->getDb()->commit()) {
-   print("Could not commit DB transaction\n");
+   print "Could not commit DB transaction\n";
    exit(1);
 }
