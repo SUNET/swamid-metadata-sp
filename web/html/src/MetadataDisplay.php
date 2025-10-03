@@ -1194,7 +1194,7 @@ class MetadataDisplay extends Common {
     # Allow updating the ServiceInfo if the user is an admin
     # (but not for the "old" metadata, and skip if we show the edit icon anyway)
     $extra = !$allowEdit && $added && $userLevel > 19 ? sprintf(' <a href="./?edit=SPServiceInfo&Entity=%d&oldEntity=%d"><button>Update</button></a>', $entityId, $otherEntityId) : '';
-    printf ('%s                <b>Service URL</b>', "\n");
+    printf ('%s                <b>URL to access this service (for use in service catalog)</b>', "\n");
     printf ('%s                <ul>', "\n");
     printf ('%s                  <li><span class="text-%s">%s</span>%s</li>', "\n", $state, $data, $extra);
     printf ('%s                </ul>', "\n");

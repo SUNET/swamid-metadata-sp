@@ -1264,7 +1264,7 @@ class MetadataEdit extends Common {
       }
       $enabled_txt = $enabled ? ' (active)' : ' (inactive)';
       $data = $serviceURL ? htmlspecialchars($serviceURL) .  $enabled_txt : 'Not provided';
-      printf ('%s        <b>Service URL</b>', "\n");
+      printf ('%s        <b>URL to access this service (for use in service catalog)</b>', "\n");
       printf ('%s        <ul>', "\n");
       printf ('%s          <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
       printf ('%s        </ul>', "\n");
@@ -1272,7 +1272,7 @@ class MetadataEdit extends Common {
     printf('
         <form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST">
           <div class="row">
-            <div class="col-3">Service URL: </div>
+            <div class="col-3">URL to access this service: </div>
             <div class="col-9"><input type="text" name="ServiceURL" value="%s" size="40"></div>
           </div>
           <div class="row">
@@ -1307,7 +1307,7 @@ class MetadataEdit extends Common {
         $copy_open = '';
         $copy_close = '';
       }
-      printf ('%s        <b>Service URL</b>', "\n");
+      printf ('%s        <b>URL to access this service (for use in service catalog)</b>', "\n");
       printf ('%s        <ul>', "\n");
       printf ('%s          <li>%s<span class="text-%s">%s</span>%s</li>', "\n", $copy_open, $state, $data, $copy_close);
       printf ('%s        </ul>', "\n");
