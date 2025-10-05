@@ -86,7 +86,6 @@ class Configuration {
       'rulesSectsBoth', 'rulesSectsIdP', 'rulesSectsSP',
       'rulesInfoBoth', 'rulesInfoIdP', 'rulesInfoSP',
       'swamid_assurance', 'checkOrganization', 'cleanAttribuesFromIDPSSODescriptor',
-      'storeServiceInfo',
       'releaseCheckResultsURL', 'mdqBaseURL');
 
     $defaultValuesFederation = array(
