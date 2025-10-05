@@ -89,6 +89,10 @@ class Configuration {
       'storeServiceInfo',
       'releaseCheckResultsURL', 'mdqBaseURL');
 
+    $defaultValuesFederation = array(
+      'storeServiceInfo' => false,
+    );
+
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
         printf ('Missing %s in config.php<br>', $param);
@@ -99,7 +103,7 @@ class Configuration {
     $this->checkParams($db, $reqParamsDB, 'db');
     $this->checkParams($smtp, $reqParamsSmtp, 'smtp');
 
-    $this->checkParams($federation, $reqParamsFederation, 'federation');
+    $this->checkParams($federation, $reqParamsFederation, 'federation', $defaultValuesFederation);
     if (! isset($federation['extend'])) {
       $federation['extend'] = '';
     }
@@ -172,7 +176,12 @@ class Configuration {
    *
    * @return void
    */
-  private function checkParams($checkParam, $reqParams, $nameOfParam) {
+  private function checkParams(&$checkParam, $reqParams, $nameOfParam, $defaultValues = array()) {
+    foreach ($defaultValues as $param => $defaultValue) {
+      if (! isset($checkParam[$param])) {
+        $checkParam[$param] = $defaultValue;
+      }
+    }
     foreach ($reqParams as $param) {
       if (! isset($checkParam[$param])) {
         printf ('Missing $%s[%s] in config.php<br>', $nameOfParam, $param);
