@@ -1076,7 +1076,7 @@ class MetadataDisplay extends Common {
         if (isset(self::LANG_CODES[$lang])) {
           $fullLang = self::LANG_CODES[$lang];
         } elseif ($lang == "") {
-          $fullLang = "(NOT ALLOWED - switch to en/sv)";
+          $fullLang = sprintf("(NOT ALLOWED - switch to %s)", implode('/', $this->config->getFederation()['languages']));
         } else {
           $fullLang = "Unknown";
         }
