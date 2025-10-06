@@ -1259,8 +1259,8 @@ function move2Pending($entitiesId) {
         $publishedMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'prod');
 
         if ($publishedMetadata->entityExists()) {
-          $mailContacts->Subject  = 'Info : Updated SWAMID metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'Updated SWAMID metadata for ' . $shortEntityid;
+          $mailContacts->Subject  = 'Info : Updated ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
+          $mailRequester->Subject = 'Updated ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
           $shadowMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'Shadow');
           $shadowMetadata->importXML($publishedMetadata->xml());
           $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
@@ -1428,8 +1428,8 @@ function move2Pending($entitiesId) {
       <label for="SWAMID_eduGAIN">' . $federation['displayName'] . ' and eduGAIN</label><br>
       <input type="radio" id="SWAMID" name="publishedIn" value="3"%s>
       <label for="SWAMID">' . $federation['displayName'] . '</label>%s',
-          $oldPublishedValue == 7 ? HTML_CHECKED : '',
-          $oldPublishedValue == 3 ? HTML_CHECKED : '', "\n");
+          ($oldPublishedValue & 4) == 4 ? HTML_CHECKED : '',
+          ($oldPublishedValue & 6) == 2 ? HTML_CHECKED : '', "\n");
         }
         printf('      <br>
       <h5> Confirmation:</h5>
