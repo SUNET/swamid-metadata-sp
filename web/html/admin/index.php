@@ -1259,8 +1259,8 @@ function move2Pending($entitiesId) {
         $publishedMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'prod');
 
         if ($publishedMetadata->entityExists()) {
-          $mailContacts->Subject  = 'Info : Updated SWAMID metadata for ' . $shortEntityid;
-          $mailRequester->Subject = 'Updated SWAMID metadata for ' . $shortEntityid;
+          $mailContacts->Subject  = 'Info : Updated ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
+          $mailRequester->Subject = 'Updated ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
           $shadowMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'Shadow');
           $shadowMetadata->importXML($publishedMetadata->xml());
           $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
