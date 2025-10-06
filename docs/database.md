@@ -158,3 +158,11 @@ Field | Type | Usage
 entity_id | int(10) | Foreign key (id) from Entities table
 type | tinyint(3) | Type of reminder ( 1 = Annual Confirmation)
 days | smallint(4) |
+
+## ServiceInfo
+
+Field | Type | Usage
+------|------| -----
+entity_id | INT UNSIGNED | Foreign key (id) from Entities table
+ServiceURL | TEXT | URL to access the service (by a user in a browser)
+enabled | TINYINT UNSIGNED | Boolean flag whether the service should be included in the Service Catalogue

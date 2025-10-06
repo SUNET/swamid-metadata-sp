@@ -687,4 +687,66 @@ class Common {
     }
     return $uuInfo;
   }
+
+  /**
+   * Get Service Info record associated with the given Entity
+   *
+   * @param int $dbIdNr Numeric ID of the entity to get the service info for
+   *
+   * @param string &$serviceURL Service URL retrieved from the ServiceInfo record.
+   *
+   * @param bool &$enabled Whether the service should be included in the Service Catalogue
+   *
+   * @return void
+   */
+
+  public function getServiceInfo($dbIdNr, &$serviceURL, &$enabled) {
+    $serviceURL = '';
+    $enabled = 0;
+    $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled` FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+    $serviceInfoHandler->bindParam(self::BIND_ID, $dbIdNr);
+    $serviceInfoHandler->execute();
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $serviceURL = $srvi['ServiceURL'];
+      $enabled = $srvi['enabled'];
+    }
+  }
+
+  /**
+   * Stores Service Info record associated with the given Entity
+   *
+   * @param int $dbIdNr Numeric ID of the entity to store the service info for
+   *
+   * @param string $serviceURL Service URL to store in the ServiceInfo record.
+   *
+   * @param bool $enabled Whether the service should be included in the Service Catalogue
+   *
+   * @return void
+   */
+
+  public function storeServiceInfo($dbIdNr, $serviceURL, $enabled = true) {
+    $strSrvInfHandler = $this->config->getDb()->prepare(
+        'INSERT INTO `ServiceInfo` ( `entity_id`, `ServiceURL`, `enabled`) ' .
+        'VALUES (:Id, :ServiceURL, :enabled) ' .
+        'ON DUPLICATE KEY UPDATE `ServiceURL` = :ServiceURL, `enabled` = :enabled;');
+    $strSrvInfHandler->bindParam(self::BIND_ID, $dbIdNr);
+    $strSrvInfHandler->bindParam(':ServiceURL', $serviceURL);
+    $strSrvInfHandler->bindParam(':enabled', $enabled);
+    $strSrvInfHandler->execute();
+  }
+
+  /**
+   * Removes Service Info record associated with the given Entity
+   *
+   * @param int $dbIdNr Numeric ID of the entity to delete the service info for
+   *
+   * @return void
+   */
+
+  public function removeServiceInfo($dbIdNr) {
+    $delSrvInfHandler = $this->config->getDb()->prepare("DELETE FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+    $delSrvInfHandler->bindParam(self::BIND_ID, $dbIdNr);
+    $delSrvInfHandler->execute();
+  }
+
 }

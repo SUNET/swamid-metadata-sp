@@ -152,6 +152,15 @@ class Metadata extends Common {
       $this->dbIdNr = $this->config->getDb()->lastInsertId();
       $this->status = 3;
       $this->copyResponsible($oldDbNr);
+
+      # copy over ServiceInfo
+      $serviceURL = '';
+      $enabled = 0;
+      $this->getServiceInfo($oldDbNr, $serviceURL, $enabled);
+      if ($serviceURL) {
+        $this->storeServiceInfo($this->dbIdNr, $serviceURL, $enabled);
+      }
+
       return $this->dbIdNr;
     } else {
       return false;
@@ -634,6 +643,16 @@ class Metadata extends Common {
         $updateEntityConfirmationHandler->execute();
         # copy over organizationInfoId from pending
         $updateEntitiesHandler->execute(array(self::BIND_ID => $publishedEntity['id'], ':OrgId' => $this->organizationInfoId ));
+
+        # copy over ServiceInfo
+        $serviceURL = '';
+        $enabled = 0;
+        $this->getServiceInfo($this->dbIdNr, $serviceURL, $enabled);
+        if ($serviceURL) {
+          $this->storeServiceInfo($publishedEntity['id'], $serviceURL, $enabled);
+        } else {
+          $this->removeServiceInfo($publishedEntity['id']);
+        }
       }
       # Move entity to status PendingPublished
       $entityUpdateHandler = $this->config->getDb()->prepare('UPDATE `Entities`

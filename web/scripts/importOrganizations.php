@@ -24,11 +24,11 @@ if ( $argc <= 1 || ($argv[1] == '--use-id' && $argc <= 2 ) ) {
 $use_id = $argv[1] == '--use-id';
 $filename = $argv[ $use_id ? 2 : 1];
 $raw_json_data = file_get_contents($filename == "-" ? 'php://stdin' : $filename);
-$organizations = json_decode($raw_json_data)->organizations;
+$organizations = json_decode(json: $raw_json_data, flags: JSON_THROW_ON_ERROR)->organizations;
 
 // Run the import within a transaction
 if (!$config->getDb()->beginTransaction()) {
-   print("Could not start DB transaction\n");
+   print "Could not start DB transaction\n";
    exit(1);
 }
 // Prepare variables and handler for OrganizationInfo records
@@ -89,6 +89,6 @@ foreach ($organizations as $org) {
 }
 
 if (!$config->getDb()->commit()) {
-   print("Could not commit DB transaction\n");
+   print "Could not commit DB transaction\n";
    exit(1);
 }

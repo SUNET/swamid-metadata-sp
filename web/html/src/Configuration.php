@@ -88,6 +88,10 @@ class Configuration {
       'swamid_assurance', 'checkOrganization', 'cleanAttribuesFromIDPSSODescriptor',
       'releaseCheckResultsURL', 'mdqBaseURL');
 
+    $defaultValuesFederation = array(
+      'storeServiceInfo' => false,
+    );
+
     foreach ($reqParams as $param) {
       if (! isset(${$param})) {
         printf ('Missing %s in config.php<br>', $param);
@@ -98,7 +102,7 @@ class Configuration {
     $this->checkParams($db, $reqParamsDB, 'db');
     $this->checkParams($smtp, $reqParamsSmtp, 'smtp');
 
-    $this->checkParams($federation, $reqParamsFederation, 'federation');
+    $this->checkParams($federation, $reqParamsFederation, 'federation', $defaultValuesFederation);
     if (! isset($federation['extend'])) {
       $federation['extend'] = '';
     }
@@ -171,7 +175,12 @@ class Configuration {
    *
    * @return void
    */
-  private function checkParams($checkParam, $reqParams, $nameOfParam) {
+  private function checkParams(&$checkParam, $reqParams, $nameOfParam, $defaultValues = array()) {
+    foreach ($defaultValues as $param => $defaultValue) {
+      if (! isset($checkParam[$param])) {
+        $checkParam[$param] = $defaultValue;
+      }
+    }
     foreach ($reqParams as $param) {
       if (! isset($checkParam[$param])) {
         printf ('Missing $%s[%s] in config.php<br>', $nameOfParam, $param);
@@ -201,7 +210,7 @@ class Configuration {
       } catch(PDOException $e) {
         $this->createTables();
         // Don't forget to update version in createTables!!!
-        $dbVersion = 2;
+        $dbVersion = 3;
       }
     }
     if ($dbVersion < 2) {
@@ -281,6 +290,20 @@ class Configuration {
       $this->db->query('ALTER TABLE `Mdui` DROP COLUMN `id`;');
       $this->db->query(
         "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
+      $this->db->query('COMMIT;');
+    }
+
+    if ($dbVersion < 3) {
+      $this->db->query('START TRANSACTION;');
+      $this->db->query('CREATE TABLE `ServiceInfo` (
+        `entity_id` int(10) unsigned NOT NULL,
+        `ServiceURL` text NOT NULL,
+        `enabled` tinyint(3) unsigned DEFAULT NULL,
+        PRIMARY KEY (`entity_id`),
+        CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+      );');
+      $this->db->query(
+        "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';");
       $this->db->query('COMMIT;');
     }
   }
@@ -582,7 +605,7 @@ class Configuration {
       `id` varchar(20) DEFAULT NULL,
       `value` text DEFAULT NULL
     );');
-    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '2');");
+    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '3');");
 
     $this->db->query('CREATE TABLE `DiscoveryResponse` (
       `entity_id` int(10) unsigned NOT NULL,
@@ -590,6 +613,14 @@ class Configuration {
       `location` text DEFAULT NULL,
       PRIMARY KEY (`entity_id`,`index`),
       CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
+    );');
+
+    $this->db->query('CREATE TABLE `ServiceInfo` (
+      `entity_id` int(10) unsigned NOT NULL,
+      `ServiceURL` text NOT NULL,
+      `enabled` tinyint(3) unsigned DEFAULT NULL,
+      PRIMARY KEY (`entity_id`),
+      CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
   }
 

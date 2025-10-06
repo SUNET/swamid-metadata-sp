@@ -1265,6 +1265,15 @@ function move2Pending($entitiesId) {
           $shadowMetadata->importXML($publishedMetadata->xml());
           $shadowMetadata->updateFeedByValue($publishedMetadata->feedValue());
           $oldEntitiesId = $shadowMetadata->id();
+
+          # copy over also ServiceInfo
+          $serviceURL = '';
+          $enabled = 0;
+          $publishedMetadata->getServiceInfo($publishedMetadata->id(), $serviceURL, $enabled);
+          if ($serviceURL) {
+            $shadowMetadata->storeServiceInfo($oldEntitiesId, $serviceURL, $enabled);
+          }
+
           validateEntity($oldEntitiesId);
         } else {
           $mailContacts->Subject  = 'Info : New ' . $federation['displayName'] . HTML_TEXT_MEDFOR . $shortEntityid;
@@ -1872,6 +1881,15 @@ function move2Draft($entitiesId) {
     if (isset($_GET['action'])) {
       $draftMetadata = new \metadata\Metadata($entity['entityID'], 'New');
       $draftMetadata->importXML($entity['xml']);
+
+      # copy over also ServiceInfo
+      $serviceURL = '';
+      $enabled = 0;
+      $draftMetadata->getServiceInfo($entitiesId, $serviceURL, $enabled);
+      if ($serviceURL) {
+        $draftMetadata->storeServiceInfo($draftMetadata->id(), $serviceURL, $enabled);
+      }
+
       validateEntity($draftMetadata->id());
       $menuActive = 'new';
       $draftMetadata->copyResponsible($entitiesId);

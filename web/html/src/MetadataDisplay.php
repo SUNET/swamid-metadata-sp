@@ -359,6 +359,7 @@ class MetadataDisplay extends Common {
       case 'EntityAttributes' :
       case 'IdPMDUI' :
       case 'SPMDUI' :
+      case 'SPServiceInfo' :
       case 'DiscoveryResponse' :
       case 'DiscoHints' :
       case 'IdPKeyInfo' :
@@ -850,6 +851,7 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showSp($entityId, $oldEntityId=0, $allowEdit = false, $removable = false) {
+    global $config;
     if ($removable) {
       $removable = 'SSO';
     }
@@ -861,6 +863,17 @@ class MetadataDisplay extends Common {
       $this->showMDUI($oldEntityId, 'SPSSO', $entityId);
     }
     $this->showCollapseEnd('UIInfo_SPSSO', 1);
+
+    if ($config->getFederation()['storeServiceInfo']) {
+        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 1, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
+
+        $this->showServiceInfo($entityId, $oldEntityId, $allowEdit, true);
+        if ($oldEntityId != 0 ) {
+          $this->showNewCol(1);
+          $this->showServiceInfo($oldEntityId, $entityId, $allowEdit);
+        }
+        $this->showCollapseEnd('ServiceInfo_SPSSO', 1);
+    }
 
     $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true,
       $allowEdit ? 'SPKeyInfo' : false, $entityId, $oldEntityId);
@@ -1129,6 +1142,62 @@ class MetadataDisplay extends Common {
     if ($showEndUL) {
       print "\n                </ul>";
     }
+  }
+
+  /**
+   * Shows ServiceInfo for SP
+   *
+   * @param int $entityId Id of entity
+   *
+   * @param int $otherEntityId Id of entity to compare with
+   *
+   * @param bool $allowEdit whether editing is allowed
+   *
+   * @param bool $added if this is the added or Old entity
+   *
+   * @return void
+   */
+  private function showServiceInfo($entityId, $otherEntityId=0, $allowEdit=false, $added = false) {
+    global $userLevel;
+
+    $serviceInfoHandler = $this->config->getDb()->prepare("SELECT `ServiceURL`, `enabled`
+      FROM `ServiceInfo` WHERE `entity_id` = :Id;");
+
+    $otherServiceURL = '';
+    $otherEnabled = false;
+    $serviceInfoHandler->bindParam(self::BIND_ID, $otherEntityId);
+    $serviceInfoHandler->execute();
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $otherServiceURL = $srvi['ServiceURL'];
+      $otherEnabled = $srvi['enabled'];
+    }
+
+    $serviceURL = '';
+    $enabled = false;
+    $serviceInfoHandler->bindParam(self::BIND_ID, $entityId);
+    $serviceInfoHandler->execute();
+    if ($srvi = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $serviceURL = $srvi['ServiceURL'];
+      $enabled = $srvi['enabled'];
+    }
+
+    if ($otherEntityId) {
+      $state = ($added) ? 'success' : 'danger';
+      if ($serviceURL == $otherServiceURL && $enabled == $otherEnabled) {
+        $state = 'dark';
+      }
+    } else {
+      $state = 'dark';
+    }
+    $enabled_txt = $enabled ? ' (active)' : ' (inactive)';
+    $data = $serviceURL ? htmlspecialchars($serviceURL) . $enabled_txt : 'Not provided';
+    # Allow updating the ServiceInfo if the user is an admin
+    # (but not for the "old" metadata, and skip if we show the edit icon anyway)
+    $extra = !$allowEdit && $added && $userLevel > 19 ? sprintf(' <a href="./?edit=SPServiceInfo&Entity=%d&oldEntity=%d"><button>Update</button></a>', $entityId, $otherEntityId) : '';
+    printf ('%s                <b>URL to access this service (for use in service catalog)</b>', "\n");
+    printf ('%s                <ul>', "\n");
+    printf ('%s                  <li><span class="text-%s">%s</span>%s</li>', "\n", $state, $data, $extra);
+    printf ('%s                </ul>', "\n");
   }
 
   /**
