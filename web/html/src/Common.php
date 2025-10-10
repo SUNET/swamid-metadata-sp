@@ -234,7 +234,7 @@ class Common {
       );
 
       curl_setopt($ch, CURLOPT_URL, $url['URL']);
-      $verboseInfo = sprintf('<tr><td>%s</td><td>', $url['URL']);
+      $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
       $output = curl_exec($ch);
       if (curl_errno($ch)) {
         $verboseInfo .= 'Curl error';

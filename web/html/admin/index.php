@@ -68,7 +68,7 @@ if (isset($_SERVER['Meta-Assurance-Certification'])) {
   }
   if (! $AssuranceCertificationFound) {
     $errors .= sprintf('%s has no AssuranceCertification (http://www.swamid.se/policy/assurance/al1) ', # NOSONAR Should be http://
-      $_SERVER['Shib-Identity-Provider']);
+      htmlspecialchars($_SERVER['Shib-Identity-Provider']));
   }
 }
 
@@ -784,7 +784,7 @@ function showEntity($entitiesId, $showHeader = true)  {
     }?>
     <div class="row">
       <div class="col">
-        <h3>entityID = <?=$entity['entityID']?></h3>
+        <h3>entityID = <?=htmlspecialchars($entity['entityID'])?></h3>
       </div>
     </div><?php
     $entityError = $display->showStatusbar($entitiesId, $userLevel > 4 ? true : false);
@@ -961,7 +961,7 @@ function showList($entities, $minLevel) {
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>',
-        $export2Edugain, $row['id'], $row['entityID'], $row['OrganizationName'],
+        $export2Edugain, $row['id'], htmlspecialchars($row['entityID']), htmlspecialchars($row['OrganizationName']),
         $row['lastUpdated'], $row['lastValidated'], $validationStatus);
       print "\n      </tr>\n";
     }
@@ -1065,7 +1065,7 @@ function showMyEntities() {
       $errorStatus = '<i class="fas fa-exclamation"></i>';
     }
     printf('        <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><td>%s (%s)</td><td>%s%s</td><td>%s</td></tr>%s',
-      $row['id'], $row['entityID'], $checkBox, $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
+      $row['id'], htmlspecialchars($row['entityID']), $checkBox, $errorStatus, $pubStatus, $lastConfirmed, $confirmStatus, $updater, "\n");
   }
   printf('      </table>
       <button type="submit" class="btn btn-primary">Validate selected</button>
@@ -1319,7 +1319,7 @@ function move2Pending($entitiesId) {
               On behalf of %s</p>
             </body>
           </html>",
-            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId, $hostURL, $entitiesId,
+            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $hostURL, $entitiesId, $hostURL, $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested an update of \"%s\" (%s)
@@ -1354,7 +1354,7 @@ function move2Pending($entitiesId) {
               On behalf of %s</p>
             </body>
           </html>",
-            $displayName, $draftMetadata->entityID(), $federation['teamName'], $federation['teamMail'], $hostURL, $entitiesId,
+            htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $federation['teamName'], $federation['teamMail'], $hostURL, $entitiesId,
             $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses),
             $federation['toolName'], $federation['teamName']);
           $mailRequester->AltBody = sprintf("Hi.
@@ -1404,7 +1404,7 @@ function move2Pending($entitiesId) {
         <div class="row"><b>Errors:</b></div>%s        <div class="row">%s</div>%s      </div>%s    </div>',
            "\n", "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
         }
-        printf('%s    <p>You are about to request publication of <b>%s</b></p>', "\n", $draftMetadata->entityID());
+        printf('%s    <p>You are about to request publication of <b>%s</b></p>', "\n", htmlspecialchars($draftMetadata->entityID()));
         $publishedMetadata = new \metadata\Metadata($draftMetadata->entityID(), 'prod');
 
         $publishArrayOld = array();
@@ -1603,7 +1603,7 @@ function annualConfirmationList($list){
           $isSP = $metadata->isSP() ? true : $isSP;
           $entityList[$postArray[1]] = $metadata->entityID();
         } else {
-          $errors .= sprintf('Problems with %s, skipping<br>', $metadata->entityID());
+          $errors .= sprintf('Problems with %s, skipping<br>', htmlspecialchars($metadata->entityID()));
           print "Found error";
         }
       }
@@ -1739,7 +1739,7 @@ function requestRemoval($entitiesId) {
                 On behalf of %s</p>
               </body>
             </html>",
-            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
+            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
             \n%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.
@@ -1774,7 +1774,7 @@ function requestRemoval($entitiesId) {
                 On behalf of %s</p>
               </body>
             </html>",
-            $displayName, $metadata->entityID(), $federation['displayName'],
+            htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'],
             $federation['teamName'], $federation['teamMail'],
             $hostURL, $entitiesId,
             $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
@@ -1900,7 +1900,7 @@ function move2Draft($entitiesId) {
       $html->showHeaders($entity['entityID']);
       $menuActive = 'wait';
       showMenu();
-      printf('%s    <p>You are about to cancel your request for publication of <b>%s</b></p>', "\n", $entity['entityID']);
+      printf('%s    <p>You are about to cancel your request for publication of <b>%s</b></p>', "\n", htmlspecialchars($entity['entityID']));
       printf('    <form>
       <input type="hidden" name="move2Draft" value="%d">
       <input type="submit" name="action" value="Confirm cancel publication request">
@@ -1956,9 +1956,9 @@ function removeEntity($entitiesId) {
       if (isset($_GET['action']) && $_GET['action'] == $button ) {
         $metadata = new \metadata\Metadata($entitiesId);
         $metadata->removeEntity();
-        printf('    <p>You have removed <b>%s</b> from %s</p>%s', $entity['entityID'], $from, "\n");
+        printf('    <p>You have removed <b>%s</b> from %s</p>%s', htmlspecialchars($entity['entityID']), $from, "\n");
       } else {
-        printf('    <p>You are about to %s of <b>%s</b></p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $action, $entity['entityID'], "\n", "\n", $entitiesId, "\n", $button, "\n", "\n",  $entitiesId);
+        printf('    <p>You are about to %s of <b>%s</b></p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $action, htmlspecialchars($entity['entityID']), "\n", "\n", $entitiesId, "\n", $button, "\n", "\n",  $entitiesId);
       }
     } else {
       print "You can't Remove / Discard this entity";

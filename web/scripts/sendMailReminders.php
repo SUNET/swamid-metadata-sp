@@ -462,7 +462,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  $displayName, $entityID, $months,
+  htmlspecialchars($displayName), htmlspecialchars($entityID), $months,
   $federation['rulesName'],
   $federation['displayName'],
   $federation['teamName'], $federation['displayName'],
@@ -530,7 +530,7 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  $federation['displayName'], $displayName, $entityID, $expireStatus,
+  $federation['displayName'], htmlspecialchars($displayName), htmlspecialchars($entityID), $expireStatus,
   $federation['rulesName'],
   $config->baseURL(), $id, $config->baseURL(), $id,
   $federation['roloverDocURL'], $federation['roloverDocURL'],
@@ -587,7 +587,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  $displayName, $entityID, $pending ? 'Pending' : 'Drafts', $weeks,
+  htmlspecialchars($displayName), htmlspecialchars($entityID), $pending ? 'Pending' : 'Drafts', $weeks,
   $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
   $pending ? '<p>To get a change published forward this mail to ' . $federation['teamMail'] . '</p>' : '',
   $pending ? 'request' : 'draft',
@@ -653,7 +653,7 @@ function sendImpsReminder($id, $name, $months) {
     <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
     --<br>
     On behalf of SWAMID Operations</p>\n  </body>\n</html>",
-    $name, $config->baseURL(), $id, $config->baseURL(), $id);
+    htmlspecialchars($name), $config->baseURL(), $id, $config->baseURL(), $id);
     $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
     The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
@@ -678,7 +678,7 @@ function sendImpsReminder($id, $name, $months) {
     <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
     --<br>
     On behalf of SWAMID Operations</p>\n  </body>\n</html>",
-    $name, $months, $config->baseURL(), $id, $config->baseURL(), $id);
+    htmlspecialchars($name), $months, $config->baseURL(), $id, $config->baseURL(), $id);
     $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
     The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process

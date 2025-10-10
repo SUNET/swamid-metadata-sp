@@ -75,7 +75,7 @@ class MetadataEdit extends Common {
     <div class="row">
       <div class="col">
         <h3>New metadata</h3>
-      </div>', $this->entityID);
+      </div>', htmlspecialchars($this->entityID));
     if ($this->oldExists && $part <> "AddIdPKeyInfo" && $part <> "AddSPKeyInfo") {
       printf ('%s      <div class="col">%s        <h3>Old metadata</h3>%s      </div>', "\n", "\n", "\n");
       }
@@ -377,7 +377,7 @@ class MetadataEdit extends Common {
               </a>
             </div>
           </li>',
-        $type, $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value)
+        $type, $error, $state, htmlspecialchars($value), $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value)
       );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -416,7 +416,7 @@ class MetadataEdit extends Common {
               </a>
             </div>
           </li>',
-          $error, $state, $value, $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value));
+          $error, $state, htmlspecialchars($value), $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value));
         $existingAttributeValues[$type][$value] = true;
       }
       printf("\n%s\n", self::HTML_END_UL);
@@ -487,13 +487,13 @@ class MetadataEdit extends Common {
           ) {
           $addLink = sprintf(
             '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
+            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], urlencode($attribute['attribute']));
         }
         $state = 'danger';
       }?>
         <b><?=$attribute['type']?></b>
         <ul>
-          <li><?=$addLink?><span class="text-<?=$state?>"><?=$attribute['attribute']?></span></li><?php
+          <li><?=$addLink?><span class="text-<?=$state?>"><?=htmlspecialchars($attribute['attribute'])?></span></li><?php
       $oldType = $attribute['type'];
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         if (isset($existingAttributeValues[$attribute['type']][$attribute['attribute']])) {
@@ -505,7 +505,7 @@ class MetadataEdit extends Common {
             ) {
             $addLink = sprintf(
               '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], $attribute['attribute']);
+              $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], urlencode($attribute['attribute']));
           }
           $state = 'danger';
         }
@@ -515,7 +515,7 @@ class MetadataEdit extends Common {
           $oldType = $attribute['type'];
         }
         printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n",
-          $addLink, $state, $attribute['attribute']);
+          $addLink, $state, htmlspecialchars($attribute['attribute']));
       }?>
 
         </ul><?php
@@ -606,7 +606,7 @@ class MetadataEdit extends Common {
               %s
             </p>
           </li>
-          </ul>', "\n", $links, $newstate, $newURL);
+          </ul>', "\n", $links, $newstate, htmlspecialchars($newURL));
     printf ('
         <form>
           <input type="hidden" name="edit" value="IdPErrorURL">
@@ -629,7 +629,7 @@ class MetadataEdit extends Common {
             </p>
           </li>
         </ul>',
-        "\n", $copy, $oldstate, $oldURL);
+        "\n", $copy, $oldstate, htmlspecialchars($oldURL));
     }
     print self::HTML_END_DIV_COL_ROW;
   }
@@ -752,10 +752,10 @@ class MetadataEdit extends Common {
         $state = 'success';
       }
       $baseLink = sprintf('<a href="?edit=IdPScopes&Entity=%d&oldEntity=%d&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $scope['scope']);
+        $this->dbIdNr, $this->dbOldIdNr, urlencode($scope['scope']));
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
       printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
-        $links, $state, $scope['scope'], $scope['regexp'] ? 'true' : 'false', "\n");
+        $links, $state, htmlspecialchars($scope['scope']), $scope['regexp'] ? 'true' : 'false', "\n");
     }
     printf ('        </ul>
         <form>
@@ -780,11 +780,11 @@ class MetadataEdit extends Common {
           $state = 'dark';
         } else {
           $copy = sprintf('<a href ="?edit=IdPScopes&Entity=%d&oldEntity=%d&action=Add&value=%s">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $scope);
+            $this->dbIdNr, $this->dbOldIdNr, urlencode($scope));
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
-          $copy, $state, $scope, $data['regexp'] ? 'true' : 'false', "\n");
+          $copy, $state, htmlspecialchars($scope), $data['regexp'] ? 'true' : 'false', "\n");
       }
       print self::HTML_END_UL;
     }
@@ -1112,15 +1112,15 @@ class MetadataEdit extends Common {
       switch ($element) {
         case 'Logo' :
           printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>',
-            "\n", $links, $state, $element, $height, $width, sprintf (self::HTML_HREF_BLANK, $data, $state, $data));
+            "\n", $links, $state, $element, $height, $width, sprintf (self::HTML_HREF_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data)));
         break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>',
-            "\n", $links, $state, $element, sprintf (self::HTML_HREF_BLANK, $data, $state, $data));
+            "\n", $links, $state, $element, sprintf (self::HTML_HREF_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data)));
           break;
         default :
-          printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $links, $state, $element, $data);
+          printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $links, $state, $element, htmlspecialchars($data));
       }
     }
     if ($showEndUL) {
@@ -1199,10 +1199,10 @@ class MetadataEdit extends Common {
           case 'InformationURL' :
           case 'Logo' :
           case 'PrivacyStatementURL' :
-            $value = sprintf (self::HTML_HREF_BLANK, $data['value'], $state, $data['value']);
+            $value = sprintf (self::HTML_HREF_BLANK, htmlspecialchars($data['value']), $state, htmlspecialchars($data['value']));
             break;
           default :
-            $value = $data['value'];
+            $value = htmlspecialchars($data['value']);
         }
         if ($element == 'Logo') {
           printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>', "\n",
@@ -1477,13 +1477,13 @@ class MetadataEdit extends Common {
               <input type="submit" name="action" value="Update">
             </form>
           </li>%s',
-          $index, $this->dbIdNr, $this->dbOldIdNr, $index, $location, "\n");
+          $index, $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($location), "\n");
       } else {
         $baseLink = sprintf('<a href="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&index=%s&action=',
           $this->dbIdNr, $this->dbOldIdNr, $index);
         $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
-          $links, $state, $index, $location, "\n");
+          $links, $state, $index, htmlspecialchars($location), "\n");
       }
     }
     if (isset($_GET['action']) && $_GET['action'] == "AddIndex") {
@@ -1516,11 +1516,11 @@ class MetadataEdit extends Common {
           $state = 'dark';
         } else {
           $copy = sprintf('<a href ="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=Add&index=%d&value=%s">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $index, $data['location']);
+            $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($data['location']));
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
-          $copy, $state, $index, $data['location'], "\n");
+          $copy, $state, $index, htmlspecialchars($data['location']), "\n");
       }
       print self::HTML_END_UL;
     }
@@ -1699,9 +1699,9 @@ class MetadataEdit extends Common {
         $state = 'success';
       }
       $baseLink = sprintf('<a href="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $element, $data);
+        $this->dbIdNr, $this->dbOldIdNr, $element, urlencode($data));
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-      printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $links, $state, $data);
+      printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $links, $state, htmlspecialchars($data));
     }
     if ($showEndUL) {
       print "\n" . self::HTML_END_UL;
@@ -1744,14 +1744,14 @@ class MetadataEdit extends Common {
             break;
           case 'removed' :
             $copy = sprintf('<a href ="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $element, $data);
+              $this->dbIdNr, $this->dbOldIdNr, $element, urlencode($data));
             $state = 'danger';
             break;
           default :
             $copy = '';
             $state = 'danger';
         }
-        printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $copy, $state, $data);
+        printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $copy, $state, htmlspecialchars($data));
       }
       print "\n" . self::HTML_END_UL;
     }
@@ -2430,8 +2430,8 @@ class MetadataEdit extends Common {
           <li>Type / bits = %s / %d</li>
           <li>Serial Number = %s</li>
         </ul>',
-        $links, "\n", $state, $useLink, $name, $error, $keyInfo['notValidAfter'], $keyInfo['subject'],
-        $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+        $links, "\n", $state, $useLink, $name, $error, $keyInfo['notValidAfter'], htmlspecialchars($keyInfo['subject']),
+        htmlspecialchars($keyInfo['issuer']), $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
     }
 
     printf('
@@ -2467,7 +2467,7 @@ class MetadataEdit extends Common {
           <li>Type / bits = %s / %d</li>
           <li>Serial Number = %s</li>
         </ul>',
-          "\n", $state, htmlspecialchars($use), $name, $keyInfo['notValidAfter'], $keyInfo['subject'], $keyInfo['issuer'],
+          "\n", $state, htmlspecialchars($use), $name, $keyInfo['notValidAfter'], htmlspecialchars($keyInfo['subject']), htmlspecialchars($keyInfo['issuer']),
           $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
       }
     }
@@ -2958,7 +2958,7 @@ class MetadataEdit extends Common {
           $serviceElement['lang'], urlencode($serviceElement['data']));
         $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
         printf(self::HTML_LI_SPAN,
-          "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], $serviceElement['data']);
+          "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
       }
       print "\n" . self::HTML_END_UL;
       if ($indexValue == $index) {
@@ -3027,11 +3027,11 @@ class MetadataEdit extends Common {
           $state = 'success';
         }
         $baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%d&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index, $requestedAttribute['Name'], $requestedAttribute['isRequired']);
+          $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($requestedAttribute['Name']), $requestedAttribute['isRequired']);
         $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
         $existingRequestedAttribute[$requestedAttribute['Name']] = true;
         printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
-          "\n", $error, $links, $state, $friendlyNameDisplay, $requestedAttribute['Name'],
+          "\n", $error, $links, $state, htmlspecialchars($friendlyNameDisplay), htmlspecialchars($requestedAttribute['Name']),
           $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
       }
       print "\n" . self::HTML_END_UL;
@@ -3126,7 +3126,7 @@ class MetadataEdit extends Common {
                 $state = 'danger';
             }
             printf(self::HTML_LI_SPAN, "\n",
-              $copy, $state, $element, $lang, $data['value']);
+              $copy, $state, $element, $lang, htmlspecialchars($data['value']));
           }
         }
         print "\n          <li>RequestedAttributes : <ul>";
@@ -3138,7 +3138,7 @@ class MetadataEdit extends Common {
               break;
             case 'removed' :
               $copy = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%s&NameFormat=%s&action=Add">[copy]</a> ',
-                $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($name), $data['isRequired'], $data['nameFormat']);
+                $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($name), $data['isRequired'], urlencode($data['nameFormat']));
               $state = 'danger';
               break;
             default :
@@ -3147,7 +3147,7 @@ class MetadataEdit extends Common {
           }
           printf('%s            <li>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
             "\n", $copy, $state,
-            $data['friendlyName'] == '' ? '(' . self::FRIENDLY_NAMES[$name]['desc'] .')' : $data['friendlyName'],
+            $data['friendlyName'] == '' ? '(' . self::FRIENDLY_NAMES[$name]['desc'] .')' : htmlspecialchars($data['friendlyName']),
             htmlspecialchars($name), $data['isRequired'] == '1' ? ' (Required)' : '');
         }
         printf("\n  %s</li>\n%s", self::HTML_END_UL, self::HTML_END_UL);
@@ -3343,10 +3343,10 @@ class MetadataEdit extends Common {
         $oldOrganizationElements[$organization['element']][$organization['lang']]['state'] = 'same';
       } else { $state = 'success'; }
       $baseLink = sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'], $organization['data']);
+        $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'], urlencode($organization['data']));
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
       printf (self::HTML_LI_SPAN,
-        "\n", $links, $state, $organization['element'], $organization['lang'], $organization['data']);
+        "\n", $links, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
       $existingOrganizationElements[$organization['element']][$organization['lang']] = true;
     }
     printf('
@@ -3395,9 +3395,9 @@ class MetadataEdit extends Common {
       $addLink =  (isset($existingOrganizationElements[$organization['element']][$organization['lang']]) )
         ? ''
         : sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'],$organization['data']);
+          $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'],urlencode($organization['data']));
       printf (self::HTML_LI_SPAN,
-        "\n", $addLink, $state, $organization['element'], $organization['lang'], $organization['data']);
+        "\n", $addLink, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
     }
     print "\n        <ul>";
     print self::HTML_END_DIV_COL_ROW;
@@ -3647,10 +3647,10 @@ class MetadataEdit extends Common {
         if ($contactPerson[$dbPart]) {
           $state = ($oldContactPersons[$contactType][$dbPart]['state'] == 'same') ? 'dark' : 'success';
           $baseLink =   sprintf('<a href="?edit=ContactPersons&Entity=%d&oldEntity=%d&type=%s&value=%s&part=%s&action=',
-            $this->dbIdNr, $this->dbOldIdNr, $contactType, $contactPerson[$dbPart], $samlPart);
+            $this->dbIdNr, $this->dbOldIdNr, $contactType, urlencode($contactPerson[$dbPart]), $samlPart);
           $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
-            $links, $state, $samlPart, $contactPerson[$dbPart], "\n");
+            $links, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
           $existingContactPersons[$contactType][$dbPart] = true;
         }
       }
@@ -3722,7 +3722,7 @@ class MetadataEdit extends Common {
             : sprintf('<a href="?edit=ContactPersons&Entity=%d&oldEntity=%d&type=%s&part=%s&value=%s&action=Add">[copy]</a> ',
               $this->dbIdNr, $this->dbOldIdNr, $type, $samlPart, urlencode($contactPerson[$dbPart]));
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
-            $addLink, $state, $samlPart, $contactPerson[$dbPart], "\n");
+            $addLink, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
         }
       }
       print self::HTML_END_UL;

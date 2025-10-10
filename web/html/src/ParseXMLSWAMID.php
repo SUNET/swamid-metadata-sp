@@ -84,7 +84,7 @@ class ParseXMLSWAMID extends ParseXML {
     if (substr($location,0,8) <> self::TEXT_HTTPS) {
       $this->error .= sprintf(
         "SWAMID Tech %s: All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
-        $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, $binding);
+        $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, htmlspecialchars($binding));
     }
     parent::checkSAMLEndpoint($data,$type, $saml2, $saml1);
   }

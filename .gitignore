@@ -2,3 +2,4 @@ web/html/MDS.db
 web/html/composer.lock
 web/html/config.php
 web/html/vendor/
+*.time

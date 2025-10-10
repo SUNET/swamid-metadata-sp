@@ -80,7 +80,7 @@ class IMPS {
       while ($organization = $organizationsHandler->fetch(PDO::FETCH_ASSOC)) {
         printf('               <option value="%d"%s>%s</option>%s',
           $organization['id'], $organization['id'] == $imps['OrganizationInfo_id'] ? ' selected' : '',
-          $organization['OrganizationDisplayName'], "\n");
+          htmlspecialchars($organization['OrganizationDisplayName']), "\n");
       }
       printf('              </select>
             </div>

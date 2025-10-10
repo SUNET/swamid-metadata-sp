@@ -179,7 +179,7 @@ class MetadataDisplay extends Common {
               case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
               case 'Missing schacPersonalUniqueCode' :
                 $errors .= ($ecsTagged[$tag]) ? sprintf("SWAMID Release-check: (%s) %s.\n",
-                  $testResult['time'], $testResult['result']) : '';
+                  htmlspecialchars($testResult['time']), htmlspecialchars($testResult['result'])) : '';
                 break;
               default :
                 printf('Unknown result : %s', $testResult['result']);
@@ -197,7 +197,7 @@ class MetadataDisplay extends Common {
           while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
             if ($url['status'] > 0) {
               $errors .= sprintf(self::HTML_SHOW_URL,
-                $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+                $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
             }
           }
         }
@@ -239,7 +239,7 @@ class MetadataDisplay extends Common {
       while ($url = $urlHandler1->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0 || ($coCov1SP  && $url['cocov1Status'] > 0)) {
           $errors .= sprintf(self::HTML_SHOW_URL,
-            $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
         }
       }
       // OrganizationURL
@@ -247,7 +247,7 @@ class MetadataDisplay extends Common {
       while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0) {
           $errors .= sprintf(self::HTML_SHOW_URL,
-            $url['validationOutput'], urlencode($url['URL']), $url['URL'], "\n");
+            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
         }
       }
       if ($this->config->getFederation()['checkOrganization']) {
@@ -472,7 +472,7 @@ class MetadataDisplay extends Common {
       }
       printf('              <option value="%d"%s>%s</option>%s',
         $organizationInfo['id'], $selected,
-        $organizationInfo['OrganizationDisplayName'],
+        htmlspecialchars($organizationInfo['OrganizationDisplayName']),
         "\n");
     }
     printf ('            </select>
@@ -557,7 +557,7 @@ class MetadataDisplay extends Common {
     foreach ($organizationDefaults as $element => $elementData) {
       foreach ($elementData as $lang => $value) {
         printf ('            <li><span class="text-dark">%s[%s] = %s</span></li>%s',
-          $element, $lang, $value, "\n");
+          $element, $lang, htmlspecialchars($value), "\n");
       }
     }
     printf('          </ul>%s', "\n",);
@@ -752,7 +752,7 @@ class MetadataDisplay extends Common {
 
           <b><?=$type?></b>
           <ul>
-            <li><div<?=$error?>><span class="text-<?=$state?>"><?=$value?></span></div></li><?php
+            <li><div<?=$error?>><span class="text-<?=$state?>"><?=htmlspecialchars($value)?></span></div></li><?php
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         $type = $attribute['type'];
@@ -772,7 +772,7 @@ class MetadataDisplay extends Common {
           printf ("\n          <b>%s</b>\n          <ul>", $type);
           $oldType = $type;
         }
-        printf ('%s            <li><div%s><span class="text-%s">%s</span></div></li>', "\n", $error, $state, $value);
+        printf ('%s            <li><div%s><span class="text-%s">%s</span></div></li>', "\n", $error, $state, htmlspecialchars($value));
       }?>
 
           </ul><?php
@@ -979,7 +979,7 @@ class MetadataDisplay extends Common {
                 <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">',
       "\n", $edit, $state);
     if ($thisURL != '') {
-      printf (self::HTML_TARGET_BLANK, $thisURL, $state, $thisURL);
+      printf (self::HTML_TARGET_BLANK, htmlspecialchars($thisURL), $state, htmlspecialchars($thisURL));
     } else {
       print 'Missing';
     }
@@ -1024,7 +1024,7 @@ class MetadataDisplay extends Common {
         $state = 'dark';
       }
       printf ('                <li><span class="text-%s">%s (regexp="%s")</span></li>%s',
-        $state, $scope['scope'], $scope['regexp'] ? self::HTML_TRUE : 'false', "\n");
+        $state, htmlspecialchars($scope['scope']), $scope['regexp'] ? self::HTML_TRUE : 'false', "\n");
     }
     print '              </ul>';
   }
@@ -1124,19 +1124,19 @@ class MetadataDisplay extends Common {
           } else {
             $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
           }
-          $data = sprintf (self::HTML_TARGET_BLANK, $data, $state, $data);
+          $data = sprintf (self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
           printf ('%s                  <li>%s <span class="text-%s">%s (%s) = %s</span>%s</li>',
             "\n", $statusIcon, $state, $element, $size, $data, $statusText);
           break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
-          $data = sprintf (self::HTML_TARGET_BLANK, $data, $state, $data);
+          $data = sprintf (self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
           printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
           "\n", $state, $element, $data);
           break;
         default :
           printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
-          "\n", $state, $element, $data);
+          "\n", $state, $element, htmlspecialchars($data));
       }
     }
     if ($showEndUL) {
@@ -1247,7 +1247,7 @@ class MetadataDisplay extends Common {
       } else {
         $state = 'dark';
       }
-      printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, $data);
+      printf ('%s                  <li><span class="text-%s">%s</span></li>', "\n", $state, htmlspecialchars($data));
     }
     if ($showEndUL) {
       print "\n                </ul>";
@@ -1369,7 +1369,7 @@ class MetadataDisplay extends Common {
                   <li>Serial Number = %s</li>
                 </ul>',
           "\n", $state, $use, $name, $error, $keyInfo['notValidAfter'],
-          $keyInfo['subject'], $keyInfo['issuer'], $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+          htmlspecialchars($keyInfo['subject']), htmlspecialchars($keyInfo['issuer']), $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
     }
   }
 
@@ -1440,7 +1440,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf('%s                  <li><span class="text-%s">%s[%s] = %s</span></li>',
-          "\n", $state, $serviceElement['element'], $serviceElement['lang'], $serviceElement['data']);
+          "\n", $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
       }
       $requestedAttributeHandler->execute();
       print "\n                  <li>RequestedAttributes : <ul>";
@@ -1477,7 +1477,7 @@ class MetadataDisplay extends Common {
           }
         }
         printf('%s                    <li%s><span class="text-%s"><b>%s</b> - %s%s</span></li>',
-          "\n", $error, $state, $friendlyNameDisplay, $requestedAttribute['Name'],
+          "\n", $error, $state, htmlspecialchars($friendlyNameDisplay), htmlspecialchars($requestedAttribute['Name']),
           $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
       }
       print "\n                  </ul></li>\n                </ul>";
@@ -1519,7 +1519,7 @@ class MetadataDisplay extends Common {
         $state = 'dark';
       }
       printf ('                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
-        $state, $index, $location, "\n");
+        $state, $index, htmlspecialchars($location), "\n");
     }
     printf ('                </ul>');
   }
@@ -1586,10 +1586,10 @@ class MetadataDisplay extends Common {
       if ($organization['element'] == 'OrganizationURL' ) {
         printf ('%s          <li><span class="text-%s">%s[%s] = <a href="%s" class="text-%s">%s</a></span></li>',
           "\n", $state, $organization['element'], $organization['lang'],
-          $organization['data'], $state, $organization['data']);
+          htmlspecialchars($organization['data']), $state, htmlspecialchars($organization['data']));
       } else {
         printf ('%s          <li><span class="text-%s">%s[%s] = %s</span></li>',
-          "\n", $state, $organization['element'], $organization['lang'], $organization['data']);
+          "\n", $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
       }
     }
     print "\n        </ul>";
@@ -1689,7 +1689,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf ('          <li><span class="text-%s">Company = %s</span></li>%s',
-          $state, $contactPerson['company'], "\n");
+          $state, htmlspecialchars($contactPerson['company']), "\n");
       }
       if ($contactPerson['givenName']) {
         if ($otherEntityId) {
@@ -1701,7 +1701,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf ('          <li><span class="text-%s">GivenName = %s</span></li>%s',
-          $state, $contactPerson['givenName'], "\n");
+          $state, htmlspecialchars($contactPerson['givenName']), "\n");
       }
       if ($contactPerson['surName']) {
         if ($otherEntityId) {
@@ -1713,7 +1713,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf ('          <li><span class="text-%s">SurName = %s</span></li>%s',
-          $state, $contactPerson['surName'], "\n");
+          $state, htmlspecialchars($contactPerson['surName']), "\n");
       }
       if ($contactPerson['emailAddress']) {
         if ($otherEntityId) {
@@ -1725,7 +1725,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf ('          <li><span class="text-%s">EmailAddress = %s</span></li>%s',
-          $state, $contactPerson['emailAddress'], "\n");
+          $state, htmlspecialchars($contactPerson['emailAddress']), "\n");
       }
       if ($contactPerson['telephoneNumber']) {
         if ($otherEntityId) {
@@ -1738,7 +1738,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf ('          <li><span class="text-%s">TelephoneNumber = %s</span></li>%s',
-          $state, $contactPerson['telephoneNumber'], "\n");
+          $state, htmlspecialchars($contactPerson['telephoneNumber']), "\n");
       }
       if ($contactPerson['extensions']) {
         if ($otherEntityId) {
@@ -1750,7 +1750,7 @@ class MetadataDisplay extends Common {
           $state = 'dark';
         }
         printf ('          <li><span class="text-%s">Extensions = %s</span></li>%s',
-          $state, $contactPerson['extensions'], "\n");
+          $state, htmlspecialchars($contactPerson['extensions']), "\n");
       }
       print "        </ul>";
     }
@@ -1934,7 +1934,7 @@ class MetadataDisplay extends Common {
       <tr><th>Entity</th><th>Part</th><th></tr>%s', self::HTML_TABLE_END, "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s',
-          $entity['entity_id'], $entity['entityID'], 'ErrorURL', "\n");
+          $entity['entity_id'], htmlspecialchars($entity['entityID']), 'ErrorURL', "\n");
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         $ecInfo = '';
@@ -1949,14 +1949,14 @@ class MetadataDisplay extends Common {
         }
         if ($entity['element'] == 'Logo' || $entity['element'] == 'InformationURL' || $entity['element'] == 'PrivacyStatementURL') {
           printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s:%s[%s]%s</td><tr>%s',
-            $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
+            $entity['entity_id'], htmlspecialchars($entity['entityID']), $this->getEntityStatusType($entity['status']),
             substr($entity['type'],0,-3), $entity['element'], $entity['lang'], $ecInfo, "\n");
         }
       }
       while ($entity = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($entity['element'] == 'OrganizationURL') {
           printf ('      <tr><td><a href="?showEntity=%d">%s</a> (%s)</td><td>%s[%s]</td><tr>%s',
-            $entity['entity_id'], $entity['entityID'], $this->getEntityStatusType($entity['status']),
+            $entity['entity_id'], htmlspecialchars($entity['entityID']), $this->getEntityStatusType($entity['status']),
             $entity['element'], $entity['lang'], "\n");
         }
       }
@@ -1991,7 +1991,7 @@ class MetadataDisplay extends Common {
           $oldType = $url['type'];
         }
         printf ('      <tr><td><a href="?action=URLlist&URL=%s">%s</a></td><td>%s</td><td>%s</td><td>%s</td><tr>%s',
-          urlencode($url['URL']), $url['URL'], $url['lastSeen'], $url['lastValidated'], $url['validationOutput'], "\n");
+          urlencode($url['URL']), htmlspecialchars($url['URL']), $url['lastSeen'], $url['lastValidated'], $url['validationOutput'], "\n");
       }
       if ($oldType > 0) { print self::HTML_TABLE_END; }
 
@@ -2016,7 +2016,7 @@ class MetadataDisplay extends Common {
           ? '! ' : '';
         printf ('      <tr>
         <td><a href="?action=URLlist&URL=%s">%s%s</td><td>%s</td><td>%s</td><td>%s</td><tr>%s',
-          urlencode($url['URL']), $warn, $url['URL'], $url['lastSeen'],
+          urlencode($url['URL']), $warn, htmlspecialchars($url['URL']), $url['lastSeen'],
           $url['lastValidated'], $url['validationOutput'], "\n");
       }
       print self::HTML_TABLE_END;
@@ -2766,7 +2766,7 @@ class MetadataDisplay extends Common {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     printf('      <tr>
       <td>%s</td>%s',
-      $idp, "\n");
+      htmlspecialchars($idp), "\n");
     if ($swamid_assurance) {
         printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
@@ -3167,9 +3167,9 @@ class MetadataDisplay extends Common {
         <td>%s</td>
         <td>%s</td>
       </tr>%s',
-            $entity['id'], $entity['entityID'],
-            $entity['OrganizationName'], $entity['OrganizationDisplayName'],
-            $entity['OrganizationURL'], "\n");
+            $entity['id'], htmlspecialchars($entity['entityID']),
+            htmlspecialchars($entity['OrganizationName']), htmlspecialchars($entity['OrganizationDisplayName']),
+            htmlspecialchars($entity['OrganizationURL']), "\n");
         }
         printf ('%s', self::HTML_TABLE_END);
       }
@@ -3231,10 +3231,10 @@ class MetadataDisplay extends Common {
               <td>%s</td>
               <td><a href="?action=OrganizationsInfo&name=%s&display=%s&url=%s&lang=%s">%d</a></td>
             </tr>%s',
-          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
-          $organization['OrganizationURL'],
-          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
-          $organization['OrganizationURL'], $lang,
+          htmlspecialchars($organization['OrganizationName']), htmlspecialchars($organization['OrganizationDisplayName']),
+          htmlspecialchars($organization['OrganizationURL']),
+          urlencode($organization['OrganizationName']), urlencode($organization['OrganizationDisplayName']),
+          urlencode($organization['OrganizationURL']), $lang,
           $organization['count'], "\n");
       }
     }
@@ -3374,7 +3374,7 @@ class MetadataDisplay extends Common {
       }
       $idpHandler->execute(array(self::BIND_ID => $imps['id']));
       $lastValidated = substr($imps['lastValidated'], 0 ,10);
-      $name = $imps['name'] . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
+      $name = htmlspecialchars($imps['name']) . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
       $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
@@ -3390,7 +3390,7 @@ class MetadataDisplay extends Common {
                 </ul>
                 <h5>Connected IdP:s</h5>
                 <ul>%s',
-        "\n", $imps['orgId'], $imps['orgId'], $imps['OrganizationDisplayName'], $imps['maximumAL'],
+        "\n", $imps['orgId'], $imps['orgId'], htmlspecialchars($imps['OrganizationDisplayName']), $imps['maximumAL'],
         $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
       while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
@@ -3456,7 +3456,7 @@ class MetadataDisplay extends Common {
       $impsHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $entitiesHandler->execute(array(self::BIND_ID => $organization['orgId']));
       $organizationDataHandler->execute(array(self::BIND_ID => $organization['orgId']));
-      $name = $organization['OrganizationDisplayName'];
+      $name = htmlspecialchars($organization['OrganizationDisplayName']);
       if ($this->config->getIMPS()) {
         $name .= '(' . $organization['impsCount'] . '/' . $organization['entitiesCount'] . ')';
       } else {
@@ -3482,7 +3482,7 @@ class MetadataDisplay extends Common {
                     </ul>
                   </li>%s',
           isset(self::LANG_CODES[$orgInfoData['lang']]) ? self::LANG_CODES[$orgInfoData['lang']] : sprintf('Unkown lang code: %s', $orgInfoData['lang']),
-          $orgInfoData['OrganizationName'], $orgInfoData['OrganizationDisplayName'], $orgInfoData['OrganizationURL'], "\n");
+          htmlspecialchars($orgInfoData['OrganizationName']), htmlspecialchars($orgInfoData['OrganizationDisplayName']), htmlspecialchars($orgInfoData['OrganizationURL']), "\n");
 
       }
       printf('                  <li>memberSince : %s</li>%s', $organization['memberSince'], "\n");
@@ -3495,7 +3495,7 @@ class MetadataDisplay extends Common {
                     <ul>%s', "\n");
         while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
           printf ('                      <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a> (AL%d) - %s</li>%s',
-          $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
+          $imps['id'], $imps['id'], htmlspecialchars($imps['name']), $imps['maximumAL'], substr($imps['lastValidated'], 0, 10),"\n");
         }
         printf ('                    </ul>
                   </li>
@@ -3537,7 +3537,7 @@ class MetadataDisplay extends Common {
             <td><a href="?showEntity=%d"><span class="text-truncate">%s</span></td>
             <td>%s</td>
           </tr>%s',
-        $scope['scope'], $scope['id'], $scope['entityID'], $scope['data'], "\n");
+        htmlspecialchars($scope['scope']), $scope['id'], htmlspecialchars($scope['entityID']), htmlspecialchars($scope['data']), "\n");
     }
     printf ('    %s', self::HTML_TABLE_END);
   }

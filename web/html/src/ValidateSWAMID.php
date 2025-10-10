@@ -333,7 +333,7 @@ class ValidateSWAMID extends Validate {
       $missingScope = false;
       if ($scope['regexp']) {
         $this->error .= sprintf("SWAMID Tech 5.1.16: IdP Scopes (%s) MUST NOT include regular expressions.\n",
-          $scope['scope']);
+          htmlspecialchars($scope['scope']));
       }
     }
     if ($missingScope) {
@@ -389,7 +389,7 @@ class ValidateSWAMID extends Validate {
           $mduiDNUniqHandler->execute();
           while ($duplicate = $mduiDNUniqHandler->fetch(PDO::FETCH_ASSOC)) {
             $this->error .= sprintf("SWAMID Tech 5.1.17: DisplayName for lang %s is also set on %s.\n",
-              $lang, $duplicate['entityID']);
+              $lang, htmlspecialchars($duplicate['entityID']));
           }
           break;
         case 'Logo' :
@@ -578,7 +578,7 @@ class ValidateSWAMID extends Validate {
       } elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
         $this->warning .= sprintf (
           "Certificate (%s) %s will soon expire. %s\n",
-          $keyInfo['use'], $keyInfo['subject'],
+          $keyInfo['use'], htmlspecialchars($keyInfo['subject']),
           'New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.');
       }
 

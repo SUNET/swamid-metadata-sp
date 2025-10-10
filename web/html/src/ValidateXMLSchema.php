@@ -72,7 +72,7 @@ class ValidateXMLSchema {
       default :
         $returnString .= '<b> Unkown Error </b>: ';
     }
-    $returnString .= trim($error->message);
+    $returnString .= htmlspecialchars(trim($error->message));
     $returnString .= " on line <b>$error->line</b>\n";
 
     return $returnString;

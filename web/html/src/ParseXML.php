@@ -42,7 +42,7 @@ class ParseXML extends Common {
    */
   public function parseXML() {
     if (! $this->entityExists) {
-      $this->result = "$this->entityID doesn't exist!!";
+      $this->result = sprintf("%s doesn't exist!!", htmlspecialchars($this->entityID));
       return 1;
     }
 
@@ -220,11 +220,11 @@ class ParseXML extends Common {
           $data->setAttribute('NameFormat', self::SAMLNF_URI);
           $this->result .= sprintf(
             "Added NameFormat %s to Extensions/EntityAttributes/Attribute/%s.\n",
-            self::SAMLNF_URI, $data->getAttribute('Name'));
+            self::SAMLNF_URI, htmlspecialchars($data->getAttribute('Name')));
           break;
         default :
         $this->result .= sprintf("Unknown Name (%s) in Extensions/EntityAttributes/Attribute.\n",
-          $data->getAttribute('Name'));
+          htmlspecialchars($data->getAttribute('Name')));
         break;
       }
     }
@@ -250,7 +250,7 @@ class ParseXML extends Common {
           break;
         default :
           $this->result .= sprintf("Unknown Name (%s) in Extensions/EntityAttributes/Attribute.\n",
-            $data->getAttribute('Name'));
+            htmlspecialchars($data->getAttribute('Name')));
           $attributeType = substr($data->getAttribute('Name'),0,30);
       }
 
@@ -290,7 +290,7 @@ class ParseXML extends Common {
       }
     } else {
       $this->result .= sprintf("Unknown NameFormat (%s) in Extensions/EntityAttributes/Attribute.\n",
-        $data->getAttribute('NameFormat'));
+        htmlspecialchars($data->getAttribute('NameFormat')));
     }
   }
 
@@ -381,7 +381,7 @@ class ParseXML extends Common {
               break;
             default :
               $this->result .= sprintf("IDPSSODescriptor->Extensions->Scope unknown value for regexp %s.\n",
-                $child->getAttribute('regexp'));
+                htmlspecialchars($child->getAttribute('regexp')));
               $regexp = -1;
           }
           $scopesHandler->bindValue(self::BIND_SCOPE, trim($child->textContent));
@@ -616,7 +616,7 @@ class ParseXML extends Common {
               self::FRIENDLY_NAMES[$name]['desc'] != $friendlyName) {
                 $this->warning .= sprintf(
                   "FriendlyName for %s %s %d is %s (recomended is %s).\n",
-                  $name, 'in RequestedAttribute for index', $index, $friendlyName, self::FRIENDLY_NAMES[$name]['desc']);
+                  htmlspecialchars($name), 'in RequestedAttribute for index', $index, htmlspecialchars($friendlyName), self::FRIENDLY_NAMES[$name]['desc']);
             }
             if ($child->getAttribute('NameFormat')) {
               $nameFormat = $child->getAttribute('NameFormat');
@@ -627,17 +627,17 @@ class ParseXML extends Common {
                 case 'urn:mace:shibboleth:1.0:attributeNamespace:uri' :
                   $this->warning .=
                     sprintf("SAML1 NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n",
-                      $nameFormat, $name, $index);
+                      htmlspecialchars($nameFormat), htmlspecialchars($name), $index);
                   break;
                 default :
                   $this->warning .=
                     sprintf("NameFormat %s for %s in RequestedAttribute for index %d is not recomended.\n",
-                      $nameFormat, $name, $index);
+                      htmlspecialchars($nameFormat), htmlspecialchars($name), $index);
               }
             } else {
               $this->warning .=
                 sprintf("NameFormat is missing for %s in RequestedAttribute for index %d. %s\n",
-                  $name, $index, 'This might create problmes with some IdP:s');
+                  htmlspecialchars($name), $index, 'This might create problmes with some IdP:s');
             }
             $requestedAttributeHandler->execute();
             $requestedAttributeFound = true;
@@ -799,7 +799,7 @@ class ParseXML extends Common {
         break;
       default :
         $contactType = 'Unknown';
-        $this->result .= sprintf("Unknown contactType in ContactPerson->%s.\n", $data->getAttribute('contactType'));
+        $this->result .= sprintf("Unknown contactType in ContactPerson->%s.\n", htmlspecialchars($data->getAttribute('contactType')));
     }
 
     $child = $data->firstChild;
@@ -829,7 +829,7 @@ class ParseXML extends Common {
       }
       if ($value == '') {
         $this->error .= sprintf ("Error in uploaded XML. Element %s in contact type=%s is empty!\n",
-          $child->nodeName, $data->getAttribute('contactType'));
+          $child->nodeName, htmlspecialchars($data->getAttribute('contactType')));
       }
       $child = $child->nextSibling;
     }
@@ -992,7 +992,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
           break;
         default :
-          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for $name.\n", $protocol);
+          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for $name.\n", htmlspecialchars($protocol));
       }
     }
 
@@ -1226,16 +1226,16 @@ class ParseXML extends Common {
         case 'good' :
           break;
         case 'discouraged' :
-          $this->warning .= sprintf("DigestMethod %s is discouraged in xmldsig-core.\n", $algorithm);
+          $this->warning .= sprintf("DigestMethod %s is discouraged in xmldsig-core.\n", htmlspecialchars($algorithm));
           break;
         case 'obsolete' :
-          $this->error .= sprintf("DigestMethod %s is obsolete in xmldsig-core.\n", $algorithm);
+          $this->error .= sprintf("DigestMethod %s is obsolete in xmldsig-core.\n", htmlspecialchars($algorithm));
           break;
         default :
-          $this->result .= sprintf("CommonTrait.php digestMethod[%s] have unknown status (%s).\n", $algorithm, self::DIGEST_METHODS[$algorithm]);
+          $this->result .= sprintf("CommonTrait.php digestMethod[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::DIGEST_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing DigestMethod[%s].\n", $algorithm);
+      $this->result .= sprintf("Missing DigestMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1255,16 +1255,16 @@ class ParseXML extends Common {
         case 'good' :
           break;
         case 'discouraged' :
-          $this->warning .= sprintf("SigningMethod %s is discouraged in xmldsig-core.\n", $algorithm);
+          $this->warning .= sprintf("SigningMethod %s is discouraged in xmldsig-core.\n", htmlspecialchars($algorithm));
           break;
         case 'obsolete' :
-          $this->error .= sprintf("SigningMethod %s is obsolete in xmldsig-core.\n", $algorithm);
+          $this->error .= sprintf("SigningMethod %s is obsolete in xmldsig-core.\n", htmlspecialchars($algorithm));
           break;
         default :
-          $this->result .= sprintf("CommonTrait.php signingMethods[%s] have unknown status (%s).\n", $algorithm, self::SIGNING_METHODS[$algorithm]);
+          $this->result .= sprintf("CommonTrait.php signingMethods[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::SIGNING_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing SigningMethod[%s].\n", $algorithm);
+      $this->result .= sprintf("Missing SigningMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1284,16 +1284,16 @@ class ParseXML extends Common {
         case 'good' :
           break;
         case 'discouraged' :
-          $this->warning .= sprintf("EncryptionMethod %s is discouraged in xmlenc-core.\n", $algorithm);
+          $this->warning .= sprintf("EncryptionMethod %s is discouraged in xmlenc-core.\n", htmlspecialchars($algorithm));
           break;
         case 'obsolete' :
-          $this->error .= sprintf("EncryptionMethod %s is obsolete in xmlenc-core.\n", $algorithm);
+          $this->error .= sprintf("EncryptionMethod %s is obsolete in xmlenc-core.\n", htmlspecialchars($algorithm));
           break;
         default :
-          $this->result .= sprintf("CommonTrait.php encryptionMethods[%s] have unknown status (%s).\n", $algorithm, self::ENCRYPTION_METHODS[$algorithm]);
+          $this->result .= sprintf("CommonTrait.php encryptionMethods[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::ENCRYPTION_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing EncryptionMethod[%s].\n", $algorithm);
+      $this->result .= sprintf("Missing EncryptionMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1329,7 +1329,7 @@ class ParseXML extends Common {
         if (! $saml1) {
           $this->error .= sprintf(
             "oasis-sstc-saml-bindings-1.1: SAML1 Binding in %s[Binding=%s], but SAML1 not supported in %sDescriptor.\n",
-            $name, $binding, $type);
+            $name, htmlspecialchars($binding), $type);
         }
         break;
       # that's a SAML 1.1 identifier defined by the project in the old days
@@ -1338,7 +1338,7 @@ class ParseXML extends Common {
         if (! $saml1) {
           $this->error .= sprintf(
             "urn:mace:shibboleth:1.0 is depending on SAML1. Found binding in %s[Binding=%s], but SAML1 not supported in %sDescriptor.\n",
-            $name, $binding, $type);
+            $name, htmlspecialchars($binding), $type);
         }
         break;
       # https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
@@ -1360,20 +1360,20 @@ class ParseXML extends Common {
         if (! $saml2) {
           $this->error .= sprintf(
             "saml-bindings-2.0-os: SAML2 Binding in %s[Binding=%s], but SAML2 not supported in %sDescriptor.\n",
-            $name, $binding, $type);
+            $name, htmlspecialchars($binding), $type);
         }
         break;
       case 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP-binding' :
-        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>SOAP</b> or urn:oasis:names:tc:SAML:<b>1.0</b>:bindings:SOAP-binding\n", $binding);
+        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>SOAP</b> or urn:oasis:names:tc:SAML:<b>1.0</b>:bindings:SOAP-binding\n", htmlspecialchars($binding));
         break;
       case 'urn:oasis:names:tc:SAML:2.0:bindings:artifact-01' :
-        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-Artifact</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:artifact-01\n", $binding);
+        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-Artifact</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:artifact-01\n", htmlspecialchars($binding));
         break;
       case 'urn:oasis:names:tc:SAML:2.0:bindings:browser-post' :
-        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-POST</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:browser-post\n", $binding);
+        $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-POST</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:browser-post\n", htmlspecialchars($binding));
         break;
       default :
-        $this->result .= sprintf("Missing Binding : %s in validator\n", $binding);
+        $this->result .= sprintf("Missing Binding : %s in validator\n", htmlspecialchars($binding));
     }
   }
 
@@ -1426,7 +1426,7 @@ class ParseXML extends Common {
       case 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient' :
         break;
       default :
-        $this->warning .= sprintf("Unknown NameIDFormat : %s. See saml-core-2.0-os below 8.3 for options.\n", $nameIDFormat);
+        $this->warning .= sprintf("Unknown NameIDFormat : %s. See saml-core-2.0-os below 8.3 for options.\n", htmlspecialchars($nameIDFormat));
     }
   }
 }
