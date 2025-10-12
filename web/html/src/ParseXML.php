@@ -989,10 +989,10 @@ class ParseXML extends Common {
           $shibboleth10found = true;
           break;
         case '' :
-          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
+          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for %s. Please remove.\n", $name);
           break;
         default :
-          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for $name.\n", htmlspecialchars($protocol));
+          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for %s.\n", htmlspecialchars($protocol), $name);
       }
     }
 
