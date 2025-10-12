@@ -3546,7 +3546,7 @@ class MetadataDisplay extends Common {
                           `publishIn` > 1 AND
                           `status` = 1 AND
                           `Organization`.`entity_id` = `Entities`.`id` AND
-                          `Organization`.`lang` = 'sv' AND
+                          `Organization`.`lang` = 'en' AND
                           `element`= 'OrganizationName';");
     $scopeHandler->execute();
     while ($scope = $scopeHandler->fetch(PDO::FETCH_ASSOC)) {
