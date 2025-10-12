@@ -122,6 +122,8 @@ $federation = array(
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
   # Base URL for MDQ - or empty string if not available
   'mdqBaseURL' => 'https://mds.swamid.se/entities/',
+  # DB path to MDS DB
+  'mdsDbPath' => __DIR__ . "/MDS.db",
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',

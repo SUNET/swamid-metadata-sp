@@ -1151,7 +1151,7 @@ function removeSSO($entitiesId, $type) {
 # Shows menu row
 ####
 function showMenu() {
-  global $userLevel, $menuActive;
+  global $userLevel, $menuActive, $config;
   $filter='';
   if (isset($_GET['query'])) {
     $filter='&query='.urlencode($_GET['query']);
@@ -1183,8 +1183,10 @@ function showMenu() {
   if ( $userLevel > 4 ) {
     printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>',
       $filter, $menuActive == 'URLlist' ? '' : HTML_OUTLINE);
-    printf('<a href="./mds.php" target="_blank"><button type="button" class="btn btn%s-primary">MDS</button></a>',
-      HTML_OUTLINE);
+    if ($config->getFederation()['mdsDbPath']) {
+      printf('<a href="./mds.php" target="_blank"><button type="button" class="btn btn%s-primary">MDS</button></a>',
+        HTML_OUTLINE);
+    };
   }
   if ( $userLevel > 10 ) {
     printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>',
