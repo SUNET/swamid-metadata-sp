@@ -886,7 +886,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       <div class="col">
         <h3><?=$headerCol1?></h3>
         Published in : <?php
-    print implode (', ', $publishArray);
+    print count($publishArray)>0 ? implode (', ', $publishArray) : '<em>no federation yet</em>.';
     if ($oldEntitiesId > 0) { ?>
 
       </div>
