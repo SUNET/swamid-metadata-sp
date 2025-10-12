@@ -187,9 +187,8 @@ class MetadataDisplay extends Common {
           }
           foreach ($ecsTested as $tag => $tested) {
             if (! $ecsTested[$tag]) {
-              $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
-              $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
-                $tag, $this->config->getMode() == 'QA' ? 'qa.' : '', "\n");
+              $warnings .= sprintf('%s Release-check: Updated test for %s missing please rerun', $this->config->getFederation()['displayName'], $tag);
+              $warnings .= sprintf(' at <a href="%s">Release-check</a>%s', $this->getReleaseCheckURL($tag), "\n");
             }
           }
           // Error URLs
@@ -315,6 +314,25 @@ class MetadataDisplay extends Common {
       }
     }
     return $entityError;
+  }
+
+
+  /**
+   * Construct a release check URL for a specific tag
+   *
+   * @param string $tag To include in the release check URL
+   *
+   * @return string Release check URL with tag included (or unmodified if tag absent)
+   */
+
+  private function getReleaseCheckURL($tag = null) {
+    $rcConfURL = $this->config->getFederation()['releaseCheckResultsURL'];
+
+    if (!$tag || !$rcConfURL) {
+      return $rcConfURL;
+    }
+
+    return preg_replace(',^(https?://),', '\1' . $tag . '.', $rcConfURL);
   }
 
   /**
