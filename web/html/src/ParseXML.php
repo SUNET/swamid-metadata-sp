@@ -467,7 +467,7 @@ class ParseXML extends Common {
     $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1'];
     $shibboleth10found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['shibboleth10'];
     if ($shibboleth10found) {
-      $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n");
+      $this->errorNB .= "Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n";
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
     $child = $data->firstChild;
@@ -794,7 +794,7 @@ class ParseXML extends Common {
               $data->getAttribute(self::SAML_ATTRIBUTE_REMD));
           }
         } else {
-          $this->warning .= sprintf("ContactPerson->other is NOT handled as a SecurityContact.\n");
+          $this->warning .= "ContactPerson->other is NOT handled as a SecurityContact.\n";
         }
         break;
       default :

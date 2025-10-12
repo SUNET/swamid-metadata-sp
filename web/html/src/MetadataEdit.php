@@ -133,7 +133,7 @@ class MetadataEdit extends Common {
         $this->editContactPersons();
         break;
       default :
-        printf('Missing what to edit');
+        print 'Missing what to edit';
     }
   }
 

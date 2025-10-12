@@ -853,7 +853,7 @@ function showEntity($entitiesId, $showHeader = true)  {
           printf ('%s      <form>
         <input type="hidden" name="mergeEntity" value="%d">
         Merge from other entity : %s        <select name="oldEntity">%s', "\n", $entitiesId, "\n", "\n");
-          printf('          <option value="0">Please select an entity to merge from</option>', "\n");
+          print '          <option value="0">Please select an entity to merge from</option>';
           if ($entity['isIdP'] ) {
             if ($entity['isSP'] ) {
               // is both SP and IdP
@@ -1282,7 +1282,7 @@ function move2Pending($entitiesId) {
         }
 
         if ($config->getMode() == 'QA') {
-          printf ("    <p>Your entity will be published within 15 to 30 minutes</p>\n");
+          print "    <p>Your entity will be published within 15 to 30 minutes</p>\n";
           printf ('    <hr>
           <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
             $entitiesId);
@@ -1691,7 +1691,7 @@ function requestRemoval($entitiesId) {
         $removeHandler->execute(array(':UserId' => $userID, ':Entity_ID' => $entitiesId));
 
         if ($config->getMode() == 'QA') {
-          printf ("    <p>Your entity will be removed within 15 to 30 minutes</p>\n");
+          print "    <p>Your entity will be removed within 15 to 30 minutes</p>\n";
           printf ('    <hr>
           <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
             $entitiesId);

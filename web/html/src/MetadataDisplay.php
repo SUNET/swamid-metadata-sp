@@ -1521,7 +1521,7 @@ class MetadataDisplay extends Common {
       printf ('                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
         $state, $index, htmlspecialchars($location), "\n");
     }
-    printf ('                </ul>');
+    print '                </ul>';
   }
 
   /**
