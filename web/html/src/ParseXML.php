@@ -284,7 +284,7 @@ class ParseXML extends Common {
           }
           $entityAttributesHandler->execute();
         } else {
-          $this->result .= 'Extensions -> EntityAttributes -> Attribute -> ' . $child->nodeName . " saknas.\n";
+          $this->result .= sprintf("Unknown Element Extensions -> EntityAttributes -> Attribute -> %s.\n", $child->nodeName);
         }
         $child = $child->nextSibling;
       }
@@ -1235,7 +1235,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("CommonTrait.php digestMethod[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::DIGEST_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing DigestMethod[%s].\n", htmlspecialchars($algorithm));
+      $this->result .= sprintf("Unknown DigestMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1264,7 +1264,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("CommonTrait.php signingMethods[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::SIGNING_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing SigningMethod[%s].\n", htmlspecialchars($algorithm));
+      $this->result .= sprintf("Unknown SigningMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1293,7 +1293,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("CommonTrait.php encryptionMethods[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::ENCRYPTION_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing EncryptionMethod[%s].\n", htmlspecialchars($algorithm));
+      $this->result .= sprintf("Unknown EncryptionMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1373,7 +1373,7 @@ class ParseXML extends Common {
         $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-POST</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:browser-post\n", htmlspecialchars($binding));
         break;
       default :
-        $this->result .= sprintf("Missing Binding : %s in validator\n", htmlspecialchars($binding));
+        $this->result .= sprintf("Unknown Binding : %s in validator\n", htmlspecialchars($binding));
     }
   }
 
