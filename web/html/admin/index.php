@@ -886,7 +886,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       <div class="col">
         <h3><?=$headerCol1?></h3>
         Published in : <?php
-    print count($publishArray)>0 ? implode (', ', $publishArray) : '<em>no federation yet</em>.';
+    print !empty($publishArray) ? implode (', ', $publishArray) : '<em>no federation yet</em>.';
     if ($oldEntitiesId > 0) { ?>
 
       </div>
@@ -1186,7 +1186,7 @@ function showMenu() {
     if ($config->getFederation()['mdsDbPath']) {
       printf('<a href="./mds.php" target="_blank"><button type="button" class="btn btn%s-primary">MDS</button></a>',
         HTML_OUTLINE);
-    };
+    }
   }
   if ( $userLevel > 10 ) {
     printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>',
