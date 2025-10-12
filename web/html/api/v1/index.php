@@ -19,4 +19,4 @@ while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
 $Obj = new \stdClass();
 $Obj->meta = $metaObj;
 $Obj->objects = $entityArray;
-print json_encode($Obj);
+print json_encode($Obj, JSON_UNESCAPED_SLASHES);
