@@ -45,7 +45,7 @@ function fetchJson() {
   global $config;
   $rcURL = $config->getFederation()['releaseCheckResultsURL'];
   if (!$rcURL) {
-    print("No release check test results URL configured, skipping test results download.\n");
+    print "No release check test results URL configured, skipping test results download.\n";
     return;
   }
   $ch = curl_init();

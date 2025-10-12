@@ -3402,7 +3402,7 @@ class MetadataDisplay extends Common {
   }
 
   /**
-   * Show List of IMPS:es
+   * Show List of OrganizationInfo:s
    *
    * @param $id Id of IMPS to expand
    *
@@ -3489,7 +3489,7 @@ class MetadataDisplay extends Common {
       if ($organization['notMemberAfter']) {
         printf('                  <li>notMemberAfter : %s</li>%s', $organization['notMemberAfter'], "\n");
       }
-      print('                  <li>');
+      print '                  <li>';
       if ($this->config->getIMPS()) {
         printf('IMPS:s
                     <ul>%s', "\n");
