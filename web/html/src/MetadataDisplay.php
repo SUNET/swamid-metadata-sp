@@ -191,13 +191,13 @@ class MetadataDisplay extends Common {
               $warnings .= sprintf(' at <a href="%s">Release-check</a>%s', $this->getReleaseCheckURL($tag), "\n");
             }
           }
-          // Error URLs
-          $urlHandler2->execute(array(self::BIND_ID => $entityId));
-          while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
-            if ($url['status'] > 0) {
-              $errors .= sprintf(self::HTML_SHOW_URL,
-                $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
-            }
+        }
+        // Error URLs
+        $urlHandler2->execute(array(self::BIND_ID => $entityId));
+        while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
+          if ($url['status'] > 0) {
+            $errors .= sprintf(self::HTML_SHOW_URL,
+              $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
           }
         }
 
