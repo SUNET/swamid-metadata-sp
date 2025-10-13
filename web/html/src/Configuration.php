@@ -88,6 +88,9 @@ class Configuration {
       'swamid_assurance', 'checkOrganization', 'cleanAttribuesFromIDPSSODescriptor',
       'releaseCheckResultsURL', 'mdqBaseURL');
 
+    $defaultValuesSmtp = array(
+      'fromName'    => 'Metadata - Admin',
+    );
     $defaultValuesFederation = array(
       'storeServiceInfo' => false,
     );
@@ -100,7 +103,7 @@ class Configuration {
     }
 
     $this->checkParams($db, $reqParamsDB, 'db');
-    $this->checkParams($smtp, $reqParamsSmtp, 'smtp');
+    $this->checkParams($smtp, $reqParamsSmtp, 'smtp', $defaultValuesSmtp);
 
     $this->checkParams($federation, $reqParamsFederation, 'federation', $defaultValuesFederation);
     if (! isset($federation['extend'])) {

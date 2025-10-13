@@ -763,7 +763,7 @@ function setupMail() {
   }
 
   //Recipients
-  $mailContacts->setFrom($config->getSmtp()['from'], 'Metadata - Admin');
+  $mailContacts->setFrom($config->getSmtp()['from'], $config->getSmtp()['fromName']);
   if ($config->getSMTP()['bcc']) {
     $mailContacts->addBCC($config->getSMTP()['bcc']);
   }
