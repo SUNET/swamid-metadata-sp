@@ -90,7 +90,7 @@ class Configuration {
 
     $defaultValuesFederation = array(
       'storeServiceInfo' => false,
-      'mdsDbPath' => __DIR__ . "/../MDS.db",
+      'mdsDbPath' => '',
     );
 
     foreach ($reqParams as $param) {
