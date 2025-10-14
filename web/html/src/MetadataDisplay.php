@@ -1894,8 +1894,8 @@ class MetadataDisplay extends Common {
         FROM `URLs` WHERE `URL` = :URL;');
       $urlHandler->bindValue(self::BIND_URL, $url);
       $urlHandler->execute();
-      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
-        FROM `EntityURLs`, `Entities` WHERE `entity_id` = `id` AND `URL` = :URL;');
+      $entityHandler = $this->config->getDb()->prepare('SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL;');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`

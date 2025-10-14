@@ -373,8 +373,8 @@ class Common {
       $missing = true;
       $coCoV1 = false;
       $logo = false;
-      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
-        FROM `EntityURLs`, `Entities` WHERE `entity_id` = `id` AND `URL` = :URL AND `status` < 4');
+      $entityHandler = $this->config->getDb()->prepare('SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL AND `Entities`.`status` < 4');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
