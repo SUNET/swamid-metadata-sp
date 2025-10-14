@@ -1951,7 +1951,7 @@ class MetadataDisplay extends Common {
       printf ('%s    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Part</th><th></tr>%s', self::HTML_TABLE_END, "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s',
+        printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
           $entity['entity_id'], htmlspecialchars($entity['entityID']), 'ErrorURL', "\n");
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
