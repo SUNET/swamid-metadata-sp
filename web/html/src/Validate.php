@@ -12,7 +12,14 @@ class Validate extends Common {
   protected $isSPandRandS = false;
   protected $isSPandCoCov1 = false;
   protected $isSPandCoCov2 = false;
+  /**
+   * Supports https://refeds.org/sirtfi
+   */
   protected $isSIRTFI = false;
+  /**
+   * Supports https://refeds.org/sirtfi2
+   */
+  protected $isSIRTFI2 = false;
 
   const TEXT_COCOV2_REQ = 'GÉANT Data Protection Code of Conduct (v2) Require';
 
@@ -44,6 +51,8 @@ class Validate extends Common {
 
     $this->getEntityAttributes();
 
+    $this->checkRequiredContactPersonElements();
+
     if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
@@ -64,15 +73,22 @@ class Validate extends Common {
     $this->isSPandCoCov1 = false;
     $this->isSPandCoCov2 = false;
     $this->isSIRTFI = false;
+    $this->isSIRTFI2 = false;
 
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
       FROM `EntityAttributes` WHERE `entity_id` = :Id');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->execute();
     while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($entityAttribute['attribute'] == 'https://refeds.org/sirtfi' &&
-        $entityAttribute['type'] == 'assurance-certification' ) {
-        $this->isSIRTFI = true;
+      if ($entityAttribute['type'] == 'assurance-certification') {
+        switch ($entityAttribute['attribute']) {
+          case 'https://refeds.org/sirtfi' :
+            $this->isSIRTFI = true;
+            break;
+          case 'https://refeds.org/sirtfi2' :
+            $this->isSIRTFI2 = true;
+            break;
+        }
       } elseif ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
         switch ($entityAttribute['attribute']) {
           case 'http://refeds.org/category/research-and-scholarship' : # NOSONAR Should be http://
@@ -87,6 +103,45 @@ class Validate extends Common {
           default:
         }
       }
+    }
+    if ($this->isSIRTFI2 && ! $this->isSIRTFI) {
+      $this->error .= "REFEDS Sirtfi2 Require support for REFEDS Sirtfi.\n";
+    }
+  }
+
+  /**
+   * Validate Required Contact Person Elements
+   *
+   * @return void
+   */
+  protected function checkRequiredContactPersonElements() {
+    $usedContactTypes = array();
+    $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
+      FROM `ContactPerson` WHERE `entity_id` = :Id');
+    $contactPersonHandler->bindValue(self::BIND_ID, $this->dbIdNr);
+    $contactPersonHandler->execute();
+
+    while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
+      $contactType = $contactPerson['contactType'];
+
+      // If a contactType other with remd:contactType http://refeds.org/metadata/contactType/securitythe element is present,
+      // a GivenName element MUST be present and the ContactPerson MUST
+      // respect the Traffic Light Protocol (TLP) during all incident response correspondence.
+      if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
+        $contactType = 'other/security';
+        if ( $contactPerson['givenName'] == '') {
+          $this->error .= "REFEDS Security Contact Metadata Extension Require that a GivenName element MUST be present for security ContactPerson.\n";
+        }
+        if ( $contactPerson['emailAddress'] == '') {
+          $this->error .= "REFEDS Security Contact Metadata Extension Require that a EmailAddress element MUST be present for security ContactPerson.\n";
+        }
+        $usedContactTypes[$contactType] = true;
+      }
+    }
+
+    // SIRTFI requires a Security contact
+    if (($this->isSIRTFI || $this->isSIRTFI2) && !isset ($usedContactTypes['other/security'])) {
+      $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
     }
   }
 

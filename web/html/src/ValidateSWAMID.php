@@ -753,7 +753,7 @@ class ValidateSWAMID extends Validate {
    *
    * @return void
    */
-  private function checkRequiredContactPersonElements() {
+  protected function checkRequiredContactPersonElements() {
     $usedContactTypes = array();
     $contactPersonHandler = $this->config->getDb()->prepare('SELECT `contactType`, `subcontactType`, `emailAddress`, `givenName`
       FROM `ContactPerson` WHERE `entity_id` = :Id');
@@ -814,7 +814,7 @@ class ValidateSWAMID extends Validate {
 
     // 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
     if (!isset ($usedContactTypes['other/security'])) {
-      if ($this->isSIRTFI) {
+      if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } else {
         $this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
