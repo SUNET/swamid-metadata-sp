@@ -9,8 +9,17 @@ use PDO;
 class Validate extends Common {
 
   # Setup
+  /**
+   * Requests https://refeds.org/category/research-and-scholarship
+   */
   protected $isSPandRandS = false;
+  /**
+   * Requests http://www.geant.net/uri/dataprotection-code-of-conduct/v1
+   */
   protected $isSPandCoCov1 = false;
+  /**
+   * Requests https://refeds.org/category/code-of-conduct/v2
+   */
   protected $isSPandCoCov2 = false;
   /**
    * Supports https://refeds.org/sirtfi
@@ -21,7 +30,10 @@ class Validate extends Common {
    */
   protected $isSIRTFI2 = false;
 
-  const TEXT_COCOV2_REQ = 'GÉANT Data Protection Code of Conduct (v2) Require';
+  const TEXT_COCOV1_REC = 'GÉANT Data Protection Code of Conduct v1 Recomend';
+  const TEXT_COCOV1_REQ = 'GÉANT Data Protection Code of Conduct v1 Require';
+  const TEXT_COCOV2_REC = 'REFEDS Data Protection Code of Conduct v2 Recommend';
+  const TEXT_COCOV2_REQ = 'REFEDS Data Protection Code of Conduct v2 Require';
 
   /**
    * Setup the class
@@ -188,6 +200,7 @@ class Validate extends Common {
    * Validate CoCoSP v1
    *
    * Validate that SP fulfills all rules for Coco v1
+   * - https://geant3plus.archive.geant.net/Pages/uri/V1.html
    *
    * @return void
    */
@@ -214,21 +227,21 @@ class Validate extends Common {
     }
 
     if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
-      $this->error .= 'GÉANT Data Protection Code of Conduct Require a';
-      $this->error .= " MDUI - PrivacyStatementURL with at least lang=en.\n";
+      $this->error .= self::TEXT_COCOV1_REQ;
+      $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['DisplayName'])) {
-      $this->warning .= 'GÉANT Data Protection Code of Conduct Recomend a';
-      $this->warning .= " MDUI - DisplayName with at least lang=en.\n";
+      $this->warning .= self::TEXT_COCOV1_REC;
+      $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['Description'])) {
-      $this->warning .= 'GÉANT Data Protection Code of Conduct Recomend a';
-      $this->warning .= " MDUI - Description with at least lang=en.\n";
+      $this->warning .= self::TEXT_COCOV1_REC;
+      $this->warning .= " a MDUI - Description with at least lang=en.\n";
     }
     foreach ($mduiElementArray as $element => $value) {
       if (! isset($mduiArray['en'][$element])) {
-        $this->error .= 'GÉANT Data Protection Code of Conduct Require a';
-        $this->error .= sprintf(" MDUI - %s with lang=en for all present elements.\n", $element);
+        $this->error .= self::TEXT_COCOV1_REQ;
+        $this->error .= sprintf(" a MDUI - %s with lang=en for all present elements.\n", $element);
       }
     }
     $requestedAttributeHandler->execute();
@@ -241,6 +254,7 @@ class Validate extends Common {
    * Validate CoCoSP v2
    *
    * Validate that SP fulfills all rules for Coco v2
+   * - https://refeds.org/category/code-of-conduct/v2
    *
    * @return void
    */
@@ -274,11 +288,11 @@ class Validate extends Common {
       $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['DisplayName'])) {
-      $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
+      $this->warning .= self::TEXT_COCOV2_REC;
       $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['Description'])) {
-      $this->warning .= 'GÉANT Data Protection Code of Conduct (v2) Recommend';
+      $this->warning .= self::TEXT_COCOV2_REC;
       $this->warning .= " a MDUI - Description with at least lang=en.\n";
     }
     foreach ($mduiElementArray as $element => $value) {
