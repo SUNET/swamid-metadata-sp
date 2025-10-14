@@ -377,6 +377,10 @@ class Common {
         FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL AND `Entities`.`status` < 4');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
+      $serviceInfoHandler = $this->config->getDb()->prepare('SELECT `ServiceInfo`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `ServiceInfo`, `Entities` WHERE `ServiceInfo`.`entity_id` = `Entities`.`id` AND `ServiceInfo`.`ServiceURL` = :URL AND `Entities`.`status` < 4');
+      $serviceInfoHandler->bindValue(self::BIND_URL, $url);
+      $serviceInfoHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
         FROM `Mdui`, `Entities` WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
@@ -388,6 +392,9 @@ class Common {
       $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
         FROM `EntityAttributes` WHERE `entity_id` = :Id AND type = 'entity-category'");
       if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
+        $missing = false;
+      }
+      if ($serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
         $missing = false;
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -733,6 +740,8 @@ class Common {
     $strSrvInfHandler->bindParam(':ServiceURL', $serviceURL);
     $strSrvInfHandler->bindParam(':enabled', $enabled);
     $strSrvInfHandler->execute();
+
+    $this->addURL($serviceURL, 1);
   }
 
   /**

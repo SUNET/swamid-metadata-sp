@@ -73,6 +73,10 @@ class MetadataDisplay extends Common {
         SELECT `status`, `URL`, `lastValidated`, `validationOutput`
         FROM `URLs`
         WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);");
+      $urlHandler4 = $this->config->getDb()->prepare("
+        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        FROM `URLs`
+        WHERE `URL` IN (SELECT `ServiceURL` FROM `ServiceInfo` WHERE `entity_id` = :Id);");
       $impsHandler = $this->config->getDb()->prepare(
         'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
           NOW() - INTERVAL 10 MONTH AS `warnDate`,
@@ -244,6 +248,14 @@ class MetadataDisplay extends Common {
       // OrganizationURL
       $urlHandler3->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
+        if ($url['status'] > 0) {
+          $errors .= sprintf(self::HTML_SHOW_URL,
+            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
+        }
+      }
+      // ServiceURL
+      $urlHandler4->execute(array(self::BIND_ID => $entityId));
+      while ($url = $urlHandler4->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0) {
           $errors .= sprintf(self::HTML_SHOW_URL,
             $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
@@ -1898,6 +1910,10 @@ class MetadataDisplay extends Common {
         FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL;');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
+      $serviceInfoHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
+        FROM `ServiceInfo`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `ServiceURL` = :URL;');
+      $serviceInfoHandler->bindValue(self::BIND_URL, $url);
+      $serviceInfoHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
         FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL;');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
@@ -1953,6 +1969,10 @@ class MetadataDisplay extends Common {
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
           $entity['entity_id'], htmlspecialchars($entity['entityID']), 'ErrorURL', "\n");
+      }
+      while ($serviceInfo = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
+          $serviceInfo['entity_id'], htmlspecialchars($serviceInfo['entityID']), 'URL for Service Catalog', "\n");
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         $ecInfo = '';
