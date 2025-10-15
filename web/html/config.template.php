@@ -124,6 +124,8 @@ $federation = array(
   'mdqBaseURL' => 'https://mds.swamid.se/entities/',
   # DB path to MDS DB
   'mdsDbPath' => __DIR__ . "/MDS.db",
+  # User Agent header value to use when validating URLs
+  'urlCheckUA' => 'https://metadata.swamid.se/validate',
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
