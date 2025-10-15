@@ -293,8 +293,15 @@ class Common {
             $updateArray[self::BIND_NOSIZE] = 1;
           } else {
             $size = getimagesizefromstring($output);
-            $updateArray[self::BIND_WIDTH] = $size[0];
-            $updateArray[self::BIND_HEIGHT] = $size[1];
+            if (is_array($size)) {
+              $updateArray[self::BIND_WIDTH] = $size[0];
+              $updateArray[self::BIND_HEIGHT] = $size[1];
+            } else {
+              $updateArray[self::BIND_RESULT] = "Invalid image content: cannot get image size.";
+              $updateArray[self::BIND_STATUS] = 2;
+              $updateArray[self::BIND_COCOV1STATUS] = 1;
+              break;
+            }
           }
         }
         if ($type == 3) {
