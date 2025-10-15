@@ -287,7 +287,7 @@ class Common {
     global $config;
     switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
       case 200 :
-        $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $verboseInfo .= 'OK : content-type = ' . htmlspecialchars(curl_getinfo($ch, CURLINFO_CONTENT_TYPE));
         if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
           if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
             $updateArray[self::BIND_NOSIZE] = 1;
