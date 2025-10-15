@@ -233,16 +233,25 @@ class Common {
         self::BIND_NOSIZE => 0
       );
 
-      curl_setopt($ch, CURLOPT_URL, $url['URL']);
-      $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
-      $output = curl_exec($ch);
-      if (curl_errno($ch)) {
-        $verboseInfo .= 'Curl error';
-        $updateArray[self::BIND_RESULT] = curl_error($ch);
+      // sanity check URL before passing to URL
+      $parsed_url = parse_url($url['URL']);
+      // guard against missing componets
+      if ($parsed_url && ($parsed_url['scheme'] ?? '') == 'https' && ($parsed_url['port'] ?? 443) == 443) {
+        curl_setopt($ch, CURLOPT_URL, $url['URL']);
+        $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
+        $output = curl_exec($ch);
+        if (curl_errno($ch)) {
+          $verboseInfo .= 'Curl error';
+          $updateArray[self::BIND_RESULT] = curl_error($ch);
+          $updateArray[self::BIND_STATUS] = 3;
+          $updateArray[self::BIND_COCOV1STATUS] = 1;
+        } else {
+          $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
+        }
+      } else { //invalid URL
+        $updateArray[self::BIND_RESULT] = 'Invalid URL';
         $updateArray[self::BIND_STATUS] = 3;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
-      } else {
-        $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
       }
       $this->checkURLStatus($url['URL'], $verbose);
       $urlUpdateHandler->execute($updateArray);
