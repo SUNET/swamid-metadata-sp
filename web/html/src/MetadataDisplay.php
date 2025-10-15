@@ -1143,10 +1143,14 @@ class MetadataDisplay extends Common {
               $statusIcon = '';
             } else {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
-              $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
-                $mdui['height'], $urlInfo['height']);
+              if ($urlInfo['height'] == 0) {
+                $statusText .= '<br><span class="text-danger">Image cannot be loaded from URL.</span>';
+              } else {
+                $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
+                  $mdui['height'], $urlInfo['height']);
+              }
             }
-            if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0) {
+            if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0 && $urlInfo['width'] != 0) {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
               $statusText .= sprintf('<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
                 $mdui['width'], $urlInfo['width']);
