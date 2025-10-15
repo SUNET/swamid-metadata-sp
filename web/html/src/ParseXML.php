@@ -913,15 +913,15 @@ class ParseXML extends Common {
             $urltype = 2;
             $this->addURL($value, $urltype);
             $element = substr($child->nodeName, 5);
-            $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-            $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
+            $height = $child->getAttribute('height') ? intval($child->getAttribute('height')) : 0;
+            $width = $child->getAttribute('width') ? intval($child->getAttribute('width')) : 0;
             $urlHandler->execute(array(self::BIND_URL => $value));
             if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
               if ($urlInfo['height'] != $height && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
                 if ($urlInfo['height'] == 0) {
                   $this->error .= sprintf(
                     "Logo (%dx%d) lang=%s Image can not be loaded from URL.\n",
-                    $height, $width, $lang, $height);
+                    $height, $width, $lang);
                 } else {
                   $this->error .= sprintf(
                     "Logo (%dx%d) lang=%s is marked with height %s in metadata but actual height is %d.\n",
