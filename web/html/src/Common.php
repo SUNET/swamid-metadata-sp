@@ -201,6 +201,7 @@ class Common {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_USERAGENT, $this->config->getFederation()['urlCheckUA']);
+    curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
