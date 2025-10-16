@@ -204,6 +204,7 @@ class Common {
     curl_setopt($ch, CURLOPT_PROTOCOLS, $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
 
     $allowed_schemes = $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
+    $default_ports = array( 'http' => 80, 'https' => 443);
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
@@ -239,8 +240,9 @@ class Common {
       $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
       // sanity check URL before passing to URL
       $parsed_url = parse_url($url['URL']);
+      $url_scheme = $parsed_url['scheme'] ?? '';
       // guard against missing componets
-      if ($parsed_url && in_array($parsed_url['scheme'] ?? '', $allowed_schemes) && ($parsed_url['port'] ?? 443) == 443) {
+      if ($parsed_url && in_array($url_scheme, $allowed_schemes) && ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]) {
         curl_setopt($ch, CURLOPT_URL, $url['URL']);
         $output = curl_exec($ch);
         if (curl_errno($ch)) {
