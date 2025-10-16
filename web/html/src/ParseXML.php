@@ -920,7 +920,7 @@ class ParseXML extends Common {
               if ($urlInfo['height'] != $height && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
                 if ($urlInfo['height'] == 0) {
                   $this->error .= sprintf(
-                    "Logo (%dx%d) lang=%s Image can not be loaded from URL.\n",
+                    "Logo (%dx%d) lang=%s Image cannot be loaded from URL.\n",
                     $height, $width, $lang);
                 } else {
                   $this->error .= sprintf(
