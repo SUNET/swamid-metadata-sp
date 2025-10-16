@@ -16,6 +16,7 @@ class ValidateSWAMID extends Validate {
   const TEXT_HTTPS = 'https://';
   const TEXT_521 = '5.2.1';
   const TEXT_621 = '6.2.1';
+  const CT_SECURITY = 'other/security';
 
   /**
    * Validate SAML
@@ -785,7 +786,7 @@ class ValidateSWAMID extends Validate {
       // If the element is present, a GivenName element MUST be present and the ContactPerson MUST
       //  respect the Traffic Light Protocol (TLP) during all incident response correspondence.
       if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
-        $contactType = 'other/security';
+        $contactType = self::CT_SECURITY;
         if ( $contactPerson['givenName'] == '') {
           $this->error .= $this->selectError('5.1.28', '6.1.27',
             'GivenName element MUST be present for security ContactPerson.');
@@ -831,7 +832,7 @@ class ValidateSWAMID extends Validate {
     }
 
     // 5.1.28 / 6.1.26 Identity Providers SHOULD have one ContactPerson element of contactType other
-    if (!isset ($usedContactTypes['other/security'])) {
+    if (!isset ($usedContactTypes[self::CT_SECURITY])) {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } else {
@@ -839,7 +840,7 @@ class ValidateSWAMID extends Validate {
         $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
-    } elseif ($contactEmail['support'] == $contactEmail['other/security']) {
+    } elseif ($contactEmail['support'] == $contactEmail[self::CT_SECURITY]) {
       $this->warning .= 'Swamid advises against using the same email address for both support and security contact, ';
       $this->warning .= "as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.\n";
     }

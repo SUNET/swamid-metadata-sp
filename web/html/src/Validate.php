@@ -100,6 +100,7 @@ class Validate extends Common {
           case 'https://refeds.org/sirtfi2' :
             $this->isSIRTFI2 = true;
             break;
+          default :
         }
       } elseif ($entityAttribute['type'] == 'entity-category' && $this->isSP) {
         switch ($entityAttribute['attribute']) {
@@ -112,7 +113,7 @@ class Validate extends Common {
           case 'https://refeds.org/category/code-of-conduct/v2' :
             $this->isSPandCoCov2 = true;
             break;
-          default:
+          default :
         }
       }
     }
