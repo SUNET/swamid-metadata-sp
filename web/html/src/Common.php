@@ -201,7 +201,9 @@ class Common {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_USERAGENT, $this->config->getFederation()['urlCheckUA']);
-    curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+    curl_setopt($ch, CURLOPT_PROTOCOLS, $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
+
+    $allowed_schemes = $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
@@ -238,7 +240,7 @@ class Common {
       // sanity check URL before passing to URL
       $parsed_url = parse_url($url['URL']);
       // guard against missing componets
-      if ($parsed_url && ($parsed_url['scheme'] ?? '') == 'https' && ($parsed_url['port'] ?? 443) == 443) {
+      if ($parsed_url && in_array($parsed_url['scheme'] ?? '', $allowed_schemes) && ($parsed_url['port'] ?? 443) == 443) {
         curl_setopt($ch, CURLOPT_URL, $url['URL']);
         $output = curl_exec($ch);
         if (curl_errno($ch)) {

@@ -128,6 +128,8 @@ $federation = array(
   'urlCheckUA' => 'https://metadata.swamid.se/validate',
   # Enable data: URLs (for logos)
   'urlCheckDataEnabled' => false,
+  # Permit plain HTTP URLs in URL validation
+  'urlCheckPlainHTTPEnabled' => false,
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',

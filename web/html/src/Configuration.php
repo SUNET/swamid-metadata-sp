@@ -93,6 +93,7 @@ class Configuration {
       'mdsDbPath' => '',
       'urlCheckUA' => 'https://metadata.swamid.se/validate',
       'urlCheckDataEnabled' => false,
+      'urlCheckPlainHTTPEnabled' => false,
     );
 
     foreach ($reqParams as $param) {
