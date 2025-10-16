@@ -132,7 +132,7 @@ class Common {
    * @param string $url URL that should be checked
    *
    * @param int $type
-   *  - 1 Check reachable (OK If reachable)
+   *  - 1 Check reachable (NEEDs to be reachable, data: URL is OK)
    *  - 2 Check reachable (NEED to be reachable)
    *  - 3 Check CoCo privacy
    *
@@ -200,7 +200,11 @@ class Common {
     curl_setopt($ch, CURLOPT_HEADER, 0);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'https://metadata.swamid.se/validate');
+    curl_setopt($ch, CURLOPT_USERAGENT, $this->config->getFederation()['urlCheckUA']);
+    curl_setopt($ch, CURLOPT_PROTOCOLS, $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
+
+    $allowed_schemes = $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
+    $default_ports = array( 'http' => 80, 'https' => 443);
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
@@ -233,16 +237,28 @@ class Common {
         self::BIND_NOSIZE => 0
       );
 
-      curl_setopt($ch, CURLOPT_URL, $url['URL']);
       $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
-      $output = curl_exec($ch);
-      if (curl_errno($ch)) {
-        $verboseInfo .= 'Curl error';
-        $updateArray[self::BIND_RESULT] = curl_error($ch);
+      // sanity check URL before passing to URL
+      $parsed_url = parse_url($url['URL']);
+      $url_scheme = $parsed_url['scheme'] ?? '';
+      // guard against missing componets
+      if ($parsed_url && in_array($url_scheme, $allowed_schemes) && ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]) {
+        curl_setopt($ch, CURLOPT_URL, $url['URL']);
+        $output = curl_exec($ch);
+        if (curl_errno($ch)) {
+          $verboseInfo .= 'Curl error';
+          $updateArray[self::BIND_RESULT] = curl_error($ch);
+          $updateArray[self::BIND_STATUS] = 3;
+          $updateArray[self::BIND_COCOV1STATUS] = 1;
+        } else {
+          $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
+        }
+      } elseif ($url['type'] == 1 && $this->config->getFederation()['urlCheckDataEnabled'] && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $url['URL'], $data_matches)) {
+         $this->checkDataURL($data_matches[1], $data_matches[2], $url['type'], $updateArray, $verboseInfo);
+      } else { //invalid URL
+        $updateArray[self::BIND_RESULT] = 'Invalid URL';
         $updateArray[self::BIND_STATUS] = 3;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
-      } else {
-        $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
       }
       $this->checkURLStatus($url['URL'], $verbose);
       $urlUpdateHandler->execute($updateArray);
@@ -277,14 +293,21 @@ class Common {
     global $config;
     switch ($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE)) {
       case 200 :
-        $verboseInfo .= 'OK : content-type = ' . curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $verboseInfo .= 'OK : content-type = ' . htmlspecialchars(curl_getinfo($ch, CURLINFO_CONTENT_TYPE));
         if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,6) == 'image/') {
           if (substr(curl_getinfo($ch, CURLINFO_CONTENT_TYPE),0,13) == 'image/svg+xml') {
             $updateArray[self::BIND_NOSIZE] = 1;
           } else {
             $size = getimagesizefromstring($output);
-            $updateArray[self::BIND_WIDTH] = $size[0];
-            $updateArray[self::BIND_HEIGHT] = $size[1];
+            if (is_array($size)) {
+              $updateArray[self::BIND_WIDTH] = $size[0];
+              $updateArray[self::BIND_HEIGHT] = $size[1];
+            } else {
+              $updateArray[self::BIND_RESULT] = "Invalid image content: cannot get image size.";
+              $updateArray[self::BIND_STATUS] = 2;
+              $updateArray[self::BIND_COCOV1STATUS] = 1;
+              break;
+            }
           }
         }
         if ($type == 3) {
@@ -325,6 +348,63 @@ class Common {
         $verboseInfo .= $http_code;
         $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from final URL %s. Can't handle :-(",
           $config->getFederation()['teamMail'], $http_code, curl_getinfo($ch, CURLINFO_EFFECTIVE_URL));
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+    }
+  }
+
+  /**
+   * Checks contents of a data URL
+   *
+   * @param string $media_type Media type of the data URL
+   *
+   * @param string $data Content of the data URL
+   *
+   * @param int $type Type of URL
+   *
+   * @param &$updateArray Array sent back to update DB
+   *
+   * @param bool &$verboseInfo Verbose info to be displayed
+   *
+   * @return void
+   */
+  private function checkDataURL($media_type, $data, $type, &$updateArray, &$verboseInfo) {
+
+    $valid = $media_type && $data && ($data_decoded=base64_decode($data));
+    if ($valid) {
+      $verboseInfo .= 'OK : content-type = ' . htmlspecialchars($media_type) . "<br>\n";
+      if (substr($media_type,0,6) == 'image/') {
+        if (substr($media_type,0,13) == 'image/svg+xml') {
+          $updateArray[self::BIND_NOSIZE] = 1;
+        } else {
+          $size = getimagesizefromstring(base64_decode($data));
+          if (is_array($size)) {
+            $updateArray[self::BIND_WIDTH] = $size[0];
+            $updateArray[self::BIND_HEIGHT] = $size[1];
+          } else {
+            $valid = false;
+            $verboseInfo .= "Invalid image content: cannot get image size.<br>\n";
+          }
+        }
+      }
+    };
+    if ($valid) {
+      if ($type == 3) {
+        $updateArray[self::BIND_RESULT] = 'Cannot use a <code>data:</code> URL for PrivacyStatementURL';
+        $updateArray[self::BIND_STATUS] = 1;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+      } else {
+        $updateArray[self::BIND_RESULT] = 'Reachable';
+        $updateArray[self::BIND_STATUS] = 0;
+        $updateArray[self::BIND_COCOV1STATUS] = 0;
+      }
+    } else {
+        $verboseInfo .= ($media_type ? sprintf("content-type = %s", htmlspecialchars($media_type)) : 'Missing content-type in <code>data:</code> URL') . "<br>\n";
+        $verboseInfo .= sprintf("encoded data size: %d<br>\n", strlen($data));
+        if (isset($data_decoded)) {
+          $verboseInfo .= sprintf("decoded data size: %d<br>\n", strlen($data_decoded));
+        }
+        $updateArray[self::BIND_RESULT] = "Invalid <code>data:</code> URL";
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
@@ -373,10 +453,14 @@ class Common {
       $missing = true;
       $coCoV1 = false;
       $logo = false;
-      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
-        FROM `EntityURLs`, `Entities` WHERE `entity_id` = `id` AND `URL` = :URL AND `status` < 4');
+      $entityHandler = $this->config->getDb()->prepare('SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL AND `Entities`.`status` < 4');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
+      $serviceInfoHandler = $this->config->getDb()->prepare('SELECT `ServiceInfo`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `ServiceInfo`, `Entities` WHERE `ServiceInfo`.`entity_id` = `Entities`.`id` AND `ServiceInfo`.`ServiceURL` = :URL AND `Entities`.`status` < 4');
+      $serviceInfoHandler->bindValue(self::BIND_URL, $url);
+      $serviceInfoHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
         FROM `Mdui`, `Entities` WHERE `Mdui`.`entity_id` = `Entities`.`id` AND `data` = :URL AND `status`< 4');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
@@ -388,6 +472,9 @@ class Common {
       $entityAttributesHandler = $this->config->getDb()->prepare("SELECT `attribute`
         FROM `EntityAttributes` WHERE `entity_id` = :Id AND type = 'entity-category'");
       if ($entityHandler->fetch(PDO::FETCH_ASSOC)) {
+        $missing = false;
+      }
+      if ($serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
         $missing = false;
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -733,6 +820,8 @@ class Common {
     $strSrvInfHandler->bindParam(':ServiceURL', $serviceURL);
     $strSrvInfHandler->bindParam(':enabled', $enabled);
     $strSrvInfHandler->execute();
+
+    $this->addURL($serviceURL, 2);
   }
 
   /**

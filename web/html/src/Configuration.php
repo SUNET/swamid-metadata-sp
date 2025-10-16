@@ -93,6 +93,10 @@ class Configuration {
     );
     $defaultValuesFederation = array(
       'storeServiceInfo' => false,
+      'mdsDbPath' => '',
+      'urlCheckUA' => 'https://metadata.swamid.se/validate',
+      'urlCheckDataEnabled' => false,
+      'urlCheckPlainHTTPEnabled' => false,
     );
 
     foreach ($reqParams as $param) {

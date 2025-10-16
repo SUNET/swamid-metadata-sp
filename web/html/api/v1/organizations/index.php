@@ -51,4 +51,4 @@ while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
 }
 $Obj = new \stdClass();
 $Obj->organizations = $orgsArray;
-print json_encode($Obj);
+print json_encode($Obj, JSON_UNESCAPED_SLASHES);

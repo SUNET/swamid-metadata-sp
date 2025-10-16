@@ -48,6 +48,7 @@ class Validate extends Common {
 
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
+    if ($this->isSP) { $this->validateSPServiceInfo(); }
     $this->saveResults();
   }
 
@@ -241,6 +242,23 @@ class Validate extends Common {
         $this->error .= self::TEXT_COCOV2_REQ;
         $this->error .= " at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
       }
+    }
+  }
+
+  /**
+   * Validate ServiceInfo.
+   *
+   * Records service URL to validate.
+   *
+   * @return void
+   */
+  protected function validateSPServiceInfo() {
+    $serviceURL = '';
+    $enabled = 0;
+    $this->getServiceInfo($this->dbIdNr, $serviceURL, $enabled);
+
+    if ($serviceURL) {
+      $this->addURL($serviceURL, 2);
     }
   }
 }

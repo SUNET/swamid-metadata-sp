@@ -70,7 +70,7 @@ function showEntityList($show) {
         WHERE `status` = 1 AND `isIdP` = 1 AND `entityID` LIKE :Query
         ORDER BY `entityID` ASC");
       showMenu('IdPs', $query);
-      $extraTH = sprintf('<th>AL1</th><th>AL2</th><th>AL3</th><th>SIRTFI</th><th>SIRTFI2</th><th>Hide</th>');
+      $extraTH = '<th>AL1</th><th>AL2</th><th>AL3</th><th>SIRTFI</th><th>SIRTFI2</th><th>Hide</th>';
       break;
     case 'SP' :
       $html->showHeaders('SP:s');

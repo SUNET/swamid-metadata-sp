@@ -123,6 +123,14 @@ $federation = array(
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
   # Base URL for MDQ - or empty string if not available
   'mdqBaseURL' => 'https://mds.swamid.se/entities/',
+  # DB path to MDS DB
+  'mdsDbPath' => __DIR__ . "/MDS.db",
+  # User Agent header value to use when validating URLs
+  'urlCheckUA' => 'https://metadata.swamid.se/validate',
+  # Enable data: URLs (for logos)
+  'urlCheckDataEnabled' => false,
+  # Permit plain HTTP URLs in URL validation
+  'urlCheckPlainHTTPEnabled' => false,
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
