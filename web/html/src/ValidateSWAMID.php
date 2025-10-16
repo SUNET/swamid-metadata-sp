@@ -84,8 +84,25 @@ class ValidateSWAMID extends Validate {
 
     if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
-    if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
-    if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
+    if ($this->isSPandCoCov1) {
+      if (! $this->isSPandCoCov2) {
+        $this->warning .= 'The GEANT Data Protection Code of Conduct version 1.0 is now deprecated. ';
+        $this->warning .= 'It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0, which reflects updated legislation, practices and standards. ';
+        $this->warning .= "However, version 1.0 may still be retained temporarily to ensure backward compatibility during the transition period.\n";
+      }
+      $this->validateSPCoCov1();
+    }
+    if ($this->isSPandCoCov2) {
+      if (! $this->isSIRTFI) {
+        $this->warning .= self::TEXT_COCOV2_REQ;
+        $this->warning .= "s in appendix 1 section G that SIRTFI is used to manage security incidents.\n";
+      }
+      $this->validateSPCoCov2();
+    }
+    if (! $this->isSIRTFI2) {
+      $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';
+      $this->warning .= "the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
+    }
     $this->saveResults();
   }
 
@@ -790,6 +807,7 @@ class ValidateSWAMID extends Validate {
       } else {
         $usedContactTypes[$contactType] = true;
       }
+      $contactEmail[$contactType] = $contactPerson['emailAddress'];
     }
 
     // 5.1.25/6.1.24 Identity Providers MUST have one ContactPerson element of type administrative.
@@ -818,7 +836,12 @@ class ValidateSWAMID extends Validate {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } else {
         $this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
+        $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
+        $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
+    } elseif ($contactEmail['support'] == $contactEmail['other/security']) {
+      $this->warning .= 'Swamid advises against using the same email address for both support and security contact, ';
+      $this->warning .= "as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.\n";
     }
   }
 
