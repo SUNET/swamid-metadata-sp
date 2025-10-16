@@ -285,27 +285,32 @@ class MetadataDisplay extends Common {
       $errors .= $entity['errors'] . $entity['errorsNB'];
       if ($errors != '') {
         printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
-        <b>Errors:</b><br>
-        %s%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "<br>", $errors), "\n", "\n");
+        <b>Errors:</b>
+        <ul>
+          <li>%s</li>
+        </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($errors)), "\n", "\n");
       }
       $warnings .= $entity['warnings'];
       if ( $warnings != '') {
         printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">
-        <b>Warnings:</b><br>
-        %s%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "<br>", $warnings), "\n", "\n");
+        <b>Warnings:</b>
+        <ul>
+          <li>%s</li>
+        </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($warnings)), "\n", "\n");
       }
 
       if ($entity['isAA']) {
         $notice .= 'The AttributeAuthority is a part of the Identity Provider and follow the same rules for SWAMID Tech 5.1.21 and 5.2.x.<br>';
-        $notice .= 'If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.<br>';
+        $notice .= "If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.\n";
       }
       if ($entity['validationOutput'] != '') {
         $notice .= $entity['validationOutput'];
       }
       if ($notice != '') {
         printf('%s    <div class="row alert alert-primary" role="alert">%s      <div class="col">
-        <b>Notice:</b><br>
-        %s%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "<br>", $notice), "\n", "\n");
+        <b>Notice:</b><ul>
+          <li>%s</li>
+        </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($notice)), "\n", "\n");
       }
 
       if ($admin && $entity['status'] < 4) {
