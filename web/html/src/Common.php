@@ -234,12 +234,12 @@ class Common {
         self::BIND_NOSIZE => 0
       );
 
+      $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
       // sanity check URL before passing to URL
       $parsed_url = parse_url($url['URL']);
       // guard against missing componets
       if ($parsed_url && ($parsed_url['scheme'] ?? '') == 'https' && ($parsed_url['port'] ?? 443) == 443) {
         curl_setopt($ch, CURLOPT_URL, $url['URL']);
-        $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
         $output = curl_exec($ch);
         if (curl_errno($ch)) {
           $verboseInfo .= 'Curl error';
