@@ -249,6 +249,8 @@ class Common {
         } else {
           $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
         }
+      } elseif ($this->config->getFederation()['urlCheckDataEnabled'] && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $url['URL'], $data_matches)) {
+         $this->checkDataURL($data_matches[1], $data_matches[2], $url['type'], $updateArray, $verboseInfo);
       } else { //invalid URL
         $updateArray[self::BIND_RESULT] = 'Invalid URL';
         $updateArray[self::BIND_STATUS] = 3;
@@ -342,6 +344,63 @@ class Common {
         $verboseInfo .= $http_code;
         $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from final URL %s. Can't handle :-(",
           $config->getFederation()['teamMail'], $http_code, curl_getinfo($ch, CURLINFO_EFFECTIVE_URL));
+        $updateArray[self::BIND_STATUS] = 2;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+    }
+  }
+
+  /**
+   * Checks contents of a data URL
+   *
+   * @param string $media_type Media type of the data URL
+   *
+   * @param string $data Content of the data URL
+   *
+   * @param int $type Type of URL
+   *
+   * @param &$updateArray Array sent back to update DB
+   *
+   * @param bool &$verboseInfo Verbose info to be displayed
+   *
+   * @return void
+   */
+  private function checkDataURL($media_type, $data, $type, &$updateArray, &$verboseInfo) {
+
+    $valid = $media_type && $data && ($data_decoded=base64_decode($data));
+    if ($valid) {
+      $verboseInfo .= 'OK : content-type = ' . htmlspecialchars($media_type) . "<br>\n";
+      if (substr($media_type,0,6) == 'image/') {
+        if (substr($media_type,0,13) == 'image/svg+xml') {
+          $updateArray[self::BIND_NOSIZE] = 1;
+        } else {
+          $size = getimagesizefromstring(base64_decode($data));
+          if (is_array($size)) {
+            $updateArray[self::BIND_WIDTH] = $size[0];
+            $updateArray[self::BIND_HEIGHT] = $size[1];
+          } else {
+            $valid = false;
+            $verboseInfo .= "Invalid image content: cannot get image size.<br>\n";
+          }
+        }
+      }
+    };
+    if ($valid) {
+      if ($type == 3) {
+        $updateArray[self::BIND_RESULT] = 'Cannot use a <code>data:</code> URL for PrivacyStatementURL';
+        $updateArray[self::BIND_STATUS] = 1;
+        $updateArray[self::BIND_COCOV1STATUS] = 1;
+      } else {
+        $updateArray[self::BIND_RESULT] = 'Reachable';
+        $updateArray[self::BIND_STATUS] = 0;
+        $updateArray[self::BIND_COCOV1STATUS] = 0;
+      }
+    } else {
+        $verboseInfo .= ($media_type ? sprintf("content-type = %s", htmlspecialchars($media_type)) : 'Missing content-type in <code>data:</code> URL') . "<br>\n";
+        $verboseInfo .= sprintf("encoded data size: %d<br>\n", strlen($data));
+        if (isset($data_decoded)) {
+          $verboseInfo .= sprintf("decoded data size: %d<br>\n", strlen($data_decoded));
+        }
+        $updateArray[self::BIND_RESULT] = "Invalid <code>data:</code> URL";
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
