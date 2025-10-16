@@ -132,7 +132,7 @@ class Common {
    * @param string $url URL that should be checked
    *
    * @param int $type
-   *  - 1 Check reachable (OK If reachable)
+   *  - 1 Check reachable (NEEDs to be reachable, data: URL is OK)
    *  - 2 Check reachable (NEED to be reachable)
    *  - 3 Check CoCo privacy
    *
@@ -249,7 +249,7 @@ class Common {
         } else {
           $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
         }
-      } elseif ($this->config->getFederation()['urlCheckDataEnabled'] && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $url['URL'], $data_matches)) {
+      } elseif ($url['type'] == 1 && $this->config->getFederation()['urlCheckDataEnabled'] && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $url['URL'], $data_matches)) {
          $this->checkDataURL($data_matches[1], $data_matches[2], $url['type'], $updateArray, $verboseInfo);
       } else { //invalid URL
         $updateArray[self::BIND_RESULT] = 'Invalid URL';
@@ -817,7 +817,7 @@ class Common {
     $strSrvInfHandler->bindParam(':enabled', $enabled);
     $strSrvInfHandler->execute();
 
-    $this->addURL($serviceURL, 1);
+    $this->addURL($serviceURL, 2);
   }
 
   /**

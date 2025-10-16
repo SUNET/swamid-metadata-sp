@@ -258,7 +258,7 @@ class Validate extends Common {
     $this->getServiceInfo($this->dbIdNr, $serviceURL, $enabled);
 
     if ($serviceURL) {
-      $this->addURL($serviceURL, 1);
+      $this->addURL($serviceURL, 2);
     }
   }
 }

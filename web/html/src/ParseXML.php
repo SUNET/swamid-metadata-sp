@@ -136,7 +136,7 @@ class ParseXML extends Common {
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->bindValue(self::BIND_TYPE, $type);
     $urlHandler->execute();
-    $this->addURL($url, 1);
+    $this->addURL($url, 2);
   }
 
   /**
@@ -734,7 +734,7 @@ class ParseXML extends Common {
       $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : ''; #NOSONAR Used in Bind above
       switch ($child->nodeName) {
         case self::SAML_MD_ORGANIZATIONURL :
-          $this->addURL(trim($child->textContent), 1);
+          $this->addURL(trim($child->textContent), 2);
           $element = substr($child->nodeName, 3); #NOSONAR Used in Bind above
           break;
         case self::SAML_MD_EXTENSIONS :
@@ -906,11 +906,11 @@ class ParseXML extends Common {
         $width = 0;
         $lang = $child->getAttribute('xml:lang') ?
           $child->getAttribute('xml:lang') : '';
-        $urltype = 1;
+        $urltype = 2;
         $value = trim($child->textContent);
         switch ($child->nodeName) {
           case self::SAML_MDUI_LOGO :
-            $urltype = 2;
+            $urltype = 1;
             $this->addURL($value, $urltype);
             $element = substr($child->nodeName, 5);
             $height = $child->getAttribute('height') ? intval($child->getAttribute('height')) : 0;
