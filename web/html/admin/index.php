@@ -1242,7 +1242,7 @@ function move2Pending($entitiesId) {
           $errors .= "Missing where to publish Metadata.\n";
           $publish = false;
         }
-        if (!isset($_GET['OrganisationOK'])) {
+        if (!isset($_POST['OrganisationOK'])) {
           $errors .= sprintf(HTML_TEXT_YMFS,
             $sections, $federation['rulesName'], "\n");
           $publish = false;
@@ -1419,7 +1419,7 @@ function move2Pending($entitiesId) {
           $oldPublishedValue = $draftMetadata->isIdP() ? 7 : 3;
         }
         printf('    <h5>The entity should be published in:</h5>
-    <form>
+    <form action="." method="POST">
       <input type="hidden" name="move2Pending" value="%d">%s',
           $entitiesId,"\n");
         if ($config->getMode() == 'QA') {
