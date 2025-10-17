@@ -1880,7 +1880,7 @@ function move2Draft($entitiesId) {
   $entityHandler->bindParam(':Id', $entitiesId);
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $draftMetadata = new \metadata\Metadata($entity['entityID'], 'New');
       $draftMetadata->importXML($entity['xml']);
 
@@ -1903,7 +1903,7 @@ function move2Draft($entitiesId) {
       $menuActive = 'wait';
       showMenu();
       printf('%s    <p>You are about to cancel your request for publication of <b>%s</b></p>', "\n", htmlspecialchars($entity['entityID']));
-      printf('    <form>
+      printf('    <form action="." method="POST">
       <input type="hidden" name="move2Draft" value="%d">
       <input type="submit" name="action" value="Confirm cancel publication request">
     </form>
