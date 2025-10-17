@@ -1487,8 +1487,8 @@ function annualConfirmation($entitiesId){
     # Entity is Published
     $errors = getErrors($entitiesId);
     $user_id = $metadata->getUserId($EPPN);
-    if (isset ($_GET['user_id']) && ($user_id <> $_GET['user_id'] || $userLevel > 19) && $metadata->isResponsible()) {
-      $metadata->removeAccessFromEntity($_GET['user_id']);
+    if (isset ($_POST['user_id']) && ($user_id <> $_POST['user_id'] || $userLevel > 19) && $metadata->isResponsible()) {
+      $metadata->removeAccessFromEntity($_POST['user_id']);
     }
     if ($errors == '') {
       if ($metadata->isResponsible()) {
@@ -1562,8 +1562,8 @@ function annualConfirmation($entitiesId){
       printf('    <br><br><h5>The following have admin-access to this entity</h5><ul>%s', "\n");
       foreach ($metadata->getResponsibles() as $user) {
         $delete = ($user_id == $user['id'] && $userLevel < 20) ? '' :
-          sprintf('<a href="?action=Annual+Confirmation&Entity=%d&user_id=%d"><i class="fas fa-trash"></i></a>',
-            $entitiesId, $user['id']);
+          sprintf('<form action="." method="POST" name="removeEditor%d" style="display: inline;"><input type="hidden" name="action" value="Annual Confirmation"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="user_id" value="%d">    <a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>',
+            $user['id'], $entitiesId, $user['id'], $user['id'], $user['id']);
         printf ('      <li>%s%s (%s)</li>%s', $delete, $user['fullName'], $user['userID'], "\n");
       }
     }
