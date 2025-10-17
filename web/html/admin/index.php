@@ -240,10 +240,10 @@ if (isset($_FILES['XMLfile'])) {
   showHelp();
 } else {
   $menuActive = 'publ';
-  if (isset($_GET['action'])) {
-    if (isset($_GET['Entity'])) {
-      $entitiesId = $_GET['Entity'];
-      switch($_GET['action']) {
+  if (isset($_REQUEST['action'])) {
+    if (isset($_REQUEST['Entity'])) {
+      $entitiesId = $_REQUEST['Entity'];
+      switch($_REQUEST['action']) {
         case 'createDraft' :
           $menuActive = 'new';
           $metadata = new \metadata\Metadata($entitiesId);
