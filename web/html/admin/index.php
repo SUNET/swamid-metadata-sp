@@ -1955,12 +1955,12 @@ function removeEntity($entitiesId) {
     }
     showMenu();
     if ($ok2Remove) {
-      if (isset($_GET['action']) && $_GET['action'] == $button ) {
+      if (isset($_POST['action']) && $_POST['action'] == $button ) {
         $metadata = new \metadata\Metadata($entitiesId);
         $metadata->removeEntity();
         printf('    <p>You have removed <b>%s</b> from %s</p>%s', htmlspecialchars($entity['entityID']), $from, "\n");
       } else {
-        printf('    <p>You are about to %s of <b>%s</b></p>%s    <form>%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $action, htmlspecialchars($entity['entityID']), "\n", "\n", $entitiesId, "\n", $button, "\n", "\n",  $entitiesId);
+        printf('    <p>You are about to %s of <b>%s</b></p>%s    <form action="." method="POST">%s      <input type="hidden" name="removeEntity" value="%d">%s      <input type="submit" name="action" value="%s">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', $action, htmlspecialchars($entity['entityID']), "\n", "\n", $entitiesId, "\n", $button, "\n", "\n",  $entitiesId);
       }
     } else {
       print "You can't Remove / Discard this entity";
