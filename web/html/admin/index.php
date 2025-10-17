@@ -192,51 +192,51 @@ $display = new \metadata\MetadataDisplay();
 
 if (isset($_FILES['XMLfile'])) {
   importXML();
-} elseif (isset($_GET['edit'])) {
-  if (isset($_GET['Entity']) && (isset($_GET['oldEntity']))) {
-    $editMeta = new \metadata\MetadataEdit($_GET['Entity'], $_GET['oldEntity']);
+} elseif (isset($_REQUEST['edit'])) {
+  if (isset($_REQUEST['Entity']) && (isset($_REQUEST['oldEntity']))) {
+    $editMeta = new \metadata\MetadataEdit($_REQUEST['Entity'], $_REQUEST['oldEntity']);
     $editMeta->updateUser($EPPN, $mail, $fullName);
-    if (checkAccess($_GET['Entity'], $EPPN, $userLevel, 10, true)) {
-      $html->showHeaders('Edit - '.$_GET['edit']);
-      $editMeta->edit($_GET['edit']);
+    if (checkAccess($_REQUEST['Entity'], $EPPN, $userLevel, 10, true)) {
+      $html->showHeaders('Edit - '.$_REQUEST['edit']);
+      $editMeta->edit($_REQUEST['edit']);
     }
   } else {
     showEntityList();
   }
-} elseif (isset($_GET['showEntity'])) {
-  showEntity($_GET['showEntity']);
-} elseif (isset($_GET['validateEntity'])) {
-  validateEntity($_GET['validateEntity']);
-  showEntity($_GET['validateEntity']);
-} elseif (isset($_GET['move2Pending'])) {
-  if (checkAccess($_GET['move2Pending'], $EPPN, $userLevel, 10, true)) {
-    move2Pending($_GET['move2Pending']);
+} elseif (isset($_REQUEST['showEntity'])) {
+  showEntity($_REQUEST['showEntity']);
+} elseif (isset($_REQUEST['validateEntity'])) {
+  validateEntity($_REQUEST['validateEntity']);
+  showEntity($_REQUEST['validateEntity']);
+} elseif (isset($_REQUEST['move2Pending'])) {
+  if (checkAccess($_REQUEST['move2Pending'], $EPPN, $userLevel, 10, true)) {
+    move2Pending($_REQUEST['move2Pending']);
   }
-} elseif (isset($_GET['move2Draft'])) {
-  if (checkAccess($_GET['move2Draft'], $EPPN, $userLevel, 10, true)) {
-    move2Draft($_GET['move2Draft']);
+} elseif (isset($_REQUEST['move2Draft'])) {
+  if (checkAccess($_REQUEST['move2Draft'], $EPPN, $userLevel, 10, true)) {
+    move2Draft($_REQUEST['move2Draft']);
   }
-} elseif (isset($_GET['mergeEntity'])) {
-  if (checkAccess($_GET['mergeEntity'],$EPPN,$userLevel,10,true)) {
-    if (isset($_GET['oldEntity'])) {
-      mergeEntity($_GET['mergeEntity'], $_GET['oldEntity']);
-      validateEntity($_GET['mergeEntity']);
+} elseif (isset($_REQUEST['mergeEntity'])) {
+  if (checkAccess($_REQUEST['mergeEntity'],$EPPN,$userLevel,10,true)) {
+    if (isset($_REQUEST['oldEntity'])) {
+      mergeEntity($_REQUEST['mergeEntity'], $_REQUEST['oldEntity']);
+      validateEntity($_REQUEST['mergeEntity']);
     }
-    showEntity($_GET['mergeEntity']);
+    showEntity($_REQUEST['mergeEntity']);
   }
-} elseif (isset($_GET['removeEntity'])) {
-  if (checkAccess($_GET['removeEntity'],$EPPN,$userLevel,10, true)) {
-    removeEntity($_GET['removeEntity']);
+} elseif (isset($_REQUEST['removeEntity'])) {
+  if (checkAccess($_REQUEST['removeEntity'],$EPPN,$userLevel,10, true)) {
+    removeEntity($_REQUEST['removeEntity']);
   }
-} elseif (isset($_GET['removeSSO']) && isset($_GET['type'])) {
-  if (checkAccess($_GET['removeSSO'],$EPPN,$userLevel,10, true)) {
-    removeSSO($_GET['removeSSO'], $_GET['type']);
+} elseif (isset($_REQUEST['removeSSO']) && isset($_REQUEST['type'])) {
+  if (checkAccess($_REQUEST['removeSSO'],$EPPN,$userLevel,10, true)) {
+    removeSSO($_REQUEST['removeSSO'], $_REQUEST['type']);
   }
-} elseif (isset($_GET['rawXML'])) {
-  $display->showRawXML($_GET['rawXML']);
-} elseif (isset(($_GET['approveAccessRequest']))) {
-  approveAccessRequest($_GET['approveAccessRequest']);
-} elseif (isset($_GET['showHelp'])) {
+} elseif (isset($_REQUEST['rawXML'])) {
+  $display->showRawXML($_REQUEST['rawXML']);
+} elseif (isset(($_REQUEST['approveAccessRequest']))) {
+  approveAccessRequest($_REQUEST['approveAccessRequest']);
+} elseif (isset($_REQUEST['showHelp'])) {
   showHelp();
 } else {
   $menuActive = 'publ';
@@ -340,9 +340,9 @@ if (isset($_FILES['XMLfile'])) {
           showEntity($entitiesId);
           break;
         case 'AddImps2IdP' :
-          if ($userLevel > 19 && isset($_GET['ImpsId'])) {
+          if ($userLevel > 19 && isset($_REQUEST['ImpsId'])) {
             $imps = new \metadata\IMPS();
-            $imps->bindIdP2IMPS($entitiesId, $_GET['ImpsId']);
+            $imps->bindIdP2IMPS($entitiesId, $_REQUEST['ImpsId']);
           }
           $metadata = new \metadata\Metadata($entitiesId);
           showEntity($entitiesId);
@@ -356,7 +356,7 @@ if (isset($_FILES['XMLfile'])) {
               $menuActive = 'publ';
               showMenu();
               $imps = new \metadata\IMPS();
-              if ($imps->validateIMPS($entitiesId, $_GET['ImpsId'], $metadata->getUserId($EPPN))) {
+              if ($imps->validateIMPS($entitiesId, $_REQUEST['ImpsId'], $metadata->getUserId($EPPN))) {
                 showEntity($entitiesId, false);
               }
             } else {
@@ -372,11 +372,11 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'addOrganization2Entity' :
           if (checkAccess($entitiesId, $EPPN, $userLevel, 10, false)) {
-            if (isset($_GET['organizationId'])) {
+            if (isset($_REQUEST['organizationId'])) {
               $updateEntitiesHandler = $config->getDb()->prepare( $userLevel > 19
               ? 'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id;'
               : 'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id AND status = 3;');
-              $updateEntitiesHandler->execute(array('OrgId' => $_GET['organizationId'], 'Id' => $entitiesId));
+              $updateEntitiesHandler->execute(array('OrgId' => $_REQUEST['organizationId'], 'Id' => $entitiesId));
             }
             showEntity($entitiesId);
           }
@@ -397,12 +397,12 @@ if (isset($_FILES['XMLfile'])) {
           break;
         default :
           if ($userLevel > 19) {
-            printf ('Missing action : %s', urlencode($_GET['action']));
+            printf ('Unknown action : %s', urlencode($_REQUEST['action']));
             exit;
           }
       }
     } else {
-      switch($_GET['action']) {
+      switch($_REQUEST['action']) {
         case 'new' :
           $menuActive = 'new';
           showEntityList(3);
@@ -445,12 +445,12 @@ if (isset($_FILES['XMLfile'])) {
           $menuActive = '';
           $html->showHeaders('URL status');
           showMenu();
-          if (isset($_GET['URL'])) {
-            if (isset($_GET['recheck'])) {
+          if (isset($_REQUEST['URL'])) {
+            if (isset($_REQUEST['recheck'])) {
               $common = new \metadata\Common();
-              $common->revalidateURL($_GET['URL'], isset($_GET['verbose']));
+              $common->revalidateURL($_REQUEST['URL'], isset($_REQUEST['verbose']));
             }
-            $display->showURLStatus($_GET['URL']);
+            $display->showURLStatus($_REQUEST['URL']);
           }
           break;
         case 'URLlist' :
@@ -458,12 +458,12 @@ if (isset($_FILES['XMLfile'])) {
             $menuActive = 'URLlist';
             $html->showHeaders('URL status');
             showMenu();
-            if (isset($_GET['URL'])) {
-              if (isset($_GET['recheck'])) {
+            if (isset($_REQUEST['URL'])) {
+              if (isset($_REQUEST['recheck'])) {
                 $common = new \metadata\Common();
-                $common->revalidateURL($_GET['URL'], isset($_GET['verbose']));
+                $common->revalidateURL($_REQUEST['URL'], isset($_REQUEST['verbose']));
               }
-              $display->showURLStatus($_GET['URL']);
+              $display->showURLStatus($_REQUEST['URL']);
             } else {
               $display->showURLStatus();
             }
@@ -496,8 +496,8 @@ if (isset($_FILES['XMLfile'])) {
           $menuActive = 'CleanPending';
           $html->showHeaders('Clean Pending');
           showMenu();
-          if (isset($_GET['entity_id1']) && isset($_GET['entity_id2'])) {
-            $display->showXMLDiff($_GET['entity_id1'], $_GET['entity_id2']);
+          if (isset($_REQUEST['entity_id1']) && isset($_REQUEST['entity_id2'])) {
+            $display->showXMLDiff($_REQUEST['entity_id1'], $_REQUEST['entity_id2']);
           }
           $display->showPendingList();
           break;
@@ -513,39 +513,39 @@ if (isset($_FILES['XMLfile'])) {
           $menuActive = 'Members';
           $html->showHeaders('Show Member Information');
           showMenu();
-          if (isset($_GET['subAction']) && isset($_GET['id']) && $userLevel > 10) {
+          if (isset($_REQUEST['subAction']) && isset($_REQUEST['id']) && $userLevel > 10) {
             $imps = new \metadata\IMPS();
-            switch ($_GET['subAction']) {
+            switch ($_REQUEST['subAction']) {
               case 'editImps' :
-                $imps->editIMPS($_GET['id']);
+                $imps->editIMPS($_REQUEST['id']);
                 break;
               case 'saveImps' :
-                if ($imps->saveImps($_GET['id'])) {
+                if ($imps->saveImps($_REQUEST['id'])) {
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 } else {
-                  $imps->editIMPS($_GET['id']);
+                  $imps->editIMPS($_REQUEST['id']);
                 }
                 break;
               case 'removeImps' :
-                if ($imps->removeImps($_GET['id'])) {
+                if ($imps->removeImps($_REQUEST['id'])) {
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 }
                 break;
               case 'editOrganization' :
-                $imps->editOrganization($_GET['id']);
+                $imps->editOrganization($_REQUEST['id']);
                 break;
               case 'saveOrganization' :
-                if ($imps->saveOrganization($_GET['id'])) {
+                if ($imps->saveOrganization($_REQUEST['id'])) {
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 } else {
-                  $imps->editOrganization($_GET['id']);
+                  $imps->editOrganization($_REQUEST['id']);
                 }
                 break;
               case 'removeOrganization':
-                if ($imps->removeOrganization($_GET['id'])) {
+                if ($imps->removeOrganization($_REQUEST['id'])) {
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 }
@@ -585,27 +585,27 @@ function showEntityList($status = 1) {
   $entityIDArrow = '';
   $warningArrow = '';
   $errorArrow = '';
-  if (isset($_GET['feedDesc'])) {
+  if (isset($_REQUEST['feedDesc'])) {
     $sortOrder = '`publishIn` DESC, `entityID`';
     $feedOrder = 'feedAsc';
     $feedArrow = HTML_CLASS_FA_UP;
-  } elseif (isset($_GET['feedAsc'])) {
+  } elseif (isset($_REQUEST['feedAsc'])) {
     $sortOrder = '`publishIn` ASC, `entityID`';
     $feedArrow = HTML_CLASS_FA_DOWN;
-  } elseif (isset($_GET['orgDesc'])) {
+  } elseif (isset($_REQUEST['orgDesc'])) {
     $sortOrder = '`OrganizationName` DESC, `entityID`';
     $orgArrow = HTML_CLASS_FA_UP;
-  } elseif (isset($_GET['orgAsc'])) {
+  } elseif (isset($_REQUEST['orgAsc'])) {
     $sortOrder = '`OrganizationName` ASC, `entityID`';
     $orgOrder = 'orgDesc';
     $orgArrow = HTML_CLASS_FA_DOWN;
-  } elseif (isset($_GET['warnings'])) {
+  } elseif (isset($_REQUEST['warnings'])) {
     $sortOrder = '`warnings` DESC, `errors` DESC, `errorsNB` DESC, `entityID`, `id`';
     $warningArrow = HTML_CLASS_FA_DOWN;
-  } elseif (isset($_GET['errors'])) {
+  } elseif (isset($_REQUEST['errors'])) {
     $sortOrder = '`errors` DESC, `errorsNB` DESC, `warnings` DESC, `entityID`, `id`';
     $errorArrow = HTML_CLASS_FA_DOWN;
-  } elseif (isset($_GET['entityIDDesc'])) {
+  } elseif (isset($_REQUEST['entityIDDesc'])) {
     $sortOrder = '`entityID` DESC';
     $entityIDOrder = 'entityIDAsc';
     $entityIDArrow = HTML_CLASS_FA_UP;
@@ -615,8 +615,8 @@ function showEntityList($status = 1) {
     $entityIDArrow = HTML_CLASS_FA_DOWN;
   }
 
-  if (isset($_GET['query'])) {
-    $query = $_GET['query'];
+  if (isset($_REQUEST['query'])) {
+    $query = $_REQUEST['query'];
   } else {
      $query = '';
   }
@@ -983,14 +983,14 @@ function showMyEntities() {
     printf ('        <a href=".?action=myEntities&showMy">
           <button type="button" class="btn btn%s-success">Show My</button>
         </a>%s',
-      isset($_GET['showMy']) ? '' : HTML_OUTLINE, "\n");
+      isset($_REQUEST['showMy']) ? '' : HTML_OUTLINE, "\n");
     printf ('        <a href=".?action=myEntities&showPub">
           <button type="button" class="btn btn%s-success">Show Published</button>
         </a>%s',
-      isset($_GET['showPub']) ? '' : HTML_OUTLINE, "\n");
+      isset($_REQUEST['showPub']) ? '' : HTML_OUTLINE, "\n");
     printf ('      </div>%s    </div>%s', "\n", "\n");
     }
-  if (isset($_GET['showPub']) && $userLevel > 9) {
+  if (isset($_REQUEST['showPub']) && $userLevel > 9) {
     $entitiesHandler = $config->getDb()->prepare("SELECT Entities.`id`, `entityID`, `errors`, `errorsNB`, `warnings`, `status`
       FROM Entities WHERE `status` = 1 AND publishIn > 1 ORDER BY `entityID`");
   } else {
@@ -1153,8 +1153,8 @@ function removeSSO($entitiesId, $type) {
 function showMenu() {
   global $userLevel, $menuActive, $config;
   $filter='';
-  if (isset($_GET['query'])) {
-    $filter='&query='.urlencode($_GET['query']);
+  if (isset($_REQUEST['query'])) {
+    $filter='&query='.urlencode($_REQUEST['query']);
   }
 
   print "\n    ";
@@ -1236,9 +1236,9 @@ function move2Pending($entitiesId) {
     $html->showHeaders($draftMetadata->entityID());
     $errors = getBlockingErrors($entitiesId);
     if ($errors == '') {
-      if (isset($_GET['publishedIn'])) {
+      if (isset($_REQUEST['publishedIn'])) {
         $publish = true;
-        if ($_GET['publishedIn'] < 1) {
+        if ($_REQUEST['publishedIn'] < 1) {
           $errors .= "Missing where to publish Metadata.\n";
           $publish = false;
         }
@@ -1394,7 +1394,7 @@ function move2Pending($entitiesId) {
             <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
             $entitiesId);
         }
-        $draftMetadata->updateFeedByValue($_GET['publishedIn']);
+        $draftMetadata->updateFeedByValue($_REQUEST['publishedIn']);
         $draftMetadata->moveDraftToPending($oldEntitiesId);
         $draftMetadata->getUser($EPPN, true);
         $draftMetadata->updateResponsible($EPPN);
