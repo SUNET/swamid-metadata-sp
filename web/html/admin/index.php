@@ -1504,11 +1504,11 @@ function annualConfirmation($entitiesId){
           $infoText = $federation['rulesInfoSP'];
         }
 
-        if (isset($_GET['entityIsOK'])) {
+        if (isset($_POST['entityIsOK'])) {
           $metadata->updateUser($EPPN, $mail, $fullName, true);
           $confirm = true;
         } else {
-          $errors .= isset($_GET['FormVisit'])
+          $errors .= isset($_POST['FormVisit'])
             ? sprintf(HTML_TEXT_YMFS, $sections, $federation['rulesName'], "\n")
             : '';
         }
@@ -1527,7 +1527,7 @@ function annualConfirmation($entitiesId){
           printf(
             '%s    <p>You are confirming that <b>%s</b> is operational and fulfils %s</p>%s',
             "\n", $metadata->entityID(), $federation['rulesName'], "\n");
-          printf('    <form>
+          printf('    <form action="." method="post">
       <input type="hidden" name="Entity" value="%d">
       <input type="hidden" name="FormVisit" value="true">
       <h5> Confirmation:</h5>
