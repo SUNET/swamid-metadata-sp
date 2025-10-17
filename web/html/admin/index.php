@@ -1682,7 +1682,7 @@ function requestRemoval($entitiesId) {
     if ($metadata->isResponsible()) {
       # User have access to entity
       $html->showHeaders($metadata->entityID());
-      if (isset($_GET['confirmRemoval'])) {
+      if (isset($_POST['confirmRemoval'])) {
         $menuActive = 'publ';
         showMenu();
 
@@ -1821,7 +1821,7 @@ function requestRemoval($entitiesId) {
         if (($metadata->feedValue() & 2) == 2) { $publishArray[] = $federation['displayName']; }
         if (($metadata->feedValue() & 4) == 4) { $publishArray[] = 'eduGAIN'; }
         printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
-        printf('    <form>%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $entitiesId, "\n", "\n", "\n", "\n", "\n", "\n" ,$entitiesId);
+        printf('    <form action="." method="POST">%s      <input type="hidden" name="Entity" value="%d">%s      <input type="checkbox" id="confirmRemoval" name="confirmRemoval">%s      <label for="confirmRemoval">I confirm that this Entity should be removed</label><br>%s      <br>%s      <input type="submit" name="action" value="Request removal">%s    </form>%s    <a href="/admin/?showEntity=%d"><button>Return to Entity</button></a>', "\n", $entitiesId, "\n", "\n", "\n", "\n", "\n", "\n" ,$entitiesId);
       }
     } else {
       # User have no access yet.
