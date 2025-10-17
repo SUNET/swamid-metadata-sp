@@ -1894,7 +1894,7 @@ class MetadataDisplay extends Common {
     while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
       # only global admins can remove themselves
       $can_remove = $is_admin && ( $user_id != $user['id'] || $userLevel > 19);
-      $extraButton = $can_remove ? sprintf(' <form action="?action=removeEditor&Entity=%d" method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $entityId, $user['id'], $user['id'], $user['id']) : '';
+      $extraButton = $can_remove ? sprintf(' <form action="." method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="action" value="removeEditor"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $user['id'], $entityId, $user['id'], $user['id']) : '';
       printf ('          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
         $user['fullName'], $user['userID'], $user['email'], $extraButton, "\n");
     }
