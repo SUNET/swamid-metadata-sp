@@ -2628,7 +2628,7 @@ class MetadataDisplay extends Common {
         }
       } else {
         printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">%s</td></tr>%s',
-          $entityID, 'Problem with XML', "\n");
+          $entityID, $pendingEntity['email'], $pendingEntity['lastUpdated'], 'Problem with XML', "\n");
       }
     }
     print self::HTML_TABLE_END;
