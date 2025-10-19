@@ -270,8 +270,8 @@ class IMPS {
           </div>%s    </div>', "\n");
           return false;
         }
-        if (isset($_GET['FormVisit'])) {
-          if (isset($_GET['impsIsValid'])) {
+        if (isset($_POST['FormVisit'])) {
+          if (isset($_POST['impsIsValid'])) {
             $impsConfirmHandler = $this->config->getDb()->prepare(
               'UPDATE `IMPS`
               SET `lastValidated` = NOW(), `user_id` = :User_id
@@ -309,7 +309,7 @@ class IMPS {
           printf('           <li>%s (AL%d)</li>%s', $idp['entityID'], $assuranceLevel, "\n");
         }
         printf('          </ul>
-          <form>
+          <form action="." method="POST">
             <input type="hidden" name="Entity" value="%d">
             <input type="hidden" name="ImpsId" value="%d">
             <input type="hidden" name="FormVisit" value="true">
