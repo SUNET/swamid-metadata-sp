@@ -671,7 +671,7 @@ class MetadataDisplay extends Common {
               <li>Last validated : %s</li>
               <li>Last validated by : %s</li>
             </ul>',
-          "\n", $state, $imps['id'], $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          "\n", $state, $imps['id'], $imps['id'], htmlspecialchars($imps['name']), substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy);
         if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
           printf ('%s            <b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.
@@ -701,7 +701,7 @@ class MetadataDisplay extends Common {
               <select name="ImpsId">', "\n", $entityId);
         while ($imps = $impsListHandler->fetch(PDO::FETCH_ASSOC)){
           printf ('                <option%s value="%d">%s</option>',
-          $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '', $imps['id'], $imps['name']);
+          $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '', $imps['id'], htmlspecialchars($imps['name']));
         }
         printf ('
               </select>

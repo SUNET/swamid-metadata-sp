@@ -198,7 +198,7 @@ class IMPS {
           <input type="submit" name="Remove" value="Remove">
         </form>
         <a href="./?action=Members&tab=imps&id=%d#imps-%d"><button>Back</button></a>%s',
-        $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], $imps['lastUpdated'], $imps['id'], $imps['id'], "\n");
+        $imps['id'], $imps['id'], htmlspecialchars($imps['name']), $imps['maximumAL'], $imps['lastUpdated'], $imps['id'], $imps['id'], "\n");
       }
     } else {
       print '        Can\'t find IMPS';
@@ -296,7 +296,7 @@ class IMPS {
           <br>
           The following Identity Providers are bound to this IMPS :
           <ul>%s',
-          $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          htmlspecialchars($imps['name']), substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy, "\n");
         $idpsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
         while ($idp = $idpsHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -536,7 +536,7 @@ class IMPS {
           <div class="col"><ul>%s', "\n");
           do {
             printf('            <li><a href="?action=Members&tab=imps&id=%d#imps-%d" target="_blank">%s</a></li>%s',
-              $imps['id'], $imps['id'], $imps['name'], "\n");
+              $imps['id'], $imps['id'], htmlspecialchars($imps['name']), "\n");
           } while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC));
           printf('          </ul></div>%s        </div>%s', "\n", "\n");
         } else {
