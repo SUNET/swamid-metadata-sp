@@ -34,6 +34,8 @@ class Validate extends Common {
   const TEXT_COCOV1_REQ = 'GÉANT Data Protection Code of Conduct v1 Require';
   const TEXT_COCOV2_REC = 'REFEDS Data Protection Code of Conduct v2 Recommend';
   const TEXT_COCOV2_REQ = 'REFEDS Data Protection Code of Conduct v2 Require';
+  const CT_SECURITY = 'other/security';
+
 
   /**
    * Setup the class
@@ -141,7 +143,7 @@ class Validate extends Common {
       // a GivenName element MUST be present and the ContactPerson MUST
       // respect the Traffic Light Protocol (TLP) during all incident response correspondence.
       if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
-        $contactType = 'other/security';
+        $contactType = self::CT_SECURITY;
         if ( $contactPerson['givenName'] == '') {
           $this->error .= "REFEDS Security Contact Metadata Extension Require that a GivenName element MUST be present for security ContactPerson.\n";
         }
@@ -153,7 +155,7 @@ class Validate extends Common {
     }
 
     // SIRTFI requires a Security contact
-    if (($this->isSIRTFI || $this->isSIRTFI2) && !isset ($usedContactTypes['other/security'])) {
+    if (($this->isSIRTFI || $this->isSIRTFI2) && !isset ($usedContactTypes[self::CT_SECURITY])) {
       $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
     }
   }
@@ -180,11 +182,11 @@ class Validate extends Common {
 
     if (isset($mduiArray['DisplayName']) && isset($mduiArray['InformationURL'])) {
       if (! (isset($mduiArray['DisplayName']['en']) && isset($mduiArray['InformationURL']['en']))) {
-        $this->warning .= 'REFEDS Research and Scholarship 4.3.3 RECOMMEND a MDUI:DisplayName';
-        $this->warning .= " and a MDUI:InformationURL with lang=en.\n";
+        $this->warning .= 'REFEDS Research and Scholarship 4.3.3 RECOMMEND an MDUI:DisplayName';
+        $this->warning .= " and an MDUI:InformationURL with lang=en.\n";
       }
     } else {
-      $this->error .= "REFEDS Research and Scholarship 4.3.3 Require a MDUI:DisplayName and a MDUI:InformationURL.\n";
+      $this->error .= "REFEDS Research and Scholarship 4.3.3 Require an MDUI:DisplayName and an MDUI:InformationURL.\n";
     }
 
     $contactPersonHandler = $this->config->getDb()->prepare("SELECT `emailAddress`
@@ -229,20 +231,20 @@ class Validate extends Common {
 
     if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
       $this->error .= self::TEXT_COCOV1_REQ;
-      $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
+      $this->error .= " an MDUI - PrivacyStatementURL with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['DisplayName'])) {
       $this->warning .= self::TEXT_COCOV1_REC;
-      $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
+      $this->warning .= " an MDUI - DisplayName with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['Description'])) {
       $this->warning .= self::TEXT_COCOV1_REC;
-      $this->warning .= " a MDUI - Description with at least lang=en.\n";
+      $this->warning .= " an MDUI - Description with at least lang=en.\n";
     }
     foreach ($mduiElementArray as $element => $value) {
       if (! isset($mduiArray['en'][$element])) {
         $this->error .= self::TEXT_COCOV1_REQ;
-        $this->error .= sprintf(" a MDUI - %s with lang=en for all present elements.\n", $element);
+        $this->error .= sprintf(" an MDUI - %s with lang=en for all present elements.\n", $element);
       }
     }
     $requestedAttributeHandler->execute();
@@ -286,20 +288,20 @@ class Validate extends Common {
 
     if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
       $this->error .= self::TEXT_COCOV2_REQ;
-      $this->error .= " a MDUI - PrivacyStatementURL with at least lang=en.\n";
+      $this->error .= " an MDUI - PrivacyStatementURL with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['DisplayName'])) {
       $this->warning .= self::TEXT_COCOV2_REC;
-      $this->warning .= " a MDUI - DisplayName with at least lang=en.\n";
+      $this->warning .= " an MDUI - DisplayName with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['Description'])) {
       $this->warning .= self::TEXT_COCOV2_REC;
-      $this->warning .= " a MDUI - Description with at least lang=en.\n";
+      $this->warning .= " an MDUI - Description with at least lang=en.\n";
     }
     foreach ($mduiElementArray as $element => $value) {
       if (! isset($mduiArray['en'][$element])) {
         $this->error .= self::TEXT_COCOV2_REQ;
-        $this->error .= sprintf(" a MDUI - %s with lang=en for all present elements.\n", $element);
+        $this->error .= sprintf(" an MDUI - %s with lang=en for all present elements.\n", $element);
       }
     }
 
