@@ -475,7 +475,7 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showAddOrganizationIdForm($entitiesId, $currentOrgId) {
-    printf ('          <form>
+    printf ('          <form action="." method="POST">
             <input type="hidden" name="action" value="addOrganization2Entity">
             <input type="hidden" name="Entity" value="%d">
             Select Organization for entity :

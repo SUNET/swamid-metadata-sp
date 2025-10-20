@@ -372,11 +372,11 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'addOrganization2Entity' :
           if (checkAccess($entitiesId, $EPPN, $userLevel, 10, false)) {
-            if (isset($_REQUEST['organizationId'])) {
+            if (isset($_POST['organizationId'])) {
               $updateEntitiesHandler = $config->getDb()->prepare( $userLevel > 19
               ? 'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id;'
               : 'UPDATE Entities SET `OrganizationInfo_id` = :OrgId WHERE `id` = :Id AND status = 3;');
-              $updateEntitiesHandler->execute(array('OrgId' => $_REQUEST['organizationId'], 'Id' => $entitiesId));
+              $updateEntitiesHandler->execute(array('OrgId' => $_POST['organizationId'], 'Id' => $entitiesId));
             }
             showEntity($entitiesId);
           }
