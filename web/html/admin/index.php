@@ -2167,8 +2167,13 @@ function approveAccessRequest($code) {
 
           //Recipients
           $mail->setFrom($config->getSmtp()['from'], 'Metadata');
+          if ($config->getSMTP()['bcc']) {
+            $mail->addBCC($config->getSMTP()['bcc']);
+          }
           $mail->addReplyTo($config->getSmtp()['replyTo'], $config->getSmtp()['replyName']);
-          $mail->addAddress($result['email']);
+          if ($config->sendOut()) {
+            $mail->addAddress($result['email']);
+          }
           $mail->Body = sprintf("<!DOCTYPE html>
             <html lang=\"en\">
               <head>
