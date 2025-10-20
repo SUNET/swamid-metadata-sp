@@ -663,7 +663,7 @@ class MetadataDisplay extends Common {
         $state = $imps['warnDate'] > $imps['lastValidated'] ? 'warning' : 'none';
         $state = $imps['errorDate'] > $imps['lastValidated'] ? 'danger' : $state;
 
-        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . " (" . $imps['email'] . ")";
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : htmlspecialchars($imps['fullName']) . " (" . htmlspecialchars($imps['email']) . ")";
         printf ('%s          <div class="alert-%s">
             <b><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></b>
             <ul>
@@ -3427,7 +3427,7 @@ class MetadataDisplay extends Common {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
       }
-      $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
+      $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
       printf('%s                <ul>
                   <li>Organization  : <a href="?action=Members&tab=organizations&id=%d#org-%d">%s</a></li>
                   <li>Allowed maximum AL : %d</li>

@@ -282,7 +282,7 @@ class IMPS {
             printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error:</b></div>%s        <div class="row">You must check that you confirm!</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", "\n", "\n");
           }
         }
-        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
         printf ('      <div class="row">
         <div class="col">
           <h4>Confirmation of Identity Management Practice Statement (IMPS)</h4>
