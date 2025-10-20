@@ -328,11 +328,15 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'forceAccess' :
-          $metadata = new \metadata\Metadata($entitiesId);
-          if ($userLevel > 19) {
-            $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
+          if (!sizeof($_POST)) {
+            print "Invalid request method.";
+          } else {
+            $metadata = new \metadata\Metadata($entitiesId);
+            if ($userLevel > 19) {
+              $metadata->addAccess2Entity($metadata->getUserId($EPPN, $mail, $fullName, true), $EPPN);
+            }
+            showEntity($entitiesId);
           }
-          showEntity($entitiesId);
           break;
         case 'removeEditor' :
           $metadata = new \metadata\Metadata($entitiesId);
@@ -2100,7 +2104,7 @@ function requestAccess($entitiesId) {
     <a href="./?showEntity=%d"><button>Return to Entity</button></a>%s',
           $entitiesId, implode (", ",$addresses), $entitiesId, "\n");
         if ($userLevel > 19) {
-          printf('    <br><a href="./?action=forceAccess&Entity=%d"><button>Force access to Entity</button></a>%s', $entitiesId, "\n");
+          printf('    <br><form action="." method="POST"><input type="hidden" name="action" value="forceAccess"><input type="hidden" name="Entity" value="%d"><button>Force access to Entity</button></form>%s', $entitiesId, "\n");
         }
       }
     }
