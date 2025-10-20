@@ -2014,7 +2014,7 @@ function requestAccess($entitiesId) {
       $errors = '';
       $addresses = $metadata->getTechnicalAndAdministrativeContacts();
 
-      if (isset($_GET['requestAccess'])) {
+      if (isset($_POST['requestAccess'])) {
         # We are committing from the Form.
         # Fetch user_id again and make sure user exists
         $user_id = $metadata->getUserId($EPPN, $mail, $fullName, true);
@@ -2084,7 +2084,7 @@ function requestAccess($entitiesId) {
       </div>%s    </div>', "\n", str_ireplace("\n", "<br>", $errors), "\n");
         }
         printf('%s    <p>You do not have access to <b>%s</b></p>%s', "\n", htmlspecialchars($metadata->entityID()), "\n");
-        printf('    <form>
+        printf('    <form action="." method="POST">
       <input type="hidden" name="Entity" value="%d">
       <input type="hidden" name="FormVisit">
       <h5>Request access:</h5>
