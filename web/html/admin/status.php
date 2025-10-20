@@ -100,7 +100,7 @@ function showSoftDeletedEntities() {
   $entityHandler->execute();
   printf ('        <h5>Entities in Soft Delete</h5>%s        <table id="softDel-table" class="table table-striped table-bordered">%s          <thead><tr><th>Action</th><th>EntityID</th><th>Removed</th></tr></thead>%s', "\n", "\n", "\n");
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href=./?showEntity=%d target="_blank">View</a> | <a href=./?action=createDraft&Entity=%d target="_blank">Create Draft</a></td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], htmlspecialchars($entity['entityID']), $entity['lastUpdated'], "\n");
+    printf('          <tr><td><a href="./?showEntity=%d" target="_blank"><button class="btn btn-outline-success">View</button></a><form action="." method="POST" style="display: inline;"><input type="hidden" name="action" value="createDraft"><input type="hidden" name="Entity" value="%d"><button class="btn btn-outline-primary">Create Draft</button></form></td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], htmlspecialchars($entity['entityID']), $entity['lastUpdated'], "\n");
   }
   print HTML_TABLE_END;
 }
