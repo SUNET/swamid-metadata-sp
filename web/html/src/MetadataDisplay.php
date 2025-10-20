@@ -2616,7 +2616,7 @@ class MetadataDisplay extends Common {
             $okRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>',
               htmlspecialchars($entityID), $pendingEntity['id'], $publishedEntity['id']);
             printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-              $okRemove, $pendingEntity['email'], $pendingEntity['lastUpdated'],
+              $okRemove, htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'],
               ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '',
               ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
           } else {
