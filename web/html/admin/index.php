@@ -216,13 +216,13 @@ if (isset($_FILES['XMLfile'])) {
   if (checkAccess($_REQUEST['move2Draft'], $EPPN, $userLevel, 10, true)) {
     move2Draft($_REQUEST['move2Draft']);
   }
-} elseif (isset($_REQUEST['mergeEntity'])) {
-  if (checkAccess($_REQUEST['mergeEntity'],$EPPN,$userLevel,10,true)) {
-    if (isset($_REQUEST['oldEntity'])) {
-      mergeEntity($_REQUEST['mergeEntity'], $_REQUEST['oldEntity']);
-      validateEntity($_REQUEST['mergeEntity']);
+} elseif (isset($_POST['mergeEntity'])) {
+  if (checkAccess($_POST['mergeEntity'],$EPPN,$userLevel,10,true)) {
+    if (isset($_POST['oldEntity'])) {
+      mergeEntity($_POST['mergeEntity'], $_POST['oldEntity']);
+      validateEntity($_POST['mergeEntity']);
     }
-    showEntity($_REQUEST['mergeEntity']);
+    showEntity($_POST['mergeEntity']);
   }
 } elseif (isset($_REQUEST['removeEntity'])) {
   if (checkAccess($_REQUEST['removeEntity'],$EPPN,$userLevel,10, true)) {
@@ -846,11 +846,11 @@ function showEntity($entitiesId, $showHeader = true)  {
               "\n", $entitiesId);
           }
           if ($oldEntitiesId > 0) {
-            printf('%s      <a href=".?mergeEntity=%d&oldEntity=%d">
-        <button type="button" class="btn btn-outline-primary">Merge from published</button></a>',
+            printf('%s      <form action="." method="POST"><input type="hidden" name="mergeEntity" value="%d"><input type="hidden" name="oldEntity" value="%d">
+        <button type="submit" class="btn btn-outline-primary">Merge from published</button></form>',
               "\n", $entitiesId, $oldEntitiesId);
           }
-          printf ('%s      <form>
+          printf ('%s      <form action="." method="POST">
         <input type="hidden" name="mergeEntity" value="%d">
         Merge from other entity : %s        <select name="oldEntity">%s', "\n", $entitiesId, "\n", "\n");
           print '          <option value="0">Please select an entity to merge from</option>';
