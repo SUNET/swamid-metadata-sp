@@ -2614,21 +2614,21 @@ class MetadataDisplay extends Common {
           $entityHandler->execute();
           if ($publishedEntity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
             $okRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>',
-              $entityID, $pendingEntity['id'], $publishedEntity['id']);
+              htmlspecialchars($entityID), $pendingEntity['id'], $publishedEntity['id']);
             printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
               $okRemove, $pendingEntity['email'], $pendingEntity['lastUpdated'],
               ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '',
               ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
           } else {
             printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">Not published</td></tr>%s',
-              $entityID, $pendingEntity['email'], $pendingEntity['lastUpdated'], "\n" );
+              htmlspecialchars($entityID), htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'], "\n" );
           }
         } else {
-          printf('      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',  $entityID, 'Diff in entityID', "\n");
+          printf('      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',  htmlspecialchars($entityID), 'Diff in entityID', "\n");
         }
       } else {
         printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">%s</td></tr>%s',
-          $entityID, $pendingEntity['email'], $pendingEntity['lastUpdated'], 'Problem with XML', "\n");
+          htmlspecialchars($entityID), htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'], 'Problem with XML', "\n");
       }
     }
     print self::HTML_TABLE_END;
