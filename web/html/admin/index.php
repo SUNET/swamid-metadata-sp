@@ -185,7 +185,7 @@ if ($errors != '') {
 }
 
 $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
-$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
+$displayName = '<div> Logged in as : <br> ' . htmlspecialchars($fullName) . ' (' . htmlspecialchars($EPPN) .')</div>';
 $html->setDisplayName($displayName);
 
 $display = new \metadata\MetadataDisplay();
@@ -2008,7 +2008,7 @@ function requestAccess($entitiesId) {
       $html->showHeaders($metadata->entityID());
       $menuActive = '';
       showMenu();
-      printf('%s    <p>You already have access to <b>%s</b></p>%s', "\n", $metadata->entityID(), "\n");
+      printf('%s    <p>You already have access to <b>%s</b></p>%s', "\n", htmlspecialchars($metadata->entityID()), "\n");
       printf('    <a href="./?showEntity=%d"><button>Return to Entity</button></a>%s', $entitiesId, "\n");
     } else {
       $errors = '';
@@ -2044,7 +2044,7 @@ function requestAccess($entitiesId) {
           --<br>
           On behalf of %s</p>
           </body>\n</html>",
-          $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode, $hostURL, $requestCode,
+          htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($metadata->entityID()), $hostURL, $requestCode, $hostURL, $requestCode,
           $federation['toolName'], $federation['teamName']);
         $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested access to update %s
@@ -2083,7 +2083,7 @@ function requestAccess($entitiesId) {
         <div class="row">%s</div>
       </div>%s    </div>', "\n", str_ireplace("\n", "<br>", $errors), "\n");
         }
-        printf('%s    <p>You do not have access to <b>%s</b></p>%s', "\n", $metadata->entityID(), "\n");
+        printf('%s    <p>You do not have access to <b>%s</b></p>%s', "\n", htmlspecialchars($metadata->entityID()), "\n");
         printf('    <form>
       <input type="hidden" name="Entity" value="%d">
       <input type="hidden" name="FormVisit">
@@ -2181,7 +2181,7 @@ function approveAccessRequest($code) {
                 If you've any questions please contact %s.</p>
               </body>
             </html>",
-            $metadata->entityID(),
+            htmlspecialchars($metadata->entityID()),
             $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $mail->AltBody = sprintf("Hi.
             \nYour access to %s have been granted.
@@ -2194,7 +2194,7 @@ function approveAccessRequest($code) {
           $mail->Subject = 'Access granted for ' . $shortEntityid;
 
           $info = sprintf('<h3>Access granted</h3>Access to <b>%s</b> added for %s (%s).',
-            $metadata->entityID(), $result['fullName'], $result['email']);
+            htmlspecialchars($metadata->entityID()), htmlspecialchars($result['fullName']), htmlspecialchars($result['email']));
 
           try {
             $mail->send();
