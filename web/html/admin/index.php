@@ -245,18 +245,22 @@ if (isset($_FILES['XMLfile'])) {
       $entitiesId = $_REQUEST['Entity'];
       switch($_REQUEST['action']) {
         case 'createDraft' :
-          $menuActive = 'new';
-          $metadata = new \metadata\Metadata($entitiesId);
-          $metadata->getUserId($EPPN);
-          if ($metadata->isResponsible()) {
-            if ($newEntity_id = $metadata->createDraft()) {
-              validateEntity($newEntity_id);
-              $menuActive = 'new';
-              showEntity($newEntity_id);
-            }
+          if (!sizeof($_POST)) {
+            print "Invalid request method.";
           } else {
-            # User have no access yet.
-            requestAccess($entitiesId);
+            $menuActive = 'new';
+            $metadata = new \metadata\Metadata($entitiesId);
+            $metadata->getUserId($EPPN);
+            if ($metadata->isResponsible()) {
+              if ($newEntity_id = $metadata->createDraft()) {
+                validateEntity($newEntity_id);
+                $menuActive = 'new';
+                showEntity($newEntity_id);
+              }
+            } else {
+              # User have no access yet.
+              requestAccess($entitiesId);
+            }
           }
           break;
         case 'Request removal' :
@@ -797,8 +801,8 @@ function showEntity($entitiesId, $showHeader = true)  {
           printf('%s      <a href=".?action=Annual+Confirmation&Entity=%d">
         <button type="button" class="btn btn-outline-%s">Annual Confirmation</button></a>',
           "\n", $entitiesId, getErrors($entitiesId) == '' ? 'success' : 'secondary');
-          printf('%s      <a href=".?action=createDraft&Entity=%d">
-        <button type="button" class="btn btn-outline-primary">Create Draft</button></a>', "\n", $entitiesId);
+          printf('%s      <form action="." method="POST"><input type="hidden" name="action" value="createDraft"><input type="hidden" name="Entity" value="%d">
+        <button type="submit" class="btn btn-outline-primary">Create Draft</button></form>', "\n", $entitiesId);
           if ($entityError['saml1Error']) {
             printf('%s      <a href=".?action=draftRemoveSaml1&Entity=%d">
         <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
