@@ -136,7 +136,7 @@ class ParseXML extends Common {
     $urlHandler->bindValue(self::BIND_URL, $url);
     $urlHandler->bindValue(self::BIND_TYPE, $type);
     $urlHandler->execute();
-    $this->addURL($url, 1);
+    $this->addURL($url, 2);
   }
 
   /**
@@ -284,7 +284,7 @@ class ParseXML extends Common {
           }
           $entityAttributesHandler->execute();
         } else {
-          $this->result .= 'Extensions -> EntityAttributes -> Attribute -> ' . $child->nodeName . " saknas.\n";
+          $this->result .= sprintf("Unknown Element Extensions -> EntityAttributes -> Attribute -> %s.\n", $child->nodeName);
         }
         $child = $child->nextSibling;
       }
@@ -467,7 +467,7 @@ class ParseXML extends Common {
     $saml1found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1'];
     $shibboleth10found = $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['shibboleth10'];
     if ($shibboleth10found) {
-      $this->errorNB .= sprintf("Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n");
+      $this->errorNB .= "Protocol urn:mace:shibboleth:1.0 should only be used on IdP:s protocolSupportEnumeration, found in SPSSODescriptor.\n";
     }
     # https://docs.oasis-open.org/security/saml/v2.0/saml-metadata-2.0-os.pdf 2.4.1 + 2.4.2 + 2.4.4
     $child = $data->firstChild;
@@ -734,7 +734,7 @@ class ParseXML extends Common {
       $lang = $child->getAttribute('xml:lang') ? $child->getAttribute('xml:lang') : ''; #NOSONAR Used in Bind above
       switch ($child->nodeName) {
         case self::SAML_MD_ORGANIZATIONURL :
-          $this->addURL(trim($child->textContent), 1);
+          $this->addURL(trim($child->textContent), 2);
           $element = substr($child->nodeName, 3); #NOSONAR Used in Bind above
           break;
         case self::SAML_MD_EXTENSIONS :
@@ -794,7 +794,7 @@ class ParseXML extends Common {
               $data->getAttribute(self::SAML_ATTRIBUTE_REMD));
           }
         } else {
-          $this->warning .= sprintf("ContactPerson->other is NOT handled as a SecurityContact.\n");
+          $this->warning .= "ContactPerson->other is NOT handled as a SecurityContact.\n";
         }
         break;
       default :
@@ -906,22 +906,22 @@ class ParseXML extends Common {
         $width = 0;
         $lang = $child->getAttribute('xml:lang') ?
           $child->getAttribute('xml:lang') : '';
-        $urltype = 1;
+        $urltype = 2;
         $value = trim($child->textContent);
         switch ($child->nodeName) {
           case self::SAML_MDUI_LOGO :
-            $urltype = 2;
+            $urltype = 1;
             $this->addURL($value, $urltype);
             $element = substr($child->nodeName, 5);
-            $height = $child->getAttribute('height') ? $child->getAttribute('height') : 0;
-            $width = $child->getAttribute('width') ? $child->getAttribute('width') : 0;
+            $height = $child->getAttribute('height') ? intval($child->getAttribute('height')) : 0;
+            $width = $child->getAttribute('width') ? intval($child->getAttribute('width')) : 0;
             $urlHandler->execute(array(self::BIND_URL => $value));
             if ($urlInfo = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
               if ($urlInfo['height'] != $height && $urlInfo['status'] == 0 && $urlInfo['nosize'] == 0) {
                 if ($urlInfo['height'] == 0) {
                   $this->error .= sprintf(
-                    "Logo (%dx%d) lang=%s Image can not be loaded from URL.\n",
-                    $height, $width, $lang, $height);
+                    "Logo (%dx%d) lang=%s Image cannot be loaded from URL.\n",
+                    $height, $width, $lang);
                 } else {
                   $this->error .= sprintf(
                     "Logo (%dx%d) lang=%s is marked with height %s in metadata but actual height is %d.\n",
@@ -989,10 +989,10 @@ class ParseXML extends Common {
           $shibboleth10found = true;
           break;
         case '' :
-          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for $name. Please remove.\n");
+          $this->result .= sprintf("Extra space found in protocolSupportEnumeration for %s. Please remove.\n", $name);
           break;
         default :
-          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for $name.\n", htmlspecialchars($protocol));
+          $this->result .= sprintf("Unknown protocol %s found in protocolSupportEnumeration for %s.\n", htmlspecialchars($protocol), $name);
       }
     }
 
@@ -1235,7 +1235,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("CommonTrait.php digestMethod[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::DIGEST_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing DigestMethod[%s].\n", htmlspecialchars($algorithm));
+      $this->result .= sprintf("Unknown DigestMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1264,7 +1264,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("CommonTrait.php signingMethods[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::SIGNING_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing SigningMethod[%s].\n", htmlspecialchars($algorithm));
+      $this->result .= sprintf("Unknown SigningMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1293,7 +1293,7 @@ class ParseXML extends Common {
           $this->result .= sprintf("CommonTrait.php encryptionMethods[%s] have unknown status (%s).\n", htmlspecialchars($algorithm), self::ENCRYPTION_METHODS[$algorithm]);
       }
     } else {
-      $this->result .= sprintf("Missing EncryptionMethod[%s].\n", htmlspecialchars($algorithm));
+      $this->result .= sprintf("Unknown EncryptionMethod[%s].\n", htmlspecialchars($algorithm));
     }
   }
 
@@ -1373,7 +1373,7 @@ class ParseXML extends Common {
         $this->error .= sprintf("Binding : %s should be either urn:oasis:names:tc:SAML:2.0:bindings:<b>HTTP-POST</b> or urn:oasis:names:tc:SAML:<b>1.0:profiles</b>:browser-post\n", htmlspecialchars($binding));
         break;
       default :
-        $this->result .= sprintf("Missing Binding : %s in validator\n", htmlspecialchars($binding));
+        $this->result .= sprintf("Unknown Binding : %s in validator\n", htmlspecialchars($binding));
     }
   }
 

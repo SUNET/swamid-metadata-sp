@@ -73,6 +73,10 @@ class MetadataDisplay extends Common {
         SELECT `status`, `URL`, `lastValidated`, `validationOutput`
         FROM `URLs`
         WHERE `URL` IN (SELECT `data` FROM `Organization` WHERE `element` = 'OrganizationURL' AND `entity_id` = :Id);");
+      $urlHandler4 = $this->config->getDb()->prepare("
+        SELECT `status`, `URL`, `lastValidated`, `validationOutput`
+        FROM `URLs`
+        WHERE `URL` IN (SELECT `ServiceURL` FROM `ServiceInfo` WHERE `entity_id` = :Id);");
       $impsHandler = $this->config->getDb()->prepare(
         'SELECT `IMPS_id`, `lastValidated`, `lastUpdated`,
           NOW() - INTERVAL 10 MONTH AS `warnDate`,
@@ -187,18 +191,17 @@ class MetadataDisplay extends Common {
           }
           foreach ($ecsTested as $tag => $tested) {
             if (! $ecsTested[$tag]) {
-              $warnings .= sprintf('SWAMID Release-check: Updated test for %s missing please rerun', $tag);
-              $warnings .= sprintf(' at <a href="https://%s.release-check.%sswamid.se/">Release-check</a>%s',
-                $tag, $this->config->getMode() == 'QA' ? 'qa.' : '', "\n");
+              $warnings .= sprintf('%s Release-check: Updated test for %s missing please rerun', $this->config->getFederation()['displayName'], $tag);
+              $warnings .= sprintf(' at <a href="%s">Release-check</a>%s', $this->getReleaseCheckURL($tag), "\n");
             }
           }
-          // Error URLs
-          $urlHandler2->execute(array(self::BIND_ID => $entityId));
-          while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
-            if ($url['status'] > 0) {
-              $errors .= sprintf(self::HTML_SHOW_URL,
-                $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
-            }
+        }
+        // Error URLs
+        $urlHandler2->execute(array(self::BIND_ID => $entityId));
+        while ($url = $urlHandler2->fetch(PDO::FETCH_ASSOC)) {
+          if ($url['status'] > 0) {
+            $errors .= sprintf(self::HTML_SHOW_URL,
+              $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
           }
         }
 
@@ -245,6 +248,14 @@ class MetadataDisplay extends Common {
       // OrganizationURL
       $urlHandler3->execute(array(self::BIND_ID => $entityId));
       while ($url = $urlHandler3->fetch(PDO::FETCH_ASSOC)) {
+        if ($url['status'] > 0) {
+          $errors .= sprintf(self::HTML_SHOW_URL,
+            $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
+        }
+      }
+      // ServiceURL
+      $urlHandler4->execute(array(self::BIND_ID => $entityId));
+      while ($url = $urlHandler4->fetch(PDO::FETCH_ASSOC)) {
         if ($url['status'] > 0) {
           $errors .= sprintf(self::HTML_SHOW_URL,
             $url['validationOutput'], urlencode($url['URL']), htmlspecialchars($url['URL']), "\n");
@@ -315,6 +326,25 @@ class MetadataDisplay extends Common {
       }
     }
     return $entityError;
+  }
+
+
+  /**
+   * Construct a release check URL for a specific tag
+   *
+   * @param string $tag To include in the release check URL
+   *
+   * @return string Release check URL with tag included (or unmodified if tag absent)
+   */
+
+  private function getReleaseCheckURL($tag = null) {
+    $rcConfURL = $this->config->getFederation()['releaseCheckResultsURL'];
+
+    if (!$tag || !$rcConfURL) {
+      return $rcConfURL;
+    }
+
+    return preg_replace(',^(https?://),', '\1' . $tag . '.', $rcConfURL);
   }
 
   /**
@@ -1113,10 +1143,14 @@ class MetadataDisplay extends Common {
               $statusIcon = '';
             } else {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
-              $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
-                $mdui['height'], $urlInfo['height']);
+              if ($urlInfo['height'] == 0) {
+                $statusText .= '<br><span class="text-danger">Image cannot be loaded from URL.</span>';
+              } else {
+                $statusText .= sprintf('<br><span class="text-danger">Marked height is %s but actual height is %d</span>',
+                  $mdui['height'], $urlInfo['height']);
+              }
             }
-            if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0) {
+            if ($urlInfo['width'] != $mdui['width'] && $urlInfo['nosize'] == 0 && $urlInfo['width'] != 0) {
               $statusIcon = '<i class="fas fa-exclamation"></i>';
               $statusText .= sprintf('<br><span class="text-danger">Marked width is %s but actual width is %d</span>',
                 $mdui['width'], $urlInfo['width']);
@@ -1521,7 +1555,7 @@ class MetadataDisplay extends Common {
       printf ('                  <li><span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
         $state, $index, htmlspecialchars($location), "\n");
     }
-    printf ('                </ul>');
+    print '                </ul>';
   }
 
   /**
@@ -1876,10 +1910,14 @@ class MetadataDisplay extends Common {
         FROM `URLs` WHERE `URL` = :URL;');
       $urlHandler->bindValue(self::BIND_URL, $url);
       $urlHandler->execute();
-      $entityHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
-        FROM `EntityURLs`, `Entities` WHERE `entity_id` = `id` AND `URL` = :URL;');
+      $entityHandler = $this->config->getDb()->prepare('SELECT `EntityURLs`.`entity_id`, `Entities`.`entityID`, `Entities`.`status`
+        FROM `EntityURLs`, `Entities` WHERE `EntityURLs`.`entity_id` = `Entities`.`id` AND `EntityURLs`.`URL` = :URL;');
       $entityHandler->bindValue(self::BIND_URL, $url);
       $entityHandler->execute();
+      $serviceInfoHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `entityID`, `status`
+        FROM `ServiceInfo`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `ServiceURL` = :URL;');
+      $serviceInfoHandler->bindValue(self::BIND_URL, $url);
+      $serviceInfoHandler->execute();
       $ssoUIIHandler = $this->config->getDb()->prepare('SELECT `entity_id`, `type`, `element`, `lang`, `entityID`, `status`
         FROM `Mdui`, `Entities` WHERE `entity_id` = `Entities`.`id` AND `data` = :URL;');
       $ssoUIIHandler->bindValue(self::BIND_URL, $url);
@@ -1933,8 +1971,12 @@ class MetadataDisplay extends Common {
       printf ('%s    <table class="table table-striped table-bordered">
       <tr><th>Entity</th><th>Part</th><th></tr>%s', self::HTML_TABLE_END, "\n");
       while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('      <tr><td><a href="?showEntity=%d">%s</td><td>%s</td><tr>%s',
+        printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
           $entity['entity_id'], htmlspecialchars($entity['entityID']), 'ErrorURL', "\n");
+      }
+      while ($serviceInfo = $serviceInfoHandler->fetch(PDO::FETCH_ASSOC)) {
+        printf ('      <tr><td><a href="?showEntity=%d">%s</a></td><td>%s</td><tr>%s',
+          $serviceInfo['entity_id'], htmlspecialchars($serviceInfo['entityID']), 'URL for Service Catalog', "\n");
       }
       while ($entity = $ssoUIIHandler->fetch(PDO::FETCH_ASSOC)) {
         $ecInfo = '';
@@ -3402,7 +3444,7 @@ class MetadataDisplay extends Common {
   }
 
   /**
-   * Show List of IMPS:es
+   * Show List of OrganizationInfo:s
    *
    * @param $id Id of IMPS to expand
    *
@@ -3489,7 +3531,7 @@ class MetadataDisplay extends Common {
       if ($organization['notMemberAfter']) {
         printf('                  <li>notMemberAfter : %s</li>%s', $organization['notMemberAfter'], "\n");
       }
-      print('                  <li>');
+      print '                  <li>';
       if ($this->config->getIMPS()) {
         printf('IMPS:s
                     <ul>%s', "\n");
@@ -3528,7 +3570,7 @@ class MetadataDisplay extends Common {
                           `publishIn` > 1 AND
                           `status` = 1 AND
                           `Organization`.`entity_id` = `Entities`.`id` AND
-                          `Organization`.`lang` = 'sv' AND
+                          `Organization`.`lang` = 'en' AND
                           `element`= 'OrganizationName';");
     $scopeHandler->execute();
     while ($scope = $scopeHandler->fetch(PDO::FETCH_ASSOC)) {

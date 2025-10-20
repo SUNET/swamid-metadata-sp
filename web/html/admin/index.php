@@ -853,7 +853,7 @@ function showEntity($entitiesId, $showHeader = true)  {
           printf ('%s      <form>
         <input type="hidden" name="mergeEntity" value="%d">
         Merge from other entity : %s        <select name="oldEntity">%s', "\n", $entitiesId, "\n", "\n");
-          printf('          <option value="0">Please select an entity to merge from</option>', "\n");
+          print '          <option value="0">Please select an entity to merge from</option>';
           if ($entity['isIdP'] ) {
             if ($entity['isSP'] ) {
               // is both SP and IdP
@@ -886,7 +886,7 @@ function showEntity($entitiesId, $showHeader = true)  {
       <div class="col">
         <h3><?=$headerCol1?></h3>
         Published in : <?php
-    print implode (', ', $publishArray);
+    print !empty($publishArray) ? implode (', ', $publishArray) : '<em>no federation yet</em>.';
     if ($oldEntitiesId > 0) { ?>
 
       </div>
@@ -1151,7 +1151,7 @@ function removeSSO($entitiesId, $type) {
 # Shows menu row
 ####
 function showMenu() {
-  global $userLevel, $menuActive;
+  global $userLevel, $menuActive, $config;
   $filter='';
   if (isset($_GET['query'])) {
     $filter='&query='.urlencode($_GET['query']);
@@ -1183,8 +1183,10 @@ function showMenu() {
   if ( $userLevel > 4 ) {
     printf('<a href=".?action=URLlist%s"><button type="button" class="btn btn%s-primary">URLlist</button></a>',
       $filter, $menuActive == 'URLlist' ? '' : HTML_OUTLINE);
-    printf('<a href="./mds.php" target="_blank"><button type="button" class="btn btn%s-primary">MDS</button></a>',
-      HTML_OUTLINE);
+    if ($config->getFederation()['mdsDbPath']) {
+      printf('<a href="./mds.php" target="_blank"><button type="button" class="btn btn%s-primary">MDS</button></a>',
+        HTML_OUTLINE);
+    }
   }
   if ( $userLevel > 10 ) {
     printf('<a href=".?action=CleanPending%s"><button type="button" class="btn btn%s-primary">Clean Pending</button></a>',
@@ -1282,7 +1284,7 @@ function move2Pending($entitiesId) {
         }
 
         if ($config->getMode() == 'QA') {
-          printf ("    <p>Your entity will be published within 15 to 30 minutes</p>\n");
+          print "    <p>Your entity will be published within 15 to 30 minutes</p>\n";
           printf ('    <hr>
           <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
             $entitiesId);
@@ -1691,7 +1693,7 @@ function requestRemoval($entitiesId) {
         $removeHandler->execute(array(':UserId' => $userID, ':Entity_ID' => $entitiesId));
 
         if ($config->getMode() == 'QA') {
-          printf ("    <p>Your entity will be removed within 15 to 30 minutes</p>\n");
+          print "    <p>Your entity will be removed within 15 to 30 minutes</p>\n";
           printf ('    <hr>
           <a href=".?showEntity=%d"><button type="button" class="btn btn-primary">Back to entity</button></a>',
             $entitiesId);

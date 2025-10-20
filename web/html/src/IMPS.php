@@ -101,7 +101,7 @@ class IMPS {
             <div class="col-2">Shared IdP</div>
             <div class="col"><input type="checkbox" name="sharedIdP"%s></div>
           </div>
-          <input type="submit">
+          <input type="submit" name="action" value="Add/Update">
         </form>
         <a href="./?action=Members&tab=imps&id=%d#imps-%d"><button>Back</button></a>%s',
         htmlspecialchars($name), $maximumAL, htmlspecialchars($lastUpdated),

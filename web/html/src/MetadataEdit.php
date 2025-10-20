@@ -133,7 +133,7 @@ class MetadataEdit extends Common {
         $this->editContactPersons();
         break;
       default :
-        printf('Missing what to edit');
+        print 'Missing what to edit';
     }
   }
 
@@ -1240,7 +1240,6 @@ class MetadataEdit extends Common {
         switch ($_POST['action']) {
           case 'Add' :
             $this->storeServiceInfo($this->dbIdNr, $serviceURL, $enabled);
-            $this->addURL($serviceURL, 1);
             break;
           case 'Delete' :
             $this->removeServiceInfo($this->dbIdNr);

@@ -39,7 +39,7 @@ $html->setDisplayName($displayName);
 $collapseIcons = array();
 
 try {
-  $fileName = __DIR__ . "/../MDS.db";
+  $fileName = $config->getFederation()['mdsDbPath'];
   $dsn = "sqlite:$fileName";
 
   $db = new PDO($dsn);
