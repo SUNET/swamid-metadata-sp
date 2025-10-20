@@ -1896,7 +1896,7 @@ class MetadataDisplay extends Common {
       $can_remove = $is_admin && ( $user_id != $user['id'] || $userLevel > 19);
       $extraButton = $can_remove ? sprintf(' <form action="." method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="action" value="removeEditor"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $user['id'], $entityId, $user['id'], $user['id']) : '';
       printf ('          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
-        $user['fullName'], $user['userID'], $user['email'], $extraButton, "\n");
+        htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), htmlspecialchars($user['email']), $extraButton, "\n");
     }
     print "        </ul>";
     $this->showCollapseEnd('Editors', 0);

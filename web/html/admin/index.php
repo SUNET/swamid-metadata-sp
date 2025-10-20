@@ -1564,7 +1564,7 @@ function annualConfirmation($entitiesId){
         $delete = ($user_id == $user['id'] && $userLevel < 20) ? '' :
           sprintf('<form action="." method="POST" name="removeEditor%d" style="display: inline;"><input type="hidden" name="action" value="Annual Confirmation"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="user_id" value="%d">    <a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>',
             $user['id'], $entitiesId, $user['id'], $user['id'], $user['id']);
-        printf ('      <li>%s%s (%s)</li>%s', $delete, $user['fullName'], $user['userID'], "\n");
+        printf ('      <li>%s%s (%s)</li>%s', $delete, htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), "\n");
       }
     }
     printf('    </ul>%s', "\n");
