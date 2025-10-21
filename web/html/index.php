@@ -1,6 +1,7 @@
 <?php
 
 const HTML_OUTLINE = '-outline';
+const TEXT_PLAIN = 'Content-Type: text/plain; charset=utf-8';
 
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
@@ -551,7 +552,7 @@ function showInfo() {
 
 function showFeed($id) {
   global $config;
-  header('Content-Type: text/plain; charset=utf-8');
+  header(TEXT_PLAIN);
   $federation = $config->getFederation();
   $entity = $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id');
   $entity->bindParam(':Id', $id);
@@ -577,7 +578,7 @@ function showFeed($id) {
 
 function showPendingQueue() {
   global $config;
-  header('Content-Type: text/plain; charset=utf-8');
+  header(TEXT_PLAIN);
   $entities = $config->getDb()->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
@@ -588,7 +589,7 @@ function showPendingQueue() {
 
 function showRemoveQueue() {
   global $config;
-  header('Content-Type: text/plain; charset=utf-8');
+  header(TEXT_PLAIN);
   $entities = $config->getDb()->prepare('SELECT `id`, `entityID` FROM Entities WHERE `removalRequestedBy` > 0 AND `status` = 1');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {

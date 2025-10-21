@@ -14,6 +14,7 @@ const HTML_TEXT_MCNBS = 'Message could not be sent to contacts.<br>';
 const HTML_TEXT_ME = 'Mailer Error: ';
 const HTML_TEXT_MEDFOR = ' metadata for ';
 const HTML_TEXT_YMFS = 'You must fulfill sections %s in %s.%s';
+const HTML_INVLD_RQ_METHOD = 'Invalid request method.';
 
 const REGEXP_ENTITYID = '/^https?:\/\/([^:\/]*)\/.*/';
 
@@ -246,7 +247,7 @@ if (isset($_FILES['XMLfile'])) {
       switch($_REQUEST['action']) {
         case 'createDraft' :
           if (!sizeof($_POST)) {
-            print "Invalid request method.";
+            print HTML_INVLD_RQ_METHOD;
           } else {
             $menuActive = 'new';
             $metadata = new \metadata\Metadata($entitiesId);
@@ -274,7 +275,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'removeSaml1' :
           if (!sizeof($_POST)) {
-            print "Invalid request method.";
+            print HTML_INVLD_RQ_METHOD;
           } else {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
@@ -291,7 +292,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'draftRemoveSaml1' :
           if (!sizeof($_POST)) {
-            print "Invalid request method.";
+            print HTML_INVLD_RQ_METHOD;
           } else {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
@@ -310,7 +311,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'removeObsoleteAlgorithms' :
           if (!sizeof($_POST)) {
-            print "Invalid request method.";
+            print HTML_INVLD_RQ_METHOD;
           } else {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
@@ -326,7 +327,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'draftRemoveObsoleteAlgorithms' :
           if (!sizeof($_POST)) {
-            print "Invalid request method.";
+            print HTML_INVLD_RQ_METHOD;
           } else {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
@@ -345,7 +346,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'forceAccess' :
           if (!sizeof($_POST)) {
-            print "Invalid request method.";
+            print HTML_INVLD_RQ_METHOD;
           } else {
             $metadata = new \metadata\Metadata($entitiesId);
             if ($userLevel > 19) {
