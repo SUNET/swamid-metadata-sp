@@ -273,58 +273,74 @@ if (isset($_FILES['XMLfile'])) {
           requestAccess($entitiesId);
           break;
         case 'removeSaml1' :
-          $metadata = new \metadata\Metadata($entitiesId);
-          $metadata->getUserId($EPPN);
-          if ($metadata->isResponsible()) {
-            $metadata->removeSaml1Support();
-            validateEntity($entitiesId);
-            $menuActive = 'new';
-            showEntity($entitiesId);
+          if (!sizeof($_POST)) {
+            print "Invalid request method.";
           } else {
-            # User have no access yet.
-            requestAccess($entitiesId);
+            $metadata = new \metadata\Metadata($entitiesId);
+            $metadata->getUserId($EPPN);
+            if ($metadata->isResponsible()) {
+              $metadata->removeSaml1Support();
+              validateEntity($entitiesId);
+              $menuActive = 'new';
+              showEntity($entitiesId);
+            } else {
+              # User have no access yet.
+              requestAccess($entitiesId);
+            }
           }
           break;
         case 'draftRemoveSaml1' :
-          $metadata = new \metadata\Metadata($entitiesId);
-          $metadata->getUserId($EPPN);
-          if ($metadata->isResponsible()) {
-            if ($newEntity_id = $metadata->createDraft()) {
-              $metadata->removeSaml1Support();
-              validateEntity($newEntity_id);
-              $menuActive = 'new';
-              showEntity($newEntity_id);
-            }
+          if (!sizeof($_POST)) {
+            print "Invalid request method.";
           } else {
-            # User have no access yet.
-            requestAccess($entitiesId);
+            $metadata = new \metadata\Metadata($entitiesId);
+            $metadata->getUserId($EPPN);
+            if ($metadata->isResponsible()) {
+              if ($newEntity_id = $metadata->createDraft()) {
+                $metadata->removeSaml1Support();
+                validateEntity($newEntity_id);
+                $menuActive = 'new';
+                showEntity($newEntity_id);
+              }
+            } else {
+              # User have no access yet.
+              requestAccess($entitiesId);
+            }
           }
           break;
         case 'removeObsoleteAlgorithms' :
-          $metadata = new \metadata\Metadata($entitiesId);
-          $metadata->getUserId($EPPN);
-          if ($metadata->isResponsible()) {
-            $metadata->removeObsoleteAlgorithms();
-            validateEntity($entitiesId);
-            showEntity($entitiesId);
+          if (!sizeof($_POST)) {
+            print "Invalid request method.";
           } else {
-            # User have no access yet.
-            requestAccess($entitiesId);
+            $metadata = new \metadata\Metadata($entitiesId);
+            $metadata->getUserId($EPPN);
+            if ($metadata->isResponsible()) {
+              $metadata->removeObsoleteAlgorithms();
+              validateEntity($entitiesId);
+              showEntity($entitiesId);
+            } else {
+              # User have no access yet.
+              requestAccess($entitiesId);
+            }
           }
           break;
         case 'draftRemoveObsoleteAlgorithms' :
-          $metadata = new \metadata\Metadata($entitiesId);
-          $metadata->getUserId($EPPN);
-          if ($metadata->isResponsible()) {
-            if ($newEntity_id = $metadata->createDraft()) {
-              $metadata->removeObsoleteAlgorithms();
-              validateEntity($newEntity_id);
-              $menuActive = 'new';
-              showEntity($newEntity_id);
-            }
+          if (!sizeof($_POST)) {
+            print "Invalid request method.";
           } else {
-            # User have no access yet.
-            requestAccess($entitiesId);
+            $metadata = new \metadata\Metadata($entitiesId);
+            $metadata->getUserId($EPPN);
+            if ($metadata->isResponsible()) {
+              if ($newEntity_id = $metadata->createDraft()) {
+                $metadata->removeObsoleteAlgorithms();
+                validateEntity($newEntity_id);
+                $menuActive = 'new';
+                showEntity($newEntity_id);
+              }
+            } else {
+              # User have no access yet.
+              requestAccess($entitiesId);
+            }
           }
           break;
         case 'forceAccess' :
@@ -808,13 +824,13 @@ function showEntity($entitiesId, $showHeader = true)  {
           printf('%s      <form action="." method="POST"><input type="hidden" name="action" value="createDraft"><input type="hidden" name="Entity" value="%d">
         <button type="submit" class="btn btn-outline-primary">Create Draft</button></form>', "\n", $entitiesId);
           if ($entityError['saml1Error']) {
-            printf('%s      <a href=".?action=draftRemoveSaml1&Entity=%d">
-        <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
+            printf('%s      <form action="." method="POST"><input type="hidden" name="action" value="draftRemoveSaml1"><input type="hidden" name="Entity" value="%d">
+        <button type="submit" class="btn btn-outline-danger">Remove SAML1 support</button></form>',
               "\n", $entitiesId);
           }
           if ($entityError['algorithmError']) {
-            printf('%s      <a href=".?action=draftRemoveObsoleteAlgorithms&Entity=%d">
-        <button type="button" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></a>',
+            printf('%s      <form action="." method="POST"><input type="hidden" name="action" value="draftRemoveObsoleteAlgorithms"><input type="hidden" name="Entity" value="%d">
+        <button type="submit" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></form>',
               "\n", $entitiesId);
           }
           printf('%s      <a href=".?action=Request+removal&Entity=%d">
@@ -844,13 +860,13 @@ function showEntity($entitiesId, $showHeader = true)  {
         <button type="button" class="btn btn-outline-danger">Discard Draft</button></a>',
             "\n", $entitiesId);
           if ($entityError['saml1Error']) {
-            printf('%s      <a href=".?action=removeSaml1&Entity=%d">
-        <button type="button" class="btn btn-outline-danger">Remove SAML1 support</button></a>',
+            printf('%s      <form action="." method="POST"><input type="hidden" name="action" value="removeSaml1"><input type="hidden" name="Entity" value="%d">
+        <button type="submit" class="btn btn-outline-danger">Remove SAML1 support</button></form>',
               "\n", $entitiesId);
           }
           if ($entityError['algorithmError']) {
-            printf('%s      <a href=".?action=removeObsoleteAlgorithms&Entity=%d">
-        <button type="button" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></a>',
+            printf('%s      <form action="." method="POST"><input type="hidden" name="action" value="removeObsoleteAlgorithms"><input type="hidden" name="Entity" value="%d">
+        <button type="submit" class="btn btn-outline-danger">Remove Obsolete Algorithms</button></form>',
               "\n", $entitiesId);
           }
           if ($oldEntitiesId > 0) {
