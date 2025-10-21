@@ -39,6 +39,8 @@ if (isset($_GET['showEntity'])) {
     case 'feed' :
       if (isset($_GET['id'])) {
         showFeed($_GET['id']);
+      } else {
+        exit; // intentionally empty output
       }
       break;
     default :
