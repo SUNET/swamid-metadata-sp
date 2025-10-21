@@ -1940,18 +1940,18 @@ class MetadataDisplay extends Common {
         printf ('      <tr>
           <th>Checked</th>
           <td>
-            %s (UTC) <a href=".?action=%s&URL=%s&recheck">
-              <button type="button" class="btn btn-primary">Recheck now</button>
-            </a>
-            <a href=".?action=%s&URL=%s&recheck&verbose">
-              <button type="button" class="btn btn-primary">Recheck now (verbose)</button>
-            </a>
+            %s (UTC) <form action="." method="POST" style="display: inline;">
+              <input type="hidden" name="action" value="%s">
+              <input type="hidden" name="URL" value="%s">
+              <input type="hidden" name="recheck">
+              <button type="submit" class="btn btn-primary">Recheck now</button>
+              <button type="submit" name="verbose" class="btn btn-primary">Recheck now (verbose)</button>
+            </form>
           </td>
         </tr>
         <tr><th>Status</th><td>%s</td></tr>%s',
-          $urlInfo['lastValidated'], htmlspecialchars($_GET['action']) ,
-          urlencode($url), htmlspecialchars($_GET['action']) ,
-          urlencode($url), $urlInfo['validationOutput'] , "\n");
+          $urlInfo['lastValidated'], htmlspecialchars($_REQUEST['action']), htmlspecialchars($url),
+          htmlspecialchars($urlInfo['validationOutput']), "\n");
         if ($urlInfo['height'] > 0 && $urlInfo['width'] > 0 ) {
           printf ('      <tr><th>Height</th><td>%s</td></tr>
         <tr><th>Width</th><td>%s</td></tr>%s', $urlInfo['height'], $urlInfo['width'], "\n");

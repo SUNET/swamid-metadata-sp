@@ -471,7 +471,7 @@ if (isset($_FILES['XMLfile'])) {
           $html->showHeaders('URL status');
           showMenu();
           if (isset($_REQUEST['URL'])) {
-            if (isset($_REQUEST['recheck'])) {
+            if (isset($_POST['recheck'])) {
               $common = new \metadata\Common();
               $common->revalidateURL($_REQUEST['URL'], isset($_REQUEST['verbose']));
             }
@@ -484,7 +484,7 @@ if (isset($_FILES['XMLfile'])) {
             $html->showHeaders('URL status');
             showMenu();
             if (isset($_REQUEST['URL'])) {
-              if (isset($_REQUEST['recheck'])) {
+              if (isset($_POST['recheck'])) {
                 $common = new \metadata\Common();
                 $common->revalidateURL($_REQUEST['URL'], isset($_REQUEST['verbose']));
               }
