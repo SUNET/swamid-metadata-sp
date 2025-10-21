@@ -212,7 +212,7 @@ function showEntity($entity_id, $urn = false)  {
 
     <div class="row">
       <div class="col">
-        <h3>entityID = <?=$entity['entityID']?></h3>
+        <h3>entityID = <?=htmlspecialchars($entity['entityID'])?></h3>
       </div>
     </div><?php $display->showStatusbar($entities_id); ?>
 
@@ -417,7 +417,7 @@ function showList($entities, $show) {
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>',
-      $row['id'], $row['entityID'], $registeredIn, $displayName, $row['OrganizationName']);
+      $row['id'], htmlspecialchars($row['entityID']), $registeredIn, htmlspecialchars($displayName), htmlspecialchars($row['OrganizationName']));
 
     switch ($show) {
       case 'IdP' :
@@ -622,8 +622,8 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entity['entityID'], $entity['organization'], $entity['contacts'],
-        $entity['scopes'], $entity['ecs'], $entity['assurancec'], $entity['ra'], "\n");
+        htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
+        htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
     $html->showHeaders('eduGAIN - SP:s');
@@ -654,8 +654,8 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entity['entityID'], $entity['displayName'], $entity['serviceName'], $entity['organization'],
-        $entity['contacts'], $entity['ec'], $entity['assurancec'], $entity['ra'], "\n");
+        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
+        $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   }
 }
