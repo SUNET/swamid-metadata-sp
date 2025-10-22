@@ -377,7 +377,7 @@ class MetadataEdit extends Common {
             </div>
           </li>',
         $type, $error, $state, htmlspecialchars($value), $entityType,
-        $this->getEditOrDeleteLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
+        $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
       );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -416,7 +416,7 @@ class MetadataEdit extends Common {
             </div>
           </li>',
           $error, $state, htmlspecialchars($value), $entityType,
-          $this->getEditOrDeleteLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
+          $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
         );
         $existingAttributeValues[$type][$value] = true;
       }
@@ -436,7 +436,7 @@ class MetadataEdit extends Common {
           if (isset($existingAttributeValues[$type]) && isset($existingAttributeValues[$type][$value])) {
             printf ('%s            <li>%s</li>', "\n", $value);
           } else {
-            $copy = $this->getEditOrDeleteLink('EntityAttributes',
+            $copy = $this->getEditActionLink('EntityAttributes',
                   array('type' => $type, 'attribute' => $value),
                   $idx, 'Add', '[copy]');
             printf ('
@@ -493,7 +493,7 @@ class MetadataEdit extends Common {
         if ($attribute['type'] != 'entity-selection-profile' ||
           ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
           ) {
-          $addLink = $this->getEditOrDeleteLink('EntityAttributes',
+          $addLink = $this->getEditActionLink('EntityAttributes',
                   array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
                   $idx, 'Add', '[copy]');
         }
@@ -512,7 +512,7 @@ class MetadataEdit extends Common {
           if ($attribute['type'] != 'entity-selection-profile' ||
             ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
             ) {
-            $addLink = $this->getEditOrDeleteLink('EntityAttributes',
+            $addLink = $this->getEditActionLink('EntityAttributes',
                   array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
                   $idx, 'Add', '[copy]');
           }
@@ -590,7 +590,7 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = ($oldURL == 'Missing') ? '' : $this->getEditOrDeleteLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', '[copy]');
+      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', '[copy]');
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
@@ -786,7 +786,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = $this->getEditOrDeleteLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', '[copy]');
+          $copy = $this->getEditActionLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', '[copy]');
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
@@ -1190,11 +1190,11 @@ class MetadataEdit extends Common {
             break;
           case 'removed' :
             if ($element == 'Logo') {
-              $copy = $this->getEditOrDeleteLink($edit,
+              $copy = $this->getEditActionLink($edit,
                   array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value']), 'height' => $data['height'], 'width' => $data['width']),
                   $idx, 'Add', '[copy]');
             } else {
-              $copy = $this->getEditOrDeleteLink($edit,
+              $copy = $this->getEditActionLink($edit,
                   array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
                   $idx, 'Add', '[copy]');
             }
@@ -1523,7 +1523,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = $this->getEditOrDeleteLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', '[copy]');
+          $copy = $this->getEditActionLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', '[copy]');
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
@@ -1751,7 +1751,7 @@ class MetadataEdit extends Common {
             $state = 'dark';
             break;
           case 'removed' :
-            $copy = $this->getEditOrDeleteLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', '[copy]');
+            $copy = $this->getEditActionLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', '[copy]');
             $state = 'danger';
             break;
           default :
@@ -2401,11 +2401,11 @@ class MetadataEdit extends Common {
       }
 
       $keyData = array('type' => $type, 'use' => $keyInfo['use'], 'serialNumber' => $keyInfo['serialNumber'], 'order' => $keyInfo['order']);
-      $links = $this->getEditOrDeleteLink($edit, $keyData, $idx, 'UpdateUse', '<i class="fas fa-pencil-alt"></i>');
-      $links .= $okRemove ?  $this->getEditOrDeleteLink($edit, $keyData, $idx, 'Delete', '<i class="fas fa-trash"></i>') : '';
-      $links .= $keyInfo['order'] > 0 ? $this->getEditOrDeleteLink($edit, $keyData, $idx, 'MoveUp', '<i class="fas fa-arrow-up"></i>') : '';
+      $links = $this->getEditActionLink($edit, $keyData, $idx, 'UpdateUse', '<i class="fas fa-pencil-alt"></i>');
+      $links .= $okRemove ?  $this->getEditActionLink($edit, $keyData, $idx, 'Delete', '<i class="fas fa-trash"></i>') : '';
+      $links .= $keyInfo['order'] > 0 ? $this->getEditActionLink($edit, $keyData, $idx, 'MoveUp', '<i class="fas fa-arrow-up"></i>') : '';
       $links .= $keyInfo['order'] < $maxOrder
-        ? $this->getEditOrDeleteLink($edit, $keyData, $idx, 'MoveDown', '<i class="fas fa-arrow-down"></i>')
+        ? $this->getEditActionLink($edit, $keyData, $idx, 'MoveDown', '<i class="fas fa-arrow-down"></i>')
         : '';
 
       if (isset($_POST['action']) && $_POST['action'] == 'UpdateUse' && $keyInfo['order'] == $order) {
@@ -3861,7 +3861,7 @@ class MetadataEdit extends Common {
    * @param string $linkText Text or HTML code to use for the link text.
    */
 
-  private function getEditOrDeleteLink($edit, $data, $id, $action, $linkText) {
+  private function getEditActionLink($edit, $data, $id, $action, $linkText) {
     $link = sprintf('            <form action="." method="POST" name="%s%s%d" style="display: inline;">
               <input type="hidden" name="edit" value="%s">
               <input type="hidden" name="Entity" value="%d">
@@ -3890,8 +3890,8 @@ class MetadataEdit extends Common {
    * @param int $id Index value to use in identifying edit forms.  Must be unique across the page.
    */
   private function getEditDeleteLinks($edit, $data, $id) {
-    return $this->getEditOrDeleteLink($edit, $data, $id, 'Copy', '<i class="fas fa-pencil-alt"></i>') .
-           $this->getEditOrDeleteLink($edit, $data, $id, 'Delete', '<i class="fas fa-trash"></i>');
+    return $this->getEditActionLink($edit, $data, $id, 'Copy', '<i class="fas fa-pencil-alt"></i>') .
+           $this->getEditActionLink($edit, $data, $id, 'Delete', '<i class="fas fa-trash"></i>');
   }
 
   /**
