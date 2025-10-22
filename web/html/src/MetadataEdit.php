@@ -529,12 +529,12 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editIdPErrorURL() {
-    if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
-      $errorURLValue = trim(urldecode($_GET['errorURL']));
+    if (isset($_POST['action']) && isset($_POST['errorURL']) && $_POST['errorURL'] != '') {
+      $errorURLValue = trim(urldecode($_POST['errorURL']));
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
 
       $update = false;
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Update' :
           if ($ssoDescriptor) {
             $ssoDescriptor->setAttribute('errorURL', $errorURLValue);
@@ -581,8 +581,7 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = ($oldURL == 'Missing') ? '' : sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&action=Update&errorURL=%s">[copy]</a> ',
-        $this->dbIdNr, $this->dbOldIdNr, urlencode($oldURL));
+      $copy = ($oldURL == 'Missing') ? '' : $this->getEditOrDeleteLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', '[copy]');
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
@@ -590,9 +589,7 @@ class MetadataEdit extends Common {
       ? 'Missing'
       : sprintf (self::HTML_HREF_BLANK, htmlspecialchars($oldURL), $oldstate, htmlspecialchars($oldURL));
     if ($newURL != 'Missing') {
-      $baseLink = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&errorURL=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, urlencode($newURL));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('IdPErrorURL', array('errorURL' => htmlspecialchars($newURL)), 1);
       $newURL = sprintf (self::HTML_HREF_BLANK, htmlspecialchars($newURL), $newstate, htmlspecialchars($newURL));
     } else {
       $links = '';
@@ -608,7 +605,7 @@ class MetadataEdit extends Common {
           </li>
           </ul>', "\n", $links, $newstate, $newURL);
     printf ('
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="IdPErrorURL">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
