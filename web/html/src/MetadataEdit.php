@@ -1531,19 +1531,19 @@ class MetadataEdit extends Common {
    */
   private function editDiscoHints() {
     printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if (isset($_GET['element']) && trim($_GET['element']) != '') {
-        $elementValue = trim($_GET['element']);
+      if (isset($_POST['element']) && trim($_POST['element']) != '') {
+        $elementValue = trim($_POST['element']);
         $elementmd = self::SAML_MDUI.$elementValue;
       } else {
         $error .= self::HTML_NES;
         $elementValue = '';
       }
-      if (isset($_GET['value']) && trim($_GET['value']) != '') {
-        $value = trim($_GET['value']);
+      if (isset($_POST['value']) && trim($_POST['value']) != '') {
+        $value = trim($_POST['value']);
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+        $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
         $value = '';
       }
       if ($error) {
@@ -1551,7 +1551,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
@@ -1681,6 +1681,7 @@ class MetadataEdit extends Common {
     $mduiHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     $showEndUL = false;
+    $idx = 1;
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
       $data = $mdui['data'];
@@ -1695,16 +1696,15 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf('<a href="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $element, urlencode($data));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('DiscoHints', array('element'=>$element, 'value'=>htmlspecialchars($data)), $idx);
       printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $links, $state, htmlspecialchars($data));
+      $idx++;
     }
     if ($showEndUL) {
       print "\n" . self::HTML_END_UL;
     }
     printf('
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="DiscoHints">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -1731,6 +1731,7 @@ class MetadataEdit extends Common {
       $elementValue == 'GeolocationHint' ? self::HTML_SELECTED : '', $elementValue == 'IPHint' ? self::HTML_SELECTED : '',
       htmlspecialchars($value), $this->dbIdNr);
 
+    $idx=0;
     foreach ($oldMDUIElements as $element => $elementValues) {
       printf ('%s        <b>%s</b>%s        <ul>', "\n", $element, "\n");
       foreach ($elementValues as $data => $state) {
@@ -1740,8 +1741,7 @@ class MetadataEdit extends Common {
             $state = 'dark';
             break;
           case 'removed' :
-            $copy = sprintf('<a href ="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $element, urlencode($data));
+            $copy = $this->getEditOrDeleteLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', '[copy]');
             $state = 'danger';
             break;
           default :
@@ -1749,6 +1749,7 @@ class MetadataEdit extends Common {
             $state = 'danger';
         }
         printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $copy, $state, htmlspecialchars($data));
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
     }
