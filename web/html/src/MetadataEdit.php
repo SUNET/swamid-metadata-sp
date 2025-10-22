@@ -1243,7 +1243,7 @@ class MetadataEdit extends Common {
         }
         $serviceURL = '';
       }
-      $enabled = $_POST['enabled'] == '1' ? 1 : 0;
+      $enabled = ($_POST['enabled'] ?? '') == '1' ? 1 : 0;
       if ($error) {
         printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
       } else {
@@ -1279,7 +1279,10 @@ class MetadataEdit extends Common {
       printf ('%s        </ul>', "\n");
     }
     printf('
-        <form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST">
+        <form action="." method="POST">
+          <input type="hidden" name="edit" value="SPServiceInfo">
+          <input type="hidden" name="Entity" value="%d">
+          <input type="hidden" name="oldEntity" value="%d">
           <div class="row">
             <div class="col-3">URL to access this service: </div>
             <div class="col-9"><input type="text" name="ServiceURL" value="%s" size="40"></div>
@@ -1305,20 +1308,13 @@ class MetadataEdit extends Common {
       // no need to test again of oldServiceURL is non-empty
       $data = htmlspecialchars($oldServiceURL) . ($oldEnabled ? ' (active)' : ' (inactive)' );
       if ($state == 'danger') {
-        $copy_open = sprintf('<form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST" name="copyServiceInfo">' .
-            '<input type="hidden" name="action" value="Add">' .
-            '<input type="hidden" name="ServiceURL" value="%s">' .
-            '<input type="hidden" name="enabled" value="%s">' .
-            '<a href="#" onClick="document.forms.copyServiceInfo.submit();">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($oldServiceURL), $oldEnabled);
-        $copy_close = '</form>';
+        $copy = $this->getEditActionLink('SPServiceInfo', array('ServiceURL' => htmlspecialchars($oldServiceURL), 'enabled' => $oldEnabled), 1, 'Add', '[copy]');
       } else {
-        $copy_open = '';
-        $copy_close = '';
+        $copy = '';
       }
       printf ('%s        <b>URL to access this service (for use in service catalog)</b>', "\n");
       printf ('%s        <ul>', "\n");
-      printf ('%s          <li>%s<span class="text-%s">%s</span>%s</li>', "\n", $copy_open, $state, $data, $copy_close);
+      printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $copy, $state, $data);
       printf ('%s        </ul>', "\n");
     }
     print self::HTML_END_DIV_COL_ROW;
