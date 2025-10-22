@@ -581,19 +581,19 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&action=Update&errorURL=%s">[copy]</a> ',
+      $copy = ($oldURL == 'Missing') ? '' : sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&action=Update&errorURL=%s">[copy]</a> ',
         $this->dbIdNr, $this->dbOldIdNr, urlencode($oldURL));
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
     $oldURL = ($oldURL == 'Missing')
       ? 'Missing'
-      : sprintf (self::HTML_HREF_BLANK, $oldURL, $oldstate, $oldURL);
+      : sprintf (self::HTML_HREF_BLANK, htmlspecialchars($oldURL), $oldstate, htmlspecialchars($oldURL));
     if ($newURL != 'Missing') {
       $baseLink = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&errorURL=%s&action=',
         $this->dbIdNr, $this->dbOldIdNr, urlencode($newURL));
       $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-      $newURL = sprintf (self::HTML_HREF_BLANK, $newURL, $newstate, $newURL);
+      $newURL = sprintf (self::HTML_HREF_BLANK, htmlspecialchars($newURL), $newstate, htmlspecialchars($newURL));
     } else {
       $links = '';
     }
@@ -606,7 +606,7 @@ class MetadataEdit extends Common {
               %s
             </p>
           </li>
-          </ul>', "\n", $links, $newstate, htmlspecialchars($newURL));
+          </ul>', "\n", $links, $newstate, $newURL);
     printf ('
         <form>
           <input type="hidden" name="edit" value="IdPErrorURL">
@@ -624,12 +624,12 @@ class MetadataEdit extends Common {
       printf('%s        <b>errorURL</b>
         <ul>
           <li>%s
-            <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">
+            <span class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">
               %s
-            </p>
+            </span>
           </li>
         </ul>',
-        "\n", $copy, $oldstate, htmlspecialchars($oldURL));
+        "\n", $copy, $oldstate, $oldURL);
     }
     print self::HTML_END_DIV_COL_ROW;
   }
