@@ -640,11 +640,11 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editIdPScopes() {
-    if (isset($_GET['action']) && isset($_GET['value']) && trim($_GET['value']) != '') {
+    if (isset($_POST['action']) && isset($_POST['value']) && trim($_POST['value']) != '') {
       $changed = false;
-      $scopeValue = trim($_GET['value']);
+      $scopeValue = trim($_POST['value']);
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Add' :
           if ($ssoDescriptor) {
             $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
@@ -744,6 +744,7 @@ class MetadataEdit extends Common {
     $scopesHandler->execute();
     printf('%s    <div class="row">%s      <div class="col">%s        <b>Scopes</b>%s        <ul>%s',
       "\n", "\n", "\n", "\n", "\n");
+    $idx=0;
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       if (isset($oldScopes[$scope['scope']])) {
         $state = 'dark';
@@ -751,14 +752,13 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf('<a href="?edit=IdPScopes&Entity=%d&oldEntity=%d&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, urlencode($scope['scope']));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('IdPScopes', array('value' => htmlspecialchars($scope['scope'])), $idx);
       printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
         $links, $state, htmlspecialchars($scope['scope']), $scope['regexp'] ? 'true' : 'false', "\n");
+      $idx++;
     }
     printf ('        </ul>
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="IdPScopes">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -774,17 +774,18 @@ class MetadataEdit extends Common {
       print '
         <b>Scopes</b>
         <ul>' . "\n";
+      $idx=0;
       foreach ($oldScopes as $scope => $data) {
         if ($data['state'] == 'same') {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = sprintf('<a href ="?edit=IdPScopes&Entity=%d&oldEntity=%d&action=Add&value=%s">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, urlencode($scope));
+          $copy = $this->getEditOrDeleteLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', '[copy]');
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
           $copy, $state, htmlspecialchars($scope), $data['regexp'] ? 'true' : 'false', "\n");
+        $idx++;
       }
       print self::HTML_END_UL;
     }
