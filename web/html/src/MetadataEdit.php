@@ -3426,17 +3426,17 @@ class MetadataEdit extends Common {
     $contactPersonHandler = $this->config->getDb()->prepare(
       'SELECT * FROM `ContactPerson` WHERE `entity_id` = :Id ORDER BY `contactType`;');
 
-    if (isset($_GET['action'])
-      && isset($_GET['type'])
-      && isset($_GET['part'])
-      && isset($_GET['value'])
-      && trim($_GET['value']) != '' ) {
-      switch ($_GET['type']) {
+    if (isset($_POST['action'])
+      && isset($_POST['type'])
+      && isset($_POST['part'])
+      && isset($_POST['value'])
+      && trim($_POST['value']) != '' ) {
+      switch ($_POST['type']) {
         case 'administrative' :
         case 'technical' :
         case 'support' :
         case 'other' :
-          $type = $_GET['type'];
+          $type = $_POST['type'];
           $subType = false;
           break;
         case 'security' :
@@ -3447,7 +3447,7 @@ class MetadataEdit extends Common {
           exit;
       }
 
-      $part = $_GET['part'];
+      $part = $_POST['part'];
       $partmd = 'md:'.$part;
       if (isset(self::ORDER_CONTACTPERSON[$partmd])) {
         $placement = self::ORDER_CONTACTPERSON[$partmd];
@@ -3456,17 +3456,17 @@ class MetadataEdit extends Common {
         exit();
       }
 
-      $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO)
-        ? self::TEXT_MAILTO.trim($_GET['value'])
-        : trim($_GET['value']);
+      $value = ($part == 'EmailAddress' && substr($_POST['value'],0,7) <> self::TEXT_MAILTO)
+        ? self::TEXT_MAILTO.trim($_POST['value'])
+        : trim($_POST['value']);
 
       # Find md:Contacts in XML
       $child = $this->entityDescriptor->firstChild;
       $contactPerson = false;
 
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Add' :
-          $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO) ? self::TEXT_MAILTO.trim($_GET['value']) : trim($_GET['value']);
+          $value = ($part == 'EmailAddress' && substr($_POST['value'],0,7) <> self::TEXT_MAILTO) ? self::TEXT_MAILTO.trim($_POST['value']) : trim($_POST['value']);
           while ($child && ! $contactPerson) {
             if ($child->nodeName == self::SAML_MD_CONTACTPERSON) {
               if ($child->getAttribute('contactType') == $type) {
@@ -3539,7 +3539,7 @@ class MetadataEdit extends Common {
           }
           break;
         case 'Delete' :
-          $value = trim($_GET['value']);
+          $value = trim($_POST['value']);
           while ($child && ! $contactPerson) {
             if ($child->nodeName == self::SAML_MD_CONTACTPERSON && $child->getAttribute('contactType') == $type) {
               if ($subType) {
@@ -3628,6 +3628,7 @@ class MetadataEdit extends Common {
     $existingContactPersons = array();
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
+    $idx=0;
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactType = $contactPerson['contactType'];
       if (! isset($existingContactPersons[$contactType])) {
@@ -3660,17 +3661,16 @@ class MetadataEdit extends Common {
       foreach ($contactPersonSAML2DB as $samlPart => $dbPart) {
         if ($contactPerson[$dbPart]) {
           $state = ($oldContactPersons[$contactType][$dbPart]['state'] == 'same') ? 'dark' : 'success';
-          $baseLink =   sprintf('<a href="?edit=ContactPersons&Entity=%d&oldEntity=%d&type=%s&value=%s&part=%s&action=',
-            $this->dbIdNr, $this->dbOldIdNr, $contactType, urlencode($contactPerson[$dbPart]), $samlPart);
-          $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+          $links = $this->getEditDeleteLinks('ContactPersons', array('type' => $contactType, 'value' => htmlspecialchars($contactPerson[$dbPart]), 'part' => $samlPart), $idx);
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
             $links, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
           $existingContactPersons[$contactType][$dbPart] = true;
+          $idx++;
         }
       }
       print self::HTML_END_UL;
     }
-    printf('        <form>
+    printf('        <form action="." method="POST">
           <input type="hidden" name="edit" value="ContactPersons">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -3718,6 +3718,7 @@ class MetadataEdit extends Common {
     # Print Old contacts
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $contactPersonHandler->execute();
+    $idx=0;
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactType = $contactPerson['contactType'];
       if ($contactPerson['subcontactType'] == '') {
@@ -3733,10 +3734,12 @@ class MetadataEdit extends Common {
           $state = $oldContactPersons[$contactType][$dbPart]['state'] == 'same' ? 'dark' : 'danger';
           $addLink = isset($existingContactPersons[$contactType][$dbPart])
             ? ''
-            : sprintf('<a href="?edit=ContactPersons&Entity=%d&oldEntity=%d&type=%s&part=%s&value=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $type, $samlPart, urlencode($contactPerson[$dbPart]));
+            : $this->getEditActionLink('ContactPersons',
+                  array('type' => $type, 'part' => $samlPart, 'value' => htmlspecialchars($contactPerson[$dbPart])),
+                  $idx, 'Add', '[copy]');
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
             $addLink, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
+          $idx++;
         }
       }
       print self::HTML_END_UL;
