@@ -1958,32 +1958,32 @@ class MetadataEdit extends Common {
     $edit = $type == 'AttributeAuthority' ? 'AAKeyInfo' : $edit;
     $addLink = sprintf('<a href="?edit=Add%s&Entity=%d&oldEntity=%d"><button>Add new certificate</button></a><br>',
       $edit, $this->dbIdNr, $this->dbOldIdNr);
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if ($_GET['action'] == 'Delete'
-        || $_GET['action'] == 'MoveUp'
-        || $_GET['action'] == 'MoveDown'
-        || $_GET['action'] == 'Change'
-        || $_GET['action'] == 'UpdateUse') {
-        if (isset($_GET['use'])) {
-          $use = $_GET['use'];
+      if ($_POST['action'] == 'Delete'
+        || $_POST['action'] == 'MoveUp'
+        || $_POST['action'] == 'MoveDown'
+        || $_POST['action'] == 'Change'
+        || $_POST['action'] == 'UpdateUse') {
+        if (isset($_POST['use'])) {
+          $use = $_POST['use'];
         } else {
           $error .= '<br>Missing use';
         }
-        if (isset($_GET['serialNumber'])) {
-          $serialNumber = $_GET['serialNumber'];
+        if (isset($_POST['serialNumber'])) {
+          $serialNumber = $_POST['serialNumber'];
         } else {
           $error .= '<br>Missing serialNumber';
         }
-        if (isset($_GET['order'])) {
-          $order = $_GET['order'];
+        if (isset($_POST['order'])) {
+          $order = $_POST['order'];
         } else {
           $error .= '<br>Missing order';
         }
       }
-      if ($_GET['action'] == 'Change') {
-        if (isset($_GET['newUse'])) {
-          $newUse = $_GET['newUse'];
+      if ($_POST['action'] == 'Change') {
+        if (isset($_POST['newUse'])) {
+          $newUse = $_POST['newUse'];
         } else {
           $error .= '<br>Missing new use';
         }
@@ -1994,7 +1994,7 @@ class MetadataEdit extends Common {
         $changed = false;
         # Find md:SSODescriptor in XML
         $ssoDescriptor = $this->getSSODecriptor($type);
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'MoveUp' :
             if ($ssoDescriptor) {
               $child = $ssoDescriptor->firstChild;
@@ -2349,6 +2349,7 @@ class MetadataEdit extends Common {
 
     $keyInfoHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->execute();
+    $idx = 0;
     while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       $okRemove = false;
       $error = '';
@@ -2395,20 +2396,18 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf(
-        '%s        <a href="?edit=%s&Entity=%d&oldEntity=%d&type=%s&use=%s&serialNumber=%s&order=%d&action=',
-        "\n", $edit, $this->dbIdNr, $this->dbOldIdNr, $type,
-        $keyInfo['use'], $keyInfo['serialNumber'], $keyInfo['order']);
-      $links = $baseLink . 'UpdateUse"><i class="fas fa-pencil-alt"></i></a> ';
-      $links .= $okRemove ? sprintf('%sDelete"><i class="fas fa-trash"></i></a> ', $baseLink) : '';
-      $links .= $keyInfo['order'] > 0 ? sprintf('%sMoveUp"><i class="fas fa-arrow-up"></i></a> ', $baseLink) : '';
+
+      $keyData = array('type' => $type, 'use' => $keyInfo['use'], 'serialNumber' => $keyInfo['serialNumber'], 'order' => $keyInfo['order']);
+      $links = $this->getEditOrDeleteLink($edit, $keyData, $idx, 'UpdateUse', '<i class="fas fa-pencil-alt"></i>');
+      $links .= $okRemove ?  $this->getEditOrDeleteLink($edit, $keyData, $idx, 'Delete', '<i class="fas fa-trash"></i>') : '';
+      $links .= $keyInfo['order'] > 0 ? $this->getEditOrDeleteLink($edit, $keyData, $idx, 'MoveUp', '<i class="fas fa-arrow-up"></i>') : '';
       $links .= $keyInfo['order'] < $maxOrder
-        ? sprintf('%sMoveDown"><i class="fas fa-arrow-down"></i></a> ', $baseLink)
+        ? $this->getEditOrDeleteLink($edit, $keyData, $idx, 'MoveDown', '<i class="fas fa-arrow-down"></i>')
         : '';
 
-      if (isset($_GET['action']) && $_GET['action'] == 'UpdateUse' && $keyInfo['order'] == $order) {
+      if (isset($_POST['action']) && $_POST['action'] == 'UpdateUse' && $keyInfo['order'] == $order) {
         $useLink = sprintf ('
-          <form>
+          <form action="." method="POST">
             <input type="hidden" name="edit" value="%s">
             <input type="hidden" name="Entity" value="%d">
             <input type="hidden" name="oldEntity" value="%d">
@@ -2440,6 +2439,7 @@ class MetadataEdit extends Common {
         </ul>',
         $links, "\n", $state, $useLink, $name, $error, $keyInfo['notValidAfter'], htmlspecialchars($keyInfo['subject']),
         htmlspecialchars($keyInfo['issuer']), $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+      $idx++;
     }
 
     printf('
