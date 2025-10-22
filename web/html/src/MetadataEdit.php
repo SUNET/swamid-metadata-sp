@@ -1908,7 +1908,10 @@ class MetadataEdit extends Common {
     if ($added) {
       $this->editKeyInfo($type);
     } else {
-      printf('    <form action="?edit=Add%s&Entity=%d&oldEntity=%d" method="POST" enctype="multipart/form-data">
+      printf('    <form action="." method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="edit" value="Add%s">
+      <input type="hidden" name="Entity" value="%d">
+      <input type="hidden" name="oldEntity" value="%d">
       <p>
         <label for="certificate">
           Certificate:<br>
