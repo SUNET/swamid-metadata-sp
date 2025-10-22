@@ -3176,10 +3176,10 @@ class MetadataEdit extends Common {
     $organizationHandler = $this->config->getDb()->prepare(
       'SELECT `element`, `lang`, `data` FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
 
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if (isset($_GET['element']) && trim($_GET['element']) != '') {
-        $element = trim($_GET['element']);
+      if (isset($_POST['element']) && trim($_POST['element']) != '') {
+        $element = trim($_POST['element']);
         $elementmd = 'md:'.$element;
         if (isset(self::ORDER_ORGANIZATION[$elementmd])) {
           $placement = self::ORDER_ORGANIZATION[$elementmd];
@@ -3189,16 +3189,16 @@ class MetadataEdit extends Common {
       } else {
         $error .= self::HTML_NES;
       }
-      if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
-        $lang = strtolower(trim($_GET['lang']));
+      if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
+        $lang = strtolower(trim($_POST['lang']));
       } else {
-        $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
+        $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
         $lang = '';
       }
-      if (isset($_GET['value']) && $_GET['value'] != '') {
-        $value = trim($_GET['value']);
+      if (isset($_POST['value']) && $_POST['value'] != '') {
+        $value = trim($_POST['value']);
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+        $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
         $value = '';
       }
       if ($error) {
@@ -3223,7 +3223,7 @@ class MetadataEdit extends Common {
         }
 
         $changed = false;
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
             if (! $organization) {
               # Add if missing
@@ -3274,7 +3274,7 @@ class MetadataEdit extends Common {
               $organizationUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
               $organizationUpdateHandler->bindParam(self::BIND_ELEMENT, $element);
               $organizationUpdateHandler->bindParam(self::BIND_LANG, $lang);
-              $organizationUpdateHandler->bindParam(self::BIND_DATA, $_GET['value']);
+              $organizationUpdateHandler->bindParam(self::BIND_DATA, $_POST['value']);
               $organizationUpdateHandler->execute();
               $changed = true;
             }
@@ -3343,6 +3343,7 @@ class MetadataEdit extends Common {
     $existingOrganizationElements = array();
     $organizationHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
+    $idx=0;
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if (! isset($existingOrganizationElements[$organization['element']]) ) {
         $existingOrganizationElements[$organization['element']] = array();
@@ -3353,16 +3354,15 @@ class MetadataEdit extends Common {
         $state = 'dark';
         $oldOrganizationElements[$organization['element']][$organization['lang']]['state'] = 'same';
       } else { $state = 'success'; }
-      $baseLink = sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'], urlencode($organization['data']));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('Organization', array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])), $idx);
       printf (self::HTML_LI_SPAN,
         "\n", $links, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
       $existingOrganizationElements[$organization['element']][$organization['lang']] = true;
+      $idx++;
     }
     printf('
         </ul>
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="Organization">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -3399,16 +3399,19 @@ class MetadataEdit extends Common {
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
     print '        <ul>';
+    $idx=0;
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $state = ($oldOrganizationElements[$organization['element']][$organization['lang']]['state'] == 'same')
         ? 'dark'
         : 'danger';
       $addLink =  (isset($existingOrganizationElements[$organization['element']][$organization['lang']]) )
         ? ''
-        : sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'],urlencode($organization['data']));
+        : $this->getEditActionLink('Organization',
+                  array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])),
+                  $idx, 'Add', '[copy]');
       printf (self::HTML_LI_SPAN,
         "\n", $addLink, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
+      $idx++;
     }
     print "\n        <ul>";
     print self::HTML_END_DIV_COL_ROW;
