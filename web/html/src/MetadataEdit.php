@@ -3834,6 +3834,54 @@ class MetadataEdit extends Common {
     print "\n              </select>\n";
   }
 
+
+  /**
+   * Render HTML code with an action link for a given metadata edit action wrapped in a form using a POST method.
+   *
+   * @param string $edit Name of element being edited
+   *
+   * @param array $data Array of key value pairs to include on the form (data to be edited).  Values already have to be prepared to render as %s (so escaped as needed)
+   *
+   * @param int $id Index value to use in identifying edit forms.  Must be unique across the page (for a single action).
+   *
+   * @param string $action The action to perform (pass in the submitted form)
+   *
+   * @param string $linkText Text or HTML code to use for the link text.
+   */
+
+  private function getEditOrDeleteLink($edit, $data, $id, $action, $linkText) {
+    $link = sprintf('            <form action="." method="POST" name="%s%s%d" style="display: inline;">
+              <input type="hidden" name="edit" value="%s">
+              <input type="hidden" name="Entity" value="%d">
+              <input type="hidden" name="oldEntity" value="%d">%s',
+              $action, $edit, $id, // form id
+              $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
+    foreach ($data as $key => $value) {
+      $link .= sprintf('              <input type="hidden" name="%s" value="%s">%s', $key, $value, "\n");
+    }
+    $link .= sprintf('              <input type="hidden" name="action" value="%s">
+              <a href="#" onClick="document.forms.%s%s%d.submit();">%s</a></form>%s',
+              $action,
+              $action, $edit, $id, // form id
+              $linkText, "\n"
+              );
+    return $link;
+  }
+
+  /**
+   * Render HTML code with Edit and Delete links for use in various metadata edit functions
+   *
+   * @param string $edit Name of element being edited
+   *
+   * @param array $data Array of key value pairs to include on the form (data to be edited).  Values already have to be prepared to render as %s (so escaped as needed)
+   *
+   * @param int $id Index value to use in identifying edit forms.  Must be unique across the page.
+   */
+  private function getEditDeleteLinks($edit, $data, $id) {
+    return $this->getEditOrDeleteLink($edit, $data, $id, 'Copy', '<i class="fas fa-pencil-alt"></i>') .
+           $this->getEditOrDeleteLink($edit, $data, $id, 'Delete', '<i class="fas fa-trash"></i>');
+  }
+
   /**
    * Update user Email and Fullname
    *
