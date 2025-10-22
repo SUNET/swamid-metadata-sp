@@ -548,7 +548,7 @@ class MetadataDisplay extends Common {
             $entitiesId, 'Import the selected organization information to this Draft', "\n");
         } elseif ($entity['OrganizationInfo_id'] == 0) {
           if ($admin) {
-            printf('          <br><br><a href="./?action=createOrganizationFromEntity&Entity=%d"><button>%s</button></a><br><br>%s',
+            printf('          <br><br><form action="." method="POST"><input type="hidden" name="action" value="createOrganizationFromEntity"><input type="hidden" name="Entity" value="%d"><button>%s</button></form><br><br>%s',
               $entitiesId, 'Create new organization based on this entity', "\n");
           }
           printf('          Please select your organization.<br>

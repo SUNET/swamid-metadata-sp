@@ -414,11 +414,15 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'createOrganizationFromEntity' :
-          if ($userLevel > 19) {
-            $imps = new \metadata\IMPS();
-            $imps->createOrganizationFromEntity($entitiesId);
+          if (!sizeof($_POST)) {
+            print HTML_INVLD_RQ_METHOD;
+          } else {
+            if ($userLevel > 19) {
+              $imps = new \metadata\IMPS();
+              $imps->createOrganizationFromEntity($entitiesId);
+            }
+            showEntity($entitiesId);
           }
-          showEntity($entitiesId);
           break;
         default :
           if ($userLevel > 19) {
