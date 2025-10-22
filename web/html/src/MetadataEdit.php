@@ -801,37 +801,37 @@ class MetadataEdit extends Common {
   private function editMDUI($type) {
     printf (self::HTML_START_DIV_ROW_COL.'%s', "\n", "\n", "\n");
     $edit = $type == 'IDPSSO' ? 'IdPMDUI' : 'SPMDUI';
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if (isset($_GET['element']) && trim($_GET['element']) != '') {
-        $elementValue = trim($_GET['element']);
+      if (isset($_POST['element']) && trim($_POST['element']) != '') {
+        $elementValue = trim($_POST['element']);
         $elementmd = self::SAML_MDUI.$elementValue;
       } else {
         $error .= self::HTML_NES;
         $elementValue = '';
       }
-      if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
-        $langvalue = strtolower(trim($_GET['lang']));
+      if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
+        $langvalue = strtolower(trim($_POST['lang']));
       } else {
-        $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
+        $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
         $langvalue = '';
       }
-      if (isset($_GET['value']) && trim($_GET['value']) != '') {
-        $value = trim($_GET['value']);
+      if (isset($_POST['value']) && trim($_POST['value']) != '') {
+        $value = trim($_POST['value']);
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+        $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
         $value = '';
       }
-      if (isset($_GET['height']) && $_GET['height'] > 0 ) {
-        $heightValue = $_GET['height'];
+      if (isset($_POST['height']) && $_POST['height'] > 0 ) {
+        $heightValue = $_POST['height'];
       } else {
-        $error .= $_GET['element'] == "Logo" ? '<br>Height must be larger than 0' : '';
+        $error .= $_POST['element'] == "Logo" ? '<br>Height must be larger than 0' : '';
         $heightValue = 0;
       }
-      if (isset($_GET['width']) && $_GET['width'] > 0 ) {
-        $widthValue = $_GET['width'];
+      if (isset($_POST['width']) && $_POST['width'] > 0 ) {
+        $widthValue = $_POST['width'];
       } else {
-        $error .= $_GET['element'] == "Logo" ? '<br>Width must be larger than 0' : '';
+        $error .= $_POST['element'] == "Logo" ? '<br>Width must be larger than 0' : '';
         $widthValue = 0;
       }
       if ($error) {
@@ -840,7 +840,7 @@ class MetadataEdit extends Common {
         $changed = false;
         # Find md:IDPSSODescriptor in XML
         $ssoDescriptor = $this->getSSODecriptor($type);
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
@@ -1065,6 +1065,7 @@ class MetadataEdit extends Common {
     $mduiHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     $showEndUL = false;
+    $idx=0;
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($oldLang != $mdui['lang']) {
         $lang = $mdui['lang'];
@@ -1106,9 +1107,7 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf('<a href="?edit=%s&Entity=%d&oldEntity=%d&element=%s&height=%d&width=%d&lang=%s&value=%s&action=',
-        $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $height, $width, $lang, urlencode($data));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks($edit, array('element'=>$element, 'height' => $height, 'width' => $width, 'lang' => $lang, 'value' => htmlspecialchars($data)), $idx);
       switch ($element) {
         case 'Logo' :
           printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>',
@@ -1122,12 +1121,13 @@ class MetadataEdit extends Common {
         default :
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $links, $state, $element, htmlspecialchars($data));
       }
+      $idx++;
     }
     if ($showEndUL) {
       print "\n" . self::HTML_END_UL;
     }
     printf('
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="%s">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -1172,6 +1172,7 @@ class MetadataEdit extends Common {
       </div><!-- end col -->
       <div class="col">', htmlspecialchars($value), $heightValue, $widthValue, $this->dbIdNr);
 
+    $idx=0;
     foreach ($oldMDUIElements as $lang => $elementValues) {
       printf ('%s        <b>Lang = "%s"</b>%s        <ul>', "\n", $lang, "\n");
       foreach ($elementValues as $element => $data) {
@@ -1182,12 +1183,13 @@ class MetadataEdit extends Common {
             break;
           case 'removed' :
             if ($element == 'Logo') {
-              $copy = sprintf('<a href ="?edit=%s&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&height=%d&width=%d&action=Add">[copy]</a> ',
-                $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang,
-                urlencode($data['value']), $data['height'], $data['width']);
+              $copy = $this->getEditOrDeleteLink($edit,
+                  array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value']), 'height' => $data['height'], 'width' => $data['width']),
+                  $idx, 'Add', '[copy]');
             } else {
-              $copy = sprintf('<a href ="?edit=%s&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-                $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang, urlencode($data['value']));
+              $copy = $this->getEditOrDeleteLink($edit,
+                  array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
+                  $idx, 'Add', '[copy]');
             }
             $state = 'danger';
             break;
@@ -1210,6 +1212,7 @@ class MetadataEdit extends Common {
         } else {
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $copy, $state, $element, $value);
         }
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
     }
