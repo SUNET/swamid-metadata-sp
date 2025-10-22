@@ -1322,9 +1322,9 @@ class MetadataEdit extends Common {
   private function editDiscoveryResponse() {
     printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
 
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if ($_GET['action'] == 'AddIndex') {
+      if ($_POST['action'] == 'AddIndex') {
         $nextDiscoveryIndexHandler = $this->config->getDb()->prepare(
           'SELECT MAX(`index`) AS lastIndex FROM `DiscoveryResponse` WHERE `entity_id` = :Id;');
         $nextDiscoveryIndexHandler->execute(array(self::BIND_ID => $this->dbIdNr));
@@ -1333,22 +1333,22 @@ class MetadataEdit extends Common {
         } else {
           $indexValue = 1;
         }
-      } elseif ($_GET['action'] == 'Copy' || $_GET['action'] == 'Delete' ) {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+      } elseif ($_POST['action'] == 'Copy' || $_POST['action'] == 'Delete' ) {
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
       } else {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
-        if (isset($_GET['value']) && trim($_GET['value']) != '') {
-          $value = trim($_GET['value']);
+        if (isset($_POST['value']) && trim($_POST['value']) != '') {
+          $value = trim($_POST['value']);
         } else {
           $error .= '<br>Value is empty';
         }
@@ -1358,7 +1358,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $ssoDescriptor = $this->getSSODecriptor('SPSSO');
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
           case 'Update' :
             if ($ssoDescriptor) {
@@ -1463,10 +1463,10 @@ class MetadataEdit extends Common {
         $state = 'success';
       }
 
-      if ($indexValue == $index && isset($_GET['action']) && $_GET['action'] == "Copy") {
+      if ($indexValue == $index && isset($_POST['action']) && $_POST['action'] == "Copy") {
         printf ('          <li>
             <b>Index = %d</b><br>
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="edit" value="DiscoveryResponse">
               <input type="hidden" name="Entity" value="%d">
               <input type="hidden" name="oldEntity" value="%d">
@@ -1478,17 +1478,16 @@ class MetadataEdit extends Common {
           </li>%s',
           $index, $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($location), "\n");
       } else {
-        $baseLink = sprintf('<a href="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&index=%s&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index);
-        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-        printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
-          $links, $state, $index, htmlspecialchars($location), "\n");
+        $links = $this->getEditDeleteLinks('DiscoveryResponse', array('index'=>$index), $index);
+        printf ('          <li>%s%s
+            <span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+          "\n", $links, $state, $index, htmlspecialchars($location), "\n");
       }
     }
-    if (isset($_GET['action']) && $_GET['action'] == "AddIndex") {
+    if (isset($_POST['action']) && $_POST['action'] == "AddIndex") {
       printf ('          <li>
             <b>Index = %d</b><br>
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="edit" value="DiscoveryResponse">
               <input type="hidden" name="Entity" value="%d">
               <input type="hidden" name="oldEntity" value="%d">
@@ -1503,7 +1502,7 @@ class MetadataEdit extends Common {
 
     printf ('        </ul>
         <a href="./?validateEntity=%d"><button>Back</button></a>
-        <a href="./?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=AddIndex"><button>Add Index</button></a>
+        <form action="." method="POST" style="display: inline;"><input type="hidden" name="edit" value="DiscoveryResponse"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="oldEntity" value="%d"><input type="hidden" name="action" value="AddIndex"><button>Add Index</button></form>
       </div><!-- end col -->
       <div class="col">',
       $this->dbIdNr, $this->dbIdNr, $this->dbOldIdNr);
@@ -1514,8 +1513,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = sprintf('<a href ="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=Add&index=%d&value=%s">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($data['location']));
+          $copy = $this->getEditOrDeleteLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', '[copy]');
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
