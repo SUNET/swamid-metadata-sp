@@ -389,7 +389,7 @@ class MetadataDisplay extends Common {
     }
     switch ($extra) {
       case 'SSO' :
-        $extraButton = sprintf('<a href="?removeSSO=%d&type=%s"><i class="fas fa-trash"></i></a>', $entityId, $name);
+        $extraButton = sprintf('<form action="." method="POST" name="removeSSO%s" style="display: inline;"><input type="hidden" name="removeSSO" value="%d"><input type="hidden" name="type" value="%s"><a href="#" onClick="document.forms.removeSSO%s.submit();"><i class="fas fa-trash"></i></a></form>', $name, $entityId, $name, $name);
         break;
       case 'EntityAttributes' :
       case 'IdPMDUI' :

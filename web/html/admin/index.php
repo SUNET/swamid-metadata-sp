@@ -229,9 +229,9 @@ if (isset($_FILES['XMLfile'])) {
   if (checkAccess($_REQUEST['removeEntity'],$EPPN,$userLevel,10, true)) {
     removeEntity($_REQUEST['removeEntity']);
   }
-} elseif (isset($_REQUEST['removeSSO']) && isset($_REQUEST['type'])) {
-  if (checkAccess($_REQUEST['removeSSO'],$EPPN,$userLevel,10, true)) {
-    removeSSO($_REQUEST['removeSSO'], $_REQUEST['type']);
+} elseif (isset($_POST['removeSSO']) && isset($_POST['type'])) {
+  if (checkAccess($_POST['removeSSO'],$EPPN,$userLevel,10, true)) {
+    removeSSO($_POST['removeSSO'], $_POST['type']);
   }
 } elseif (isset($_REQUEST['rawXML'])) {
   $display->showRawXML($_REQUEST['rawXML']);
