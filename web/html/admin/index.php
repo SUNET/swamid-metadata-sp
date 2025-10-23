@@ -2101,7 +2101,7 @@ function requestAccess($entitiesId) {
         $menuActive = '';
         showText($info, true, false);
       } else {
-        $errors .= isset($_GET['FormVisit']) ? "You must check the box to confirm.\n" : '';
+        $errors .= isset($_POST['FormVisit']) ? "You must check the box to confirm.\n" : '';
         $html->showHeaders($metadata->entityID());
         $menuActive = '';
         showMenu();
