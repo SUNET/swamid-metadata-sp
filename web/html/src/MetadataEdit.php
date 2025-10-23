@@ -31,6 +31,7 @@ class MetadataEdit extends Common {
   const HTML_START_DIV_ROW_COL = '%s    <div class="row">%s      <div class="col">';
 
   const TEXT_BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
+  const TEXT_COPY = '[copy]';
   const TEXT_END_CERT = "-----END CERTIFICATE-----\n";
   const TEXT_ENC_SIGN = 'encryption & signing';
   const TEXT_MAILTO = 'mailto:';
@@ -438,7 +439,7 @@ class MetadataEdit extends Common {
           } else {
             $copy = $this->getEditActionLink('EntityAttributes',
                   array('type' => $type, 'attribute' => $value),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
             printf ('
             <li>
               %s %s
@@ -495,7 +496,7 @@ class MetadataEdit extends Common {
           ) {
           $addLink = $this->getEditActionLink('EntityAttributes',
                   array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
         }
         $state = 'danger';
       }?>
@@ -514,7 +515,7 @@ class MetadataEdit extends Common {
             ) {
             $addLink = $this->getEditActionLink('EntityAttributes',
                   array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
           }
           $state = 'danger';
         }
@@ -590,7 +591,7 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', '[copy]');
+      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', self::TEXT_COPY);
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
@@ -786,7 +787,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = $this->getEditActionLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', '[copy]');
+          $copy = $this->getEditActionLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', self::TEXT_COPY);
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
@@ -1192,11 +1193,11 @@ class MetadataEdit extends Common {
             if ($element == 'Logo') {
               $copy = $this->getEditActionLink($edit,
                   array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value']), 'height' => $data['height'], 'width' => $data['width']),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
             } else {
               $copy = $this->getEditActionLink($edit,
                   array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
             }
             $state = 'danger';
             break;
@@ -1308,7 +1309,7 @@ class MetadataEdit extends Common {
       // no need to test again of oldServiceURL is non-empty
       $data = htmlspecialchars($oldServiceURL) . ($oldEnabled ? ' (active)' : ' (inactive)' );
       if ($state == 'danger') {
-        $copy = $this->getEditActionLink('SPServiceInfo', array('ServiceURL' => htmlspecialchars($oldServiceURL), 'enabled' => $oldEnabled), 1, 'Add', '[copy]');
+        $copy = $this->getEditActionLink('SPServiceInfo', array('ServiceURL' => htmlspecialchars($oldServiceURL), 'enabled' => $oldEnabled), 1, 'Add', self::TEXT_COPY);
       } else {
         $copy = '';
       }
@@ -1519,7 +1520,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = $this->getEditActionLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', '[copy]');
+          $copy = $this->getEditActionLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', self::TEXT_COPY);
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
@@ -1747,7 +1748,7 @@ class MetadataEdit extends Common {
             $state = 'dark';
             break;
           case 'removed' :
-            $copy = $this->getEditActionLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', '[copy]');
+            $copy = $this->getEditActionLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', self::TEXT_COPY);
             $state = 'danger';
             break;
           default :
@@ -3060,7 +3061,7 @@ class MetadataEdit extends Common {
                           'NameFormat' => self::SAMLNF_URI,
                           'isRequired' => '1'
                           ),
-                    $idx, 'Add', '[copy]'),
+                    $idx, 'Add', self::TEXT_COPY),
                   $data['desc'], $nameL,  "\n");
             }
             $idx++;
@@ -3088,7 +3089,7 @@ class MetadataEdit extends Common {
                           'NameFormat' => $nf,
                           'isRequired' => '1'
                           ),
-                    $idx, 'Add', '[copy]'),
+                    $idx, 'Add', self::TEXT_COPY),
                 $data['desc'], $samlVer, $nameL,  "\n");
             }
           }
@@ -3146,7 +3147,7 @@ class MetadataEdit extends Common {
               case 'removed' :
                 $copy = $this->getEditActionLink('AttributeConsumingService',
                     array('index' => $index, 'element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
-                    $idx, 'Add', '[copy]');
+                    $idx, 'Add', self::TEXT_COPY);
                 $state = 'danger';
                 break;
               default :
@@ -3174,7 +3175,7 @@ class MetadataEdit extends Common {
                           'friendlyName' => $data['friendlyName'],
                           'NameFormat' => htmlspecialchars($data['nameFormat'])
                           ),
-                    $idx, 'Add', '[copy]');
+                    $idx, 'Add', self::TEXT_COPY);
               $state = 'danger';
               break;
             default :
@@ -3434,7 +3435,7 @@ class MetadataEdit extends Common {
         ? ''
         : $this->getEditActionLink('Organization',
                   array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
       printf (self::HTML_LI_SPAN,
         "\n", $addLink, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
       $idx++;
@@ -3762,7 +3763,7 @@ class MetadataEdit extends Common {
             ? ''
             : $this->getEditActionLink('ContactPersons',
                   array('type' => $type, 'part' => $samlPart, 'value' => htmlspecialchars($contactPerson[$dbPart])),
-                  $idx, 'Add', '[copy]');
+                  $idx, 'Add', self::TEXT_COPY);
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
             $addLink, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
           $idx++;
