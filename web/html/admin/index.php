@@ -1673,7 +1673,8 @@ function annualConfirmationList($list){
       }
       printf(
       '%s    <p>You are confirming that the list below is operational and fulfils %s</p>
-    <form action="?action=myEntities" method="POST" enctype="multipart/form-data">
+    <form action="." method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="myEntities">
       <input type="hidden" name="FormVisit" value="true">
       <ul>', "\n", $federation['rulesName']);
       foreach ($entityList as $id => $entityID) {
@@ -1688,7 +1689,7 @@ function annualConfirmationList($list){
       <input type="checkbox" id="entityIsOK" name="entityIsOK">
       <label for="entityIsOK">I confirm that this Entity fulfils sections <b>%s</b> in <a href="%s" target="_blank">%s</a></label><br>
       <br>
-      <input type="submit" name="action" value="Annual Confirmation">
+      <input type="submit" name="formAction" value="Annual Confirmation">
     </form>
     <a href="/admin/?action=myEntities"><button>Return to My entities</button></a>%s',
         $federation['rulesName'], $infoText, $sections,
