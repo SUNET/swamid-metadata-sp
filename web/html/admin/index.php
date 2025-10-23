@@ -222,11 +222,13 @@ if (isset($_FILES['XMLfile'])) {
   validateEntity($_REQUEST['validateEntity']);
   showEntity($_REQUEST['validateEntity']);
 } elseif (isset($_REQUEST['move2Pending'])) {
-  if (checkAccess($_REQUEST['move2Pending'], $EPPN, $userLevel, 10, true)) {
+  if (checkAccess($_REQUEST['move2Pending'], $EPPN, $userLevel, 10, true) &&
+      checkStatus($_REQUEST['move2Pending'], 3)) {
     move2Pending($_REQUEST['move2Pending']);
   }
 } elseif (isset($_REQUEST['move2Draft'])) {
-  if (checkAccess($_REQUEST['move2Draft'], $EPPN, $userLevel, 10, true)) {
+  if (checkAccess($_REQUEST['move2Draft'], $EPPN, $userLevel, 10, true) &&
+      checkStatus($_REQUEST['move2Draft'], 2)) {
     move2Draft($_REQUEST['move2Draft']);
   }
 } elseif (isset($_POST['mergeEntity'])) {
