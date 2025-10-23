@@ -172,6 +172,17 @@ if (isset($_SERVER['displayName'])) {
   $fullName = '';
 }
 
+// Safeguard POST requests against CSRF
+if (sizeof($_POST) || $_SERVER['REQUEST_METHOD'] == 'POST') {
+  $referer = $_SERVER['HTTP_REFERER'] ?? '';
+  $baseURL = $config->baseURL();
+  if (!$referer || substr($referer, 0, strlen($baseURL)) != $baseURL) {
+    http_response_code(400); // Bad Request
+    print 'Invalid request';
+    exit;
+  }
+}
+
 if ($errors != '') {
   $html->showHeaders('Problem');
   printf('
