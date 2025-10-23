@@ -2487,7 +2487,7 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editAttributeConsumingService() {
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $name = '';
       $friendlyName = '';
       $nameFormat = '';
@@ -2497,7 +2497,7 @@ class MetadataEdit extends Common {
       $elementmd = 'md:';
       $elementValue = '';
       $error = '';
-      if ($_GET['action'] == 'AddIndex') {
+      if ($_POST['action'] == 'AddIndex') {
         $nextServiceIndexHandler = $this->config->getDb()->prepare(
           'SELECT MAX(`Service_index`) AS lastIndex FROM `AttributeConsumingService` WHERE `entity_id` = :Id;');
         $nextServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2508,22 +2508,22 @@ class MetadataEdit extends Common {
         } else {
           $indexValue = 1;
         }
-      } elseif ($_GET['action'] == 'SetIndex' || $_GET['action'] == 'DeleteIndex' ) {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+      } elseif ($_POST['action'] == 'SetIndex' || $_POST['action'] == 'DeleteIndex' ) {
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
       } else {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
-        if (isset($_GET['element']) && trim($_GET['element']) != '') {
-          $elementValue = trim($_GET['element']);
+        if (isset($_POST['element']) && trim($_POST['element']) != '') {
+          $elementValue = trim($_POST['element']);
           $elementmd = 'md:'.$elementValue;
         } else {
           $error .= self::HTML_NES;
@@ -2534,37 +2534,37 @@ class MetadataEdit extends Common {
           $error .= '<br>Unknown element selected';
         }
         if ($placement < 3 ) {
-          if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
-            $langvalue = strtolower(trim($_GET['lang']));
+          if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
+            $langvalue = strtolower(trim($_POST['lang']));
           } else {
-            $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
+            $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
           }
-          if (isset($_GET['value']) && trim($_GET['value']) != '') {
-            $value = trim($_GET['value']);
+          if (isset($_POST['value']) && trim($_POST['value']) != '') {
+            $value = trim($_POST['value']);
           } else {
-            $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+            $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
           }
         } else {
-          if (isset($_GET['name']) && trim($_GET['name']) != '') {
-            $name = trim($_GET['name']);
+          if (isset($_POST['name']) && trim($_POST['name']) != '') {
+            $name = trim($_POST['name']);
           } else {
             $error .= '<br>Name is empty';
           }
-          if (isset($_GET['friendlyName']) && trim($_GET['friendlyName']) != '') {
-            $friendlyName = trim($_GET['friendlyName']);
+          if (isset($_POST['friendlyName']) && trim($_POST['friendlyName']) != '') {
+            $friendlyName = trim($_POST['friendlyName']);
           } else {
             if (isset(self::FRIENDLY_NAMES[$name])) {
               $friendlyName = self::FRIENDLY_NAMES[$name]['desc'];
             }
           }
-          if (isset($_GET['NameFormat']) && trim($_GET['NameFormat']) != '') {
-            $nameFormat = trim($_GET['NameFormat']);
+          if (isset($_POST['NameFormat']) && trim($_POST['NameFormat']) != '') {
+            $nameFormat = trim($_POST['NameFormat']);
           } else {
-            $error .= $_GET['action'] == "Add" ? $error .= '<br>NameFormat is empty' : '';
+            $error .= $_POST['action'] == "Add" ? $error .= '<br>NameFormat is empty' : '';
           }
-          $isRequired = isset($_GET['isRequired'])
-            && ($_GET['isRequired'] == 1
-            || strtolower($_GET['isRequired']) == 'true')
+          $isRequired = isset($_POST['isRequired'])
+            && ($_POST['isRequired'] == 1
+            || strtolower($_POST['isRequired']) == 'true')
             ? 1 : 0;
         }
       }
@@ -2573,7 +2573,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $ssoDescriptor = $this->getSSODecriptor('SPSSO');
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'AddIndex' :
             if ($ssoDescriptor) {
               $changed = true;
@@ -2933,23 +2933,25 @@ class MetadataEdit extends Common {
     $serviceElementHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $serviceIndexHandler->execute();
+    $idx=1;
     while ($serviceIndex = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
       $index = $serviceIndex['Service_index'];
       if ($indexValue == $index) {
         printf ('
         <b>Index = %d</b>
-          <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%d&action=DeleteIndex">
-          <i class="fa fa-trash"></i></a>
+          %s
         <ul>',
-          $index, $this->dbIdNr, $this->dbOldIdNr, $index);
+          $index,
+          $this->getEditActionLink('AttributeConsumingService', array('index' => $index), $idx, 'DeleteIndex', '<i class="fa fa-trash"></i>'));
       } else {
         printf ('
         <b>Index = %d</b>
-          <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%d&action=SetIndex">
-          <i class="fa fa-pencil-alt"></i></a>
+          %s
         <ul>',
-          $index, $this->dbIdNr, $this->dbOldIdNr, $index);
+          $index,
+          $this->getEditActionLink('AttributeConsumingService', array('index' => $index), $idx, 'SetIndex', '<i class="fa fa-pencil-alt"></i>'));
       }
+      $idx++;
       $serviceElementHandler->execute();
       while ($serviceElement = $serviceElementHandler->fetch(PDO::FETCH_ASSOC)) {
         if (isset($oldServiceElements[$index][$serviceElement['element']][$serviceElement['lang']])
@@ -2960,17 +2962,16 @@ class MetadataEdit extends Common {
         } else {
           $state = 'success';
         }
-        $baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=%s&lang=%s&value=%s&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index, $serviceElement['element'],
-          $serviceElement['lang'], urlencode($serviceElement['data']));
-        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+        $links = $this->getEditDeleteLinks('AttributeConsumingService',
+            array('index' => $index, 'element' => $serviceElement['element'], 'lang' => $serviceElement['lang'], 'value' => htmlspecialchars($serviceElement['data'])), $idx);
         printf(self::HTML_LI_SPAN,
           "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
       if ($indexValue == $index) {
         printf('
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="edit" value="AttributeConsumingService">
               <input type="hidden" name="Entity" value="%d">
               <input type="hidden" name="oldEntity" value="%d">
@@ -3033,13 +3034,13 @@ class MetadataEdit extends Common {
         } else {
           $state = 'success';
         }
-        $baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%d&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($requestedAttribute['Name']), $requestedAttribute['isRequired']);
-        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+        $links = $this->getEditDeleteLinks('AttributeConsumingService',
+            array('index' => $index, 'element' => 'RequestedAttribute', 'name' => htmlspecialchars($requestedAttribute['Name']), 'isRequired' => $requestedAttribute['isRequired'], 'friendlyName' => htmlspecialchars($requestedAttribute['FriendlyName'])), $idx);
         $existingRequestedAttribute[$requestedAttribute['Name']] = true;
         printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
           "\n", $error, $links, $state, htmlspecialchars($friendlyNameDisplay), htmlspecialchars($requestedAttribute['Name']),
           $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
 
@@ -3050,9 +3051,19 @@ class MetadataEdit extends Common {
             if (isset($existingRequestedAttribute[$nameL])) {
               printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
             } else {
-              printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s',
-                $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $data['desc'], $nameL,  "\n");
+              printf('%s <b>%s</b> - %s<br>%s',
+                  $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index,
+                          'element' => 'RequestedAttribute',
+                          'name' => $nameL,
+                          'friendlyName' => $data['desc'],
+                          'NameFormat' => self::SAMLNF_URI,
+                          'isRequired' => '1'
+                          ),
+                    $idx, 'Add', '[copy]'),
+                  $data['desc'], $nameL,  "\n");
             }
+            $idx++;
           }
         }
         print '<br><h5>Not recommended attributes:</h5>';
@@ -3068,15 +3079,24 @@ class MetadataEdit extends Common {
             if (isset($existingRequestedAttribute[$nameL])) {
               printf('<b>%s%s</b> - %s<br>%s', $data['desc'], $samlVer, $nameL,  "\n");
             } else {
-              printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=%s&isRequired=1&action=Add">[copy]</a> <b>%s%s</b> - %s<br>%s',
-                $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $nf,
+              printf('%s <b>%s%s</b> - %s<br>%s',
+                  $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index,
+                          'element' => 'RequestedAttribute',
+                          'name' => $nameL,
+                          'friendlyName' => $data['desc'],
+                          'NameFormat' => $nf,
+                          'isRequired' => '1'
+                          ),
+                    $idx, 'Add', '[copy]'),
                 $data['desc'], $samlVer, $nameL,  "\n");
             }
           }
+          $idx++;
         }
         printf('
     <br>
-    <form>
+    <form action="." method="POST">
           <input type="hidden" name="edit" value="AttributeConsumingService">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -3108,7 +3128,7 @@ class MetadataEdit extends Common {
       }
     }
     printf('        <a href="./?validateEntity=%d"><button>Back</button></a>
-        <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&action=AddIndex"><button>Add Index</button></a>
+        <form action="." method="POST" style="display: inline;"><input type="hidden" name="edit" value="AttributeConsumingService"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="oldEntity" value="%d"><button name="action" value="AddIndex"">Add Index</button></form>
       </div><!-- end col -->
       <div class="col">',
       $this->dbIdNr, $this->dbIdNr, $this->dbOldIdNr);
@@ -3124,8 +3144,9 @@ class MetadataEdit extends Common {
                 $state = 'dark';
                 break;
               case 'removed' :
-                $copy = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-                  $this->dbIdNr, $this->dbOldIdNr, $index, $element, $lang, urlencode($data['value']));
+                $copy = $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index, 'element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
+                    $idx, 'Add', '[copy]');
                 $state = 'danger';
                 break;
               default :
@@ -3134,6 +3155,7 @@ class MetadataEdit extends Common {
             }
             printf(self::HTML_LI_SPAN, "\n",
               $copy, $state, $element, $lang, htmlspecialchars($data['value']));
+            $idx++;
           }
         }
         print "\n          <li>RequestedAttributes : <ul>";
@@ -3144,8 +3166,15 @@ class MetadataEdit extends Common {
               $state = 'dark';
               break;
             case 'removed' :
-              $copy = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%s&NameFormat=%s&action=Add">[copy]</a> ',
-                $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($name), $data['isRequired'], urlencode($data['nameFormat']));
+              $copy = $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index,
+                          'element' => 'RequestedAttribute',
+                          'name' => htmlspecialchars($name),
+                          'isRequired' => $data['isRequired'],
+                          'friendlyName' => $data['friendlyName'],
+                          'NameFormat' => htmlspecialchars($data['nameFormat'])
+                          ),
+                    $idx, 'Add', '[copy]');
               $state = 'danger';
               break;
             default :
@@ -3156,6 +3185,7 @@ class MetadataEdit extends Common {
             "\n", $copy, $state,
             $data['friendlyName'] == '' ? '(' . self::FRIENDLY_NAMES[$name]['desc'] .')' : htmlspecialchars($data['friendlyName']),
             htmlspecialchars($name), $data['isRequired'] == '1' ? ' (Required)' : '');
+          $idx++;
         }
         printf("\n  %s</li>\n%s", self::HTML_END_UL, self::HTML_END_UL);
       }
