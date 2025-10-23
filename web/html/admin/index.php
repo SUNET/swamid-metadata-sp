@@ -238,7 +238,8 @@ if (isset($_FILES['XMLfile'])) {
     showEntity($_POST['mergeEntity']);
   }
 } elseif (isset($_REQUEST['removeEntity'])) {
-  if (checkAccess($_REQUEST['removeEntity'],$EPPN,$userLevel,10, true)) {
+  if (checkAccess($_REQUEST['removeEntity'],$EPPN,$userLevel,10, true) &&
+      checkStatus($_REQUEST['removeEntity'], 3, $userLevel, 10)) {
     removeEntity($_REQUEST['removeEntity']);
   }
 } elseif (isset($_POST['removeSSO']) && isset($_POST['type'])) {
