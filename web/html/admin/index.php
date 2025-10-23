@@ -1061,7 +1061,7 @@ function showMyEntities() {
     $entityConfirmationHandler->execute();
     if ($entityConfirmation = $entityConfirmationHandler->fetch(PDO::FETCH_ASSOC)) {
       $lastConfirmed = $entityConfirmation['lastConfirmed'];
-      $updater = $entityConfirmation['fullName'] . ' (' . $entityConfirmation['email'] . ')';
+      $updater = htmlspecialchars($entityConfirmation['fullName']) . ' (' . htmlspecialchars($entityConfirmation['email']) . ')';
       if ($entityConfirmation['warnDate'] > $entityConfirmation['lastConfirmed']) {
         $confirmStatus =  $entityConfirmation['errorDate'] > $entityConfirmation['lastConfirmed']
           ? ' <i class="fa-regular fa-bell"></i>'

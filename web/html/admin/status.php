@@ -31,7 +31,7 @@ if (isset($_SERVER['displayName'])) {
 
 $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
 if ($userLevel < 20) { exit; }
-$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
+$displayName = '<div> Logged in as : <br> ' . htmlspecialchars($fullName) . ' (' . htmlspecialchars($EPPN) .')</div>';
 $html->setDisplayName($displayName);
 
 $html->showHeaders('');
