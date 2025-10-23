@@ -208,7 +208,8 @@ if (isset($_FILES['XMLfile'])) {
   if (isset($_REQUEST['Entity']) && (isset($_REQUEST['oldEntity']))) {
     $editMeta = new \metadata\MetadataEdit($_REQUEST['Entity'], $_REQUEST['oldEntity']);
     $editMeta->updateUser($EPPN, $mail, $fullName);
-    if (checkAccess($_REQUEST['Entity'], $EPPN, $userLevel, 10, true)) {
+    if (checkAccess($_REQUEST['Entity'], $EPPN, $userLevel, 10, true) &&
+        checkStatus($_REQUEST['Entity'], 3, $userLevel, 10)) {
       $html->showHeaders('Edit - '.$_REQUEST['edit']);
       $editMeta->edit($_REQUEST['edit']);
     }
@@ -241,7 +242,8 @@ if (isset($_FILES['XMLfile'])) {
     removeEntity($_REQUEST['removeEntity']);
   }
 } elseif (isset($_POST['removeSSO']) && isset($_POST['type'])) {
-  if (checkAccess($_POST['removeSSO'],$EPPN,$userLevel,10, true)) {
+  if (checkAccess($_POST['removeSSO'],$EPPN,$userLevel,10, true) &&
+      checkStatus($_REQUEST['removeSSO'], 3, $userLevel, 10)) {
     removeSSO($_POST['removeSSO'], $_POST['type']);
   }
 } elseif (isset($_REQUEST['rawXML'])) {
@@ -2028,6 +2030,34 @@ function checkAccess($entitiesId, $userID, $userLevel, $minLevel, $showError=fal
     if ($showError) {
       $html->showHeaders('');
       print "You doesn't have access to this entityID";
+      printf('%s      <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-danger">Back to entity</button></a>', "\n", $entitiesId);
+    }
+    return false;
+  }
+}
+
+/**
+ * Check entity is in required status
+ *
+ * @param int $entitiesId The entity to check
+ * @param int $status The required status
+ * @param int $userLevel The privilege level of the current user.  Optional if bypass is unused.
+ * @param int $minLevel The minimum privilege level to bypass this check.  Zero or negative values disable bypass.  Optional, defaults to disabling bypass.
+ * @return bool Wheter the check succeeded
+ */
+function checkStatus($entitiesId, $status, $userLevel=0, $minLevel=0, $showError=true) {
+  global $html;
+  // bypass check for admin users if allowed
+  if ($minLevel > 0 && $userLevel >= $minLevel) {
+    return true;
+  }
+  $metadata = new \metadata\Metadata($entitiesId);
+  if ($metadata->status() == $status) {
+    return true;
+  } else {
+    if ($showError) {
+      $html->showHeaders('');
+      print "The status of this entity does not permit this action.<br>";
       printf('%s      <a href=".?showEntity=%d"><button type="button" class="btn btn-outline-danger">Back to entity</button></a>', "\n", $entitiesId);
     }
     return false;
