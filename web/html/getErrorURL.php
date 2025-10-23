@@ -7,6 +7,8 @@ require_once 'vendor/autoload.php';
 
 $config = new \metadata\Configuration();
 
+header('Content-Type: text/plain; charset=utf-8');
+
 print "<?php\n\n\$helpdesks = array(\n";
 
 $entityHandler = $config->getDb()->prepare("SELECT `id`, `entityID` FROM `Entities` WHERE `status` = 1 AND `isIdP` = 1 ORDER BY `entityID` ASC");
@@ -19,7 +21,7 @@ $errorUrlHandler->bindParam(':Id', $Entity_id);
 $entityHandler->execute();
 while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
   $Entity_id = $entity['id'];
-  printf("  '%s' => array(\n    'feed' => 'SWAMID',\n    'displayname' => array(\n", $entity['entityID']);
+  printf("  '%s' => array(\n    'feed' => 'SWAMID',\n    'displayname' => array(\n", addslashes($entity['entityID']));
   $displayHandler->execute();
   while ($displayName = $displayHandler->fetch(PDO::FETCH_ASSOC)) {
     printf ("      '%s' => '%s',\n", $displayName['lang'], addslashes($displayName['data']));
@@ -27,11 +29,11 @@ while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
   print "    ),\n";
   $contactHandler->execute();
   if ($contact = $contactHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf ("    'contactperson_email' => '%s',\n", substr($contact['emailAddress'], 7));
+    printf ("    'contactperson_email' => '%s',\n", addslashes(substr($contact['emailAddress'], 7)));
   }
   $errorUrlHandler->execute();
   if ($errorURL = $errorUrlHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf ("    'errorurl' => '%s',\n", $errorURL['URL']);
+    printf ("    'errorurl' => '%s',\n", addslashes($errorURL['URL']));
   }
   print "  ),\n";
 }
