@@ -91,6 +91,7 @@ $foundAffiliate = false;
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
     switch(explode('@',$ScopedAffiliation)[0]) {
+      case 'staff' :
       case 'employee' :
         $foundEmployee = true;
         break;
@@ -110,6 +111,7 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   $foundEmployee = false;
   foreach (explode(';',$_SERVER['eduPersonAffiliation']) as $Affiliation) {
     switch($Affiliation) {
+      case 'staff' :
       case 'employee' :
         $foundEmployee = true;
         break;
@@ -141,7 +143,7 @@ if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
    ) {
   $errors .=
       'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-  $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  $errors .= ' of either <b>employee</b> or <b>staff</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
   if ($config->getFederation()['eduPersonAffiliationLink']) {
     $errors .=
       sprintf('Please check <a href="%s">documentation on affiliation values</a> for more information.<br>', $config->getFederation()['eduPersonAffiliationLink']);
