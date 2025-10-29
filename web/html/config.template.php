@@ -121,6 +121,8 @@ $federation = array(
   'storeServiceInfo' => true,
   # URL to get release-check test results from - or empty string if not used
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
+  # Information page on eduPersonAffiliation
+  'eduPersonAffiliationLink' => 'https://wiki.sunet.se/pages/viewpage.action?pageId=17138034',
   # Base URL for MDQ - or empty string if not available
   'mdqBaseURL' => 'https://mds.swamid.se/entities/',
   # DB path to MDS DB

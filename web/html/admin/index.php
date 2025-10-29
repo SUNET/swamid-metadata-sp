@@ -142,8 +142,10 @@ if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
   $errors .=
       'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
   $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
-  $errors .=
-    'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
+  if ($config->getFederation()['eduPersonAffiliationLink']) {
+    $errors .=
+      sprintf('Please check <a href="%s">documentation on affiliation values</a> for more information.<br>', $config->getFederation()['eduPersonAffiliationLink']);
+  }
   if ($config->getFederation()['releaseCheckResultsURL']) {
     $errors .=
       sprintf('Login to <a href="%s">release-check</a> to verify.<br>', $html->getBaseURL($config->getFederation()['releaseCheckResultsURL']));
