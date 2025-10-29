@@ -123,6 +123,8 @@ $federation = array(
   'releaseCheckResultsURL' => 'https://release-check.swamid.se/metaDump.php',
   # Information page on eduPersonAffiliation
   'eduPersonAffiliationLink' => 'https://wiki.sunet.se/pages/viewpage.action?pageId=17138034',
+  # IdPs exempt from eduPersonAffiliation check
+  'eduPersonAffiliationExemptIdPs' => array('https://login.idp.eduid.se/idp.xml'),
   # Base URL for MDQ - or empty string if not available
   'mdqBaseURL' => 'https://mds.swamid.se/entities/',
   # DB path to MDS DB

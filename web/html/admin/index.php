@@ -129,7 +129,7 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   }
 } else {
   if (isset($_SERVER['Shib-Identity-Provider'])
-    && $_SERVER['Shib-Identity-Provider'] == 'https://login.idp.eduid.se/idp.xml') {
+    && in_array($_SERVER['Shib-Identity-Provider'], $config->getFederation()['eduPersonAffiliationExemptIdPs']) ) {
     #OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
     $foundMember = true;
   } else {
