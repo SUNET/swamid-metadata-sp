@@ -119,6 +119,9 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
       case 'member' :
         $foundMember = true;
         break;
+      case 'affiliate' :
+        $foundAffiliate = true;
+        break;
       default :
     }
   }
