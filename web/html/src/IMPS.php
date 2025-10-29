@@ -101,7 +101,7 @@ class IMPS {
             <div class="col-2">Shared IdP</div>
             <div class="col"><input type="checkbox" name="sharedIdP"%s></div>
           </div>
-          <input type="submit" name="action" value="Add/Update">
+          <input type="submit" name="formAction" value="Add/Update">
         </form>
         <a href="./?action=Members&tab=imps&id=%d#imps-%d"><button>Back</button></a>%s',
         htmlspecialchars($name), $maximumAL, htmlspecialchars($lastUpdated),
@@ -198,7 +198,7 @@ class IMPS {
           <input type="submit" name="Remove" value="Remove">
         </form>
         <a href="./?action=Members&tab=imps&id=%d#imps-%d"><button>Back</button></a>%s',
-        $imps['id'], $imps['id'], $imps['name'], $imps['maximumAL'], $imps['lastUpdated'], $imps['id'], $imps['id'], "\n");
+        $imps['id'], $imps['id'], htmlspecialchars($imps['name']), $imps['maximumAL'], $imps['lastUpdated'], $imps['id'], $imps['id'], "\n");
       }
     } else {
       print '        Can\'t find IMPS';
@@ -270,8 +270,8 @@ class IMPS {
           </div>%s    </div>', "\n");
           return false;
         }
-        if (isset($_GET['FormVisit'])) {
-          if (isset($_GET['impsIsValid'])) {
+        if (isset($_POST['FormVisit'])) {
+          if (isset($_POST['impsIsValid'])) {
             $impsConfirmHandler = $this->config->getDb()->prepare(
               'UPDATE `IMPS`
               SET `lastValidated` = NOW(), `user_id` = :User_id
@@ -282,7 +282,7 @@ class IMPS {
             printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">%s        <div class="row"><b>Error:</b></div>%s        <div class="row">You must check that you confirm!</div>%s      </div>%s    </div>', "\n", "\n", "\n", "\n", "\n", "\n");
           }
         }
-        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
         printf ('      <div class="row">
         <div class="col">
           <h4>Confirmation of Identity Management Practice Statement (IMPS)</h4>
@@ -296,7 +296,7 @@ class IMPS {
           <br>
           The following Identity Providers are bound to this IMPS :
           <ul>%s',
-          $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          htmlspecialchars($imps['name']), substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy, "\n");
         $idpsHandler->execute(array(self::BIND_IMPS_ID => $imps_Id));
         while ($idp = $idpsHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -309,7 +309,7 @@ class IMPS {
           printf('           <li>%s (AL%d)</li>%s', $idp['entityID'], $assuranceLevel, "\n");
         }
         printf('          </ul>
-          <form>
+          <form action="." method="POST">
             <input type="hidden" name="Entity" value="%d">
             <input type="hidden" name="ImpsId" value="%d">
             <input type="hidden" name="FormVisit" value="true">
@@ -407,7 +407,7 @@ class IMPS {
             <div class="col-2">Left</div>
             <div class="col"><input type="text" name="notMemberAfter" value="%s" size="10"></div>
           </div>
-          <input type="submit" name="action" value="Add/Update">
+          <input type="submit" name="formAction" value="Add/Update">
         </form>
         <a href="./?action=Members&tab=organizations&id=%d%s#org-%d"><button>Back</button></a>%s',
         htmlspecialchars($memberSince), htmlspecialchars($notMemberAfter),
@@ -536,7 +536,7 @@ class IMPS {
           <div class="col"><ul>%s', "\n");
           do {
             printf('            <li><a href="?action=Members&tab=imps&id=%d#imps-%d" target="_blank">%s</a></li>%s',
-              $imps['id'], $imps['id'], $imps['name'], "\n");
+              $imps['id'], $imps['id'], htmlspecialchars($imps['name']), "\n");
           } while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC));
           printf('          </ul></div>%s        </div>%s', "\n", "\n");
         } else {

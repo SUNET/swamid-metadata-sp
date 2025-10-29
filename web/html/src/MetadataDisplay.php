@@ -389,7 +389,7 @@ class MetadataDisplay extends Common {
     }
     switch ($extra) {
       case 'SSO' :
-        $extraButton = sprintf('<a href="?removeSSO=%d&type=%s"><i class="fas fa-trash"></i></a>', $entityId, $name);
+        $extraButton = sprintf('<form action="." method="POST" name="removeSSO%s" style="display: inline;"><input type="hidden" name="removeSSO" value="%d"><input type="hidden" name="type" value="%s"><a href="#" onClick="document.forms.removeSSO%s.submit();"><i class="fas fa-trash"></i></a></form>', $name, $entityId, $name, $name);
         break;
       case 'EntityAttributes' :
       case 'IdPMDUI' :
@@ -475,7 +475,7 @@ class MetadataDisplay extends Common {
    * @return void
    */
   public function showAddOrganizationIdForm($entitiesId, $currentOrgId) {
-    printf ('          <form>
+    printf ('          <form action="." method="POST">
             <input type="hidden" name="action" value="addOrganization2Entity">
             <input type="hidden" name="Entity" value="%d">
             Select Organization for entity :
@@ -548,7 +548,7 @@ class MetadataDisplay extends Common {
             $entitiesId, 'Import the selected organization information to this Draft', "\n");
         } elseif ($entity['OrganizationInfo_id'] == 0) {
           if ($admin) {
-            printf('          <br><br><a href="./?action=createOrganizationFromEntity&Entity=%d"><button>%s</button></a><br><br>%s',
+            printf('          <br><br><form action="." method="POST"><input type="hidden" name="action" value="createOrganizationFromEntity"><input type="hidden" name="Entity" value="%d"><button>%s</button></form><br><br>%s',
               $entitiesId, 'Create new organization based on this entity', "\n");
           }
           printf('          Please select your organization.<br>
@@ -663,7 +663,7 @@ class MetadataDisplay extends Common {
         $state = $imps['warnDate'] > $imps['lastValidated'] ? 'warning' : 'none';
         $state = $imps['errorDate'] > $imps['lastValidated'] ? 'danger' : $state;
 
-        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : $imps['fullName'] . " (" . $imps['email'] . ")";
+        $validatedBy = $imps['lastUpdated'] == substr($imps['lastValidated'], 0 ,10) ? '(BoT)' : htmlspecialchars($imps['fullName']) . " (" . htmlspecialchars($imps['email']) . ")";
         printf ('%s          <div class="alert-%s">
             <b><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></b>
             <ul>
@@ -671,7 +671,7 @@ class MetadataDisplay extends Common {
               <li>Last validated : %s</li>
               <li>Last validated by : %s</li>
             </ul>',
-          "\n", $state, $imps['id'], $imps['id'], $imps['name'], substr($imps['lastUpdated'], 0, 10),
+          "\n", $state, $imps['id'], $imps['id'], htmlspecialchars($imps['name']), substr($imps['lastUpdated'], 0, 10),
           substr($imps['lastValidated'], 0, 10), $validatedBy);
         if ($imps['lastUpdated'] < $this->config->getIMPS()['oldDate']) {
           printf ('%s            <b>Updated IMPS required!</b><br>Current approved IMPS is based on a earlier version of the assurance profile.
@@ -689,19 +689,19 @@ class MetadataDisplay extends Common {
       if ($allowEdit) {
         $displayNameHandler->execute(array(self::BIND_ID => $entityId));
         if (! $displayName = $displayNameHandler->fetch(PDO::FETCH_ASSOC)) {
-          $displayName['data'] = 'Unkown';
+          $displayName['data'] = 'Unknown';
         }
         $impsListHandler->execute();
         printf ('%s          <div class="alert alert-danger" role="alert">
             IdP is not bound to any IMPS<br>
             Bind to :
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="action" value="AddImps2IdP">
               <input type="hidden" name="Entity" value="%d">
               <select name="ImpsId">', "\n", $entityId);
         while ($imps = $impsListHandler->fetch(PDO::FETCH_ASSOC)){
           printf ('                <option%s value="%d">%s</option>',
-          $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '', $imps['id'], $imps['name']);
+          $imps['name'] == $displayName['data'] ? self::HTML_SELECTED : '', $imps['id'], htmlspecialchars($imps['name']));
         }
         printf ('
               </select>
@@ -1894,9 +1894,9 @@ class MetadataDisplay extends Common {
     while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
       # only global admins can remove themselves
       $can_remove = $is_admin && ( $user_id != $user['id'] || $userLevel > 19);
-      $extraButton = $can_remove ? sprintf(' <form action="?action=removeEditor&Entity=%d" method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $entityId, $user['id'], $user['id'], $user['id']) : '';
+      $extraButton = $can_remove ? sprintf(' <form action="." method="POST" name="removeEditor%s" style="display: inline;"><input type="hidden" name="action" value="removeEditor"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="userIDtoRemove" value="%s"><a href="#" onClick="document.forms.removeEditor%s.submit();"><i class="fas fa-trash"></i></a></form>', $user['id'], $entityId, $user['id'], $user['id']) : '';
       printf ('          <li>%s (Identifier : %s, Email : %s)%s</li>%s',
-        $user['fullName'], $user['userID'], $user['email'], $extraButton, "\n");
+        htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), htmlspecialchars($user['email']), $extraButton, "\n");
     }
     print "        </ul>";
     $this->showCollapseEnd('Editors', 0);
@@ -1940,18 +1940,18 @@ class MetadataDisplay extends Common {
         printf ('      <tr>
           <th>Checked</th>
           <td>
-            %s (UTC) <a href=".?action=%s&URL=%s&recheck">
-              <button type="button" class="btn btn-primary">Recheck now</button>
-            </a>
-            <a href=".?action=%s&URL=%s&recheck&verbose">
-              <button type="button" class="btn btn-primary">Recheck now (verbose)</button>
-            </a>
+            %s (UTC) <form action="." method="POST" style="display: inline;">
+              <input type="hidden" name="action" value="%s">
+              <input type="hidden" name="URL" value="%s">
+              <input type="hidden" name="recheck">
+              <button type="submit" class="btn btn-primary">Recheck now</button>
+              <button type="submit" name="verbose" class="btn btn-primary">Recheck now (verbose)</button>
+            </form>
           </td>
         </tr>
         <tr><th>Status</th><td>%s</td></tr>%s',
-          $urlInfo['lastValidated'], htmlspecialchars($_GET['action']) ,
-          urlencode($url), htmlspecialchars($_GET['action']) ,
-          urlencode($url), $urlInfo['validationOutput'] , "\n");
+          $urlInfo['lastValidated'], htmlspecialchars($_REQUEST['action']), htmlspecialchars($url),
+          htmlspecialchars($urlInfo['validationOutput']), "\n");
         if ($urlInfo['height'] > 0 && $urlInfo['width'] > 0 ) {
           printf ('      <tr><th>Height</th><td>%s</td></tr>
         <tr><th>Width</th><td>%s</td></tr>%s', $urlInfo['height'], $urlInfo['width'], "\n");
@@ -2614,21 +2614,21 @@ class MetadataDisplay extends Common {
           $entityHandler->execute();
           if ($publishedEntity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
             $okRemove = sprintf('%s <a href=".?action=ShowDiff&entity_id1=%d&entity_id2=%d">Diff</a>',
-              $entityID, $pendingEntity['id'], $publishedEntity['id']);
+              htmlspecialchars($entityID), $pendingEntity['id'], $publishedEntity['id']);
             printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-              $okRemove, $pendingEntity['email'], $pendingEntity['lastUpdated'],
+              $okRemove, htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'],
               ($pendingEntity['lastUpdated'] < $publishedEntity['lastUpdated']) ? 'X' : '',
               ($pendingXML == $publishedEntity['xml']) ? 'X' : '', "\n" );
           } else {
             printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">Not published</td></tr>%s',
-              $entityID, $pendingEntity['email'], $pendingEntity['lastUpdated'], "\n" );
+              htmlspecialchars($entityID), htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'], "\n" );
           }
         } else {
-          printf('      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',  $entityID, 'Diff in entityID', "\n");
+          printf('      <tr><td>%s</td><td colspan="4">%s</td></tr>%s',  htmlspecialchars($entityID), 'Diff in entityID', "\n");
         }
       } else {
         printf('      <tr><td>%s</td><td>%s</td><td>%s</td><td colspan="2">%s</td></tr>%s',
-          $entityID, 'Problem with XML', "\n");
+          htmlspecialchars($entityID), htmlspecialchars($pendingEntity['email']), $pendingEntity['lastUpdated'], 'Problem with XML', "\n");
       }
     }
     print self::HTML_TABLE_END;
@@ -3427,7 +3427,7 @@ class MetadataDisplay extends Common {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
       }
-      $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : $imps['fullName'] . "(" . $imps['email'] . ")";
+      $validatedBy = $imps['lastUpdated'] == $lastValidated ? '(BoT)' : htmlspecialchars($imps['fullName']) . "(" . htmlspecialchars($imps['email']) . ")";
       printf('%s                <ul>
                   <li>Organization  : <a href="?action=Members&tab=organizations&id=%d#org-%d">%s</a></li>
                   <li>Allowed maximum AL : %d</li>

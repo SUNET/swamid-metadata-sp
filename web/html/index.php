@@ -1,6 +1,7 @@
 <?php
 
 const HTML_OUTLINE = '-outline';
+const TEXT_PLAIN = 'Content-Type: text/plain; charset=utf-8';
 
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
@@ -39,6 +40,8 @@ if (isset($_GET['showEntity'])) {
     case 'feed' :
       if (isset($_GET['id'])) {
         showFeed($_GET['id']);
+      } else {
+        exit; // intentionally empty output
       }
       break;
     default :
@@ -212,7 +215,7 @@ function showEntity($entity_id, $urn = false)  {
 
     <div class="row">
       <div class="col">
-        <h3>entityID = <?=$entity['entityID']?></h3>
+        <h3>entityID = <?=htmlspecialchars($entity['entityID'])?></h3>
       </div>
     </div><?php $display->showStatusbar($entities_id); ?>
 
@@ -417,7 +420,7 @@ function showList($entities, $show) {
         <td>%s</td>
         <td>%s</td>
         <td>%s</td>',
-      $row['id'], $row['entityID'], $registeredIn, $displayName, $row['OrganizationName']);
+      $row['id'], htmlspecialchars($row['entityID']), $registeredIn, htmlspecialchars($displayName), htmlspecialchars($row['OrganizationName']));
 
     switch ($show) {
       case 'IdP' :
@@ -549,6 +552,7 @@ function showInfo() {
 
 function showFeed($id) {
   global $config;
+  header(TEXT_PLAIN);
   $federation = $config->getFederation();
   $entity = $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id');
   $entity->bindParam(':Id', $id);
@@ -574,6 +578,7 @@ function showFeed($id) {
 
 function showPendingQueue() {
   global $config;
+  header(TEXT_PLAIN);
   $entities = $config->getDb()->prepare('SELECT `id`, `entityID` FROM Entities WHERE `status` = 2');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
@@ -584,6 +589,7 @@ function showPendingQueue() {
 
 function showRemoveQueue() {
   global $config;
+  header(TEXT_PLAIN);
   $entities = $config->getDb()->prepare('SELECT `id`, `entityID` FROM Entities WHERE `removalRequestedBy` > 0 AND `status` = 1');
   $entities->execute();
   while ($row = $entities->fetch(PDO::FETCH_ASSOC)) {
@@ -622,8 +628,8 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entity['entityID'], $entity['organization'], $entity['contacts'],
-        $entity['scopes'], $entity['ecs'], $entity['assurancec'], $entity['ra'], "\n");
+        htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
+        htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
     $html->showHeaders('eduGAIN - SP:s');
@@ -654,8 +660,8 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entity['entityID'], $entity['displayName'], $entity['serviceName'], $entity['organization'],
-        $entity['contacts'], $entity['ec'], $entity['assurancec'], $entity['ra'], "\n");
+        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
+        $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   }
 }

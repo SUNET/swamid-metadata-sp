@@ -31,6 +31,7 @@ class MetadataEdit extends Common {
   const HTML_START_DIV_ROW_COL = '%s    <div class="row">%s      <div class="col">';
 
   const TEXT_BEGIN_CERT = "-----BEGIN CERTIFICATE-----\n";
+  const TEXT_COPY = '[copy]';
   const TEXT_END_CERT = "-----END CERTIFICATE-----\n";
   const TEXT_ENC_SIGN = 'encryption & signing';
   const TEXT_MAILTO = 'mailto:';
@@ -146,8 +147,8 @@ class MetadataEdit extends Common {
     $entityAttributesHandler = $this->config->getDb()->prepare(
       'SELECT type, attribute FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
 
-    if (isset($_GET['action']) && isset($_GET['attribute']) && trim($_GET['attribute']) != '' ) {
-      switch ($_GET['type']) {
+    if (isset($_POST['action']) && isset($_POST['attribute']) && trim($_POST['attribute']) != '' ) {
+      switch ($_POST['type']) {
         case 'assurance-certification' :
           $attributeType = 'urn:oasis:names:tc:SAML:attribute:assurance-certification';
           break;
@@ -167,12 +168,12 @@ class MetadataEdit extends Common {
           $attributeType ='https://refeds.org/entity-selection-profile';
           break;
         default :
-          printf ('Missing type (%s)', urlencode($_GET['type']));
+          printf ('Unknown type (%s)', urlencode($_POST['type']));
           exit;
       }
       $extensions = $this->getExtensions(false);
 
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Add' :
           $update = true;
           if (! $extensions) {
@@ -223,23 +224,23 @@ class MetadataEdit extends Common {
           $child = $attribute->firstChild;
           $attributeValue = false;
           while ($child && ! $attributeValue) {
-            if ($_GET['type'] == 'entity-selection-profile') {
+            if ($_POST['type'] == 'entity-selection-profile') {
               $attributeValue = $child;
-              if (isset($this->config->entitySelectionProfiles()[trim($_GET['attribute'])])) {
+              if (isset($this->config->entitySelectionProfiles()[trim($_POST['attribute'])])) {
                 # Update with new value
-                $child->nodeValue = $this->config->entitySelectionProfiles()[trim($_GET['attribute'])]["base64"];
+                $child->nodeValue = $this->config->entitySelectionProfiles()[trim($_POST['attribute'])]["base64"];
                 $attribute->appendChild($attributeValue);
                 $this->saveXML();
                 $entityAttributesUpdateHandler = $this->config->getDb()->prepare(
                   'UPDATE `EntityAttributes` SET `attribute` = :Attribute WHERE `entity_id` = :Id AND `type` = :Type;');
                 $entityAttributesUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-                $entityAttributesUpdateHandler->bindParam(self::BIND_TYPE, $_GET['type']);
-                $entityAttributesUpdateHandler->bindValue(self::BIND_ATTRIBUTE, trim($_GET['attribute']));
+                $entityAttributesUpdateHandler->bindParam(self::BIND_TYPE, $_POST['type']);
+                $entityAttributesUpdateHandler->bindValue(self::BIND_ATTRIBUTE, trim($_POST['attribute']));
                 $entityAttributesUpdateHandler->execute();
               } else {
                 $update = false;
               }
-            } elseif ($child->nodeValue == trim($_GET['attribute'])) {
+            } elseif ($child->nodeValue == trim($_POST['attribute'])) {
               $attributeValue = $child;
             } else {
               $child = $child->nextSibling;
@@ -248,16 +249,16 @@ class MetadataEdit extends Common {
           if (! $attributeValue) {
             # Add if missing
             $attributeValue = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-            if ($_GET['type'] == 'entity-selection-profile') {
-              if (isset($this->config->entitySelectionProfiles()[trim($_GET['attribute'])])) {
+            if ($_POST['type'] == 'entity-selection-profile') {
+              if (isset($this->config->entitySelectionProfiles()[trim($_POST['attribute'])])) {
                 # Update with new value
-                $attributeValue->nodeValue = $this->config->entitySelectionProfiles()[trim($_GET['attribute'])]["base64"];
+                $attributeValue->nodeValue = $this->config->entitySelectionProfiles()[trim($_POST['attribute'])]["base64"];
                 $attribute->appendChild($attributeValue);
               } else {
                 $update = false;
               }
             } else {
-              $attributeValue->nodeValue = htmlspecialchars(trim($_GET['attribute']));
+              $attributeValue->nodeValue = htmlspecialchars(trim($_POST['attribute']));
               $attribute->appendChild($attributeValue);
             }
 
@@ -265,8 +266,8 @@ class MetadataEdit extends Common {
               $entityAttributesAddHandler = $this->config->getDb()->prepare(
                 'INSERT INTO `EntityAttributes` (`entity_id`, `type`, `attribute`) VALUES (:Id, :Type, :Attribute) ;');
               $entityAttributesAddHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-              $entityAttributesAddHandler->bindParam(self::BIND_TYPE, $_GET['type']);
-              $entityAttributesAddHandler->bindValue(self::BIND_ATTRIBUTE, trim($_GET['attribute']));
+              $entityAttributesAddHandler->bindParam(self::BIND_TYPE, $_POST['type']);
+              $entityAttributesAddHandler->bindValue(self::BIND_ATTRIBUTE, trim($_POST['attribute']));
               $entityAttributesAddHandler->execute();
               $this->saveXML();
             }
@@ -301,7 +302,7 @@ class MetadataEdit extends Common {
                 $attributeValue = false;
                 $moreAttributeValues = false;
                 while ($child && ! $attributeValue) {
-                  if ($child->nodeValue == $_GET['attribute'] || $_GET['type'] == 'entity-selection-profile') {
+                  if ($child->nodeValue == $_POST['attribute'] || $_POST['type'] == 'entity-selection-profile') {
                     $attributeValue = $child;
                   }
                   $child = $child->nextSibling;
@@ -318,8 +319,8 @@ class MetadataEdit extends Common {
                   $entityAttributesRemoveHandler = $this->config->getDb()->prepare(
                     'DELETE FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type AND `attribute` = :Attribute;');
                   $entityAttributesRemoveHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-                  $entityAttributesRemoveHandler->bindParam(self::BIND_TYPE, $_GET['type']);
-                  $entityAttributesRemoveHandler->bindParam(self::BIND_ATTRIBUTE, $_GET['attribute']);
+                  $entityAttributesRemoveHandler->bindParam(self::BIND_TYPE, $_POST['type']);
+                  $entityAttributesRemoveHandler->bindParam(self::BIND_ATTRIBUTE, $_POST['attribute']);
                   $entityAttributesRemoveHandler->execute();
                   $this->saveXML();
                 }
@@ -349,6 +350,7 @@ class MetadataEdit extends Common {
     $entityAttributesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $entityAttributesHandler->execute();
     if ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+      $idx=1;
       $type = $attribute['type'];
       $value = $attribute['attribute'];
       $existingAttributeValues[$type] = array();
@@ -372,15 +374,15 @@ class MetadataEdit extends Common {
             <div%s>
               <span class="text-%s">%s</span>
               (%s)
-              <a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Delete">
-                <i class="fas fa-trash"></i>
-              </a>
+              %s
             </div>
           </li>',
-        $type, $error, $state, htmlspecialchars($value), $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value)
+        $type, $error, $state, htmlspecialchars($value), $entityType,
+        $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
       );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+        $idx++;
         $type = $attribute['type'];
         $value = $attribute['attribute'];
         if (isset($oldAttributeValues[$type][$value])) {
@@ -411,12 +413,12 @@ class MetadataEdit extends Common {
             <div%s>
               <span class="text-%s">%s</span>
               (%s)
-              <a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Delete">
-                <i class="fas fa-trash"></i>
-              </a>
+              %s
             </div>
           </li>',
-          $error, $state, htmlspecialchars($value), $entityType, $this->dbIdNr, $this->dbOldIdNr, $type, urlencode($value));
+          $error, $state, htmlspecialchars($value), $entityType,
+          $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
+        );
         $existingAttributeValues[$type][$value] = true;
       }
       printf("\n%s\n", self::HTML_END_UL);
@@ -424,6 +426,7 @@ class MetadataEdit extends Common {
     print '        <hr>
         Quick-links
         <ul>';
+    $idx=0;
     foreach (self::STANDARD_ATTRIBUTES as $type => $values) {
       printf ('%s          <li>%s</li><ul>', "\n", $type);
       foreach ($values as $value => $data) {
@@ -434,12 +437,16 @@ class MetadataEdit extends Common {
           if (isset($existingAttributeValues[$type]) && isset($existingAttributeValues[$type][$value])) {
             printf ('%s            <li>%s</li>', "\n", $value);
           } else {
+            $copy = $this->getEditActionLink('EntityAttributes',
+                  array('type' => $type, 'attribute' => $value),
+                  $idx, 'Add', self::TEXT_COPY);
             printf ('
             <li>
-              <a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]<a> %s
-            </li>', $this->dbIdNr, $this->dbOldIdNr, $type, $value, $value);
+              %s %s
+            </li>', $copy, $value);
           }
         }
+        $idx++;
       }
       printf ('%s  %s', "\n", self::HTML_END_UL);
     }
@@ -456,7 +463,7 @@ class MetadataEdit extends Common {
     }
     print '
         </ul>
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="EntityAttributes">
           <input type="hidden" name="Entity" value="' . $this->dbIdNr . '">
           <input type="hidden" name="oldEntity" value="' . $this->dbOldIdNr . '">
@@ -478,6 +485,8 @@ class MetadataEdit extends Common {
     $entityAttributesHandler->execute();
 
     if ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+      // continue with $idx as new [copy] forms here will also be named Add
+      $idx++;
       if (isset($existingAttributeValues[$attribute['type']][$attribute['attribute']])) {
         $addLink = '';
         $state = 'dark';
@@ -485,9 +494,9 @@ class MetadataEdit extends Common {
         if ($attribute['type'] != 'entity-selection-profile' ||
           ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
           ) {
-          $addLink = sprintf(
-            '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], urlencode($attribute['attribute']));
+          $addLink = $this->getEditActionLink('EntityAttributes',
+                  array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
+                  $idx, 'Add', self::TEXT_COPY);
         }
         $state = 'danger';
       }?>
@@ -496,6 +505,7 @@ class MetadataEdit extends Common {
           <li><?=$addLink?><span class="text-<?=$state?>"><?=htmlspecialchars($attribute['attribute'])?></span></li><?php
       $oldType = $attribute['type'];
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+        $idx++;
         if (isset($existingAttributeValues[$attribute['type']][$attribute['attribute']])) {
           $addLink = '';
           $state = 'dark';
@@ -503,9 +513,9 @@ class MetadataEdit extends Common {
           if ($attribute['type'] != 'entity-selection-profile' ||
             ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
             ) {
-            $addLink = sprintf(
-              '<a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=%s&attribute=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $attribute['type'], urlencode($attribute['attribute']));
+            $addLink = $this->getEditActionLink('EntityAttributes',
+                  array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
+                  $idx, 'Add', self::TEXT_COPY);
           }
           $state = 'danger';
         }
@@ -529,12 +539,12 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editIdPErrorURL() {
-    if (isset($_GET['action']) && isset($_GET['errorURL']) && $_GET['errorURL'] != '') {
-      $errorURLValue = trim(urldecode($_GET['errorURL']));
+    if (isset($_POST['action']) && isset($_POST['errorURL']) && $_POST['errorURL'] != '') {
+      $errorURLValue = trim(urldecode($_POST['errorURL']));
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
 
       $update = false;
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Update' :
           if ($ssoDescriptor) {
             $ssoDescriptor->setAttribute('errorURL', $errorURLValue);
@@ -581,19 +591,16 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&action=Update&errorURL=%s">[copy]</a> ',
-        $this->dbIdNr, $this->dbOldIdNr, urlencode($oldURL));
+      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', self::TEXT_COPY);
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
     $oldURL = ($oldURL == 'Missing')
       ? 'Missing'
-      : sprintf (self::HTML_HREF_BLANK, $oldURL, $oldstate, $oldURL);
+      : sprintf (self::HTML_HREF_BLANK, htmlspecialchars($oldURL), $oldstate, htmlspecialchars($oldURL));
     if ($newURL != 'Missing') {
-      $baseLink = sprintf('<a href="?edit=IdPErrorURL&Entity=%d&oldEntity=%d&errorURL=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, urlencode($newURL));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-      $newURL = sprintf (self::HTML_HREF_BLANK, $newURL, $newstate, $newURL);
+      $links = $this->getEditDeleteLinks('IdPErrorURL', array('errorURL' => htmlspecialchars($newURL)), 1);
+      $newURL = sprintf (self::HTML_HREF_BLANK, htmlspecialchars($newURL), $newstate, htmlspecialchars($newURL));
     } else {
       $links = '';
     }
@@ -606,9 +613,9 @@ class MetadataEdit extends Common {
               %s
             </p>
           </li>
-          </ul>', "\n", $links, $newstate, htmlspecialchars($newURL));
+          </ul>', "\n", $links, $newstate, $newURL);
     printf ('
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="IdPErrorURL">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -624,12 +631,12 @@ class MetadataEdit extends Common {
       printf('%s        <b>errorURL</b>
         <ul>
           <li>%s
-            <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">
+            <span class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">
               %s
-            </p>
+            </span>
           </li>
         </ul>',
-        "\n", $copy, $oldstate, htmlspecialchars($oldURL));
+        "\n", $copy, $oldstate, $oldURL);
     }
     print self::HTML_END_DIV_COL_ROW;
   }
@@ -640,11 +647,11 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editIdPScopes() {
-    if (isset($_GET['action']) && isset($_GET['value']) && trim($_GET['value']) != '') {
+    if (isset($_POST['action']) && isset($_POST['value']) && trim($_POST['value']) != '') {
       $changed = false;
-      $scopeValue = trim($_GET['value']);
+      $scopeValue = trim($_POST['value']);
       $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Add' :
           if ($ssoDescriptor) {
             $extensions = $this->getSSODescriptorExtensions($ssoDescriptor);
@@ -744,6 +751,7 @@ class MetadataEdit extends Common {
     $scopesHandler->execute();
     printf('%s    <div class="row">%s      <div class="col">%s        <b>Scopes</b>%s        <ul>%s',
       "\n", "\n", "\n", "\n", "\n");
+    $idx=0;
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       if (isset($oldScopes[$scope['scope']])) {
         $state = 'dark';
@@ -751,14 +759,13 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf('<a href="?edit=IdPScopes&Entity=%d&oldEntity=%d&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, urlencode($scope['scope']));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('IdPScopes', array('value' => htmlspecialchars($scope['scope'])), $idx);
       printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
         $links, $state, htmlspecialchars($scope['scope']), $scope['regexp'] ? 'true' : 'false', "\n");
+      $idx++;
     }
     printf ('        </ul>
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="IdPScopes">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -774,17 +781,18 @@ class MetadataEdit extends Common {
       print '
         <b>Scopes</b>
         <ul>' . "\n";
+      $idx=0;
       foreach ($oldScopes as $scope => $data) {
         if ($data['state'] == 'same') {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = sprintf('<a href ="?edit=IdPScopes&Entity=%d&oldEntity=%d&action=Add&value=%s">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, urlencode($scope));
+          $copy = $this->getEditActionLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', self::TEXT_COPY);
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
           $copy, $state, htmlspecialchars($scope), $data['regexp'] ? 'true' : 'false', "\n");
+        $idx++;
       }
       print self::HTML_END_UL;
     }
@@ -801,37 +809,37 @@ class MetadataEdit extends Common {
   private function editMDUI($type) {
     printf (self::HTML_START_DIV_ROW_COL.'%s', "\n", "\n", "\n");
     $edit = $type == 'IDPSSO' ? 'IdPMDUI' : 'SPMDUI';
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if (isset($_GET['element']) && trim($_GET['element']) != '') {
-        $elementValue = trim($_GET['element']);
+      if (isset($_POST['element']) && trim($_POST['element']) != '') {
+        $elementValue = trim($_POST['element']);
         $elementmd = self::SAML_MDUI.$elementValue;
       } else {
         $error .= self::HTML_NES;
         $elementValue = '';
       }
-      if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
-        $langvalue = strtolower(trim($_GET['lang']));
+      if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
+        $langvalue = strtolower(trim($_POST['lang']));
       } else {
-        $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
+        $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
         $langvalue = '';
       }
-      if (isset($_GET['value']) && trim($_GET['value']) != '') {
-        $value = trim($_GET['value']);
+      if (isset($_POST['value']) && trim($_POST['value']) != '') {
+        $value = trim($_POST['value']);
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+        $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
         $value = '';
       }
-      if (isset($_GET['height']) && $_GET['height'] > 0 ) {
-        $heightValue = $_GET['height'];
+      if (isset($_POST['height']) && $_POST['height'] > 0 ) {
+        $heightValue = $_POST['height'];
       } else {
-        $error .= $_GET['element'] == "Logo" ? '<br>Height must be larger than 0' : '';
+        $error .= $_POST['element'] == "Logo" ? '<br>Height must be larger than 0' : '';
         $heightValue = 0;
       }
-      if (isset($_GET['width']) && $_GET['width'] > 0 ) {
-        $widthValue = $_GET['width'];
+      if (isset($_POST['width']) && $_POST['width'] > 0 ) {
+        $widthValue = $_POST['width'];
       } else {
-        $error .= $_GET['element'] == "Logo" ? '<br>Width must be larger than 0' : '';
+        $error .= $_POST['element'] == "Logo" ? '<br>Width must be larger than 0' : '';
         $widthValue = 0;
       }
       if ($error) {
@@ -840,7 +848,7 @@ class MetadataEdit extends Common {
         $changed = false;
         # Find md:IDPSSODescriptor in XML
         $ssoDescriptor = $this->getSSODecriptor($type);
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
@@ -1065,6 +1073,7 @@ class MetadataEdit extends Common {
     $mduiHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     $showEndUL = false;
+    $idx=0;
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       if ($oldLang != $mdui['lang']) {
         $lang = $mdui['lang'];
@@ -1106,9 +1115,7 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf('<a href="?edit=%s&Entity=%d&oldEntity=%d&element=%s&height=%d&width=%d&lang=%s&value=%s&action=',
-        $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $height, $width, $lang, urlencode($data));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks($edit, array('element'=>$element, 'height' => $height, 'width' => $width, 'lang' => $lang, 'value' => htmlspecialchars($data)), $idx);
       switch ($element) {
         case 'Logo' :
           printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>',
@@ -1122,12 +1129,13 @@ class MetadataEdit extends Common {
         default :
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $links, $state, $element, htmlspecialchars($data));
       }
+      $idx++;
     }
     if ($showEndUL) {
       print "\n" . self::HTML_END_UL;
     }
     printf('
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="%s">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -1172,6 +1180,7 @@ class MetadataEdit extends Common {
       </div><!-- end col -->
       <div class="col">', htmlspecialchars($value), $heightValue, $widthValue, $this->dbIdNr);
 
+    $idx=0;
     foreach ($oldMDUIElements as $lang => $elementValues) {
       printf ('%s        <b>Lang = "%s"</b>%s        <ul>', "\n", $lang, "\n");
       foreach ($elementValues as $element => $data) {
@@ -1182,12 +1191,13 @@ class MetadataEdit extends Common {
             break;
           case 'removed' :
             if ($element == 'Logo') {
-              $copy = sprintf('<a href ="?edit=%s&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&height=%d&width=%d&action=Add">[copy]</a> ',
-                $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang,
-                urlencode($data['value']), $data['height'], $data['width']);
+              $copy = $this->getEditActionLink($edit,
+                  array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value']), 'height' => $data['height'], 'width' => $data['width']),
+                  $idx, 'Add', self::TEXT_COPY);
             } else {
-              $copy = sprintf('<a href ="?edit=%s&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-                $edit, $this->dbIdNr, $this->dbOldIdNr, $element, $lang, urlencode($data['value']));
+              $copy = $this->getEditActionLink($edit,
+                  array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
+                  $idx, 'Add', self::TEXT_COPY);
             }
             $state = 'danger';
             break;
@@ -1210,6 +1220,7 @@ class MetadataEdit extends Common {
         } else {
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $copy, $state, $element, $value);
         }
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
     }
@@ -1233,7 +1244,7 @@ class MetadataEdit extends Common {
         }
         $serviceURL = '';
       }
-      $enabled = $_POST['enabled'] == '1' ? 1 : 0;
+      $enabled = ($_POST['enabled'] ?? '') == '1' ? 1 : 0;
       if ($error) {
         printf (self::HTML_DIV_CLASS_ALERT_DANGER, $error);
       } else {
@@ -1269,7 +1280,10 @@ class MetadataEdit extends Common {
       printf ('%s        </ul>', "\n");
     }
     printf('
-        <form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST">
+        <form action="." method="POST">
+          <input type="hidden" name="edit" value="SPServiceInfo">
+          <input type="hidden" name="Entity" value="%d">
+          <input type="hidden" name="oldEntity" value="%d">
           <div class="row">
             <div class="col-3">URL to access this service: </div>
             <div class="col-9"><input type="text" name="ServiceURL" value="%s" size="40"></div>
@@ -1295,20 +1309,13 @@ class MetadataEdit extends Common {
       // no need to test again of oldServiceURL is non-empty
       $data = htmlspecialchars($oldServiceURL) . ($oldEnabled ? ' (active)' : ' (inactive)' );
       if ($state == 'danger') {
-        $copy_open = sprintf('<form action="?edit=SPServiceInfo&Entity=%d&oldEntity=%d" method="POST" name="copyServiceInfo">' .
-            '<input type="hidden" name="action" value="Add">' .
-            '<input type="hidden" name="ServiceURL" value="%s">' .
-            '<input type="hidden" name="enabled" value="%s">' .
-            '<a href="#" onClick="document.forms.copyServiceInfo.submit();">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($oldServiceURL), $oldEnabled);
-        $copy_close = '</form>';
+        $copy = $this->getEditActionLink('SPServiceInfo', array('ServiceURL' => htmlspecialchars($oldServiceURL), 'enabled' => $oldEnabled), 1, 'Add', self::TEXT_COPY);
       } else {
-        $copy_open = '';
-        $copy_close = '';
+        $copy = '';
       }
       printf ('%s        <b>URL to access this service (for use in service catalog)</b>', "\n");
       printf ('%s        <ul>', "\n");
-      printf ('%s          <li>%s<span class="text-%s">%s</span>%s</li>', "\n", $copy_open, $state, $data, $copy_close);
+      printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $copy, $state, $data);
       printf ('%s        </ul>', "\n");
     }
     print self::HTML_END_DIV_COL_ROW;
@@ -1322,9 +1329,9 @@ class MetadataEdit extends Common {
   private function editDiscoveryResponse() {
     printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
 
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if ($_GET['action'] == 'AddIndex') {
+      if ($_POST['action'] == 'AddIndex') {
         $nextDiscoveryIndexHandler = $this->config->getDb()->prepare(
           'SELECT MAX(`index`) AS lastIndex FROM `DiscoveryResponse` WHERE `entity_id` = :Id;');
         $nextDiscoveryIndexHandler->execute(array(self::BIND_ID => $this->dbIdNr));
@@ -1333,22 +1340,22 @@ class MetadataEdit extends Common {
         } else {
           $indexValue = 1;
         }
-      } elseif ($_GET['action'] == 'Copy' || $_GET['action'] == 'Delete' ) {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+      } elseif ($_POST['action'] == 'Copy' || $_POST['action'] == 'Delete' ) {
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
       } else {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
-        if (isset($_GET['value']) && trim($_GET['value']) != '') {
-          $value = trim($_GET['value']);
+        if (isset($_POST['value']) && trim($_POST['value']) != '') {
+          $value = trim($_POST['value']);
         } else {
           $error .= '<br>Value is empty';
         }
@@ -1358,7 +1365,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $ssoDescriptor = $this->getSSODecriptor('SPSSO');
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
           case 'Update' :
             if ($ssoDescriptor) {
@@ -1463,10 +1470,10 @@ class MetadataEdit extends Common {
         $state = 'success';
       }
 
-      if ($indexValue == $index && isset($_GET['action']) && $_GET['action'] == "Copy") {
+      if ($indexValue == $index && isset($_POST['action']) && $_POST['action'] == "Copy") {
         printf ('          <li>
             <b>Index = %d</b><br>
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="edit" value="DiscoveryResponse">
               <input type="hidden" name="Entity" value="%d">
               <input type="hidden" name="oldEntity" value="%d">
@@ -1478,17 +1485,16 @@ class MetadataEdit extends Common {
           </li>%s',
           $index, $this->dbIdNr, $this->dbOldIdNr, $index, htmlspecialchars($location), "\n");
       } else {
-        $baseLink = sprintf('<a href="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&index=%s&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index);
-        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
-        printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
-          $links, $state, $index, htmlspecialchars($location), "\n");
+        $links = $this->getEditDeleteLinks('DiscoveryResponse', array('index'=>$index), $index);
+        printf ('          <li>%s%s
+            <span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
+          "\n", $links, $state, $index, htmlspecialchars($location), "\n");
       }
     }
-    if (isset($_GET['action']) && $_GET['action'] == "AddIndex") {
+    if (isset($_POST['action']) && $_POST['action'] == "AddIndex") {
       printf ('          <li>
             <b>Index = %d</b><br>
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="edit" value="DiscoveryResponse">
               <input type="hidden" name="Entity" value="%d">
               <input type="hidden" name="oldEntity" value="%d">
@@ -1503,7 +1509,7 @@ class MetadataEdit extends Common {
 
     printf ('        </ul>
         <a href="./?validateEntity=%d"><button>Back</button></a>
-        <a href="./?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=AddIndex"><button>Add Index</button></a>
+        <form action="." method="POST" style="display: inline;"><input type="hidden" name="edit" value="DiscoveryResponse"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="oldEntity" value="%d"><input type="hidden" name="action" value="AddIndex"><button>Add Index</button></form>
       </div><!-- end col -->
       <div class="col">',
       $this->dbIdNr, $this->dbIdNr, $this->dbOldIdNr);
@@ -1514,8 +1520,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = sprintf('<a href ="?edit=DiscoveryResponse&Entity=%d&oldEntity=%d&action=Add&index=%d&value=%s">[copy]</a> ',
-            $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($data['location']));
+          $copy = $this->getEditActionLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', self::TEXT_COPY);
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
@@ -1533,19 +1538,19 @@ class MetadataEdit extends Common {
    */
   private function editDiscoHints() {
     printf (self::HTML_START_DIV_ROW_COL, "\n", "\n");
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if (isset($_GET['element']) && trim($_GET['element']) != '') {
-        $elementValue = trim($_GET['element']);
+      if (isset($_POST['element']) && trim($_POST['element']) != '') {
+        $elementValue = trim($_POST['element']);
         $elementmd = self::SAML_MDUI.$elementValue;
       } else {
         $error .= self::HTML_NES;
         $elementValue = '';
       }
-      if (isset($_GET['value']) && trim($_GET['value']) != '') {
-        $value = trim($_GET['value']);
+      if (isset($_POST['value']) && trim($_POST['value']) != '') {
+        $value = trim($_POST['value']);
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+        $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
         $value = '';
       }
       if ($error) {
@@ -1553,7 +1558,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $ssoDescriptor = $this->getSSODecriptor('IDPSSO');
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
             if ($ssoDescriptor) {
               $changed = true;
@@ -1683,6 +1688,7 @@ class MetadataEdit extends Common {
     $mduiHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $mduiHandler->execute();
     $showEndUL = false;
+    $idx = 1;
     while ($mdui = $mduiHandler->fetch(PDO::FETCH_ASSOC)) {
       $element = $mdui['element'];
       $data = $mdui['data'];
@@ -1697,16 +1703,15 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf('<a href="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $element, urlencode($data));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('DiscoHints', array('element'=>$element, 'value'=>htmlspecialchars($data)), $idx);
       printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $links, $state, htmlspecialchars($data));
+      $idx++;
     }
     if ($showEndUL) {
       print "\n" . self::HTML_END_UL;
     }
     printf('
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="DiscoHints">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -1733,6 +1738,7 @@ class MetadataEdit extends Common {
       $elementValue == 'GeolocationHint' ? self::HTML_SELECTED : '', $elementValue == 'IPHint' ? self::HTML_SELECTED : '',
       htmlspecialchars($value), $this->dbIdNr);
 
+    $idx=0;
     foreach ($oldMDUIElements as $element => $elementValues) {
       printf ('%s        <b>%s</b>%s        <ul>', "\n", $element, "\n");
       foreach ($elementValues as $data => $state) {
@@ -1742,8 +1748,7 @@ class MetadataEdit extends Common {
             $state = 'dark';
             break;
           case 'removed' :
-            $copy = sprintf('<a href ="?edit=DiscoHints&Entity=%d&oldEntity=%d&element=%s&value=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $element, urlencode($data));
+            $copy = $this->getEditActionLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', self::TEXT_COPY);
             $state = 'danger';
             break;
           default :
@@ -1751,6 +1756,7 @@ class MetadataEdit extends Common {
             $state = 'danger';
         }
         printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $copy, $state, htmlspecialchars($data));
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
     }
@@ -1899,7 +1905,10 @@ class MetadataEdit extends Common {
     if ($added) {
       $this->editKeyInfo($type);
     } else {
-      printf('    <form action="?edit=Add%s&Entity=%d&oldEntity=%d" method="POST" enctype="multipart/form-data">
+      printf('    <form action="." method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="edit" value="Add%s">
+      <input type="hidden" name="Entity" value="%d">
+      <input type="hidden" name="oldEntity" value="%d">
       <p>
         <label for="certificate">
           Certificate:<br>
@@ -1949,32 +1958,32 @@ class MetadataEdit extends Common {
     $edit = $type == 'AttributeAuthority' ? 'AAKeyInfo' : $edit;
     $addLink = sprintf('<a href="?edit=Add%s&Entity=%d&oldEntity=%d"><button>Add new certificate</button></a><br>',
       $edit, $this->dbIdNr, $this->dbOldIdNr);
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if ($_GET['action'] == 'Delete'
-        || $_GET['action'] == 'MoveUp'
-        || $_GET['action'] == 'MoveDown'
-        || $_GET['action'] == 'Change'
-        || $_GET['action'] == 'UpdateUse') {
-        if (isset($_GET['use'])) {
-          $use = $_GET['use'];
+      if ($_POST['action'] == 'Delete'
+        || $_POST['action'] == 'MoveUp'
+        || $_POST['action'] == 'MoveDown'
+        || $_POST['action'] == 'Change'
+        || $_POST['action'] == 'UpdateUse') {
+        if (isset($_POST['use'])) {
+          $use = $_POST['use'];
         } else {
           $error .= '<br>Missing use';
         }
-        if (isset($_GET['serialNumber'])) {
-          $serialNumber = $_GET['serialNumber'];
+        if (isset($_POST['serialNumber'])) {
+          $serialNumber = $_POST['serialNumber'];
         } else {
           $error .= '<br>Missing serialNumber';
         }
-        if (isset($_GET['order'])) {
-          $order = $_GET['order'];
+        if (isset($_POST['order'])) {
+          $order = $_POST['order'];
         } else {
           $error .= '<br>Missing order';
         }
       }
-      if ($_GET['action'] == 'Change') {
-        if (isset($_GET['newUse'])) {
-          $newUse = $_GET['newUse'];
+      if ($_POST['action'] == 'Change') {
+        if (isset($_POST['newUse'])) {
+          $newUse = $_POST['newUse'];
         } else {
           $error .= '<br>Missing new use';
         }
@@ -1985,7 +1994,7 @@ class MetadataEdit extends Common {
         $changed = false;
         # Find md:SSODescriptor in XML
         $ssoDescriptor = $this->getSSODecriptor($type);
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'MoveUp' :
             if ($ssoDescriptor) {
               $child = $ssoDescriptor->firstChild;
@@ -2340,6 +2349,7 @@ class MetadataEdit extends Common {
 
     $keyInfoHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $keyInfoHandler->execute();
+    $idx = 0;
     while ($keyInfo = $keyInfoHandler->fetch(PDO::FETCH_ASSOC)) {
       $okRemove = false;
       $error = '';
@@ -2386,20 +2396,18 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $baseLink = sprintf(
-        '%s        <a href="?edit=%s&Entity=%d&oldEntity=%d&type=%s&use=%s&serialNumber=%s&order=%d&action=',
-        "\n", $edit, $this->dbIdNr, $this->dbOldIdNr, $type,
-        $keyInfo['use'], $keyInfo['serialNumber'], $keyInfo['order']);
-      $links = $baseLink . 'UpdateUse"><i class="fas fa-pencil-alt"></i></a> ';
-      $links .= $okRemove ? sprintf('%sDelete"><i class="fas fa-trash"></i></a> ', $baseLink) : '';
-      $links .= $keyInfo['order'] > 0 ? sprintf('%sMoveUp"><i class="fas fa-arrow-up"></i></a> ', $baseLink) : '';
+
+      $keyData = array('type' => $type, 'use' => $keyInfo['use'], 'serialNumber' => $keyInfo['serialNumber'], 'order' => $keyInfo['order']);
+      $links = $this->getEditActionLink($edit, $keyData, $idx, 'UpdateUse', '<i class="fas fa-pencil-alt"></i>');
+      $links .= $okRemove ?  $this->getEditActionLink($edit, $keyData, $idx, 'Delete', '<i class="fas fa-trash"></i>') : '';
+      $links .= $keyInfo['order'] > 0 ? $this->getEditActionLink($edit, $keyData, $idx, 'MoveUp', '<i class="fas fa-arrow-up"></i>') : '';
       $links .= $keyInfo['order'] < $maxOrder
-        ? sprintf('%sMoveDown"><i class="fas fa-arrow-down"></i></a> ', $baseLink)
+        ? $this->getEditActionLink($edit, $keyData, $idx, 'MoveDown', '<i class="fas fa-arrow-down"></i>')
         : '';
 
-      if (isset($_GET['action']) && $_GET['action'] == 'UpdateUse' && $keyInfo['order'] == $order) {
+      if (isset($_POST['action']) && $_POST['action'] == 'UpdateUse' && $keyInfo['order'] == $order) {
         $useLink = sprintf ('
-          <form>
+          <form action="." method="POST">
             <input type="hidden" name="edit" value="%s">
             <input type="hidden" name="Entity" value="%d">
             <input type="hidden" name="oldEntity" value="%d">
@@ -2431,6 +2439,7 @@ class MetadataEdit extends Common {
         </ul>',
         $links, "\n", $state, $useLink, $name, $error, $keyInfo['notValidAfter'], htmlspecialchars($keyInfo['subject']),
         htmlspecialchars($keyInfo['issuer']), $keyInfo['key_type'], $keyInfo['bits'], $keyInfo['serialNumber']);
+      $idx++;
     }
 
     printf('
@@ -2479,7 +2488,7 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editAttributeConsumingService() {
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $name = '';
       $friendlyName = '';
       $nameFormat = '';
@@ -2489,7 +2498,7 @@ class MetadataEdit extends Common {
       $elementmd = 'md:';
       $elementValue = '';
       $error = '';
-      if ($_GET['action'] == 'AddIndex') {
+      if ($_POST['action'] == 'AddIndex') {
         $nextServiceIndexHandler = $this->config->getDb()->prepare(
           'SELECT MAX(`Service_index`) AS lastIndex FROM `AttributeConsumingService` WHERE `entity_id` = :Id;');
         $nextServiceIndexHandler->bindParam(self::BIND_ID, $this->dbIdNr);
@@ -2500,22 +2509,22 @@ class MetadataEdit extends Common {
         } else {
           $indexValue = 1;
         }
-      } elseif ($_GET['action'] == 'SetIndex' || $_GET['action'] == 'DeleteIndex' ) {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+      } elseif ($_POST['action'] == 'SetIndex' || $_POST['action'] == 'DeleteIndex' ) {
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
       } else {
-        if (isset($_GET['index']) && $_GET['index'] > -1) {
-          $indexValue = $_GET['index'];
+        if (isset($_POST['index']) && $_POST['index'] > -1) {
+          $indexValue = $_POST['index'];
         } else {
           $error .= '<br>No Index';
           $indexValue = -1;
         }
-        if (isset($_GET['element']) && trim($_GET['element']) != '') {
-          $elementValue = trim($_GET['element']);
+        if (isset($_POST['element']) && trim($_POST['element']) != '') {
+          $elementValue = trim($_POST['element']);
           $elementmd = 'md:'.$elementValue;
         } else {
           $error .= self::HTML_NES;
@@ -2526,37 +2535,37 @@ class MetadataEdit extends Common {
           $error .= '<br>Unknown element selected';
         }
         if ($placement < 3 ) {
-          if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
-            $langvalue = strtolower(trim($_GET['lang']));
+          if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
+            $langvalue = strtolower(trim($_POST['lang']));
           } else {
-            $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
+            $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
           }
-          if (isset($_GET['value']) && trim($_GET['value']) != '') {
-            $value = trim($_GET['value']);
+          if (isset($_POST['value']) && trim($_POST['value']) != '') {
+            $value = trim($_POST['value']);
           } else {
-            $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+            $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
           }
         } else {
-          if (isset($_GET['name']) && trim($_GET['name']) != '') {
-            $name = trim($_GET['name']);
+          if (isset($_POST['name']) && trim($_POST['name']) != '') {
+            $name = trim($_POST['name']);
           } else {
             $error .= '<br>Name is empty';
           }
-          if (isset($_GET['friendlyName']) && trim($_GET['friendlyName']) != '') {
-            $friendlyName = trim($_GET['friendlyName']);
+          if (isset($_POST['friendlyName']) && trim($_POST['friendlyName']) != '') {
+            $friendlyName = trim($_POST['friendlyName']);
           } else {
             if (isset(self::FRIENDLY_NAMES[$name])) {
               $friendlyName = self::FRIENDLY_NAMES[$name]['desc'];
             }
           }
-          if (isset($_GET['NameFormat']) && trim($_GET['NameFormat']) != '') {
-            $nameFormat = trim($_GET['NameFormat']);
+          if (isset($_POST['NameFormat']) && trim($_POST['NameFormat']) != '') {
+            $nameFormat = trim($_POST['NameFormat']);
           } else {
-            $error .= $_GET['action'] == "Add" ? $error .= '<br>NameFormat is empty' : '';
+            $error .= $_POST['action'] == "Add" ? $error .= '<br>NameFormat is empty' : '';
           }
-          $isRequired = isset($_GET['isRequired'])
-            && ($_GET['isRequired'] == 1
-            || strtolower($_GET['isRequired']) == 'true')
+          $isRequired = isset($_POST['isRequired'])
+            && ($_POST['isRequired'] == 1
+            || strtolower($_POST['isRequired']) == 'true')
             ? 1 : 0;
         }
       }
@@ -2565,7 +2574,7 @@ class MetadataEdit extends Common {
       } else {
         $changed = false;
         $ssoDescriptor = $this->getSSODecriptor('SPSSO');
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'AddIndex' :
             if ($ssoDescriptor) {
               $changed = true;
@@ -2925,23 +2934,25 @@ class MetadataEdit extends Common {
     $serviceElementHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $requestedAttributeHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $serviceIndexHandler->execute();
+    $idx=1;
     while ($serviceIndex = $serviceIndexHandler->fetch(PDO::FETCH_ASSOC)) {
       $index = $serviceIndex['Service_index'];
       if ($indexValue == $index) {
         printf ('
         <b>Index = %d</b>
-          <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%d&action=DeleteIndex">
-          <i class="fa fa-trash"></i></a>
+          %s
         <ul>',
-          $index, $this->dbIdNr, $this->dbOldIdNr, $index);
+          $index,
+          $this->getEditActionLink('AttributeConsumingService', array('index' => $index), $idx, 'DeleteIndex', '<i class="fa fa-trash"></i>'));
       } else {
         printf ('
         <b>Index = %d</b>
-          <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%d&action=SetIndex">
-          <i class="fa fa-pencil-alt"></i></a>
+          %s
         <ul>',
-          $index, $this->dbIdNr, $this->dbOldIdNr, $index);
+          $index,
+          $this->getEditActionLink('AttributeConsumingService', array('index' => $index), $idx, 'SetIndex', '<i class="fa fa-pencil-alt"></i>'));
       }
+      $idx++;
       $serviceElementHandler->execute();
       while ($serviceElement = $serviceElementHandler->fetch(PDO::FETCH_ASSOC)) {
         if (isset($oldServiceElements[$index][$serviceElement['element']][$serviceElement['lang']])
@@ -2952,17 +2963,16 @@ class MetadataEdit extends Common {
         } else {
           $state = 'success';
         }
-        $baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=%s&lang=%s&value=%s&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index, $serviceElement['element'],
-          $serviceElement['lang'], urlencode($serviceElement['data']));
-        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+        $links = $this->getEditDeleteLinks('AttributeConsumingService',
+            array('index' => $index, 'element' => $serviceElement['element'], 'lang' => $serviceElement['lang'], 'value' => htmlspecialchars($serviceElement['data'])), $idx);
         printf(self::HTML_LI_SPAN,
           "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
       if ($indexValue == $index) {
         printf('
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="edit" value="AttributeConsumingService">
               <input type="hidden" name="Entity" value="%d">
               <input type="hidden" name="oldEntity" value="%d">
@@ -3025,13 +3035,13 @@ class MetadataEdit extends Common {
         } else {
           $state = 'success';
         }
-        $baseLink = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%d&action=',
-          $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($requestedAttribute['Name']), $requestedAttribute['isRequired']);
-        $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+        $links = $this->getEditDeleteLinks('AttributeConsumingService',
+            array('index' => $index, 'element' => 'RequestedAttribute', 'name' => htmlspecialchars($requestedAttribute['Name']), 'isRequired' => $requestedAttribute['isRequired'], 'friendlyName' => htmlspecialchars($requestedAttribute['FriendlyName'])), $idx);
         $existingRequestedAttribute[$requestedAttribute['Name']] = true;
         printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
           "\n", $error, $links, $state, htmlspecialchars($friendlyNameDisplay), htmlspecialchars($requestedAttribute['Name']),
           $requestedAttribute['isRequired'] == '1' ? ' (Required)' : '');
+        $idx++;
       }
       print "\n" . self::HTML_END_UL;
 
@@ -3042,9 +3052,19 @@ class MetadataEdit extends Common {
             if (isset($existingRequestedAttribute[$nameL])) {
               printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
             } else {
-              printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri&isRequired=1&action=Add">[copy]</a> <b>%s</b> - %s<br>%s',
-                $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $data['desc'], $nameL,  "\n");
+              printf('%s <b>%s</b> - %s<br>%s',
+                  $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index,
+                          'element' => 'RequestedAttribute',
+                          'name' => $nameL,
+                          'friendlyName' => $data['desc'],
+                          'NameFormat' => self::SAMLNF_URI,
+                          'isRequired' => '1'
+                          ),
+                    $idx, 'Add', self::TEXT_COPY),
+                  $data['desc'], $nameL,  "\n");
             }
+            $idx++;
           }
         }
         print '<br><h5>Not recommended attributes:</h5>';
@@ -3060,15 +3080,24 @@ class MetadataEdit extends Common {
             if (isset($existingRequestedAttribute[$nameL])) {
               printf('<b>%s%s</b> - %s<br>%s', $data['desc'], $samlVer, $nameL,  "\n");
             } else {
-              printf('<a href="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&element=RequestedAttribute&index=%d&name=%s&friendlyName=%s&NameFormat=%s&isRequired=1&action=Add">[copy]</a> <b>%s%s</b> - %s<br>%s',
-                $this->dbIdNr, $this->dbOldIdNr, $index, $nameL, $data['desc'], $nf,
+              printf('%s <b>%s%s</b> - %s<br>%s',
+                  $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index,
+                          'element' => 'RequestedAttribute',
+                          'name' => $nameL,
+                          'friendlyName' => $data['desc'],
+                          'NameFormat' => $nf,
+                          'isRequired' => '1'
+                          ),
+                    $idx, 'Add', self::TEXT_COPY),
                 $data['desc'], $samlVer, $nameL,  "\n");
             }
           }
+          $idx++;
         }
         printf('
     <br>
-    <form>
+    <form action="." method="POST">
           <input type="hidden" name="edit" value="AttributeConsumingService">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -3100,7 +3129,7 @@ class MetadataEdit extends Common {
       }
     }
     printf('        <a href="./?validateEntity=%d"><button>Back</button></a>
-        <a href="./?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&action=AddIndex"><button>Add Index</button></a>
+        <form action="." method="POST" style="display: inline;"><input type="hidden" name="edit" value="AttributeConsumingService"><input type="hidden" name="Entity" value="%d"><input type="hidden" name="oldEntity" value="%d"><button name="action" value="AddIndex"">Add Index</button></form>
       </div><!-- end col -->
       <div class="col">',
       $this->dbIdNr, $this->dbIdNr, $this->dbOldIdNr);
@@ -3116,8 +3145,9 @@ class MetadataEdit extends Common {
                 $state = 'dark';
                 break;
               case 'removed' :
-                $copy = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-                  $this->dbIdNr, $this->dbOldIdNr, $index, $element, $lang, urlencode($data['value']));
+                $copy = $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index, 'element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
+                    $idx, 'Add', self::TEXT_COPY);
                 $state = 'danger';
                 break;
               default :
@@ -3126,6 +3156,7 @@ class MetadataEdit extends Common {
             }
             printf(self::HTML_LI_SPAN, "\n",
               $copy, $state, $element, $lang, htmlspecialchars($data['value']));
+            $idx++;
           }
         }
         print "\n          <li>RequestedAttributes : <ul>";
@@ -3136,8 +3167,15 @@ class MetadataEdit extends Common {
               $state = 'dark';
               break;
             case 'removed' :
-              $copy = sprintf('<a href ="?edit=AttributeConsumingService&Entity=%d&oldEntity=%d&index=%s&element=RequestedAttribute&name=%s&isRequired=%s&NameFormat=%s&action=Add">[copy]</a> ',
-                $this->dbIdNr, $this->dbOldIdNr, $index, urlencode($name), $data['isRequired'], urlencode($data['nameFormat']));
+              $copy = $this->getEditActionLink('AttributeConsumingService',
+                    array('index' => $index,
+                          'element' => 'RequestedAttribute',
+                          'name' => htmlspecialchars($name),
+                          'isRequired' => $data['isRequired'],
+                          'friendlyName' => $data['friendlyName'],
+                          'NameFormat' => htmlspecialchars($data['nameFormat'])
+                          ),
+                    $idx, 'Add', self::TEXT_COPY);
               $state = 'danger';
               break;
             default :
@@ -3148,6 +3186,7 @@ class MetadataEdit extends Common {
             "\n", $copy, $state,
             $data['friendlyName'] == '' ? '(' . self::FRIENDLY_NAMES[$name]['desc'] .')' : htmlspecialchars($data['friendlyName']),
             htmlspecialchars($name), $data['isRequired'] == '1' ? ' (Required)' : '');
+          $idx++;
         }
         printf("\n  %s</li>\n%s", self::HTML_END_UL, self::HTML_END_UL);
       }
@@ -3164,10 +3203,10 @@ class MetadataEdit extends Common {
     $organizationHandler = $this->config->getDb()->prepare(
       'SELECT `element`, `lang`, `data` FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
 
-    if (isset($_GET['action'])) {
+    if (isset($_POST['action'])) {
       $error = '';
-      if (isset($_GET['element']) && trim($_GET['element']) != '') {
-        $element = trim($_GET['element']);
+      if (isset($_POST['element']) && trim($_POST['element']) != '') {
+        $element = trim($_POST['element']);
         $elementmd = 'md:'.$element;
         if (isset(self::ORDER_ORGANIZATION[$elementmd])) {
           $placement = self::ORDER_ORGANIZATION[$elementmd];
@@ -3177,16 +3216,16 @@ class MetadataEdit extends Common {
       } else {
         $error .= self::HTML_NES;
       }
-      if (isset($_GET['lang']) && trim($_GET['lang']) != '') {
-        $lang = strtolower(trim($_GET['lang']));
+      if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
+        $lang = strtolower(trim($_POST['lang']));
       } else {
-        $error .= $_GET['action'] == "Add" ? self::HTML_LIE : '';
+        $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
         $lang = '';
       }
-      if (isset($_GET['value']) && $_GET['value'] != '') {
-        $value = trim($_GET['value']);
+      if (isset($_POST['value']) && $_POST['value'] != '') {
+        $value = trim($_POST['value']);
       } else {
-        $error .= $_GET['action'] == "Add" ? '<br>Value is empty' : '';
+        $error .= $_POST['action'] == "Add" ? '<br>Value is empty' : '';
         $value = '';
       }
       if ($error) {
@@ -3211,7 +3250,7 @@ class MetadataEdit extends Common {
         }
 
         $changed = false;
-        switch ($_GET['action']) {
+        switch ($_POST['action']) {
           case 'Add' :
             if (! $organization) {
               # Add if missing
@@ -3262,7 +3301,7 @@ class MetadataEdit extends Common {
               $organizationUpdateHandler->bindParam(self::BIND_ID, $this->dbIdNr);
               $organizationUpdateHandler->bindParam(self::BIND_ELEMENT, $element);
               $organizationUpdateHandler->bindParam(self::BIND_LANG, $lang);
-              $organizationUpdateHandler->bindParam(self::BIND_DATA, $_GET['value']);
+              $organizationUpdateHandler->bindParam(self::BIND_DATA, $_POST['value']);
               $organizationUpdateHandler->execute();
               $changed = true;
             }
@@ -3331,6 +3370,7 @@ class MetadataEdit extends Common {
     $existingOrganizationElements = array();
     $organizationHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $organizationHandler->execute();
+    $idx=0;
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       if (! isset($existingOrganizationElements[$organization['element']]) ) {
         $existingOrganizationElements[$organization['element']] = array();
@@ -3341,16 +3381,15 @@ class MetadataEdit extends Common {
         $state = 'dark';
         $oldOrganizationElements[$organization['element']][$organization['lang']]['state'] = 'same';
       } else { $state = 'success'; }
-      $baseLink = sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=',
-        $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'], urlencode($organization['data']));
-      $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+      $links = $this->getEditDeleteLinks('Organization', array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])), $idx);
       printf (self::HTML_LI_SPAN,
         "\n", $links, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
       $existingOrganizationElements[$organization['element']][$organization['lang']] = true;
+      $idx++;
     }
     printf('
         </ul>
-        <form>
+        <form action="." method="POST">
           <input type="hidden" name="edit" value="Organization">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -3387,16 +3426,19 @@ class MetadataEdit extends Common {
     $organizationHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $organizationHandler->execute();
     print '        <ul>';
+    $idx=0;
     while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
       $state = ($oldOrganizationElements[$organization['element']][$organization['lang']]['state'] == 'same')
         ? 'dark'
         : 'danger';
       $addLink =  (isset($existingOrganizationElements[$organization['element']][$organization['lang']]) )
         ? ''
-        : sprintf('<a href="?edit=Organization&Entity=%d&oldEntity=%d&element=%s&lang=%s&value=%s&action=Add">[copy]</a> ',
-          $this->dbIdNr, $this->dbOldIdNr, $organization['element'], $organization['lang'],urlencode($organization['data']));
+        : $this->getEditActionLink('Organization',
+                  array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])),
+                  $idx, 'Add', self::TEXT_COPY);
       printf (self::HTML_LI_SPAN,
         "\n", $addLink, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
+      $idx++;
     }
     print "\n        <ul>";
     print self::HTML_END_DIV_COL_ROW;
@@ -3411,17 +3453,17 @@ class MetadataEdit extends Common {
     $contactPersonHandler = $this->config->getDb()->prepare(
       'SELECT * FROM `ContactPerson` WHERE `entity_id` = :Id ORDER BY `contactType`;');
 
-    if (isset($_GET['action'])
-      && isset($_GET['type'])
-      && isset($_GET['part'])
-      && isset($_GET['value'])
-      && trim($_GET['value']) != '' ) {
-      switch ($_GET['type']) {
+    if (isset($_POST['action'])
+      && isset($_POST['type'])
+      && isset($_POST['part'])
+      && isset($_POST['value'])
+      && trim($_POST['value']) != '' ) {
+      switch ($_POST['type']) {
         case 'administrative' :
         case 'technical' :
         case 'support' :
         case 'other' :
-          $type = $_GET['type'];
+          $type = $_POST['type'];
           $subType = false;
           break;
         case 'security' :
@@ -3432,7 +3474,7 @@ class MetadataEdit extends Common {
           exit;
       }
 
-      $part = $_GET['part'];
+      $part = $_POST['part'];
       $partmd = 'md:'.$part;
       if (isset(self::ORDER_CONTACTPERSON[$partmd])) {
         $placement = self::ORDER_CONTACTPERSON[$partmd];
@@ -3441,17 +3483,17 @@ class MetadataEdit extends Common {
         exit();
       }
 
-      $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO)
-        ? self::TEXT_MAILTO.trim($_GET['value'])
-        : trim($_GET['value']);
+      $value = ($part == 'EmailAddress' && substr($_POST['value'],0,7) <> self::TEXT_MAILTO)
+        ? self::TEXT_MAILTO.trim($_POST['value'])
+        : trim($_POST['value']);
 
       # Find md:Contacts in XML
       $child = $this->entityDescriptor->firstChild;
       $contactPerson = false;
 
-      switch ($_GET['action']) {
+      switch ($_POST['action']) {
         case 'Add' :
-          $value = ($part == 'EmailAddress' && substr($_GET['value'],0,7) <> self::TEXT_MAILTO) ? self::TEXT_MAILTO.trim($_GET['value']) : trim($_GET['value']);
+          $value = ($part == 'EmailAddress' && substr($_POST['value'],0,7) <> self::TEXT_MAILTO) ? self::TEXT_MAILTO.trim($_POST['value']) : trim($_POST['value']);
           while ($child && ! $contactPerson) {
             if ($child->nodeName == self::SAML_MD_CONTACTPERSON) {
               if ($child->getAttribute('contactType') == $type) {
@@ -3524,7 +3566,7 @@ class MetadataEdit extends Common {
           }
           break;
         case 'Delete' :
-          $value = trim($_GET['value']);
+          $value = trim($_POST['value']);
           while ($child && ! $contactPerson) {
             if ($child->nodeName == self::SAML_MD_CONTACTPERSON && $child->getAttribute('contactType') == $type) {
               if ($subType) {
@@ -3613,6 +3655,7 @@ class MetadataEdit extends Common {
     $existingContactPersons = array();
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $contactPersonHandler->execute();
+    $idx=0;
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactType = $contactPerson['contactType'];
       if (! isset($existingContactPersons[$contactType])) {
@@ -3645,17 +3688,16 @@ class MetadataEdit extends Common {
       foreach ($contactPersonSAML2DB as $samlPart => $dbPart) {
         if ($contactPerson[$dbPart]) {
           $state = ($oldContactPersons[$contactType][$dbPart]['state'] == 'same') ? 'dark' : 'success';
-          $baseLink =   sprintf('<a href="?edit=ContactPersons&Entity=%d&oldEntity=%d&type=%s&value=%s&part=%s&action=',
-            $this->dbIdNr, $this->dbOldIdNr, $contactType, urlencode($contactPerson[$dbPart]), $samlPart);
-          $links = $baseLink . self::HTML_COPY . $baseLink . self::HTML_DELETE;
+          $links = $this->getEditDeleteLinks('ContactPersons', array('type' => $contactType, 'value' => htmlspecialchars($contactPerson[$dbPart]), 'part' => $samlPart), $idx);
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
             $links, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
           $existingContactPersons[$contactType][$dbPart] = true;
+          $idx++;
         }
       }
       print self::HTML_END_UL;
     }
-    printf('        <form>
+    printf('        <form action="." method="POST">
           <input type="hidden" name="edit" value="ContactPersons">
           <input type="hidden" name="Entity" value="%d">
           <input type="hidden" name="oldEntity" value="%d">
@@ -3703,6 +3745,7 @@ class MetadataEdit extends Common {
     # Print Old contacts
     $contactPersonHandler->bindParam(self::BIND_ID, $this->dbOldIdNr);
     $contactPersonHandler->execute();
+    $idx=0;
     while ($contactPerson = $contactPersonHandler->fetch(PDO::FETCH_ASSOC)) {
       $contactType = $contactPerson['contactType'];
       if ($contactPerson['subcontactType'] == '') {
@@ -3718,10 +3761,12 @@ class MetadataEdit extends Common {
           $state = $oldContactPersons[$contactType][$dbPart]['state'] == 'same' ? 'dark' : 'danger';
           $addLink = isset($existingContactPersons[$contactType][$dbPart])
             ? ''
-            : sprintf('<a href="?edit=ContactPersons&Entity=%d&oldEntity=%d&type=%s&part=%s&value=%s&action=Add">[copy]</a> ',
-              $this->dbIdNr, $this->dbOldIdNr, $type, $samlPart, urlencode($contactPerson[$dbPart]));
+            : $this->getEditActionLink('ContactPersons',
+                  array('type' => $type, 'part' => $samlPart, 'value' => htmlspecialchars($contactPerson[$dbPart])),
+                  $idx, 'Add', self::TEXT_COPY);
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
             $addLink, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
+          $idx++;
         }
       }
       print self::HTML_END_UL;
@@ -3832,6 +3877,54 @@ class MetadataEdit extends Common {
         $lang, $lang == $langValue ? self ::HTML_SELECTED : '', $descr);
     }
     print "\n              </select>\n";
+  }
+
+
+  /**
+   * Render HTML code with an action link for a given metadata edit action wrapped in a form using a POST method.
+   *
+   * @param string $edit Name of element being edited
+   *
+   * @param array $data Array of key value pairs to include on the form (data to be edited).  Values already have to be prepared to render as %s (so escaped as needed)
+   *
+   * @param int $id Index value to use in identifying edit forms.  Must be unique across the page (for a single action).
+   *
+   * @param string $action The action to perform (pass in the submitted form)
+   *
+   * @param string $linkText Text or HTML code to use for the link text.
+   */
+
+  private function getEditActionLink($edit, $data, $id, $action, $linkText) {
+    $link = sprintf('            <form action="." method="POST" name="%s%s%d" style="display: inline;">
+              <input type="hidden" name="edit" value="%s">
+              <input type="hidden" name="Entity" value="%d">
+              <input type="hidden" name="oldEntity" value="%d">%s',
+              $action, $edit, $id, // form id
+              $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
+    foreach ($data as $key => $value) {
+      $link .= sprintf('              <input type="hidden" name="%s" value="%s">%s', $key, $value, "\n");
+    }
+    $link .= sprintf('              <input type="hidden" name="action" value="%s">
+              <a href="#" onClick="document.forms.%s%s%d.submit();">%s</a></form>%s',
+              $action,
+              $action, $edit, $id, // form id
+              $linkText, "\n"
+              );
+    return $link;
+  }
+
+  /**
+   * Render HTML code with Edit and Delete links for use in various metadata edit functions
+   *
+   * @param string $edit Name of element being edited
+   *
+   * @param array $data Array of key value pairs to include on the form (data to be edited).  Values already have to be prepared to render as %s (so escaped as needed)
+   *
+   * @param int $id Index value to use in identifying edit forms.  Must be unique across the page.
+   */
+  private function getEditDeleteLinks($edit, $data, $id) {
+    return $this->getEditActionLink($edit, $data, $id, 'Copy', '<i class="fas fa-pencil-alt"></i>') .
+           $this->getEditActionLink($edit, $data, $id, 'Delete', '<i class="fas fa-trash"></i>');
   }
 
   /**

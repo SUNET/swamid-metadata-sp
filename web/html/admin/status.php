@@ -31,7 +31,7 @@ if (isset($_SERVER['displayName'])) {
 
 $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
 if ($userLevel < 20) { exit; }
-$displayName = '<div> Logged in as : <br> ' . $fullName . ' (' . $EPPN .')</div>';
+$displayName = '<div> Logged in as : <br> ' . htmlspecialchars($fullName) . ' (' . htmlspecialchars($EPPN) .')</div>';
 $html->setDisplayName($displayName);
 
 $html->showHeaders('');
@@ -89,7 +89,7 @@ function showShadowEntities() {
   $entityHandler->execute();
   printf ('        <h5>Entities only in shadow</h5>%s        <table id="shadow-table" class="table table-striped table-bordered">%s          <thead><tr><th>Id</th><th>EntityID</th><th>Created</th></tr></thead>%s', "\n", "\n", "\n");
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href=./?removeEntity=%d target="_blank"><i class="fas fa-trash"></i></a>%d</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], $entity['entityID'], $entity['lastValidated'], "\n");
+    printf('          <tr><td><a href=./?removeEntity=%d target="_blank"><i class="fas fa-trash"></i></a>%d</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], htmlspecialchars($entity['entityID']), $entity['lastValidated'], "\n");
   }
   print HTML_TABLE_END;
 }
@@ -100,7 +100,7 @@ function showSoftDeletedEntities() {
   $entityHandler->execute();
   printf ('        <h5>Entities in Soft Delete</h5>%s        <table id="softDel-table" class="table table-striped table-bordered">%s          <thead><tr><th>Action</th><th>EntityID</th><th>Removed</th></tr></thead>%s', "\n", "\n", "\n");
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href=./?showEntity=%d target="_blank">View</a> | <a href=./?action=createDraft&Entity=%d target="_blank">Create Draft</a></td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], $entity['entityID'], $entity['lastUpdated'], "\n");
+    printf('          <tr><td><a href="./?showEntity=%d" target="_blank"><button class="btn btn-outline-success">View</button></a><form action="." method="POST" style="display: inline;"><input type="hidden" name="action" value="createDraft"><input type="hidden" name="Entity" value="%d"><button class="btn btn-outline-primary">Create Draft</button></form></td><td>%s</td><td>%s</td></tr>%s', $entity['id'], $entity['id'], htmlspecialchars($entity['entityID']), $entity['lastUpdated'], "\n");
   }
   print HTML_TABLE_END;
 }
@@ -121,7 +121,7 @@ function showPublishedPendingEntities() {
   while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
     if ($lastId != $entity['id'] ) {
       printf('          <tr><td><a href=./?showEntity=%d target="_blank">%d</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-        $entity['id'], $entity['id'], $entity['entityID'], $entity['lastUpdated'], $entity['email'], "\n");
+        $entity['id'], $entity['id'], htmlspecialchars($entity['entityID']), $entity['lastUpdated'], htmlspecialchars($entity['email']), "\n");
       $lastId = $entity['id'];
     }
   }
@@ -144,7 +144,7 @@ function showUsers(){
       printf ('        <h5>%s (%s)</h5>
         <table id="entity-table" class="table table-striped table-bordered">
           <thead><tr><th>Status</th><th>EntityID</th></tr></thead>%s',
-        $user['fullName'], $user['userID'], "\n");
+        htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), "\n");
       while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
         switch ($entity['status']) {
           case 1 :
@@ -169,7 +169,7 @@ function showUsers(){
             $statusName = 'Unknown';
         }
         printf('          <tr><td>%s</td><td><a href=./?showEntity=%d target="_blank">%s<a></td></tr>%s',
-          $statusName, $entity['id'], $entity['entityID'], "\n");
+          $statusName, $entity['id'], htmlspecialchars($entity['entityID']), "\n");
       }
       print HTML_TABLE_END;
     }
@@ -183,7 +183,7 @@ function showUsers(){
           <thead><tr><th>UserID</th><th>Email</th><th>Name</th><th>Last seen</th><th>Number of entities</th></tr></thead>%s', "\n");
   while ($user = $usersHandler->fetch(PDO::FETCH_ASSOC)) {
     printf('          <tr><td><a href="?action=users&user=%d">%s<a></td></td><td>%s</td><td>%s</td><td>%s</td><td>%d</td></tr>%s',
-      $user['id'], $user['userID'], $user['email'], $user['fullName'], $user['lastSeen'], $user['count'], "\n");
+      $user['id'], htmlspecialchars($user['userID']), htmlspecialchars($user['email']), htmlspecialchars($user['fullName']), $user['lastSeen'], $user['count'], "\n");
   }
   print HTML_TABLE_END;
 }
@@ -197,7 +197,7 @@ function showValidationOutput() {
         <table id="validation-table" class="table table-striped table-bordered">
           <thead><tr><th>entityID</th><th>Validation error</th></tr></thead>%s', "\n");
   while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td></tr>%s', $entity['id'], $entity['entityID'], str_ireplace("\n", "<br>", $entity['validationOutput']), "\n");
+    printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td></tr>%s', $entity['id'], htmlspecialchars($entity['entityID']), str_ireplace("\n", "<br>", $entity['validationOutput']), "\n");
   }
   print HTML_TABLE_END;
 }
@@ -272,10 +272,10 @@ function showOrganizationDifference() {
         <td><a href=".?action=OrganizationsInfo&name=%s&display=%s&url=%s&lang=%s">%d</a></td>
       </tr>%s',
           $orgsSame ? 'success' : 'warning',
-          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
-          $organization['OrganizationURL'],
-          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
-          $organization['OrganizationURL'], $lang,
+          htmlspecialchars($organization['OrganizationName']), htmlspecialchars($organization['OrganizationDisplayName']),
+          htmlspecialchars($organization['OrganizationURL']),
+          urlencode($organization['OrganizationName']), urlencode($organization['OrganizationDisplayName']),
+          urlencode($organization['OrganizationURL']), $lang,
           $organization['count'], "\n");
       }
     }
@@ -290,8 +290,8 @@ function printNewOrgInfo($organization) {
         <td>%s</td>
         <td><a href="./?action=Members&tab=organizations&id=%d&showAllOrgs#org-%d" target="_blank">Edit</a>(%d)</td>
       </tr>%s',
-          $organization['OrganizationName'], $organization['OrganizationDisplayName'],
-          $organization['OrganizationURL'],
+          htmlspecialchars($organization['OrganizationName']), htmlspecialchars($organization['OrganizationDisplayName']),
+          htmlspecialchars($organization['OrganizationURL']),
           $organization['OrganizationInfo_id'], $organization['OrganizationInfo_id'], $organization['OrganizationInfo_id'], "\n");
 }
 
