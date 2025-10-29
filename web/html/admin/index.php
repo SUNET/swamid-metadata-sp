@@ -133,17 +133,9 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   }
 }
 
-if ($foundMember) {
-  if ($foundStudent && ! $foundEmployee) {
-    $errors .=
-      'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-    $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
-    $errors .=
-      'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
-    $errors .=
-      'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
-  }
-} elseif (!$foundAffiliate) {
+if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
+     (! $foundMember && !$foundAffiliate)
+   ) {
   $errors .=
       'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
   $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
