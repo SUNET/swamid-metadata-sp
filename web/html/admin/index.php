@@ -144,8 +144,10 @@ if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
   $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
   $errors .=
     'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
-  $errors .=
-    'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
+  if ($config->getFederation()['releaseCheckResultsURL']) {
+    $errors .=
+      sprintf('Login to <a href="%s">release-check</a> to verify.<br>', $html->getBaseURL($config->getFederation()['releaseCheckResultsURL']));
+  }
 }
 
 if ( isset($_SERVER['mail'])) {
