@@ -381,9 +381,9 @@ if (isset($_FILES['XMLfile'])) {
           showEntity($entitiesId);
           break;
         case 'AddImps2IdP' :
-          if ($userLevel > 19 && isset($_REQUEST['ImpsId'])) {
+          if ($userLevel > 19 && isset($_POST['ImpsId'])) {
             $imps = new \metadata\IMPS();
-            $imps->bindIdP2IMPS($entitiesId, $_REQUEST['ImpsId']);
+            $imps->bindIdP2IMPS($entitiesId, $_POST['ImpsId']);
           }
           $metadata = new \metadata\Metadata($entitiesId);
           showEntity($entitiesId);

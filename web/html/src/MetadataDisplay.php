@@ -689,13 +689,13 @@ class MetadataDisplay extends Common {
       if ($allowEdit) {
         $displayNameHandler->execute(array(self::BIND_ID => $entityId));
         if (! $displayName = $displayNameHandler->fetch(PDO::FETCH_ASSOC)) {
-          $displayName['data'] = 'Unkown';
+          $displayName['data'] = 'Unknown';
         }
         $impsListHandler->execute();
         printf ('%s          <div class="alert alert-danger" role="alert">
             IdP is not bound to any IMPS<br>
             Bind to :
-            <form>
+            <form action="." method="POST">
               <input type="hidden" name="action" value="AddImps2IdP">
               <input type="hidden" name="Entity" value="%d">
               <select name="ImpsId">', "\n", $entityId);
