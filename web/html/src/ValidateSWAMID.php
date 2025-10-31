@@ -16,7 +16,6 @@ class ValidateSWAMID extends Validate {
   const TEXT_HTTPS = 'https://';
   const TEXT_521 = '5.2.1';
   const TEXT_621 = '6.2.1';
-  const CT_SECURITY = 'other/security';
 
   /**
    * Validate SAML

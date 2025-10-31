@@ -93,6 +93,8 @@ class Configuration {
     );
     $defaultValuesFederation = array(
       'storeServiceInfo' => false,
+      'eduPersonAffiliationLink' => '',
+      'eduPersonAffiliationExemptIdPs' => array(),
       'mdsDbPath' => '',
       'urlCheckUA' => 'https://metadata.swamid.se/validate',
       'urlCheckDataEnabled' => false,

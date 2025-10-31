@@ -335,7 +335,8 @@ class MetadataDisplay extends Common {
 
 
   /**
-   * Construct a release check URL for a specific tag
+   * Construct a release check URL for a specific tag.  Starting with configured releaseCheckResultsURL,
+   * the $tag given is prepended as another name component to the hostname and any path is stripped.
    *
    * @param string $tag To include in the release check URL
    *
@@ -349,7 +350,7 @@ class MetadataDisplay extends Common {
       return $rcConfURL;
     }
 
-    return preg_replace(',^(https?://),', '\1' . $tag . '.', $rcConfURL);
+    return preg_replace(',^(https?://)([^/]+/).*$,', '\1' . $tag . '.\2', $rcConfURL);
   }
 
   /**

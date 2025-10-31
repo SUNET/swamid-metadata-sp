@@ -274,4 +274,15 @@ class HTML {
   private function getPageTitle($title_part) {
     return 'Metadata ' . $this->federation['displayName'] . ( $title_part ? ' - ' . $title_part : '');
   }
+
+  /**
+   * Helper function to return a base URL based on a given URL (strip out path and query string)
+   *
+   * @param string $url The URL to process.
+   *
+   * @return string Base URL of $url
+   */
+  public function getBaseURL($url) {
+    return preg_replace(',^(https?://[^/]+/).*$,', '\1', $url);
+  }
 }

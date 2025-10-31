@@ -33,34 +33,38 @@ $assuranceHandler = $config->getDb()->prepare(
   'INSERT INTO `assuranceLog` (`entityID`, `assurance`, `logDate`)
     VALUES (:EntityID, :Assurance, NOW()) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
 $assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
+$foundAssurance = false;
 if (isset($_SERVER['eduPersonAssurance'])) {
   foreach (explode(';', $_SERVER['eduPersonAssurance']) as $eduPersonAssurance) {
     if (substr($eduPersonAssurance, 0, 33) ==  'https://refeds.org/assurance/IAP/') {
       $assuranceHandler->bindValue(BIND_ASSURANCE,
         substr(str_replace ('https://refeds.org/assurance/IAP/', 'RAF-', $eduPersonAssurance),0,10));
       $assuranceHandler->execute();
-    } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
+      $foundAssurance = true;
+    } elseif ($config->getFederation()['swamid_assurance'] && substr($eduPersonAssurance, 0, 40) == 'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
       $assuranceHandler->bindValue(BIND_ASSURANCE,
       substr(str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance),0,10)); # NOSONAR Should be http://
       $assuranceHandler->execute();
+      $foundAssurance = true;
     }
   }
-} else {
+}
+if (!$foundAssurance) {
   $assuranceHandler->bindValue(BIND_ASSURANCE, 'None');
   $assuranceHandler->execute();
 }
 /* END RAF Logging */
 
 $errorURL = isset($_SERVER['Meta-errorURL'])
-  ? '<a href="' . $_SERVER['Meta-errorURL'] . '">Mer information</a><br>'
+  ? '<br><a href="' . $_SERVER['Meta-errorURL'] . '">More information</a><br>'
   : '<br>';
 $errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
-  array(time(), 'https://metadata.swamid.se/shibboleth', $_SERVER['Shib-Session-ID']),
+  array(time(), $config->baseURL() . 'shibboleth', $_SERVER['Shib-Session-ID']),
   $errorURL);
 
 $errors = '';
 
-if (isset($_SERVER['Meta-Assurance-Certification'])) {
+if (isset($_SERVER['Meta-Assurance-Certification']) && $config->getFederation()['swamid_assurance']) {
   $AssuranceCertificationFound = false;
   foreach (explode(';',$_SERVER['Meta-Assurance-Certification']) as $AssuranceCertification) {
     if ($AssuranceCertification == 'http://www.swamid.se/policy/assurance/al1') { # NOSONAR Should be http://
@@ -91,6 +95,7 @@ $foundAffiliate = false;
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
     switch(explode('@',$ScopedAffiliation)[0]) {
+      case 'staff' :
       case 'employee' :
         $foundEmployee = true;
         break;
@@ -110,6 +115,7 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   $foundEmployee = false;
   foreach (explode(';',$_SERVER['eduPersonAffiliation']) as $Affiliation) {
     switch($Affiliation) {
+      case 'staff' :
       case 'employee' :
         $foundEmployee = true;
         break;
@@ -119,12 +125,15 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
       case 'member' :
         $foundMember = true;
         break;
+      case 'affiliate' :
+        $foundAffiliate = true;
+        break;
       default :
     }
   }
 } else {
   if (isset($_SERVER['Shib-Identity-Provider'])
-    && $_SERVER['Shib-Identity-Provider'] == 'https://login.idp.eduid.se/idp.xml') {
+    && in_array($_SERVER['Shib-Identity-Provider'], $config->getFederation()['eduPersonAffiliationExemptIdPs']) ) {
     #OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
     $foundMember = true;
   } else {
@@ -133,24 +142,20 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   }
 }
 
-if ($foundMember) {
-  if ($foundStudent && ! $foundEmployee) {
-    $errors .=
+if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
+     (! $foundMember && !$foundAffiliate)
+   ) {
+  $errors .=
       'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-    $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  $errors .= ' of either <b>employee</b> or <b>staff</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  if ($config->getFederation()['eduPersonAffiliationLink']) {
     $errors .=
-      'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
-    $errors .=
-      'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
+      sprintf('Please check <a href="%s">documentation on affiliation values</a> for more information.<br>', $config->getFederation()['eduPersonAffiliationLink']);
   }
-} elseif (!$foundAffiliate) {
-  $errors .=
-      'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-  $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
-  $errors .=
-    'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
-  $errors .=
-    'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
+  if ($config->getFederation()['releaseCheckResultsURL']) {
+    $errors .=
+      sprintf('Login to <a href="%s">release-check</a> to verify.<br>', $html->getBaseURL($config->getFederation()['releaseCheckResultsURL']));
+  }
 }
 
 if ( isset($_SERVER['mail'])) {

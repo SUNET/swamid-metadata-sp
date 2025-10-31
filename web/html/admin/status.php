@@ -231,9 +231,12 @@ function showOrganizationDifference() {
     WHERE `lang`= :Lang
     ORDER BY `OrganizationName` COlLATE utf8mb4_swedish_ci, `OrganizationDisplayName` COlLATE utf8mb4_swedish_ci, `OrganizationURL` COlLATE utf8mb4_swedish_ci;');
   printf ('    <h5>Comparing of Organizations in Metadata and Members/OrginfoTable</h5>%s', "\n");
-  foreach (array('en', 'sv') as $lang) {
-    printf ('    <h6>Lang = %s</h6>
-    <table id="Organization%s-table" class="table table-striped table-bordered">
+  $languages = $config->getFederation()['languages'];
+  foreach ($languages as $lang) {
+    if (count($languages)>1) {
+      printf ('    <h6>Lang = %s</h6>%s', $lang, "\n");
+    }
+    printf('    <table id="Organization%s-table" class="table table-striped table-bordered">
       <thead>
         <tr>
           <th>OrganizationName</th>
@@ -242,7 +245,7 @@ function showOrganizationDifference() {
           <th>Count</th>
         </tr>
       </thead>%s',
-      $lang, $lang, "\n");
+      $lang, "\n");
     $organizationHandler->execute(array('Lang' => $lang));
     $orgInfoHandler->execute(array('Lang' => $lang));
     $orgInfo = $orgInfoHandler->fetch(PDO::FETCH_ASSOC);
