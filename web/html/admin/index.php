@@ -60,7 +60,7 @@ $errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
 
 $errors = '';
 
-if (isset($_SERVER['Meta-Assurance-Certification'])) {
+if (isset($_SERVER['Meta-Assurance-Certification']) && $config->getFederation()['swamid_assurance']) {
   $AssuranceCertificationFound = false;
   foreach (explode(';',$_SERVER['Meta-Assurance-Certification']) as $AssuranceCertification) {
     if ($AssuranceCertification == 'http://www.swamid.se/policy/assurance/al1') { # NOSONAR Should be http://
