@@ -33,19 +33,23 @@ $assuranceHandler = $config->getDb()->prepare(
   'INSERT INTO `assuranceLog` (`entityID`, `assurance`, `logDate`)
     VALUES (:EntityID, :Assurance, NOW()) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
 $assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
+$foundAssurance = false;
 if (isset($_SERVER['eduPersonAssurance'])) {
   foreach (explode(';', $_SERVER['eduPersonAssurance']) as $eduPersonAssurance) {
     if (substr($eduPersonAssurance, 0, 33) ==  'https://refeds.org/assurance/IAP/') {
       $assuranceHandler->bindValue(BIND_ASSURANCE,
         substr(str_replace ('https://refeds.org/assurance/IAP/', 'RAF-', $eduPersonAssurance),0,10));
       $assuranceHandler->execute();
-    } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
+      $foundAssurance = true;
+    } elseif ($config->getFederation()['swamid_assurance'] && substr($eduPersonAssurance, 0, 40) == 'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
       $assuranceHandler->bindValue(BIND_ASSURANCE,
       substr(str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance),0,10)); # NOSONAR Should be http://
       $assuranceHandler->execute();
+      $foundAssurance = true;
     }
   }
-} else {
+}
+if (!$foundAssurance) {
   $assuranceHandler->bindValue(BIND_ASSURANCE, 'None');
   $assuranceHandler->execute();
 }
