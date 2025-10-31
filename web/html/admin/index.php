@@ -52,10 +52,10 @@ if (isset($_SERVER['eduPersonAssurance'])) {
 /* END RAF Logging */
 
 $errorURL = isset($_SERVER['Meta-errorURL'])
-  ? '<a href="' . $_SERVER['Meta-errorURL'] . '">Mer information</a><br>'
+  ? '<br><a href="' . $_SERVER['Meta-errorURL'] . '">More information</a><br>'
   : '<br>';
 $errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
-  array(time(), 'https://metadata.swamid.se/shibboleth', $_SERVER['Shib-Session-ID']),
+  array(time(), $config->baseURL() . 'shibboleth', $_SERVER['Shib-Session-ID']),
   $errorURL);
 
 $errors = '';
