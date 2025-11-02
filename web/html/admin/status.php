@@ -10,6 +10,15 @@ $config = new \metadata\Configuration();
 
 $html = new \metadata\HTML();
 
+$errorURL = isset($_SERVER['Meta-errorURL'])
+  ? '<br><a href="' . $_SERVER['Meta-errorURL'] . '">More information</a><br>'
+  : '<br>';
+$errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
+  array(time(), $config->baseURL() . 'shibboleth', $_SERVER['Shib-Session-ID']),
+  $errorURL);
+
+$errors = '';
+
 if (isset($_SERVER['eduPersonPrincipalName'])) {
   $EPPN = $_SERVER['eduPersonPrincipalName'];
 } elseif (isset($_SERVER['subject-id'])) {
@@ -27,6 +36,19 @@ if (isset($_SERVER['displayName'])) {
   }
 } else {
   $fullName = '';
+}
+
+if ($errors != '') {
+  $html->showHeaders('Problem');
+  printf('
+    <div class="row alert alert-danger" role="alert">
+      <div class="col">
+        <b>Errors:</b><br>
+        %s
+      </div>
+    </div>%s', str_ireplace("\n", "<br>", $errors), "\n");
+  $html->showFooter(array());
+  exit;
 }
 
 $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
