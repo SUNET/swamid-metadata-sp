@@ -301,8 +301,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
+              // clear messages explicitly
+              $metadata->clearResult();
+              $metadata->clearWarning();
+              $metadata->clearError();
               $metadata->removeSaml1Support();
-              validateEntity($entitiesId);
+              validateEntity($entitiesId, clearMessages: false); // keep messages from removeSaml1Support
               $menuActive = 'new';
               showEntity($entitiesId);
             } else {
@@ -319,8 +323,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
               if ($newEntity_id = $metadata->createDraft()) {
+                // clear messages explicitly
+                $metadata->clearResult();
+                $metadata->clearWarning();
+                $metadata->clearError();
                 $metadata->removeSaml1Support();
-                validateEntity($newEntity_id);
+                validateEntity($newEntity_id, clearMessages: false); // keep messages from removeSaml1Support
                 $menuActive = 'new';
                 showEntity($newEntity_id);
               }
@@ -337,8 +345,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
+              // clear messages explicitly
+              $metadata->clearResult();
+              $metadata->clearWarning();
+              $metadata->clearError();
               $metadata->removeObsoleteAlgorithms();
-              validateEntity($entitiesId);
+              validateEntity($entitiesId, clearMessages: false); // keep messages from removeObsoleteAlgorithms
               showEntity($entitiesId);
             } else {
               # User have no access yet.
@@ -354,8 +366,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
               if ($newEntity_id = $metadata->createDraft()) {
+                // clear messages explicitly
+                $metadata->clearResult();
+                $metadata->clearWarning();
+                $metadata->clearError();
                 $metadata->removeObsoleteAlgorithms();
-                validateEntity($newEntity_id);
+                validateEntity($newEntity_id, clearMessages: false); // keep messages from removeObsoleteAlgorithms
                 $menuActive = 'new';
                 showEntity($newEntity_id);
               }
@@ -1245,7 +1261,7 @@ function showMenu() {
   print "\n    <br>\n    <br>\n";
 }
 
-function validateEntity($entitiesId) {
+function validateEntity($entitiesId, $clearMessages = true) {
   global $config;
   $xmlParser = class_exists(CLASS_PARSER.$config->getFederation()['extend']) ?
     CLASS_PARSER.$config->getFederation()['extend'] :
@@ -1254,9 +1270,11 @@ function validateEntity($entitiesId) {
     CLASS_VALIDATOR.$config->getFederation()['extend'] :
     CLASS_VALIDATOR;
   $parser = new $xmlParser($entitiesId);
-  $parser->clearResult();
-  $parser->clearWarning();
-  $parser->clearError();
+  if ($clearMessages) {
+    $parser->clearResult();
+    $parser->clearWarning();
+    $parser->clearError();
+  }
   $parser->parseXML();
   $validator = new $samlValidator($entitiesId);
   $validator->saml();
