@@ -2279,18 +2279,22 @@ function approveAccessRequest($code) {
               <body>
                 <p>Hi.</p>
                 <p>Your access to %s have been granted.</p>
+                <p>You can now access the entity at <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a></p>
                 <p>-- <br>This mail was sent by %s, a service provided by %s.
                 If you've any questions please contact %s.</p>
               </body>
             </html>",
             htmlspecialchars($metadata->entityID()),
+            $config->baseURL(), $metadata->id(), $config->baseURL(), $metadata->id(),
             $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $mail->AltBody = sprintf("Hi.
             \nYour access to %s have been granted.
+            \nYou can now access the entity at %sadmin/?showEntity=%d
             \n--
             This mail was sent by %s, a service provided by %s.
             If you've any questions please contact %s.",
             $metadata->entityID(),
+            $config->baseURL(), $metadata->id(),
             $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
           $mail->Subject = 'Access granted for ' . $shortEntityid;
