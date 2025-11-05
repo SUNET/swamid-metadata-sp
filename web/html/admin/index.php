@@ -1367,8 +1367,6 @@ function move2Pending($entitiesId) {
             }
           }
 
-          $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-
           //Content
           $mailContacts->isHTML(true);
           $mailContacts->Body = sprintf("<!DOCTYPE html>
@@ -1381,7 +1379,7 @@ function move2Pending($entitiesId) {
               <p>%s (%s) has requested an update of \"%s\" (%s)</p>
               <p>You have received this email because you are either
               the new or old technical and/or administrative contact.</p>
-              <p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+              <p>You can see the new version at <a href=\"%s?showEntity=%d\">%s?showEntity=%d</a></p>
               <p>If you do not approve this update, forward this email to %s (%s)
               and request for the update to be denied.</p>
               <p>This is a message from the %s.<br>
@@ -1389,17 +1387,17 @@ function move2Pending($entitiesId) {
               On behalf of %s</p>
             </body>
           </html>",
-            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $hostURL, $entitiesId, $hostURL, $entitiesId,
+            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $config->baseURL(), $entitiesId, $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested an update of \"%s\" (%s)
           \nYou have received this email because you are either the new or old technical and/or administrative contact.
-          \nYou can see the new version at %s/?showEntity=%d
+          \nYou can see the new version at %s?showEntity=%d
           \nIf you do not approve this update, forward this email to %s (%s) and request for the update to be denied.
           \nThis is a message from the %s.
           --
           On behalf of %s",
-            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId,
+            $fullName, $mail, $displayName, $draftMetadata->entityID(), $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
 
           $mailRequester->isHTML(true);
@@ -1413,7 +1411,7 @@ function move2Pending($entitiesId) {
               <p>You have requested an update of \"%s\" (%s)</p>
               <p>To continue the publication request, forward this email to %s (%s).
               If you don’t do this the publication request will not be processed.</p>
-              <p>The new version can be found at <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a></p>
+              <p>The new version can be found at <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a></p>
               <p>An email has also been sent to the following addresses since they are the new or old technical
               and/or administrative contacts : </p>
               <p><ul>
@@ -1424,20 +1422,20 @@ function move2Pending($entitiesId) {
               On behalf of %s</p>
             </body>
           </html>",
-            htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $federation['teamName'], $federation['teamMail'], $hostURL, $entitiesId,
-            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses),
+            htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $federation['teamName'], $federation['teamMail'], $config->baseURL(), $entitiesId,
+            $config->baseURL(), $entitiesId,implode ("</li>\n<li>",$addresses),
             $federation['toolName'], $federation['teamName']);
           $mailRequester->AltBody = sprintf("Hi.
           \nYou have requested an update of \"%s\" (%s)
           \nTo continue the publication request, forward this email to %s (%s).
           If you don’t do this the publication request will not be processed.
-          \nThe new version can be found at %s/admin/?showEntity=%d
+          \nThe new version can be found at %sadmin/?showEntity=%d
           \nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s
           \nThis is a message from the %s.
           --
           On behalf of %s",
             $displayName, $draftMetadata->entityID(), $federation['teamName'], $federation['teamMail'],
-            $hostURL, $entitiesId, implode (", ",$addresses),
+            $config->baseURL(), $entitiesId, implode (", ",$addresses),
             $federation['toolName'], $federation['teamName']);
 
           try {
@@ -1789,8 +1787,6 @@ function requestRemoval($entitiesId) {
             $addresses[] = substr($address['emailAddress'],7);
           }
 
-          $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-
           //Content
           $mailContacts->isHTML(true);
           $mailContacts->Body = sprintf("<!DOCTYPE html>
@@ -1802,7 +1798,7 @@ function requestRemoval($entitiesId) {
                 <p>Hi.</p>
                 <p>%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.</p>
                 <p>You have received this email because you are either the technical and/or administrative contact.</p>
-                <p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+                <p>You can see the current metadata at <a href=\"%s?showEntity=%d\">%s?showEntity=%d</a></p>
                 <p>If you do not approve request please forward this email to %s (%s)
                 and request for the removal to be denied.</p>
                 <p>This is a message from the %s.<br>
@@ -1810,18 +1806,18 @@ function requestRemoval($entitiesId) {
                 On behalf of %s</p>
               </body>
             </html>",
-            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
+            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'], $config->baseURL(), $entitiesId, $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
             \n%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.
             \nYou have received this email because you are either the technical and/or administrative contact.
-            \nYou can see the current metadata at %s/?showEntity=%d
+            \nYou can see the current metadata at %s?showEntity=%d
             \nIf you do not approve request please forward this email to %s (%s)
             and request for the removal to be denied.
             \nThis is a message from the %s.
             --
             On behalf of %s",
-            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId,
+            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
 
           $mailRequester->isHTML(true);
@@ -1834,7 +1830,7 @@ function requestRemoval($entitiesId) {
                 <p>Hi.</p>
                 <p>You have requested removal of the entity \"%s\" (%s) from the %s metadata.
                 <p>Please forward this email to %s (%s).</p>
-                <p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+                <p>The current metadata can be found at <a href=\"%s?showEntity=%d\">%s?showEntity=%d</a></p>
                 <p>An email has also been sent to the following addresses since they are the technical
                 and/or administrative contacts : </p>
                 <p><ul>
@@ -1847,19 +1843,19 @@ function requestRemoval($entitiesId) {
             </html>",
             htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'],
             $federation['teamName'], $federation['teamMail'],
-            $hostURL, $entitiesId,
-            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
+            $config->baseURL(), $entitiesId,
+            $config->baseURL(), $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
           $mailRequester->AltBody = sprintf("Hi.
             \nYou have requested removal of the entity \"%s\" (%s) from the %s metadata.
             \nPlease forward this email to %s (%s).
-            \nThe current metadata can be found at %s/?showEntity=%d
+            \nThe current metadata can be found at %s?showEntity=%d
             \nAn email has also been sent to the following addresses since they are the technical
             and/or administrative contacts : %s
             \nThis is a message from the %s.
             --
             On behalf of %s",
             $displayName, $metadata->entityID(), $federation['displayName'], $federation['teamName'], $federation['teamMail'],
-            $hostURL, $entitiesId, implode (", ",$addresses),
+            $config->baseURL(), $entitiesId, implode (", ",$addresses),
             $federation['toolName'], $federation['teamName']);
 
           $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
@@ -2123,7 +2119,6 @@ function requestAccess($entitiesId) {
             $mailContacts->addAddress($address);
           }
         }
-        $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
 
         //Content
         $mailContacts->isHTML(true);
@@ -2135,23 +2130,23 @@ function requestAccess($entitiesId) {
           <p>Hi.</p>
           <p>%s (%s) has requested access to update %s</p>
           <p>You have received this email because you are either the technical and/or administrative contact.</p>
-          <p>If you approve, please click on this link <a href=\"%s/admin/?approveAccessRequest=%s\">%s/admin/?approveAccessRequest=%s</a></p>
+          <p>If you approve, please click on this link <a href=\"%sadmin/?approveAccessRequest=%s\">%sadmin/?approveAccessRequest=%s</a></p>
           <p>If you do not approve, you can ignore this email. No changes will be made.</p>
           <p>This is a message from the %s.<br>
           --<br>
           On behalf of %s</p>
           </body>\n</html>",
-          htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($metadata->entityID()), $hostURL, $requestCode, $hostURL, $requestCode,
+          htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($metadata->entityID()), $config->baseURL(), $requestCode, $config->baseURL(), $requestCode,
           $federation['toolName'], $federation['teamName']);
         $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested access to update %s
           \nYou have received this email because you are either the technical and/or administrative contact.
-          \nIf you approve, please click on this link %s/admin/?approveAccessRequest=%s
+          \nIf you approve, please click on this link %sadmin/?approveAccessRequest=%s
           \nIf you do not approve, you can ignore this email. No changes will be made.
           \nThis is a message from the %s.
           --
           On behalf of %s",
-        $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode, $federation['toolName'], $federation['teamName']);
+        $fullName, $mail, $metadata->entityID(), $config->baseURL(), $requestCode, $federation['toolName'], $federation['teamName']);
         $info = sprintf(
           "<p>The request has been sent to: %s</p>\n<p>Contact them and ask them to accept your request.</p>\n",
           implode (", ",$addresses));
