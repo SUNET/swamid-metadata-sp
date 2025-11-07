@@ -33,34 +33,38 @@ $assuranceHandler = $config->getDb()->prepare(
   'INSERT INTO `assuranceLog` (`entityID`, `assurance`, `logDate`)
     VALUES (:EntityID, :Assurance, NOW()) ON DUPLICATE KEY UPDATE `logDate` = NOW()');
 $assuranceHandler->bindParam(':EntityID', $_SERVER['Shib-Identity-Provider']);
+$foundAssurance = false;
 if (isset($_SERVER['eduPersonAssurance'])) {
   foreach (explode(';', $_SERVER['eduPersonAssurance']) as $eduPersonAssurance) {
     if (substr($eduPersonAssurance, 0, 33) ==  'https://refeds.org/assurance/IAP/') {
       $assuranceHandler->bindValue(BIND_ASSURANCE,
         substr(str_replace ('https://refeds.org/assurance/IAP/', 'RAF-', $eduPersonAssurance),0,10));
       $assuranceHandler->execute();
-    } elseif (substr($eduPersonAssurance, 0, 40) ==  'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
+      $foundAssurance = true;
+    } elseif ($config->getFederation()['swamid_assurance'] && substr($eduPersonAssurance, 0, 40) == 'http://www.swamid.se/policy/assurance/al') { # NOSONAR Should be http://
       $assuranceHandler->bindValue(BIND_ASSURANCE,
       substr(str_replace ('http://www.swamid.se/policy/assurance/al', 'SWAMID-AL', $eduPersonAssurance),0,10)); # NOSONAR Should be http://
       $assuranceHandler->execute();
+      $foundAssurance = true;
     }
   }
-} else {
+}
+if (!$foundAssurance) {
   $assuranceHandler->bindValue(BIND_ASSURANCE, 'None');
   $assuranceHandler->execute();
 }
 /* END RAF Logging */
 
 $errorURL = isset($_SERVER['Meta-errorURL'])
-  ? '<a href="' . $_SERVER['Meta-errorURL'] . '">Mer information</a><br>'
+  ? '<br><a href="' . $_SERVER['Meta-errorURL'] . '">More information</a><br>'
   : '<br>';
 $errorURL = str_replace(array('ERRORURL_TS', 'ERRORURL_RP', 'ERRORURL_TID'),
-  array(time(), 'https://metadata.swamid.se/shibboleth', $_SERVER['Shib-Session-ID']),
+  array(time(), $config->baseURL() . 'shibboleth', $_SERVER['Shib-Session-ID']),
   $errorURL);
 
 $errors = '';
 
-if (isset($_SERVER['Meta-Assurance-Certification'])) {
+if (isset($_SERVER['Meta-Assurance-Certification']) && $config->getFederation()['swamid_assurance']) {
   $AssuranceCertificationFound = false;
   foreach (explode(';',$_SERVER['Meta-Assurance-Certification']) as $AssuranceCertification) {
     if ($AssuranceCertification == 'http://www.swamid.se/policy/assurance/al1') { # NOSONAR Should be http://
@@ -91,6 +95,7 @@ $foundAffiliate = false;
 if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   foreach (explode(';',$_SERVER['eduPersonScopedAffiliation']) as $ScopedAffiliation) {
     switch(explode('@',$ScopedAffiliation)[0]) {
+      case 'staff' :
       case 'employee' :
         $foundEmployee = true;
         break;
@@ -110,6 +115,7 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   $foundEmployee = false;
   foreach (explode(';',$_SERVER['eduPersonAffiliation']) as $Affiliation) {
     switch($Affiliation) {
+      case 'staff' :
       case 'employee' :
         $foundEmployee = true;
         break;
@@ -119,12 +125,15 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
       case 'member' :
         $foundMember = true;
         break;
+      case 'affiliate' :
+        $foundAffiliate = true;
+        break;
       default :
     }
   }
 } else {
   if (isset($_SERVER['Shib-Identity-Provider'])
-    && $_SERVER['Shib-Identity-Provider'] == 'https://login.idp.eduid.se/idp.xml') {
+    && in_array($_SERVER['Shib-Identity-Provider'], $config->getFederation()['eduPersonAffiliationExemptIdPs']) ) {
     #OK to not send eduPersonScopedAffiliation / eduPersonAffiliation
     $foundMember = true;
   } else {
@@ -133,24 +142,20 @@ if (isset($_SERVER['eduPersonScopedAffiliation'])) {
   }
 }
 
-if ($foundMember) {
-  if ($foundStudent && ! $foundEmployee) {
-    $errors .=
+if ( ($foundMember && $foundStudent && ! $foundEmployee) ||
+     (! $foundMember && !$foundAffiliate)
+   ) {
+  $errors .=
       'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-    $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  $errors .= ' of either <b>employee</b> or <b>staff</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
+  if ($config->getFederation()['eduPersonAffiliationLink']) {
     $errors .=
-      'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
-    $errors .=
-      'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
+      sprintf('Please check <a href="%s">documentation on affiliation values</a> for more information.<br>', $config->getFederation()['eduPersonAffiliationLink']);
   }
-} elseif (!$foundAffiliate) {
-  $errors .=
-      'Expected affiliations are missing in eduPersonScopedAffiliation (must contain the subset';
-  $errors .= ' of either <b>employee</b> + <b>member</b>, <b>affiliate</b> or only <b>member</b>).<br>';
-  $errors .=
-    'Please check <a href="https://wiki.sunet.se/pages/viewpage.action?pageId=17138034">Wiki</a> for more info.<br>';
-  $errors .=
-    'Login to <a href="https://release-check.swamid.se/result/">release-check</a> to verify.<br>';
+  if ($config->getFederation()['releaseCheckResultsURL']) {
+    $errors .=
+      sprintf('Login to <a href="%s">release-check</a> to verify.<br>', $html->getBaseURL($config->getFederation()['releaseCheckResultsURL']));
+  }
 }
 
 if ( isset($_SERVER['mail'])) {
@@ -296,8 +301,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
+              // clear messages explicitly
+              $metadata->clearResult();
+              $metadata->clearWarning();
+              $metadata->clearError();
               $metadata->removeSaml1Support();
-              validateEntity($entitiesId);
+              validateEntity($entitiesId, clearMessages: false); // keep messages from removeSaml1Support
               $menuActive = 'new';
               showEntity($entitiesId);
             } else {
@@ -314,8 +323,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
               if ($newEntity_id = $metadata->createDraft()) {
+                // clear messages explicitly
+                $metadata->clearResult();
+                $metadata->clearWarning();
+                $metadata->clearError();
                 $metadata->removeSaml1Support();
-                validateEntity($newEntity_id);
+                validateEntity($newEntity_id, clearMessages: false); // keep messages from removeSaml1Support
                 $menuActive = 'new';
                 showEntity($newEntity_id);
               }
@@ -332,8 +345,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata = new \metadata\Metadata($entitiesId);
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
+              // clear messages explicitly
+              $metadata->clearResult();
+              $metadata->clearWarning();
+              $metadata->clearError();
               $metadata->removeObsoleteAlgorithms();
-              validateEntity($entitiesId);
+              validateEntity($entitiesId, clearMessages: false); // keep messages from removeObsoleteAlgorithms
               showEntity($entitiesId);
             } else {
               # User have no access yet.
@@ -349,8 +366,12 @@ if (isset($_FILES['XMLfile'])) {
             $metadata->getUserId($EPPN);
             if ($metadata->isResponsible()) {
               if ($newEntity_id = $metadata->createDraft()) {
+                // clear messages explicitly
+                $metadata->clearResult();
+                $metadata->clearWarning();
+                $metadata->clearError();
                 $metadata->removeObsoleteAlgorithms();
-                validateEntity($newEntity_id);
+                validateEntity($newEntity_id, clearMessages: false); // keep messages from removeObsoleteAlgorithms
                 $menuActive = 'new';
                 showEntity($newEntity_id);
               }
@@ -1240,7 +1261,7 @@ function showMenu() {
   print "\n    <br>\n    <br>\n";
 }
 
-function validateEntity($entitiesId) {
+function validateEntity($entitiesId, $clearMessages = true) {
   global $config;
   $xmlParser = class_exists(CLASS_PARSER.$config->getFederation()['extend']) ?
     CLASS_PARSER.$config->getFederation()['extend'] :
@@ -1249,9 +1270,11 @@ function validateEntity($entitiesId) {
     CLASS_VALIDATOR.$config->getFederation()['extend'] :
     CLASS_VALIDATOR;
   $parser = new $xmlParser($entitiesId);
-  $parser->clearResult();
-  $parser->clearWarning();
-  $parser->clearError();
+  if ($clearMessages) {
+    $parser->clearResult();
+    $parser->clearWarning();
+    $parser->clearError();
+  }
   $parser->parseXML();
   $validator = new $samlValidator($entitiesId);
   $validator->saml();
@@ -1344,8 +1367,6 @@ function move2Pending($entitiesId) {
             }
           }
 
-          $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-
           //Content
           $mailContacts->isHTML(true);
           $mailContacts->Body = sprintf("<!DOCTYPE html>
@@ -1358,7 +1379,7 @@ function move2Pending($entitiesId) {
               <p>%s (%s) has requested an update of \"%s\" (%s)</p>
               <p>You have received this email because you are either
               the new or old technical and/or administrative contact.</p>
-              <p>You can see the new version at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+              <p>You can see the new version at <a href=\"%s?showEntity=%d\">%s?showEntity=%d</a></p>
               <p>If you do not approve this update, forward this email to %s (%s)
               and request for the update to be denied.</p>
               <p>This is a message from the %s.<br>
@@ -1366,17 +1387,17 @@ function move2Pending($entitiesId) {
               On behalf of %s</p>
             </body>
           </html>",
-            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $hostURL, $entitiesId, $hostURL, $entitiesId,
+            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $config->baseURL(), $entitiesId, $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested an update of \"%s\" (%s)
           \nYou have received this email because you are either the new or old technical and/or administrative contact.
-          \nYou can see the new version at %s/?showEntity=%d
+          \nYou can see the new version at %s?showEntity=%d
           \nIf you do not approve this update, forward this email to %s (%s) and request for the update to be denied.
           \nThis is a message from the %s.
           --
           On behalf of %s",
-            $fullName, $mail, $displayName, $draftMetadata->entityID(), $hostURL, $entitiesId,
+            $fullName, $mail, $displayName, $draftMetadata->entityID(), $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
 
           $mailRequester->isHTML(true);
@@ -1390,7 +1411,7 @@ function move2Pending($entitiesId) {
               <p>You have requested an update of \"%s\" (%s)</p>
               <p>To continue the publication request, forward this email to %s (%s).
               If you don’t do this the publication request will not be processed.</p>
-              <p>The new version can be found at <a href=\"%s/admin/?showEntity=%d\">%s/admin/?showEntity=%d</a></p>
+              <p>The new version can be found at <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a></p>
               <p>An email has also been sent to the following addresses since they are the new or old technical
               and/or administrative contacts : </p>
               <p><ul>
@@ -1401,20 +1422,20 @@ function move2Pending($entitiesId) {
               On behalf of %s</p>
             </body>
           </html>",
-            htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $federation['teamName'], $federation['teamMail'], $hostURL, $entitiesId,
-            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses),
+            htmlspecialchars($displayName), htmlspecialchars($draftMetadata->entityID()), $federation['teamName'], $federation['teamMail'], $config->baseURL(), $entitiesId,
+            $config->baseURL(), $entitiesId,implode ("</li>\n<li>",$addresses),
             $federation['toolName'], $federation['teamName']);
           $mailRequester->AltBody = sprintf("Hi.
           \nYou have requested an update of \"%s\" (%s)
           \nTo continue the publication request, forward this email to %s (%s).
           If you don’t do this the publication request will not be processed.
-          \nThe new version can be found at %s/admin/?showEntity=%d
+          \nThe new version can be found at %sadmin/?showEntity=%d
           \nAn email has also been sent to the following addresses since they are the new or old technical and/or administrative contacts : %s
           \nThis is a message from the %s.
           --
           On behalf of %s",
             $displayName, $draftMetadata->entityID(), $federation['teamName'], $federation['teamMail'],
-            $hostURL, $entitiesId, implode (", ",$addresses),
+            $config->baseURL(), $entitiesId, implode (", ",$addresses),
             $federation['toolName'], $federation['teamName']);
 
           try {
@@ -1766,8 +1787,6 @@ function requestRemoval($entitiesId) {
             $addresses[] = substr($address['emailAddress'],7);
           }
 
-          $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
-
           //Content
           $mailContacts->isHTML(true);
           $mailContacts->Body = sprintf("<!DOCTYPE html>
@@ -1779,7 +1798,7 @@ function requestRemoval($entitiesId) {
                 <p>Hi.</p>
                 <p>%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.</p>
                 <p>You have received this email because you are either the technical and/or administrative contact.</p>
-                <p>You can see the current metadata at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+                <p>You can see the current metadata at <a href=\"%s?showEntity=%d\">%s?showEntity=%d</a></p>
                 <p>If you do not approve request please forward this email to %s (%s)
                 and request for the removal to be denied.</p>
                 <p>This is a message from the %s.<br>
@@ -1787,18 +1806,18 @@ function requestRemoval($entitiesId) {
                 On behalf of %s</p>
               </body>
             </html>",
-            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'], $hostURL, $entitiesId, $hostURL, $entitiesId,
+            htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'], $config->baseURL(), $entitiesId, $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
           $mailContacts->AltBody = sprintf("Hi.
             \n%s (%s) has requested removal of the entity \"%s\" (%s) from the %s metadata.
             \nYou have received this email because you are either the technical and/or administrative contact.
-            \nYou can see the current metadata at %s/?showEntity=%d
+            \nYou can see the current metadata at %s?showEntity=%d
             \nIf you do not approve request please forward this email to %s (%s)
             and request for the removal to be denied.
             \nThis is a message from the %s.
             --
             On behalf of %s",
-            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $hostURL, $entitiesId,
+            $fullName, $mail, $displayName, $metadata->entityID(), $federation['displayName'], $config->baseURL(), $entitiesId,
             $federation['teamName'], $federation['teamMail'], $federation['toolName'], $federation['teamName']);
 
           $mailRequester->isHTML(true);
@@ -1811,7 +1830,7 @@ function requestRemoval($entitiesId) {
                 <p>Hi.</p>
                 <p>You have requested removal of the entity \"%s\" (%s) from the %s metadata.
                 <p>Please forward this email to %s (%s).</p>
-                <p>The current metadata can be found at <a href=\"%s/?showEntity=%d\">%s/?showEntity=%d</a></p>
+                <p>The current metadata can be found at <a href=\"%s?showEntity=%d\">%s?showEntity=%d</a></p>
                 <p>An email has also been sent to the following addresses since they are the technical
                 and/or administrative contacts : </p>
                 <p><ul>
@@ -1824,19 +1843,19 @@ function requestRemoval($entitiesId) {
             </html>",
             htmlspecialchars($displayName), htmlspecialchars($metadata->entityID()), $federation['displayName'],
             $federation['teamName'], $federation['teamMail'],
-            $hostURL, $entitiesId,
-            $hostURL, $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
+            $config->baseURL(), $entitiesId,
+            $config->baseURL(), $entitiesId,implode ("</li>\n<li>",$addresses), $federation['toolName'], $federation['teamName']);
           $mailRequester->AltBody = sprintf("Hi.
             \nYou have requested removal of the entity \"%s\" (%s) from the %s metadata.
             \nPlease forward this email to %s (%s).
-            \nThe current metadata can be found at %s/?showEntity=%d
+            \nThe current metadata can be found at %s?showEntity=%d
             \nAn email has also been sent to the following addresses since they are the technical
             and/or administrative contacts : %s
             \nThis is a message from the %s.
             --
             On behalf of %s",
             $displayName, $metadata->entityID(), $federation['displayName'], $federation['teamName'], $federation['teamMail'],
-            $hostURL, $entitiesId, implode (", ",$addresses),
+            $config->baseURL(), $entitiesId, implode (", ",$addresses),
             $federation['toolName'], $federation['teamName']);
 
           $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
@@ -2100,7 +2119,6 @@ function requestAccess($entitiesId) {
             $mailContacts->addAddress($address);
           }
         }
-        $hostURL = "http".(!empty($_SERVER['HTTPS'])?"s":"")."://".$_SERVER['SERVER_NAME'];
 
         //Content
         $mailContacts->isHTML(true);
@@ -2112,23 +2130,23 @@ function requestAccess($entitiesId) {
           <p>Hi.</p>
           <p>%s (%s) has requested access to update %s</p>
           <p>You have received this email because you are either the technical and/or administrative contact.</p>
-          <p>If you approve, please click on this link <a href=\"%s/admin/?approveAccessRequest=%s\">%s/admin/?approveAccessRequest=%s</a></p>
+          <p>If you approve, please click on this link <a href=\"%sadmin/?approveAccessRequest=%s\">%sadmin/?approveAccessRequest=%s</a></p>
           <p>If you do not approve, you can ignore this email. No changes will be made.</p>
           <p>This is a message from the %s.<br>
           --<br>
           On behalf of %s</p>
           </body>\n</html>",
-          htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($metadata->entityID()), $hostURL, $requestCode, $hostURL, $requestCode,
+          htmlspecialchars($fullName), htmlspecialchars($mail), htmlspecialchars($metadata->entityID()), $config->baseURL(), $requestCode, $config->baseURL(), $requestCode,
           $federation['toolName'], $federation['teamName']);
         $mailContacts->AltBody = sprintf("Hi.
           \n%s (%s) has requested access to update %s
           \nYou have received this email because you are either the technical and/or administrative contact.
-          \nIf you approve, please click on this link %s/admin/?approveAccessRequest=%s
+          \nIf you approve, please click on this link %sadmin/?approveAccessRequest=%s
           \nIf you do not approve, you can ignore this email. No changes will be made.
           \nThis is a message from the %s.
           --
           On behalf of %s",
-        $fullName, $mail, $metadata->entityID(), $hostURL, $requestCode, $federation['toolName'], $federation['teamName']);
+        $fullName, $mail, $metadata->entityID(), $config->baseURL(), $requestCode, $federation['toolName'], $federation['teamName']);
         $info = sprintf(
           "<p>The request has been sent to: %s</p>\n<p>Contact them and ask them to accept your request.</p>\n",
           implode (", ",$addresses));
@@ -2256,18 +2274,22 @@ function approveAccessRequest($code) {
               <body>
                 <p>Hi.</p>
                 <p>Your access to %s have been granted.</p>
+                <p>You can now access the entity at <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a></p>
                 <p>-- <br>This mail was sent by %s, a service provided by %s.
                 If you've any questions please contact %s.</p>
               </body>
             </html>",
             htmlspecialchars($metadata->entityID()),
+            $config->baseURL(), $metadata->id(), $config->baseURL(), $metadata->id(),
             $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $mail->AltBody = sprintf("Hi.
             \nYour access to %s have been granted.
+            \nYou can now access the entity at %sadmin/?showEntity=%d
             \n--
             This mail was sent by %s, a service provided by %s.
             If you've any questions please contact %s.",
             $metadata->entityID(),
+            $config->baseURL(), $metadata->id(),
             $federation['toolName'], $federation['teamName'], $federation['teamMail']);
           $shortEntityid = preg_replace(REGEXP_ENTITYID, '$1', $metadata->entityID());
           $mail->Subject = 'Access granted for ' . $shortEntityid;
