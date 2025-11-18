@@ -1854,6 +1854,7 @@ class MetadataDisplay extends Common {
       }
       print $entity['xml'];
     } else {
+      http_response_code(404);
       print "Not Found";
     }
     exit;
