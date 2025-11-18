@@ -157,6 +157,7 @@ class HTML {
         <a class="p-2 text-dark" href="<?= $this->federation['aboutURL'] ?>">About <?= $this->federation['displayName'] ?></a>
         <a class="p-2 text-dark" href="<?= $this->federation['contactURL'] ?>">Contact us</a>
         <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/admin/?showHelp">Help</a>' : ''?>
+        <?=$this->loggedIn ? '<a class="p-2 text-dark" href="/Shibboleth.sso/Logout?return=/">Logout</a>' : ''?>
 
       </nav>
       <a href="/admin/<?=$this->destination?>"><?=$this->displayName?></a>
