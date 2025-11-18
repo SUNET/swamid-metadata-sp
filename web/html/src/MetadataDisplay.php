@@ -2294,7 +2294,7 @@ class MetadataDisplay extends Common {
             </td>
             <td>%s</td>
             <td>%s</td>%s          </tr>%s',
-          $type, $feed, $entity['id'], $entity['entityID'], $email,
+          $type, $feed, $entity['id'], htmlspecialchars($entity['entityID']), htmlspecialchars($email),
           str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
       }
     }
@@ -2433,7 +2433,7 @@ class MetadataDisplay extends Common {
             <td>%s</td>
             <td>%s</td>
           </tr>%s',
-          $entity['entity_id'], $entity['entityID'], $reason, $entity['mailDate'], $date,"\n");
+          $entity['entity_id'], htmlspecialchars($entity['entityID']), $reason, $entity['mailDate'], $date,"\n");
       }
     }
     printf ('    %s', self::HTML_TABLE_END);
@@ -2462,14 +2462,14 @@ class MetadataDisplay extends Common {
             <ul>%s' ,"\n");
     while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
       $testing = $idp['publishIn'] == 1 ? ' (Testing)' : '';
-      printf('              <li><a href="?showEntity=%s" target="_blank">%s</a>%s</li>%s', $idp['id'], $idp['entityID'], $testing, "\n");
+      printf('              <li><a href="?showEntity=%s" target="_blank">%s</a>%s</li>%s', $idp['id'], htmlspecialchars($idp['entityID']), $testing, "\n");
     }
     $impsHandler->execute();
     printf('            </ul>
             <h4>IMPS:s missing an IdP</h4>
             <ul>%s' ,"\n");
     while ($imps = $impsHandler->fetch(PDO::FETCH_ASSOC)) {
-      printf('              <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></li>%s', $imps['id'], $imps['id'], $imps['name'], "\n");
+      printf('              <li><a href="?action=Members&tab=imps&id=%d#imps-%d">%s</a></li>%s', $imps['id'], $imps['id'], htmlspecialchars($imps['name']), "\n");
 
     }
     printf('            </ul>
