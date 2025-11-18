@@ -40,6 +40,8 @@ if (isset($_GET['showEntity'])) {
     case 'feed' :
       if (isset($_GET['id'])) {
         showFeed($_GET['id']);
+      } elseif (isset($_GET['entityID'])) {
+        showFeed($_GET['entityID'], true);
       } else {
         exit; // intentionally empty output
       }
@@ -550,11 +552,13 @@ function showInfo() {
 <?php
 }
 
-function showFeed($id) {
+function showFeed($id, $urn = false) {
   global $config;
   header(TEXT_PLAIN);
   $federation = $config->getFederation();
-  $entity = $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id');
+  $entity = $entityHandler = $urn
+    ? $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;')
+    : $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id;');
   $entity->bindParam(':Id', $id);
   $entity->execute();
   if ($row = $entity->fetch(PDO::FETCH_ASSOC)) {
