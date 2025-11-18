@@ -571,7 +571,8 @@ function showFeed($id) {
         printf ("%s\n", $federation['localFeed']);
     }
   } else {
-    printf ("%s\n", $federation['localFeed']);
+    http_response_code(404);
+    print "Not Found";
   }
   exit;
 }
