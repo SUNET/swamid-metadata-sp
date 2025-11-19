@@ -224,7 +224,7 @@ class HTML {
     $(".custom-file-input").on("change", function() {
       //var fileName = $(this).val().split("\\").pop();
       var fileName = $(this).val().split("\\\\").pop();
-      $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+      $(this).siblings(".custom-file-label").addClass("selected").text(fileName);
     });<?php
       print "\n  </script>\n";
     }
