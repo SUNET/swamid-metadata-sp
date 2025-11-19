@@ -221,9 +221,21 @@ class HTML {
       }
     ?>
     // Add the following code if you want the name of the file appear on select
+    function extractFilename(path) {
+      if (path.substr(0, 12) == "C:\\fakepath\\")
+        return path.substr(12); // modern browser
+      var x;
+      x = path.lastIndexOf('/');
+      if (x >= 0) // Unix-based path
+        return path.substr(x+1);
+      x = path.lastIndexOf('\\');
+      if (x >= 0) // Windows-based path
+        return path.substr(x+1);
+      return path; // just the filename
+    }
+
     $(".custom-file-input").on("change", function() {
-      //var fileName = $(this).val().split("\\").pop();
-      var fileName = $(this).val().split("\\\\").pop();
+      var fileName = extractFilename($(this).val());
       $(this).siblings(".custom-file-label").addClass("selected").text(fileName);
     });<?php
       print "\n  </script>\n";
