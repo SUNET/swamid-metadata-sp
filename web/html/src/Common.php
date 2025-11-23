@@ -72,6 +72,7 @@ class Common {
   const BIND_WARNINGS = ':Warnings';
   const BIND_WIDTH = ':Width';
   const BIND_XML = ':Xml';
+  const HTTP_MAX_REDIRECTS = 20; # PHP default
 
   /**
    * Setup the class
@@ -199,7 +200,7 @@ class Common {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_HEADER, 0);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
     curl_setopt($ch, CURLOPT_USERAGENT, $this->config->getFederation()['urlCheckUA']);
     curl_setopt($ch, CURLOPT_PROTOCOLS, $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
 
@@ -237,26 +238,44 @@ class Common {
         self::BIND_NOSIZE => 0
       );
 
-      $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($url['URL']));
-      // sanity check URL before passing to URL
-      $parsed_url = parse_url($url['URL']);
-      $url_scheme = $parsed_url['scheme'] ?? '';
-      // guard against missing componets
-      if ($parsed_url && in_array($url_scheme, $allowed_schemes) && ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]) {
-        curl_setopt($ch, CURLOPT_URL, $url['URL']);
-        $output = curl_exec($ch);
-        if (curl_errno($ch)) {
-          $verboseInfo .= 'Curl error';
-          $updateArray[self::BIND_RESULT] = curl_error($ch);
+      $target_url = $url['URL'];
+      $redirects_found = 0;
+      $verboseInfo = sprintf('<tr><td>%s</td><td>', htmlspecialchars($target_url));
+      do { // loop to follow redirects
+        $needs_redirect = false;
+        // sanity check URL before passing to URL
+        $parsed_url = parse_url($target_url);
+        $url_scheme = $parsed_url['scheme'] ?? '';
+        // guard against missing componets
+        if ($parsed_url && in_array($url_scheme, $allowed_schemes) && ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]) {
+          curl_setopt($ch, CURLOPT_URL, $target_url);
+          $output = curl_exec($ch);
+          // check if we received a valid redirect
+          if (curl_errno($ch) === 0 && in_array($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE), array(301,302, 307, 308)) ) {
+            $needs_redirect = true;
+            $redirects_found++;
+            $target_url = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+            $verboseInfo .= sprintf("Received redirect to %s<br>\n", htmlspecialchars($target_url));
+            continue;
+          }
+          if (curl_errno($ch)) {
+            $verboseInfo .= 'Curl error';
+            $updateArray[self::BIND_RESULT] = curl_error($ch);
+            $updateArray[self::BIND_STATUS] = 3;
+            $updateArray[self::BIND_COCOV1STATUS] = 1;
+          } else {
+            $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
+          }
+        } elseif ($url['type'] == 1 && $this->config->getFederation()['urlCheckDataEnabled'] && $redirects_found==0 && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $target_url, $data_matches)) {
+           $this->checkDataURL($data_matches[1], $data_matches[2], $url['type'], $updateArray, $verboseInfo);
+        } else { //invalid URL
+          $updateArray[self::BIND_RESULT] = 'Invalid URL';
           $updateArray[self::BIND_STATUS] = 3;
           $updateArray[self::BIND_COCOV1STATUS] = 1;
-        } else {
-          $this->checkCurlReturnCode($ch, $output, $url['type'], $updateArray, $verboseInfo);
         }
-      } elseif ($url['type'] == 1 && $this->config->getFederation()['urlCheckDataEnabled'] && preg_match('|^data:([^/;]+/[^/;]+);base64,(.*)$|', $url['URL'], $data_matches)) {
-         $this->checkDataURL($data_matches[1], $data_matches[2], $url['type'], $updateArray, $verboseInfo);
-      } else { //invalid URL
-        $updateArray[self::BIND_RESULT] = 'Invalid URL';
+      } while ($needs_redirect && $redirects_found < self::HTTP_MAX_REDIRECTS);
+      if ($needs_redirect) {
+        $updateArray[self::BIND_RESULT] = 'Too many redirects';
         $updateArray[self::BIND_STATUS] = 3;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
       }
