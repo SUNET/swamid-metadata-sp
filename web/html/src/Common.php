@@ -252,7 +252,7 @@ class Common {
           curl_setopt($ch, CURLOPT_URL, $target_url);
           $output = curl_exec($ch);
           // check if we received a valid redirect
-          if (curl_errno($ch) === 0 && in_array($http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE), array(301,302, 307, 308)) ) {
+          if (curl_errno($ch) === 0 && in_array(curl_getinfo($ch, CURLINFO_HTTP_CODE), array(301,302, 307, 308)) ) {
             $needs_redirect = true;
             $redirects_found++;
             $target_url = curl_getinfo($ch, CURLINFO_REDIRECT_URL);

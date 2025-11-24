@@ -556,7 +556,7 @@ function showFeed($id, $urn = false) {
   global $config;
   header(TEXT_PLAIN);
   $federation = $config->getFederation();
-  $entity = $entityHandler = $urn
+  $entity = $urn
     ? $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;')
     : $config->getDb()->prepare('SELECT `publishIn` FROM Entities WHERE `id` = :Id;');
   $entity->bindParam(':Id', $id);
