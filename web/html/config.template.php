@@ -57,6 +57,16 @@ $userLevels = array(
 $federation = array(
   'displayName' => 'SWAMID',
   'longName' => 'Academic Identity Federation SWAMID',
+  # Icon links and related HTML elements to include in HEAD
+  'htmlIcons' => '
+      <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+      <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+      <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+      <link rel="manifest" href="/images/site.webmanifest">
+      <link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+      <link rel="shortcut icon" href="/images/favicon.ico">
+      <meta name="msapplication-TileColor" content="#da532c">
+      <meta name="msapplication-config" content="/images/browserconfig.xml">',
   'noAccountHtml' => 'you can create an eduID account at <a href="https://eduid.se">eduID.se</a>',
   'localFeed' => 'swamid-2.0',
   'eduGAINFeed' => 'swamid-edugain',
@@ -135,6 +145,8 @@ $federation = array(
   'urlCheckDataEnabled' => false,
   # Permit plain HTTP URLs in URL validation
   'urlCheckPlainHTTPEnabled' => false,
+  # Maximum response size in URL check (default: 16MB)
+  'urlCheckMaxSize' => 16*1024*1024, // 16MB
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
