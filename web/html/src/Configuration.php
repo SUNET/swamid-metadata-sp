@@ -77,6 +77,7 @@ class Configuration {
     $reqParamsSmtp = array('host', 'from', 'replyTo', 'replyName', 'sendOut');
     $reqParamsSmtpSasl = array('user', 'user');
     $reqParamsFederation = array('displayName', 'longName',
+      'htmlIcons',
       'noAccountHtml', 'localFeed', 'eduGAINFeed',
       'aboutURL', 'contactURL', 'toolName', 'teamName',
       'teamMail', 'logoURL', 'logoWidth', 'logoHeight', 'languages',
