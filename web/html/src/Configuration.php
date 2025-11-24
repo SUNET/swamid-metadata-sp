@@ -99,6 +99,7 @@ class Configuration {
       'urlCheckUA' => 'https://metadata.swamid.se/validate',
       'urlCheckDataEnabled' => false,
       'urlCheckPlainHTTPEnabled' => false,
+      'urlCheckMaxSize' => 16*1024*1024, // 16MB
     );
 
     foreach ($reqParams as $param) {

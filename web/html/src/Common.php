@@ -203,6 +203,7 @@ class Common {
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
     curl_setopt($ch, CURLOPT_USERAGENT, $this->config->getFederation()['urlCheckUA']);
     curl_setopt($ch, CURLOPT_PROTOCOLS, $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
+    curl_setopt($ch, CURLOPT_MAXFILESIZE, $this->config->getFederation()['urlCheckMaxSize']);
 
     $allowed_schemes = $this->config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
     $default_ports = array( 'http' => 80, 'https' => 443);

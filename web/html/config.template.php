@@ -135,6 +135,8 @@ $federation = array(
   'urlCheckDataEnabled' => false,
   # Permit plain HTTP URLs in URL validation
   'urlCheckPlainHTTPEnabled' => false,
+  # Maximum response size in URL check (default: 16MB)
+  'urlCheckMaxSize' => 16*1024*1024, // 16MB
   # Optional if you want to extend Validate and ParseXML with an extended version
   # See ValidateSWAMID and ParseXMLSWAMID for examples
   #'extend' => 'SWAMID',
