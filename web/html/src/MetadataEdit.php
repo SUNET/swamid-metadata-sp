@@ -171,16 +171,11 @@ class MetadataEdit extends Common {
           printf ('Unknown type (%s)', urlencode($_POST['type']));
           exit;
       }
-      $extensions = $this->getExtensions(false);
 
       switch ($_POST['action']) {
         case 'Add' :
           $update = true;
-          if (! $extensions) {
-            # Add if missing
-            $extensions = $this->xml->createElement(self::SAML_MD_EXTENSIONS);
-            $this->entityDescriptor->appendChild($extensions);
-          }
+          $extensions = $this->getExtensions();
 
           # Find mdattr:EntityAttributes in XML
           $child = $extensions->firstChild;
@@ -274,15 +269,18 @@ class MetadataEdit extends Common {
           }
           break;
         case 'Delete' :
+          $extensions = $this->getExtensions(false);
           if ($extensions) {
             # Find mdattr:EntityAttributes in XML
             $child = $extensions->firstChild;
+            $moreExtensions = false;
             $entityAttributes = false;
             while ($child && ! $entityAttributes) {
               if ($child->nodeName == self::SAML_MDATTR_ENTITYATTRIBUTES) {
                 $entityAttributes = $child;
               }
               $child = $child->nextSibling;
+              $moreExtensions = ($moreExtensions) ? true : $child;
             }
             if ($entityAttributes) {
               # Find samla:Attribute in XML
@@ -314,6 +312,9 @@ class MetadataEdit extends Common {
                     $entityAttributes->removeChild($attribute);
                     if (! $moreAttributes) {
                       $extensions->removeChild($entityAttributes);
+                      if (! $moreExtensions) {
+                        $this->entityDescriptor->removeChild($extensions);
+                      }
                     }
                   }
                   $entityAttributesRemoveHandler = $this->config->getDb()->prepare(
