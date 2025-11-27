@@ -1953,7 +1953,7 @@ class MetadataDisplay extends Common {
         </tr>
         <tr><th>Status</th><td>%s</td></tr>%s',
           $urlInfo['lastValidated'], htmlspecialchars($_REQUEST['action']), htmlspecialchars($url),
-          htmlspecialchars($urlInfo['validationOutput']), "\n");
+          $urlInfo['validationOutput'], "\n");
         if ($urlInfo['height'] > 0 && $urlInfo['width'] > 0 ) {
           printf ('      <tr><th>Height</th><td>%s</td></tr>
         <tr><th>Width</th><td>%s</td></tr>%s', $urlInfo['height'], $urlInfo['width'], "\n");
