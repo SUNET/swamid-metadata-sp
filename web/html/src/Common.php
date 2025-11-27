@@ -367,7 +367,7 @@ class Common {
       default :
         $verboseInfo .= $http_code;
         $updateArray[self::BIND_RESULT] = sprintf("Contact %s. Got code %d from final URL %s. Can't handle :-(",
-          $config->getFederation()['teamMail'], $http_code, curl_getinfo($ch, CURLINFO_EFFECTIVE_URL));
+          $config->getFederation()['teamMail'], $http_code, htmlspecialchars(curl_getinfo($ch, CURLINFO_EFFECTIVE_URL)));
         $updateArray[self::BIND_STATUS] = 2;
         $updateArray[self::BIND_COCOV1STATUS] = 1;
     }
