@@ -35,6 +35,7 @@ class MetadataEdit extends Common {
   const TEXT_END_CERT = "-----END CERTIFICATE-----\n";
   const TEXT_ENC_SIGN = 'encryption & signing';
   const TEXT_MAILTO = 'mailto:';
+  const TEXT_SET = '[set]';
 
   /**
    * Setup the class
@@ -455,10 +456,14 @@ class MetadataEdit extends Common {
     if ($this->isSP && count($entitySelectionProfiles) > 0)  {
       printf ('%s          <li>entity-selection-profile</li><ul>', "\n");
       foreach ($entitySelectionProfiles as $key => $data) {
+        $copy = $this->getEditActionLink('EntityAttributes',
+                  array('type' => 'entity-selection-profile', 'attribute' => $key),
+                  $idx, 'Add', self::TEXT_SET);
         printf ('
             <li>
-              <a href="?edit=EntityAttributes&Entity=%d&oldEntity=%d&type=entity-selection-profile&attribute=%s&action=Add">[set]<a> %s - %s
-            </li>', $this->dbIdNr, $this->dbOldIdNr, $key, $key, $data["desc"]);
+              %s %s - %s
+            </li>', $copy, $key, $data["desc"]);
+        $idx++;
       }
       printf ('%s  %s', "\n", self::HTML_END_UL);
     }
