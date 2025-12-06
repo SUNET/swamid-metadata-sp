@@ -82,7 +82,8 @@ function showEntityList($show) {
       $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `publishIn`, `data` AS OrganizationName
         FROM Entities
-        LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
+        LEFT JOIN Organization ON `entity_id` = `id`
+          AND `element` = 'OrganizationName' AND `lang` = 'en'
         WHERE `status` = 1 AND `isSP` = 1 AND `entityID` LIKE :Query
         ORDER BY `entityID` ASC");
       showMenu('SPs', $query);
@@ -93,7 +94,9 @@ function showEntityList($show) {
       $html->showHeaders('All');
       $entities = $config->getDb()->prepare(
         "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`, `data` AS OrganizationName
-        FROM Entities LEFT JOIN Organization ON `entity_id` = `id` AND `element` = 'OrganizationName' AND `lang` = 'en'
+        FROM Entities
+        LEFT JOIN Organization ON `entity_id` = `id`
+          AND `element` = 'OrganizationName' AND `lang` = 'en'
         WHERE `status` = 1 AND `entityID` LIKE :Query
         ORDER BY `entityID` ASC");
       showMenu('all', $query);

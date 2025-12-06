@@ -791,12 +791,12 @@ function showEntity($entitiesId, $showHeader = true)  {
     if ($entity['status'] > 1 && $entity['status'] < 7) {
       if ($entity['publishedId'] > 0) {
         $entityHandlerOld = $config->getDb()->prepare(
-          'SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
+          'SELECT `id`, `publishIn` FROM Entities WHERE `id` = :Id AND `status` = 6;');
         $entityHandlerOld->bindParam(':Id', $entity['publishedId']);
         $headerCol2 = 'Old metadata - when requested publication';
       } else {
         $entityHandlerOld = $config->getDb()->prepare(
-          'SELECT `id`, `isIdP`, `isSP`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
+          'SELECT `id`, `publishIn` FROM Entities WHERE `entityID` = :Id AND `status` = 1;');
         $entityHandlerOld->bindParam(':Id', $entity['entityID']);
         $headerCol2 = 'Published now';
       }
