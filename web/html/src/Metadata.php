@@ -14,6 +14,10 @@ class Metadata extends Common {
    * Info about logged in user
    */
   private $user = array ('id' => 0, 'email' => '', 'fullname' => '');
+  /**
+   * Id for currently published version of this entityID
+   */
+  private $publishedId = 0;
 
   const BIND_APPROVEDBY = ':ApprovedBy';
   const BIND_ENTITY_ID = ':Entity_id';
@@ -995,6 +999,40 @@ class Metadata extends Common {
   }
 
   /**
+   * Check if userID is responsible for this entityID in published.
+   *
+   * Returns true if entityID
+   *  * exists in Published AND user is responsible
+   *  * does NOT exists in Published - new entityID with no responsible
+   *
+   * @return bool
+   */
+  public function isResponsiblePublished() {
+    $entityCheckHandler = $this->config->getDb()->prepare('SELECT `id` FROM Entities
+      WHERE entityID = :EntityID AND `status` = 1;');
+    $entityCheckHandler->execute(array(self::BIND_ENTITYID => $this->entityID));
+    if ($entity_id = $entityCheckHandler->fetchColumn()){
+      // entityID exists in published
+      $return = false;
+      $this->publishedId = $entity_id;
+      if ($this->user['id'] > 0) {
+        $userHandler = $this->config->getDb()->prepare('SELECT *
+          FROM `EntityUser` WHERE `user_id` = :User_id AND `entity_id`= :Entity_id' );
+        $userHandler->execute(array(
+          self::BIND_USER_ID => $this->user['id'],
+          self::BIND_ENTITY_ID => $entity_id
+        ));
+        $return = $userHandler->fetch(PDO::FETCH_ASSOC);
+      }
+    } else {
+      // New entityID allow access
+      $return = true;
+    }
+    return $return;
+  }
+
+
+  /**
    * Get list of responsible users for currentr Entity
    *
    * @return array
@@ -1158,5 +1196,12 @@ class Metadata extends Common {
       (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`)
       VALUES ('$date', $nrOfEntities, $nrOfSPs, $nrOfIdPs);");
     $statsUpdate->execute();
+  }
+
+  /**
+   * Return Id for currently published version of this entityID
+   */
+  public function getPublishedId() {
+    return $this->publishedId;
   }
 }

@@ -1172,17 +1172,28 @@ function importXML(){
     $validate = new \metadata\ValidateXMLSchema($import->getXML());
     if ($validate->validateSchema('../../schemas/schema.xsd')) {
       $metadata = new \metadata\Metadata($entityID, 'New');
-      $metadata->importXML($import->cleanOutRegistrationInfo($import->getXML()));
       $metadata->getUser($EPPN, $mail, $fullName, true);
-      $metadata->updateResponsible($EPPN);
-      validateEntity($metadata->id());
-      $prodmetadata = new \metadata\Metadata($entityID, 'Prod');
-      if ($prodmetadata->entityExists()) {
-        $mergeMetadata = new \metadata\MetadataMerge($metadata->id(), $prodmetadata->id());
-        $mergeMetadata->mergeRegistrationInfo();
-        $mergeMetadata->saveResults();
+      if ($metadata->isResponsiblePublished()) {
+        $metadata->importXML($import->cleanOutRegistrationInfo($import->getXML()));
+        $metadata->updateResponsible($EPPN);
+        validateEntity($metadata->id());
+        $prodmetadata = new \metadata\Metadata($entityID, 'Prod');
+        if ($prodmetadata->entityExists()) {
+          $mergeMetadata = new \metadata\MetadataMerge($metadata->id(), $prodmetadata->id());
+          $mergeMetadata->mergeRegistrationInfo();
+          $mergeMetadata->saveResults();
+        }
+        showEntity($metadata->id());
+      } else {
+        $html->showHeaders('Problem');
+        printf('%s    <div class="row alert alert-danger" role="alert">
+      <div class="col">
+        <b>You do not have access to entityID = %s</b><br>
+        You need to be admin for this entityID in order to upload new metadata.<br>
+        <a href=".?action=Request+Access&Entity=%d"><button type="button" class="btn btn-danger">Request access</button></a>
+      </div>%s    </div>%s', "\n", htmlspecialchars($entityID), $metadata->getPublishedId(), "\n", "\n");
+      $html->showFooter(array());
       }
-      showEntity($metadata->id());
     } else {
       $html->showHeaders('Problem');
       printf('%s    <div class="row alert alert-danger" role="alert">
