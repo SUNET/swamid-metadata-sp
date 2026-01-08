@@ -2377,7 +2377,8 @@ class MetadataDisplay extends Common {
         } else {
           $type='?';
         }
-        printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], htmlspecialchars($entity['entityID']), $type, $entity['publishIn'] &4 == 4 ? 'eduGAIN' : '', $URLInfo, "\n");
+        printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
+          $entity['id'], htmlspecialchars($entity['entityID']), $type, ($entity['publishIn'] & 4) == 4 ? 'eduGAIN' : '', $URLInfo, "\n");
       }
     }
     print self::HTML_TABLE_END;
