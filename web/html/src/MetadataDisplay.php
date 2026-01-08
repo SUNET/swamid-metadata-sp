@@ -2131,6 +2131,14 @@ class MetadataDisplay extends Common {
     $idPsSelected = 'false';
     $idPsShow = '';
     $idPsId = 0;
+    #
+    $ppErrorsActive='';
+    $ppErrorsSelected='false';
+    $ppErrorsShow='';
+    #
+    $infoErrorsActive='';
+    $infoErrorsSelected='false';
+    $infoErrorsShow='';
 
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
@@ -2144,6 +2152,16 @@ class MetadataDisplay extends Common {
           $idPsSelected = self::HTML_TRUE;
           $idPsShow = self::HTML_SHOW;
           $idPsId = isset($_GET['id']) ? $_GET['id'] : 0;
+          break;
+        case 'PP' :
+          $ppErrorsActive = self::HTML_ACTIVE;
+          $ppErrorsSelected = self::HTML_TRUE;
+          $ppErrorsShow = self::HTML_SHOW;
+          break;
+        case 'Info' :
+          $infoErrorsActive = self::HTML_ACTIVE;
+          $infoErrorsSelected = self::HTML_TRUE;
+          $infoErrorsShow = self::HTML_SHOW;
           break;
         case 'reminders-urgent' :
         default :
@@ -2171,9 +2189,17 @@ class MetadataDisplay extends Common {
           <li class="nav-item">
             <a class="nav-link%s" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
               aria-controls="errors" aria-selected="%s">Errors</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="ppErrors-tab" data-toggle="tab" href="#ppErrors" role="tab"
+              aria-controls="ppErrors" aria-selected="%s">PrivacyStatement</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="infoErrors-tab" data-toggle="tab" href="#infoErrors" role="tab"
+              aria-controls="infoErrors" aria-selected="%s">Information</a>
           </li>%s',
         $remindersUrgentActive, $remindersUrgentSelected, $remindersActive, $remindersSelected,
-        $errorsActive, $errorsSelected, "\n");
+        $errorsActive, $errorsSelected, $ppErrorsActive, $ppErrorsSelected, $infoErrorsActive, $infoErrorsSelected, "\n");
       if ($this->config->getIMPS()) {
         printf('          <li class="nav-item">
             <a class="nav-link%s" id="idps-tab" data-toggle="tab" href="#idps" role="tab"
@@ -2196,7 +2222,15 @@ class MetadataDisplay extends Common {
     }
     $this->showErrorEntitiesList($download);
     if (! $download) {
-      printf('      </div><!-- End tab-pane errors -->%s', "\n");
+      printf('      </div><!-- End tab-pane errors -->
+      <div class="tab-pane fade%s%s" id="ppErrors" role="tabpanel" aria-labelledby="ppErrors-tab">%s',
+        $ppErrorsShow, $ppErrorsActive, "\n");
+      $this->showEntityErrorURL('PrivacyStatementURL');
+      printf('      </div><!-- End tab-pane ppErrors -->
+      <div class="tab-pane fade%s%s" id="infoErrors" role="tabpanel" aria-labelledby="infoErrors-tab">%s',
+        $infoErrorsShow, $infoErrorsActive, "\n");
+      $this->showEntityErrorURL('InformationURL');
+      printf('      </div><!-- End tab-pane infoErrors -->%s', "\n");
       if ($this->config->getIMPS()) {
         printf('      <div class="tab-pane fade%s%s" id="idps" role="tabpanel" aria-labelledby="idps-tab">%s',
           $idPsShow, $idPsActive, "\n");
@@ -2300,6 +2334,53 @@ class MetadataDisplay extends Common {
       }
     }
     if (!$download) {print "    " . self::HTML_TABLE_END; }
+  }
+
+  /**
+   * Return Error list for Entities with complains in URLCheck
+   *
+   * @param string $urlType type of URL to check
+   *
+   * @return void
+   */
+  private function showEntityErrorURL($urlType) {
+    $entityHandler = $this->config->getDb()->prepare('SELECT id, `isIdP`, `isSP`, `entityID`, `publishIn` FROM Entities WHERE status = 1 ORDER BY `entityID`;');
+    $URLHandler = $this->config->getDb()->prepare(
+      'SELECT DISTINCT `URLs`.`URL`, URLs.`type`, `URLs`.`status`, `URLs`.`cocov1Status`, `URLs`.`validationOutput`
+      FROM `Mdui`, `URLs`
+      WHERE `Mdui`.`data` = `URLs`.`URL` AND
+        `Mdui`.`element` = :Type AND
+        `Mdui`.`entity_id` = :Id;');
+    $entityHandler->execute();
+    printf ('        <br>
+        <h5>Entities with problem in %s</h5>
+        <table id="%s-table" class="table table-striped table-bordered">
+          <thead><tr><th>EntityID</th><th>Type</th><th>Feed</th><th></th></tr></thead>%s',
+      $urlType, $urlType, "\n");
+    while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
+      $URLHandler->execute(array('Id' => $entity['id'], 'Type' => $urlType));
+      $URLInfo = '';
+      while($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
+        if ($URL['status'] != 0) {
+          $URLInfo .= $URL['URL'] . ' : ' . $URL['validationOutput'] .'<br>';
+        }
+      }
+      if ($URLInfo != '') {
+        if ($entity['isIdP']) {
+          if ($entity['isSP']) {
+            $type='IdP/SP';
+          } else {
+            $type='IdP';
+          }
+        } elseif ($entity['isSP']) {
+          $type='SP';
+        } else {
+          $type='?';
+        }
+        printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s', $entity['id'], htmlspecialchars($entity['entityID']), $type, $entity['publishIn'] &4 == 4 ? 'eduGAIN' : '', $URLInfo, "\n");
+      }
+    }
+    print self::HTML_TABLE_END;
   }
 
   /**

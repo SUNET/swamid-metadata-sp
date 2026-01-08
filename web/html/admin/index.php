@@ -543,6 +543,8 @@ if (isset($_FILES['XMLfile'])) {
           $html->addTableSort('error-table');
           $html->addTableSort('reminder-table');
           $html->addTableSort('reminder-table-actOn');
+          $html->addTableSort('PrivacyStatementURL-table');
+          $html->addTableSort('InformationURL-table');
           break;
         case 'ErrorListDownload' :
           if ($userLevel > 1) {
