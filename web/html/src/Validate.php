@@ -315,6 +315,10 @@ class Validate extends Common {
         $this->error .= " at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
       }
     }
+    if (! $this->isSIRTFI) {
+      $this->error .= self::TEXT_COCOV2_REQ;
+      $this->error .= "s in appendix 1 section G that SIRTFI is used to manage security incidents.\n";
+    }
   }
 
   /**

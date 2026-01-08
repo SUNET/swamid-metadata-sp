@@ -92,13 +92,7 @@ class ValidateSWAMID extends Validate {
       }
       $this->validateSPCoCov1();
     }
-    if ($this->isSPandCoCov2) {
-      if (! $this->isSIRTFI) {
-        $this->warning .= self::TEXT_COCOV2_REQ;
-        $this->warning .= "s in appendix 1 section G that SIRTFI is used to manage security incidents.\n";
-      }
-      $this->validateSPCoCov2();
-    }
+    if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
     if (! $this->isSIRTFI2) {
       $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';
       $this->warning .= "the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
