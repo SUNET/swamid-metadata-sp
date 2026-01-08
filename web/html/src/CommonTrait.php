@@ -41,9 +41,6 @@ trait CommonTrait {
       'https://refeds.org/category/personalized' => array(
         'type' => 'SP', 'standard' => true
       ),
-      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
-        'type' => 'SP', 'standard' => true
-      ),
       'https://refeds.org/category/code-of-conduct/v2' => array(
         'type' => 'SP', 'standard' => true
       ),
@@ -66,9 +63,6 @@ trait CommonTrait {
         'type' => 'IdP', 'standard' => true
       ),
       'http://refeds.org/category/research-and-scholarship' => array( # NOSONAR Should be http://
-        'type' => 'IdP', 'standard' => true
-      ),
-      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
         'type' => 'IdP', 'standard' => true
       ),
       'https://myacademicid.org/entity-categories/esi' => array(

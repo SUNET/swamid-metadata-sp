@@ -113,7 +113,6 @@ class MetadataDisplay extends Common {
         $ecsTested = array(
           'anonymous' => false,
           'esi' => false,
-          'cocov1-1' => false,
           'cocov2-1' => false,
           'personalized' => false,
           'pseudonymous' => false,
