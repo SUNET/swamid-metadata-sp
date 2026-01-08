@@ -1069,7 +1069,7 @@ class MetadataDisplay extends Common {
    *
    * @param int $entityId Id of entity
    *
-   * @param $type if SP or Idp
+   * @param string $type if SP or Idp
    *
    * @param int $otherEntityId Id of entity to compare with
    *
@@ -1298,7 +1298,7 @@ class MetadataDisplay extends Common {
    *
    * @param int $entityId Id of entity
    *
-   * @param $type if AttributeAuthority, SP or Idp
+   * @param string $type if AttributeAuthority, SP or Idp
    *
    * @param int $otherEntityId Id of entity to compare with
    *
@@ -3374,7 +3374,7 @@ class MetadataDisplay extends Common {
   /**
    * Show Members tab
    *
-   * @param $userLevel Userlevel for user
+   * @param int $userLevel Userlevel for user
    *
    * @return void
    */
@@ -3534,9 +3534,9 @@ class MetadataDisplay extends Common {
   /**
    * Show List of OrganizationInfo:s
    *
-   * @param $id Id of IMPS to expand
+   * @param int $id Id of IMPS to expand
    *
-   * @param $userLevel Userlevel for user
+   * @param int $userLevel Userlevel for user
    *
    * @return void
    */

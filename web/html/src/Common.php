@@ -303,7 +303,7 @@ class Common {
    *
    * @param int $type Type of URL
    *
-   * @param &$updateArray Array sent back to update DB
+   * @param array &$updateArray Array sent back to update DB
    *
    * @param bool &$verboseInfo Verbose info to be displayed
    *
@@ -382,7 +382,7 @@ class Common {
    *
    * @param int $type Type of URL
    *
-   * @param &$updateArray Array sent back to update DB
+   * @param array &$updateArray Array sent back to update DB
    *
    * @param bool &$verboseInfo Verbose info to be displayed
    *

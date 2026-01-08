@@ -3,3 +3,6 @@ web/html/composer.lock
 web/html/config.php
 web/html/vendor/
 *.time
+.vscode/
+Makefile
+phpdocs

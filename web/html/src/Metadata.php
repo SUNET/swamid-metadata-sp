@@ -1148,7 +1148,7 @@ class Metadata extends Common {
   /**
    * Remove access from current Entity for a user
    *
-   * @param @userId Id of user to remove access for
+   * @param int $userId Id of user to remove access for
    *
    * @return void
    */

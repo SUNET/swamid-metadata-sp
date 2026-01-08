@@ -64,7 +64,7 @@ class MetadataEdit extends Common {
   /**
    * Edit part of XML
    *
-   * @param $part Part to edit
+   * @param string $part Part to edit
    *
    * @return void
    */
@@ -3872,7 +3872,7 @@ class MetadataEdit extends Common {
   /**
    * Show Language Selector
    *
-   * @param $langValue Current Language
+   * @param string $langValue Current Language
    *
    * @return void
    */
