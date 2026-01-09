@@ -84,14 +84,7 @@ class ValidateSWAMID extends Validate {
 
     if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
-    if ($this->isSPandCoCov1) {
-      if (! $this->isSPandCoCov2) {
-        $this->warning .= 'The GEANT Data Protection Code of Conduct version 1.0 is now deprecated. ';
-        $this->warning .= 'It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0, which reflects updated legislation, practices and standards. ';
-        $this->warning .= "However, version 1.0 may still be retained temporarily to ensure backward compatibility during the transition period.\n";
-      }
-      $this->validateSPCoCov1();
-    }
+    if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
     if (! $this->isSIRTFI2) {
       $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';

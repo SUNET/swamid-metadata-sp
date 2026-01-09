@@ -252,6 +252,9 @@ class Validate extends Common {
     if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
       $this->error .= "GÉANT Data Protection Code of Conduct Require at least one RequestedAttribute.\n";
     }
+    $this->warning .= 'The GEANT Data Protection Code of Conduct version 1.0 is now deprecated. ';
+    $this->warning .= 'It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0, which reflects updated legislaion, practices and standards. ';
+    $this->warning .= "However, version 1.0 may still be retained temporarily to ensure backward compatibility during the transition period.\n";
   }
 
   /**
