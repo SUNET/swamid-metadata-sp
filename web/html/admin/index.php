@@ -205,8 +205,6 @@ $userLevel = $config->getUserLevels()[$EPPN] ?? 1;
 $displayName = '<div> Logged in as : <br> ' . htmlspecialchars($fullName) . ' (' . htmlspecialchars($EPPN) .')</div>';
 $html->setDisplayName($displayName);
 
-$display = new \metadata\MetadataDisplay();
-
 if (isset($_FILES['XMLfile'])) {
   importXML();
 } elseif (isset($_REQUEST['edit'])) {
@@ -255,6 +253,7 @@ if (isset($_FILES['XMLfile'])) {
     removeSSO($_POST['removeSSO'], $_POST['type']);
   }
 } elseif (isset($_REQUEST['rawXML'])) {
+  $display = $config->getExtendedClass('MetadataDisplay');
   $display->showRawXML($_REQUEST['rawXML']);
 } elseif (isset(($_REQUEST['approveAccessRequest']))) {
   approveAccessRequest($_REQUEST['approveAccessRequest']);
@@ -490,18 +489,21 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'EntityStatistics' :
+          $display = $config->getExtendedClass('Display\Statistics');
           $menuActive = 'EntityStatistics';
           $html->showHeaders('Entity Statistics');
           showMenu();
           $display->showEntityStatistics();
           break;
         case 'EcsStatistics' :
+          $display = $config->getExtendedClass('Display\Statistics');
           $menuActive = 'EcsStatistics';
           $html->showHeaders('EntityCategorySupport status');
           showMenu();
           $display->showEcsStatistics();
           break;
         case 'RAFStatistics' :
+          $display = $config->getExtendedClass('Display\Statistics');
           $menuActive = 'RAFStatistics';
           $html->showHeaders('RAF status');
           showMenu();
@@ -512,6 +514,7 @@ if (isset($_FILES['XMLfile'])) {
           $html->showHeaders('URL status');
           showMenu();
           if (isset($_REQUEST['URL'])) {
+            $display = $config->getExtendedClass('MetadataDisplay');
             if (isset($_POST['recheck'])) {
               $common = new \metadata\Common();
               $common->revalidateURL($_REQUEST['URL'], isset($_REQUEST['verbose']));
@@ -521,6 +524,7 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'URLlist' :
           if ($userLevel > 4) {
+            $display = $config->getExtendedClass('MetadataDisplay');
             $menuActive = 'URLlist';
             $html->showHeaders('URL status');
             showMenu();
@@ -536,6 +540,7 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'ErrorList' :
+          $display = $config->getExtendedClass('MetadataDisplay');
           $menuActive = 'Errors';
           $html->showHeaders('Error status');
           showMenu();
@@ -548,12 +553,14 @@ if (isset($_FILES['XMLfile'])) {
           break;
         case 'ErrorListDownload' :
           if ($userLevel > 1) {
+            $display = $config->getExtendedClass('MetadataDisplay');
             $display->showErrorList(true);
             exit;
           }
           break;
         case 'CleanPending' :
           if ($userLevel > 10) {
+            $display = $config->getExtendedClass('MetadataDisplay');
             $menuActive = 'CleanPending';
             $html->showHeaders('Clean Pending');
             showMenu();
@@ -561,6 +568,7 @@ if (isset($_FILES['XMLfile'])) {
           }
           break;
         case 'ShowDiff' :
+          $display = $config->getExtendedClass('MetadataDisplay');
           $menuActive = 'CleanPending';
           $html->showHeaders('Clean Pending');
           showMenu();
@@ -570,6 +578,7 @@ if (isset($_FILES['XMLfile'])) {
           $display->showPendingList();
           break;
         case 'OrganizationsInfo' :
+          $display = $config->getExtendedClass('MetadataDisplay');
           $menuActive = 'OrganizationsInfo';
           $html->showHeaders('Show EntityInfo');
           showMenu();
@@ -589,6 +598,7 @@ if (isset($_FILES['XMLfile'])) {
                 break;
               case 'saveImps' :
                 if ($imps->saveImps($_REQUEST['id'])) {
+                  $display = $config->getExtendedClass('MetadataDisplay');
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 } else {
@@ -597,6 +607,7 @@ if (isset($_FILES['XMLfile'])) {
                 break;
               case 'removeImps' :
                 if ($imps->removeImps($_REQUEST['id'])) {
+                  $display = $config->getExtendedClass('MetadataDisplay');
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 }
@@ -606,6 +617,7 @@ if (isset($_FILES['XMLfile'])) {
                 break;
               case 'saveOrganization' :
                 if ($imps->saveOrganization($_REQUEST['id'])) {
+                  $display = $config->getExtendedClass('MetadataDisplay');
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 } else {
@@ -614,6 +626,7 @@ if (isset($_FILES['XMLfile'])) {
                 break;
               case 'removeOrganization':
                 if ($imps->removeOrganization($_REQUEST['id'])) {
+                  $display = $config->getExtendedClass('MetadataDisplay');
                   $display->showMembers($userLevel);
                   $html->addTableSort('scope-table');
                 }
@@ -622,6 +635,7 @@ if (isset($_FILES['XMLfile'])) {
                 print "Unkown action";
             }
           } else {
+            $display = $config->getExtendedClass('MetadataDisplay');
             $display->showMembers($userLevel);
             $html->addTableSort('scope-table');
           }
@@ -635,8 +649,12 @@ if (isset($_FILES['XMLfile'])) {
     showMyEntities();
   }
 }
+if (isset($display)) {
+  $html->showFooter($display->getCollapseIcons());
+} else {
+  $html->showFooter();
+}
 
-$html->showFooter($display->getCollapseIcons());
 # End of page
 
 ####
