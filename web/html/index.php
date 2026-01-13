@@ -151,7 +151,8 @@ function showMenu($menuActive, $query = '') {
 # Shows Entity information
 ####
 function showEntity($entity_id, $urn = false)  {
-  global $config, $html, $display;
+  global $config, $html;
+  $display = $config->getExtendedClass('MetadataDisplay');
   $federation = $config->getFederation();
   $entityHandler = $urn ?
     $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`

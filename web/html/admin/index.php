@@ -780,7 +780,8 @@ function showEntityList($status = 1) {
 # Shows Entity information
 ####
 function showEntity($entitiesId, $showHeader = true)  {
-  global $config, $html, $display, $userLevel, $menuActive, $EPPN;
+  global $config, $html, $userLevel, $menuActive, $EPPN;
+  $display = $config->getExtendedClass('MetadataDisplay');
   $federation = $config->getFederation();
   $entityHandler = $config->getDb()->prepare(
     'SELECT `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
@@ -2240,7 +2241,8 @@ function getErrors($entitiesId) {
 }
 
 function showHelp() {
-  global $html, $display, $menuActive;
+  global $html, $config, $menuActive;
+  $display = $config->getExtendedClass('MetadataDisplay');
   $html->showHeaders('');
   $menuActive = '';
   showMenu();
