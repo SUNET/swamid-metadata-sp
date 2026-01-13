@@ -19,6 +19,10 @@ class Statistics extends Common {
     $entitySelected='false';
     $entityShow='';
     #
+    $ecActive='';
+    $ecSelected='false';
+    $ecShow='';
+    #
     $ecsActive='';
     $ecsSelected='false';
     $ecsShow='';
@@ -29,6 +33,11 @@ class Statistics extends Common {
 
     if (isset($_GET["tab"])) {
       switch ($_GET["tab"]) {
+        case 'ec' :
+          $ecActive = self::HTML_ACTIVE;
+          $ecSelected = self::HTML_TRUE;
+          $ecShow = self::HTML_SHOW;
+          break;
         case 'ecs' :
           $ecsActive = self::HTML_ACTIVE;
           $ecsSelected = self::HTML_TRUE;
@@ -58,6 +67,10 @@ class Statistics extends Common {
               aria-controls="entity" aria-selected="%s">Entity Statistics</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link%s" id="ec-tab" data-toggle="tab" href="#ec" role="tab"
+              aria-controls="ec" aria-selected="%s">Entity Category</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link%s" id="ecs-tab" data-toggle="tab" href="#ecs" role="tab"
               aria-controls="ecs" aria-selected="%s">Entity Category Support</a>
           </li>
@@ -65,7 +78,7 @@ class Statistics extends Common {
             <a class="nav-link%s" id="assurance-tab" data-toggle="tab" href="#assurance" role="tab"
               aria-controls="assurance" aria-selected="%s">Assurance</a>
           </li>%s',
-      $entityActive, $entitySelected,
+      $entityActive, $entitySelected, $ecActive, $ecSelected,
       $ecsActive, $ecsSelected, $assuranceActive, $assuranceSelected, "\n");
     printf('        </ul>
       </div>%s    </div>%s    <script src="/include/chart/chart.min.js"></script>%s    <div class="tab-content" id="myTabContent">
@@ -74,6 +87,10 @@ class Statistics extends Common {
       $entityShow, $entityActive, "\n");
     $this->showEntityStatistics();
     printf('      </div><!-- End tab-pane entity -->
+      <div class="tab-pane fade%s%s" id="ec" role="tabpanel" aria-labelledby="ec-tab">%s',
+      $ecShow, $ecActive, "\n");
+    $this->showEcStatistics();
+    printf('      </div><!-- End tab-pane ec -->
       <div class="tab-pane fade%s%s" id="ecs" role="tabpanel" aria-labelledby="ecs-tab">%s',
         $ecsShow, $ecsActive, "\n");
     $this->showEcsStatistics();
@@ -177,6 +194,200 @@ class Statistics extends Common {
             }
           });%s        </script>%s",
       $labels, $idps, $sps, "\n", "\n");
+  }
+
+  /**
+   * Show Graph for EntityCategory
+   *
+   * @param string $canvas id for canvas where to display the graph
+   *
+   * @param int $marked Number of SP:s with this Entity Category
+   *
+   * @param int $noEc Number of SP:s with no Entity Category
+   *
+   * @param int $total Total numer of SP:s
+   *
+   * @return void
+   */
+  protected function showEcGraph($canvas, $marked, $noEc, $total) {
+    printf ("          const ctxEC%s = document.getElementById('ec_%s').getContext('2d');
+          const myEC%s = new Chart(ctxEC%s, {
+            width: 200,
+            type: 'pie',
+            data: {
+              labels: ['This Category', 'Some other Category', 'No Category'],
+              datasets: [{
+                data: [%d, %d, %d],
+                backgroundColor: [
+                  'rgb(99, 255, 132)',
+                  'rgb(255, 205, 86)',
+                  'rgb(255, 255, 255)',
+                ],
+                borderColor : 'rgb(0,0,0)',
+                hoverOffset: 4
+              }]
+            },
+          });%s",
+      $canvas, $canvas, $canvas, $canvas, $marked, $total - $noEc - $marked, $noEc, "\n");
+  }
+
+  /**
+   * Show Graph for EntityCategory Code Of Cunduct
+   *
+   * @param int $bothCoco Number of SP:s with both CoCo v1 and CoCo v2
+   *
+   * @param int $cocov1 Number of SP:s with CoCo v1
+   *
+   * @param int $cocov2 Number of SP:s with CoCo v2
+   *
+   * @param int $noEc Number of SP:s with no Entity Category
+   *
+   * @param int $total Total numer of SP:s
+   *
+   * @return void
+   */
+  protected function showEcGraphCoCo($bothCoco, $cocov1, $cocov2, $noEc, $total) {
+    printf ("          const ctxECcoco = document.getElementById('ec_coco').getContext('2d');
+          const myECcoco = new Chart(ctxECcoco, {
+            width: 200,
+            type: 'pie',
+            data: {
+              labels: ['Both CoCo v1 and v2', 'CoCo v2 Only', 'CoCo v1 Only', 'Some other Category', 'No Category'],
+              datasets: [{
+                data: [%d, %d, %d, %d, %d],
+                backgroundColor: [
+                  'rgb(99, 255, 132)',
+                  'rgb(199, 255, 132)',
+                  'rgb(199, 255, 255)',
+                  'rgb(255, 205, 86)',
+                  'rgb(255, 255, 255)',
+                ],
+                borderColor : 'rgb(0,0,0)',
+                hoverOffset: 4
+              }]
+            },
+          });%s",
+      $bothCoco, $cocov2 - $bothCoco, $cocov1 - $bothCoco, $total - $noEc - $cocov2 - $cocov1, $noEc, "\n");
+  }
+
+  /**
+   * Show EcStatistics tab
+   *
+   * @return void
+   */
+  protected function showEcStatistics() {
+    $spHandler = $this->config->getDb()->prepare(
+      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isSP` = 1 AND `status` = 1 AND `publishIn` > 1;');
+    $entityAttributesHandler = $this->config->getDb()->prepare(
+      "SELECT COUNT(`attribute`) AS `count`, `attribute`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+      GROUP BY `attribute`;");
+    $bothCoCoHandler = $this->config->getDb()->prepare(
+      "SELECT COUNT(`attribute`) AS `count`
+      FROM `EntityAttributes`
+      WHERE `type` = 'entity-category' AND
+        `attribute`= 'https://refeds.org/category/code-of-conduct/v2' AND
+        `entity_id` IN (
+          SELECT entity_id
+          FROM `EntityAttributes`, `Entities`
+          WHERE `type` = 'entity-category' AND
+          `entity_id` = `Entities`.`id` AND
+          `isSP` = 1 AND
+          `status` = 1 AND
+          `publishIn` > 1 AND
+          `attribute`= 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1');");
+    $noEcHandler = $this->config->getDb()->prepare(
+      "SELECT COUNT(`id`) AS `count`
+      FROM `Entities`
+      WHERE `isSP` = 1 AND
+        `status` = 1 AND
+        `publishIn` > 1 AND
+        `id` NOT IN (
+          SELECT DISTINCT `entity_id`
+          FROM `EntityAttributes`
+          WHERE `type` = 'entity-category'
+        );");
+    $spHandler->execute();
+    if ($sps = $spHandler->fetch(PDO::FETCH_ASSOC)) {
+      $nrOfSPs = $sps['count'];
+    } else {
+      $nrOfSPs = 0;
+    }
+    $noEcHandler->execute();
+    if ($sps = $noEcHandler->fetch(PDO::FETCH_ASSOC)) {
+      $nrOfSPsWithoutEc = $sps['count'];
+    } else {
+      $nrOfSPsWithoutEc = 0;
+    }
+    $entityAttributesHandler->execute();
+    while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+      $ecTagged[$attribute['attribute']] = $attribute['count'];
+    }
+    $bothCoCoHandler->execute();
+    if ($attribute = $bothCoCoHandler->fetch(PDO::FETCH_ASSOC)) {
+      $ecTagged['bothCoCo'] = $attribute['count'];
+    } else {
+      $ecTagged['bothCoCo'] = 0;
+    }
+    printf ('        <div class="row">
+          <div class="col">
+            <h3>REFEDS Anonymous Access</h3>
+            <canvas id="ec_anonymous"></canvas>
+          </div>
+          <div class="col">
+            <h3>REFEDS Pseudonymous Access</h3>
+            <canvas id="ec_pseudonymous"></canvas>
+          </div>
+          <div class="col">
+            <h3>REFEDS Personalized Access</h3>
+            <canvas id="ec_personalized"></canvas>
+          </div>
+          <div class="col">
+            <h3>REFEDS R&S</h3>
+            <canvas id="ec_rands"></canvas>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <h3>Code Of Conduct</h3>
+            <canvas id="ec_coco"></canvas>
+          </div>
+          <div class="col">
+            <h3>European Student Identifier</h3>
+            <canvas id="ec_esi"></canvas>
+          </div>
+          <div class="col"></div>
+          <div class="col"></div>
+        </div>
+        <br><br>
+        <h3>Statistics in numbers</h3>
+        <table class="table table-striped table-bordered">
+          <tr><th>Total numer of SP:s</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS Anonymous Access Category</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS Pseudonymous Access Category</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS Personalized Access Category</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS Research and Scholarship Category</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS Code Of Conduct (v2) Access Category</th><td>%d</td></tr>
+          <tr><th>SP:s with GÉANT Code Of Conduct (v1) Access Category</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS and GÉANT CoCo Categories</th><td>%d</td></tr>
+          <tr><th>SP:s with European Student Identifier Access Category</th><td>%d</td></tr>
+          <tr><th>SP:s with NO Access Category</th><td>%d</td></tr>
+        </table>
+        <script>%s',
+      $nrOfSPs,
+      $ecTagged[self::SAML_EC_ANONYMOUS], $ecTagged[self::SAML_EC_PSEUDONYMOUS], $ecTagged[self::SAML_EC_PERSONALIZED],
+      $ecTagged[self::SAML_EC_RANDS],
+      $ecTagged[self::SAML_EC_COCOV2], $ecTagged[self::SAML_EC_COCOV1], $ecTagged['bothCoCo'],
+      $ecTagged[self::SAML_EC_ESI], $nrOfSPsWithoutEc, "\n");
+
+    $this->showEcGraph('anonymous', $ecTagged[self::SAML_EC_ANONYMOUS], $nrOfSPsWithoutEc, $nrOfSPs);
+    $this->showEcGraph('pseudonymous', $ecTagged[self::SAML_EC_PSEUDONYMOUS], $nrOfSPsWithoutEc, $nrOfSPs);
+    $this->showEcGraph('personalized', $ecTagged[self::SAML_EC_PERSONALIZED], $nrOfSPsWithoutEc, $nrOfSPs);
+    $this->showEcGraph('rands', $ecTagged[self::SAML_EC_RANDS], $nrOfSPsWithoutEc, $nrOfSPs);
+    $this->showEcGraphCoCo($ecTagged['bothCoCo'], $ecTagged[self::SAML_EC_COCOV1], $ecTagged[self::SAML_EC_COCOV2], $nrOfSPsWithoutEc, $nrOfSPs);
+    $this->showEcGraph('esi', $ecTagged[self::SAML_EC_ESI], $nrOfSPsWithoutEc, $nrOfSPs);
+    printf('        </script>%s', "\n");
   }
 
   /**
@@ -327,7 +538,6 @@ class Statistics extends Common {
             data: {
               labels: ['OK + ECS', 'OK no ECS', 'Fail', 'Not tested'],
               datasets: [{
-                label: 'Errors',
                 data: [%d, %d, %d, %d],
                 backgroundColor: [
                   'rgb(99, 255, 132)',
@@ -525,7 +735,6 @@ class Statistics extends Common {
             data: {
               labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
               datasets: [{
-                label: \'SWAMID\',
                 data: [%d, %d, %d, %d],
                 backgroundColor: [
                   \'rgb(99, 255, 132)\',
@@ -553,7 +762,6 @@ class Statistics extends Common {
             data: {
               labels: [\'High\', \'Medium\', \'Low\', \'None\'],
               datasets: [{
-                label: \'RAF\',
                 data: [%d, %d, %d, %d],
                 backgroundColor: [
                   \'rgb(99, 255, 132)\',
@@ -580,7 +788,6 @@ class Statistics extends Common {
             data: {
               labels: [\'AL3\', \'AL2\', \'AL1\'],
               datasets: [{
-                label: \'Metadata\',
                 data: [%d, %d, %d],
                 backgroundColor: [
                   \'rgb(99, 255, 132)\',
