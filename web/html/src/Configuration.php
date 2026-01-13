@@ -739,4 +739,22 @@ class Configuration {
   public function getMode() {
     return $this->mode;
   }
+
+  /**
+   * Get classname, Checks if extended class exists
+   *
+   * @param string $className name of baseClass
+   *
+   * @return instance of baseClass or if exists extended class
+   */
+  public function getExtendedClass($className, ...$params) {
+    $baseClass   = __NAMESPACE__ . '\\' . $className;
+    $extendClass = $baseClass . ($this->federation['extend'] ?? '');
+
+    if (!class_exists($baseClass)) {
+        return null;
+    }
+
+    return new (class_exists($extendClass) ? $extendClass : $baseClass)(...$params);
+  }
 }
