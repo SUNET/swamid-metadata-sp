@@ -488,26 +488,12 @@ if (isset($_FILES['XMLfile'])) {
             showMyEntities();
           }
           break;
-        case 'EntityStatistics' :
+        case 'Statistics' :
           $display = $config->getExtendedClass('Display\Statistics');
-          $menuActive = 'EntityStatistics';
-          $html->showHeaders('Entity Statistics');
+          $menuActive = 'Statistics';
+          $html->showHeaders('Statistics');
           showMenu();
-          $display->showEntityStatistics();
-          break;
-        case 'EcsStatistics' :
-          $display = $config->getExtendedClass('Display\Statistics');
-          $menuActive = 'EcsStatistics';
-          $html->showHeaders('EntityCategorySupport status');
-          showMenu();
-          $display->showEcsStatistics();
-          break;
-        case 'RAFStatistics' :
-          $display = $config->getExtendedClass('Display\Statistics');
-          $menuActive = 'RAFStatistics';
-          $html->showHeaders('RAF status');
-          showMenu();
-          $display->showRAFStatistics();
+          $display->showStatistics();
           break;
         case 'showURL' :
           $menuActive = '';
@@ -1267,14 +1253,10 @@ function showMenu() {
     $filter, $menuActive == 'upload' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=OrganizationsInfo%s"><button type="button" class="btn btn%s-primary">Organizations</button></a>',
     $filter, $menuActive == 'OrganizationsInfo' ? '' : HTML_OUTLINE);
-  printf('<a href=".?action=EntityStatistics%s"><button type="button" class="btn btn%s-primary">Entity Statistics</button></a>',
-    $filter, $menuActive == 'EntityStatistics' ? '' : HTML_OUTLINE);
-  printf('<a href=".?action=EcsStatistics%s"><button type="button" class="btn btn%s-primary">ECS statistics</button></a>',
-    $filter, $menuActive == 'EcsStatistics' ? '' : HTML_OUTLINE);
-  printf('<a href=".?action=RAFStatistics%s"><button type="button" class="btn btn%s-primary">RAF statistics</button></a>',
-    $filter, $menuActive == 'RAFStatistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=Members%s"><button type="button" class="btn btn%s-primary">Members</button></a>',
     $filter, $menuActive == 'Members' ? '' : HTML_OUTLINE);
+  printf('<a href=".?action=Statistics%s"><button type="button" class="btn btn%s-primary">Statistics</button></a>',
+    $filter, $menuActive == 'Statistics' ? '' : HTML_OUTLINE);
   printf('<a href=".?action=ErrorList%s"><button type="button" class="btn btn%s-primary">Errors</button></a>',
     $filter, $menuActive == 'Errors' ? '' : HTML_OUTLINE);
   if ( $userLevel > 4 ) {

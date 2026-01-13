@@ -9,6 +9,83 @@ use PDO;
 class Statistics extends Common {
 
   /**
+   * Show Statistics
+   *
+   * @return void
+   */
+  public function showStatistics() {
+    # Default values
+    $entityActive='';
+    $entitySelected='false';
+    $entityShow='';
+    #
+    $ecsActive='';
+    $ecsSelected='false';
+    $ecsShow='';
+    #
+    $assuranceActive='';
+    $assuranceSelected='false';
+    $assuranceShow='';
+
+    if (isset($_GET["tab"])) {
+      switch ($_GET["tab"]) {
+        case 'ecs' :
+          $ecsActive = self::HTML_ACTIVE;
+          $ecsSelected = self::HTML_TRUE;
+          $ecsShow = self::HTML_SHOW;
+          break;
+        case 'assurance' :
+          $assuranceActive = self::HTML_ACTIVE;
+          $assuranceSelected = self::HTML_TRUE;
+          $assuranceShow = self::HTML_SHOW;
+          break;
+        case 'entity' :
+        default :
+          $entityActive = self::HTML_ACTIVE;
+          $entitySelected = self::HTML_TRUE;
+          $entityShow = self::HTML_SHOW;
+        }
+    } else {
+      $entityActive = self::HTML_ACTIVE;
+      $entitySelected = self::HTML_TRUE;
+      $entityShow = self::HTML_SHOW;
+    }
+    printf('    <div class="row">
+      <div class="col">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link%s" id="entity-tab" data-toggle="tab" href="#entity" role="tab"
+              aria-controls="entity" aria-selected="%s">Entity Statistics</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="ecs-tab" data-toggle="tab" href="#ecs" role="tab"
+              aria-controls="ecs" aria-selected="%s">Entity Category Support</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link%s" id="assurance-tab" data-toggle="tab" href="#assurance" role="tab"
+              aria-controls="assurance" aria-selected="%s">Assurance</a>
+          </li>%s',
+      $entityActive, $entitySelected,
+      $ecsActive, $ecsSelected, $assuranceActive, $assuranceSelected, "\n");
+    printf('        </ul>
+      </div>%s    </div>%s    <script src="/include/chart/chart.min.js"></script>%s    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade%s%s" id="entity" role="tabpanel" aria-labelledby="entity-tab">%s',
+        "\n", "\n", "\n",
+      $entityShow, $entityActive, "\n");
+    $this->showEntityStatistics();
+    printf('      </div><!-- End tab-pane entity -->
+      <div class="tab-pane fade%s%s" id="ecs" role="tabpanel" aria-labelledby="ecs-tab">%s',
+        $ecsShow, $ecsActive, "\n");
+    $this->showEcsStatistics();
+    printf('      </div><!-- End tab-pane ecs -->
+      <div class="tab-pane fade%s%s" id="assurance" role="tabpanel" aria-labelledby="assurance-tab">%s',
+      $assuranceShow, $assuranceActive, "\n");
+    $this->showRAFStatistics();
+    printf('      </div><!-- End tab-pane assurance -->
+    </div><!-- End tab-content -->%s', "\n");
+  }
+
+  /**
    * Show EntityStatistics over time
    *
    * @return void
@@ -43,14 +120,14 @@ class Statistics extends Common {
       }
     }
 
-    printf ('    <h3>Entity Statistics</h3>
-    <p>Statistics on number of entities in %s.</p>
-    <canvas id="total" width="200" height="50"></canvas>
-    <br><br>
-    <h3>Statistics in numbers</h3>
-    <table class="table table-striped table-bordered">
-      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', $federation['displayName'], "\n");
-    printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
+    printf ('        <h3>Entity Statistics</h3>
+        <p>Statistics on number of entities in %s.</p>
+        <canvas id="total" width="200" height="50"></canvas>
+        <br><br>
+        <h3>Statistics in numbers</h3>
+        <table class="table table-striped table-bordered">
+          <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', $federation['displayName'], "\n");
+    printf('          <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
       'Now', $nrOfEntites, $nrOfSPs, $nrOfIdPs, "\n");
     array_unshift($labelsArray, 'Now');
     array_unshift($spArray, $nrOfSPs);
@@ -61,7 +138,7 @@ class Statistics extends Common {
     $statusRows->execute();
     while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
       $dateLabel = substr($row['date'],2,8);
-      printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
+      printf('          <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
         substr($row['date'],0,10), $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], "\n");
       array_unshift($labelsArray, $dateLabel);
       array_unshift($spArray, $row['NrOfSPs']);
@@ -71,34 +148,34 @@ class Statistics extends Common {
     $idps = implode(',', $idpArray);
     $sps = implode(',', $spArray);
 
-    printf ('%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', self::HTML_TABLE_END, "\n", "\n");
-    printf ("      const ctxTotal = document.getElementById('total').getContext('2d');
-      const myTotal = new Chart(ctxTotal, {
-        type: 'line',
-        data: {
-          labels: ['%s'],
-          datasets: [{
-            label: 'IdP',
-            backgroundColor: \"rgb(240,85,35)\",
-            data: [%s],
-            fill: 'origin'
-          }, {
-            label: 'SP',
-            backgroundColor: \"rgb(2,71,254)\",
-            data: [%s],
-            fill: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            yAxes: {
-              beginAtZero: true,
-              stacked: true,
+    printf ('    %s        <script>%s', self::HTML_TABLE_END, "\n", "\n");
+    printf ("          const ctxTotal = document.getElementById('total').getContext('2d');
+          const myTotal = new Chart(ctxTotal, {
+            type: 'line',
+            data: {
+              labels: ['%s'],
+              datasets: [{
+                label: 'IdP',
+                backgroundColor: \"rgb(240,85,35)\",
+                data: [%s],
+                fill: 'origin'
+              }, {
+                label: 'SP',
+                backgroundColor: \"rgb(2,71,254)\",
+                data: [%s],
+                fill: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                yAxes: {
+                  beginAtZero: true,
+                  stacked: true,
+                }
+              }
             }
-          }
-        }
-      });%s    </script>%s",
+          });%s        </script>%s",
       $labels, $idps, $sps, "\n", "\n");
   }
 
@@ -194,35 +271,35 @@ class Statistics extends Common {
     $count = 1;
     foreach ($ecs as $ec => $descr) {
       if ($count == 1) {
-        printf ('    <div class="row">%s      <div class="col">%s', "\n", "\n");
+        printf ('        <div class="row">%s          <div class="col">%s', "\n", "\n");
       } else {
-        printf ('      <div class="col">%s', "\n");
+        printf ('          <div class="col">%s', "\n");
       }
-      printf ('        <h3>%s</h3>%s        <canvas id="%s"></canvas>%s', $descr, "\n", str_replace('-','', $ec), "\n");
+      printf ('            <h3>%s</h3>%s            <canvas id="ecs_%s"></canvas>%s', $descr, "\n", str_replace('-','', $ec), "\n");
       if ($count == 4) {
-        printf ('      </div>%s    </div>%s', "\n", "\n");
+        printf ('          </div>%s        </div>%s', "\n", "\n");
         $count = 1;
       } else {
-        printf ('      </div>%s', "\n");
+        printf ('          </div>%s', "\n");
         $count ++;
       }
     }
     if ($count > 1) {
       while ($count < 5) {
-        printf ('      <div class="col"></div>%s', "\n");
+        printf ('          <div class="col"></div>%s', "\n");
         $count ++;
       }
-      printf ('    </div>%s', "\n");
+      printf ('        </div>%s', "\n");
     }
-    printf ('    <br><br>
-    <h3>Statistics in numbers</h3>
-    <p>
-      Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.
-      <br>
-      Out of %d IdPs in %s:
-    </p>
-    <table class="table table-striped table-bordered">
-      <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
+    printf ('        <br><br>
+        <h3>Statistics in numbers</h3>
+        <p>
+          Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.
+          <br>
+          Out of %d IdPs in %s:
+        </p>
+        <table class="table table-striped table-bordered">
+          <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
       $nrOfIdPs, $this->config->getFederation()['displayName'], "\n");
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
@@ -231,41 +308,41 @@ class Statistics extends Common {
         : 0;
       $fail = $ecsTested[$ec]['Fail'] > $nrOfIdPs ? 0 : $ecsTested[$ec]['Fail'];
       $notTested = $nrOfIdPs - $markedECS - $ok - $fail;
-      printf('      <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s',
+      printf('          <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s',
         $descr, $markedECS, ($markedECS/$nrOfIdPs*100), $ok, ($ok/$nrOfIdPs*100),
         $fail, ($fail/$nrOfIdPs*100), $notTested, ($notTested/$nrOfIdPs*100), "\n");
     }
-    printf('%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', self::HTML_TABLE_END, "\n", "\n");
+    printf('    %s        <script>%s', self::HTML_TABLE_END, "\n", "\n");
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
       $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
         ? $ecsTested[$ec]['OK'] - $ecsTested[$ec]['MarkedWithECS'] : 0;
       $fail = $ecsTested[$ec]['Fail'] > $nrOfIdPs ? 0 : $ecsTested[$ec]['Fail'];
       $notTested = $nrOfIdPs - $markedECS - $ok - $fail;
-      $ecdiv = str_replace('-','', $ec);
-      printf ("      const ctx%s = document.getElementById('%s').getContext('2d');%s", $ecdiv, $ecdiv, "\n");
-      printf ("      const my%s = new Chart(ctx%s, {
-        width: 200,
-        type: 'pie',
-        data: {
-          labels: ['OK + ECS', 'OK no ECS', 'Fail', 'Not tested'],
-          datasets: [{
-            label: 'Errors',
-            data: [%d, %d, %d, %d],
-            backgroundColor: [
-              'rgb(99, 255, 132)',
-              'rgb(255, 205, 86)',
-              'rgb(255, 99, 132)',
-              'rgb(255, 255, 255)',
-            ],
-            borderColor : 'rgb(0,0,0)',
-            hoverOffset: 4
-          }]
-        },
-      });%s",
+      $ecdiv = 'ecs_' . str_replace('-','', $ec);
+      printf ("          const ctx%s = document.getElementById('%s').getContext('2d');%s", $ecdiv, $ecdiv, "\n");
+      printf ("          const my%s = new Chart(ctx%s, {
+            width: 200,
+            type: 'pie',
+            data: {
+              labels: ['OK + ECS', 'OK no ECS', 'Fail', 'Not tested'],
+              datasets: [{
+                label: 'Errors',
+                data: [%d, %d, %d, %d],
+                backgroundColor: [
+                  'rgb(99, 255, 132)',
+                  'rgb(255, 205, 86)',
+                  'rgb(255, 99, 132)',
+                  'rgb(255, 255, 255)',
+                ],
+                borderColor : 'rgb(0,0,0)',
+                hoverOffset: 4
+              }]
+            },
+          });%s",
         $ecdiv, $ecdiv, $markedECS, $ok, $fail, $notTested, "\n");
     }
-   print "    </script>\n";
+   print "        </script>\n";
   }
 
   /**
@@ -279,19 +356,19 @@ class Statistics extends Common {
    */
   private function printAssuranceRow($idp, $assurance) {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
-    printf('      <tr>
-      <td>%s</td>%s',
+    printf('          <tr>
+            <td>%s</td>%s',
       htmlspecialchars($idp), "\n");
     if ($swamid_assurance) {
-        printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
+        printf('            <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
       "\n");
     }
-    printf('      <td>%s</td><td>%s</td><td>%s</td>
-      <td>%s</td>
-    </tr>%s',
+    printf('            <td>%s</td><td>%s</td><td>%s</td>
+            <td>%s</td>
+          </tr>%s',
       $assurance['RAF-low'],
       $assurance['RAF-medium'],
       $assurance['RAF-high'],
@@ -348,60 +425,60 @@ class Statistics extends Common {
       $metaAssuranceCount[$metaAssuranceRow['attribute']] = $metaAssuranceRow['count'];
     }
 
-    printf('    <div class="row">
-      <div class="col">
-        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
+    printf('        <div class="row">
+          <div class="col">
+            <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
       $idps,
       "\n");
     if ($swamid_assurance) {
-        printf('        <div class="row"><div class="col">&nbsp;</div></div>
-        <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>%s',
+        printf('            <div class="row"><div class="col">&nbsp;</div></div>
+            <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
+            <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
+            <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
+            <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>%s',
       $assuranceCount['SWAMID-AL3'],
       $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
       $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
       $idps - $assuranceCount['SWAMID-AL1'],
       "\n");
     }
-    printf('        <div class="row"><div class="col">&nbsp;</div></div>
-        <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
-      </div>',
+    printf('            <div class="row"><div class="col">&nbsp;</div></div>
+            <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
+            <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
+            <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
+            <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
+          </div>',
       $assuranceCount['RAF-high'],
       $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
       $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
       $idps - $assuranceCount['RAF-low'],
       "\n");
     printf(( $swamid_assurance ?  '
-      <div class="col">
-        <h3>SWAMID Assurance</h3>
-        <canvas id="swamid"></canvas>
-      </div>' : '' ) . '
-      <div class="col">
-        <h3>REFEDS Assurance</h3>
-        <canvas id="raf"></canvas>
-      </div>
-      <div class="col">
-        <h3>Assurance in metadata</h3>
-        <canvas id="meta"></canvas>
-      </div>
-    </div>
-    <br>
-    <table class="table table-striped table-bordered">
-      <tr>
-        <th>IdP</th>' . ( $swamid_assurance ? '
-        <th>AL1</th>
-        <th>AL2</th>
-        <th>AL3</th>' : '' ) . '
-        <th>RAF-Low</th>
-        <th>RAF-Medium</th>
-        <th>RAF-High</th>
-        <th>Nothing</th>
-      </tr>%s',
+          <div class="col">
+            <h3>SWAMID Assurance</h3>
+            <canvas id="swamid"></canvas>
+          </div>' : '' ) . '
+          <div class="col">
+            <h3>REFEDS Assurance</h3>
+            <canvas id="raf"></canvas>
+          </div>
+          <div class="col">
+            <h3>Assurance in metadata</h3>
+            <canvas id="meta"></canvas>
+          </div>
+        </div>
+        <br>
+        <table class="table table-striped table-bordered">
+          <tr>
+            <th>IdP</th>' . ( $swamid_assurance ? '
+            <th>AL1</th>
+            <th>AL2</th>
+            <th>AL3</th>' : '' ) . '
+            <th>RAF-Low</th>
+            <th>RAF-Medium</th>
+            <th>RAF-High</th>
+            <th>Nothing</th>
+          </tr>%s',
       "\n");
 
     $assuranceHandler = $this->config->getDb()->prepare(
@@ -437,92 +514,90 @@ class Statistics extends Common {
     if ($oldIdp) {
       $this->printAssuranceRow($oldIdp, $assurance);
     }
-    print self::HTML_TABLE_END . "    <br>\n";
+    printf('    %s        <br>%s', self::HTML_TABLE_END, "\n") ;
 
-    printf('      <script src="/include/chart/chart.min.js"></script>%s',
-      "\n");
     if ($swamid_assurance) {
-        printf('      <script>
-        const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
-        const myswamid = new Chart(ctxswamid, {
-          width: 200,
-          type: \'pie\',
-          data: {
-            labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
-            datasets: [{
-              label: \'SWAMID\',
-              data: [%d, %d, %d, %d],
-              backgroundColor: [
-                \'rgb(99, 255, 132)\',
-                \'rgb(255, 205, 86)\',
-                \'rgb(255, 99, 132)\',
-                \'rgb(255, 255, 255)\',
-              ],
-              borderColor : \'rgb(0,0,0)\',
-              hoverOffset: 4
-            }]
-          },
-        });
-      </script>%s',
+      printf('        <script>
+          const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
+          const myswamid = new Chart(ctxswamid, {
+            width: 200,
+            type: \'pie\',
+            data: {
+              labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
+              datasets: [{
+                label: \'SWAMID\',
+                data: [%d, %d, %d, %d],
+                backgroundColor: [
+                  \'rgb(99, 255, 132)\',
+                  \'rgb(255, 205, 86)\',
+                  \'rgb(255, 99, 132)\',
+                  \'rgb(255, 255, 255)\',
+                ],
+                borderColor : \'rgb(0,0,0)\',
+                hoverOffset: 4
+              }]
+            },
+          });
+        </script>%s',
         $assuranceCount['SWAMID-AL3'],
         $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
         $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
         $idps - $assuranceCount['SWAMID-AL1'],
         "\n");
     }
-    printf('      <script>
-        const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
-        const myraf = new Chart(ctxraf, {
-          width: 200,
-          type: \'pie\',
-          data: {
-            labels: [\'High\', \'Medium\', \'Low\', \'None\'],
-            datasets: [{
-              label: \'RAF\',
-              data: [%d, %d, %d, %d],
-              backgroundColor: [
-                \'rgb(99, 255, 132)\',
-                \'rgb(255, 205, 86)\',
-                \'rgb(255, 99, 132)\',
-                \'rgb(255, 255, 255)\',
-              ],
-              borderColor : \'rgb(0,0,0)\',
-              hoverOffset: 4
-            }]
-          },
-        });
-      </script>%s',
-    $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-    $idps - $assuranceCount['RAF-low'],
-    "\n");
-    printf('      <script>
-        const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
-        const mymeta = new Chart(ctxmeta, {
-          width: 200,
-          type: \'pie\',
-          data: {
-            labels: [\'AL3\', \'AL2\', \'AL1\'],
-            datasets: [{
-              label: \'Metadata\',
-              data: [%d, %d, %d],
-              backgroundColor: [
-                \'rgb(99, 255, 132)\',
-                \'rgb(255, 205, 86)\',
-                \'rgb(255, 99, 132)\',
-              ],
-              borderColor : \'rgb(0,0,0)\',
-              hoverOffset: 4
-            }]
-          },
-        });
-      </script>',
+    printf('        <script>
+          const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
+          const myraf = new Chart(ctxraf, {
+            width: 200,
+            type: \'pie\',
+            data: {
+              labels: [\'High\', \'Medium\', \'Low\', \'None\'],
+              datasets: [{
+                label: \'RAF\',
+                data: [%d, %d, %d, %d],
+                backgroundColor: [
+                  \'rgb(99, 255, 132)\',
+                  \'rgb(255, 205, 86)\',
+                  \'rgb(255, 99, 132)\',
+                  \'rgb(255, 255, 255)\',
+                ],
+                borderColor : \'rgb(0,0,0)\',
+                hoverOffset: 4
+              }]
+            },
+          });
+        </script>%s',
+      $assuranceCount['RAF-high'],
+      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+      $idps - $assuranceCount['RAF-low'],
+      "\n");
+    printf('        <script>
+          const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
+          const mymeta = new Chart(ctxmeta, {
+            width: 200,
+            type: \'pie\',
+            data: {
+              labels: [\'AL3\', \'AL2\', \'AL1\'],
+              datasets: [{
+                label: \'Metadata\',
+                data: [%d, %d, %d],
+                backgroundColor: [
+                  \'rgb(99, 255, 132)\',
+                  \'rgb(255, 205, 86)\',
+                  \'rgb(255, 99, 132)\',
+                ],
+                borderColor : \'rgb(0,0,0)\',
+                hoverOffset: 4
+              }]
+            },
+          });
+        </script>%s',
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
       $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
     $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] - # NOSONAR Should be http://
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2']); # NOSONAR Should be http://
+      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'], # NOSONAR Should be http://
+    "\n");
   }
-
 }
