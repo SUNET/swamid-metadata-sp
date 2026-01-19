@@ -221,7 +221,7 @@ class Configuration {
       } catch(PDOException $e) {
         $this->createTables();
         // Don't forget to update version in createTables!!!
-        $dbVersion = 3;
+        $dbVersion = 4;
       }
     }
     if ($dbVersion < 2) {
@@ -315,6 +315,21 @@ class Configuration {
       );');
       $this->db->query(
         "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';");
+      $this->db->query('COMMIT;');
+    }
+
+    if ($dbVersion < 4) {
+      $this->db->query('START TRANSACTION;');
+
+      $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
+        FROM `EntityAttributes`, `Entities`
+        WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+          AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+        GROUP BY `entityID`
+        ORDER BY `count`;");
+
+      $this->db->query(
+        "UPDATE `params` SET `value` = '4' WHERE `id` = 'dbVersion';");
       $this->db->query('COMMIT;');
     }
   }
@@ -425,6 +440,14 @@ class Configuration {
       `NrOfIdPs` int(10) unsigned DEFAULT NULL,
       PRIMARY KEY (`date`)
     );');
+
+    $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+      GROUP BY `entityID`
+      ORDER BY `count`;");
+
 
     $this->db->query('CREATE TABLE `EntityAttributes` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,

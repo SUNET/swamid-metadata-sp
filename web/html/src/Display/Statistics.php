@@ -81,7 +81,7 @@ class Statistics extends Common {
       $entityActive, $entitySelected, $ecActive, $ecSelected,
       $ecsActive, $ecsSelected, $assuranceActive, $assuranceSelected, "\n");
     printf('        </ul>
-      </div>%s    </div>%s    <script src="/include/chart/chart.min.js"></script>%s    <div class="tab-content" id="myTabContent">
+      </div>%s    </div>%s    <script src="/include/chart/chart.umd.js"></script>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="entity" role="tabpanel" aria-labelledby="entity-tab">%s',
         "\n", "\n", "\n",
       $entityShow, $entityActive, "\n");
@@ -203,24 +203,21 @@ class Statistics extends Common {
    *
    * @param int $marked Number of SP:s with this Entity Category
    *
-   * @param int $noEc Number of SP:s with no Entity Category
-   *
    * @param int $total Total numer of SP:s
    *
    * @return void
    */
-  protected function showEcGraph($canvas, $marked, $noEc, $total) {
+  protected function showEcGraph($canvas, $marked, $total) {
     printf ("          const ctxEC%s = document.getElementById('ec_%s').getContext('2d');
           const myEC%s = new Chart(ctxEC%s, {
             width: 200,
             type: 'pie',
             data: {
-              labels: ['This Category', 'Some other Category', 'No Category'],
+              labels: ['This Category', 'No/other Category'],
               datasets: [{
-                data: [%d, %d, %d],
+                data: [%d, %d],
                 backgroundColor: [
                   'rgb(99, 255, 132)',
-                  'rgb(255, 205, 86)',
                   'rgb(255, 255, 255)',
                 ],
                 borderColor : 'rgb(0,0,0)',
@@ -228,38 +225,35 @@ class Statistics extends Common {
               }]
             },
           });%s",
-      $canvas, $canvas, $canvas, $canvas, $marked, $total - $noEc - $marked, $noEc, "\n");
+      $canvas, $canvas, $canvas, $canvas, $marked, $total - $marked, "\n");
   }
 
   /**
-   * Show Graph for EntityCategory Code Of Cunduct
+   * Show Graph for EntityCategory Code Of Conduct
    *
-   * @param int $bothCoco Number of SP:s with both CoCo v1 and CoCo v2
+   * @param int $both Number of SP:s with both CoCo v1 and CoCo v2
    *
    * @param int $cocov1 Number of SP:s with CoCo v1
    *
    * @param int $cocov2 Number of SP:s with CoCo v2
    *
-   * @param int $noEc Number of SP:s with no Entity Category
-   *
    * @param int $total Total numer of SP:s
    *
    * @return void
    */
-  protected function showEcGraphCoCo($bothCoco, $cocov1, $cocov2, $noEc, $total) {
+  protected function showEcGraphCoCo($both, $cocov1, $cocov2, $total) {
     printf ("          const ctxECcoco = document.getElementById('ec_coco').getContext('2d');
           const myECcoco = new Chart(ctxECcoco, {
             width: 200,
             type: 'pie',
             data: {
-              labels: ['Both CoCo v1 and v2', 'CoCo v2 Only', 'CoCo v1 Only', 'Some other Category', 'No Category'],
+              labels: ['Both CoCo v1 and v2', 'CoCo v2 Only', 'CoCo v1 Only', 'No or Other Category'],
               datasets: [{
-                data: [%d, %d, %d, %d, %d],
+                data: [%d, %d, %d, %d],
                 backgroundColor: [
                   'rgb(99, 255, 132)',
                   'rgb(199, 255, 132)',
                   'rgb(199, 255, 255)',
-                  'rgb(255, 205, 86)',
                   'rgb(255, 255, 255)',
                 ],
                 borderColor : 'rgb(0,0,0)',
@@ -267,7 +261,86 @@ class Statistics extends Common {
               }]
             },
           });%s",
-      $bothCoco, $cocov2 - $bothCoco, $cocov1 - $bothCoco, $total - $noEc - $cocov2 - $cocov1, $noEc, "\n");
+      $both, $cocov2 - $both, $cocov1 - $both, $total - $cocov2 - $cocov1, "\n");
+  }
+
+  /**
+   * Show Graph for Refeds EntityCategories
+   *
+   * @param int $both Number of SP:s with both R&S and PersonCoCo v1 and CoCo v2
+   *
+   * @param int $rands Number of SP:s with http://refeds.org/category/research-and-scholarship # NOSONAR Should be http://
+   *
+   * @param int $personalized Number of SP:s with https://refeds.org/category/personalized
+   *
+   * @param int $pseudonymous Number of SP:s with https://refeds.org/category/pseudonymous
+   *
+   * @param int $anonymous Number of SP:s with https://refeds.org/category/anonymous
+   *
+   * @param int $total Total numer of SP:s
+   *
+   * @return void
+   */
+  protected function showEcGraphRefeds($both, $rands, $personalized, $pseudonymous, $anonymous, $total) {
+    printf ("          const ctxECRefeds = document.getElementById('ec_Refeds').getContext('2d');
+          const myECRefeds = new Chart(ctxECRefeds, {
+            width: 200,
+            type: 'pie',
+            data: {
+              labels: ['Both R&S and Personalized', 'R&S Only', 'Personalized Only',
+                      'Pseudonymous', 'Anonymous', 'No or Other Category'],
+              datasets: [{
+                data: [%d, %d, %d, %d, %d, %d],
+                backgroundColor: [
+                  'rgb(99, 255, 132)',
+                  'rgb(199, 255, 132)',
+                  'rgb(199, 255, 255)',
+                  'rgb(255, 205, 86)',
+                  'rgb(99, 132, 255)',
+                  'rgb(255, 255, 255)',
+                ],
+                borderColor : 'rgb(0,0,0)',
+                hoverOffset: 4
+              }]
+            },
+          });%s",
+      $both, $rands - $both, $personalized - $both, $pseudonymous, $anonymous, $total - $rands - $personalized - $pseudonymous - $anonymous, "\n");
+  }
+
+  /**
+   * Show Graph for numer of EC:s per entityID
+   *
+   * @param array $labels Arrray with labels
+   *
+   * @param array $data Arrray with data points
+   *
+   * @return void
+   */
+  protected function showECCountGraph($labels, $data) {
+    printf ("          const ctxECcounts = document.getElementById('ec_counts').getContext('2d');
+          const myECcounts = new Chart(ctxECcounts, {
+            width: 200,
+            type: 'pie',
+            data: {
+              labels: ['%s'],
+              datasets: [{
+                data: [%s],
+                backgroundColor: [
+                  'rgb(255, 255, 255)',
+                  'rgb(99, 255, 132)',
+                  'rgb(199, 255, 132)',
+                  'rgb(199, 255, 255)',
+                  'rgb(255, 205, 86)',
+                  'rgb(99, 132, 255)',
+                  'rgb(255, 99, 132)',
+                ],
+                borderColor : 'rgb(0,0,0)',
+                hoverOffset: 4
+              }]
+            },
+          });%s",
+      implode("','", $labels),
+      implode(',', $data), "\n");
   }
 
   /**
@@ -297,6 +370,20 @@ class Statistics extends Common {
           `status` = 1 AND
           `publishIn` > 1 AND
           `attribute`= 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1');");
+    $bothRASandPers = $this->config->getDb()->prepare(
+      "SELECT COUNT(`attribute`) AS `count`
+      FROM `EntityAttributes`
+      WHERE `type` = 'entity-category' AND
+        `attribute`= 'http://refeds.org/category/research-and-scholarship' AND
+        `entity_id` IN (
+          SELECT entity_id
+          FROM `EntityAttributes`, `Entities`
+          WHERE `type` = 'entity-category' AND
+          `entity_id` = `Entities`.`id` AND
+          `isSP` = 1 AND
+          `status` = 1 AND
+          `publishIn` > 1 AND
+          `attribute`= 'https://refeds.org/category/personalized');");
     $noEcHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`id`) AS `count`
       FROM `Entities`
@@ -308,6 +395,11 @@ class Statistics extends Common {
           FROM `EntityAttributes`
           WHERE `type` = 'entity-category'
         );");
+    $ecCountHandler = $this->config->getDb()->prepare(
+      "SELECT COUNT(`entityID`) AS nrOfEntyID, `count`
+      FROM EntityEntityAttributes
+      GROUP BY `count`
+      ORDER BY `count`;");
     $spHandler->execute();
     if ($sps = $spHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfSPs = $sps['count'];
@@ -330,25 +422,19 @@ class Statistics extends Common {
     } else {
       $ecTagged['bothCoCo'] = 0;
     }
+    $bothRASandPers->execute();
+    if ($attribute = $bothRASandPers->fetch(PDO::FETCH_ASSOC)) {
+      $ecTagged['bothRASandPers'] = $attribute['count'];
+    } else {
+      $ecTagged['bothRASandPers'] = 0;
+    }
+    $ecCountHandler->execute();
+    $nrOfEcsPerEntityID = $ecCountHandler->fetchAll(PDO::FETCH_ASSOC);
     printf ('        <div class="row">
           <div class="col">
-            <h3>REFEDS Anonymous Access</h3>
-            <canvas id="ec_anonymous"></canvas>
+            <h3>REFEDS Categories</h3>
+            <canvas id="ec_Refeds"></canvas>
           </div>
-          <div class="col">
-            <h3>REFEDS Pseudonymous Access</h3>
-            <canvas id="ec_pseudonymous"></canvas>
-          </div>
-          <div class="col">
-            <h3>REFEDS Personalized Access</h3>
-            <canvas id="ec_personalized"></canvas>
-          </div>
-          <div class="col">
-            <h3>REFEDS R&S</h3>
-            <canvas id="ec_rands"></canvas>
-          </div>
-        </div>
-        <div class="row">
           <div class="col">
             <h3>Code Of Conduct</h3>
             <canvas id="ec_coco"></canvas>
@@ -357,8 +443,10 @@ class Statistics extends Common {
             <h3>European Student Identifier</h3>
             <canvas id="ec_esi"></canvas>
           </div>
-          <div class="col"></div>
-          <div class="col"></div>
+          <div class="col">
+            <h3>Categories per entityID</h3>
+            <canvas id="ec_counts"></canvas>
+          </div>
         </div>
         <br><br>
         <h3>Statistics in numbers</h3>
@@ -368,26 +456,38 @@ class Statistics extends Common {
           <tr><th>SP:s with REFEDS Pseudonymous Access Category</th><td>%d</td></tr>
           <tr><th>SP:s with REFEDS Personalized Access Category</th><td>%d</td></tr>
           <tr><th>SP:s with REFEDS Research and Scholarship Category</th><td>%d</td></tr>
+          <tr><th>SP:s with REFEDS Personalized &amp; Research and Scholarship Categories</th><td>%d</td></tr>
           <tr><th>SP:s with REFEDS Code Of Conduct (v2) Access Category</th><td>%d</td></tr>
           <tr><th>SP:s with GÉANT Code Of Conduct (v1) Access Category</th><td>%d</td></tr>
           <tr><th>SP:s with REFEDS and GÉANT CoCo Categories</th><td>%d</td></tr>
           <tr><th>SP:s with European Student Identifier Access Category</th><td>%d</td></tr>
           <tr><th>SP:s with NO Access Category</th><td>%d</td></tr>
         </table>
-        <script>%s',
+        <table class="table table-striped table-bordered">%s',
       $nrOfSPs,
       $ecTagged[self::SAML_EC_ANONYMOUS], $ecTagged[self::SAML_EC_PSEUDONYMOUS], $ecTagged[self::SAML_EC_PERSONALIZED],
-      $ecTagged[self::SAML_EC_RANDS],
+      $ecTagged[self::SAML_EC_RANDS], $ecTagged['bothRASandPers'],
       $ecTagged[self::SAML_EC_COCOV2], $ecTagged[self::SAML_EC_COCOV1], $ecTagged['bothCoCo'],
       $ecTagged[self::SAML_EC_ESI], $nrOfSPsWithoutEc, "\n");
-
-    $this->showEcGraph('anonymous', $ecTagged[self::SAML_EC_ANONYMOUS], $nrOfSPsWithoutEc, $nrOfSPs);
-    $this->showEcGraph('pseudonymous', $ecTagged[self::SAML_EC_PSEUDONYMOUS], $nrOfSPsWithoutEc, $nrOfSPs);
-    $this->showEcGraph('personalized', $ecTagged[self::SAML_EC_PERSONALIZED], $nrOfSPsWithoutEc, $nrOfSPs);
-    $this->showEcGraph('rands', $ecTagged[self::SAML_EC_RANDS], $nrOfSPsWithoutEc, $nrOfSPs);
-    $this->showEcGraphCoCo($ecTagged['bothCoCo'], $ecTagged[self::SAML_EC_COCOV1], $ecTagged[self::SAML_EC_COCOV2], $nrOfSPsWithoutEc, $nrOfSPs);
-    $this->showEcGraph('esi', $ecTagged[self::SAML_EC_ESI], $nrOfSPsWithoutEc, $nrOfSPs);
+    $labelArray = array('No EC');
+    $dataArray = array($nrOfSPsWithoutEc);
+    foreach ($nrOfEcsPerEntityID as $rarray) {
+      $labelArray[] = '# of EC = ' . $rarray['count'];
+      $dataArray[] = $rarray['nrOfEntyID'];
+      printf('          <tr><th>Numer of SP:s with %d Entity Categor%s</th><td>%d</td></tr>%s',
+        $rarray['count'], $rarray['count'] == 1 ? 'y' : 'ies', $rarray['nrOfEntyID'], "\n");
+    }
+    printf('          <tr><th>Numer of SP:s with no Entity Category</th><td>%d</td></tr>
+        </table>
+        <script>%s', $nrOfSPsWithoutEc, "\n");
+    $this->showEcGraphRefeds($ecTagged['bothRASandPers'], $ecTagged[self::SAML_EC_RANDS],
+      $ecTagged[self::SAML_EC_PERSONALIZED], $ecTagged[self::SAML_EC_PSEUDONYMOUS],
+      $ecTagged[self::SAML_EC_ANONYMOUS], $nrOfSPs);
+    $this->showEcGraphCoCo($ecTagged['bothCoCo'], $ecTagged[self::SAML_EC_COCOV1], $ecTagged[self::SAML_EC_COCOV2], $nrOfSPs);
+    $this->showEcGraph('esi', $ecTagged[self::SAML_EC_ESI], $nrOfSPs);
+    $this->showECCountGraph($labelArray, $dataArray);
     printf('        </script>%s', "\n");
+
   }
 
   /**
@@ -421,13 +521,12 @@ class Statistics extends Common {
       'cocov2-1' => 'REFEDS CoCo (v2)',
       'esi' => 'European Student Identifier');
 
+    $nrOfIdPs = 0;
     $idpHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1;');
     $idpHandler->execute();
     if ($idps = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfIdPs = $idps['count'];
-    } else {
-      $nrOfIdPs = 0;
     }
     $entityAttributesHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`attribute`) AS `count`, `attribute`
@@ -481,18 +580,15 @@ class Statistics extends Common {
 
     $count = 1;
     foreach ($ecs as $ec => $descr) {
-      if ($count == 1) {
-        printf ('        <div class="row">%s          <div class="col">%s', "\n", "\n");
-      } else {
-        printf ('          <div class="col">%s', "\n");
-      }
-      printf ('            <h3>%s</h3>%s            <canvas id="ecs_%s"></canvas>%s', $descr, "\n", str_replace('-','', $ec), "\n");
-      if ($count == 4) {
-        printf ('          </div>%s        </div>%s', "\n", "\n");
+      printf ('%s          <div class="col">
+            <h3>%s</h3>%s            <canvas id="ecs_%s"></canvas>
+          </div>%s',
+        $count == 1 ? "        <div class=\"row\">\n" : '',
+        $descr, "\n", str_replace('-','', $ec), "\n");
+      $count ++;
+      if ($count == 5) {
+        printf ('        </div>%s', "\n");
         $count = 1;
-      } else {
-        printf ('          </div>%s', "\n");
-        $count ++;
       }
     }
     if ($count > 1) {
@@ -512,6 +608,7 @@ class Statistics extends Common {
         <table class="table table-striped table-bordered">
           <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
       $nrOfIdPs, $this->config->getFederation()['displayName'], "\n");
+    $scripts = '';
     foreach ($ecs as $ec => $descr) {
       $markedECS = $ecsTested[$ec]['MarkedWithECS'];
       $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
@@ -522,17 +619,9 @@ class Statistics extends Common {
       printf('          <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s',
         $descr, $markedECS, ($markedECS/$nrOfIdPs*100), $ok, ($ok/$nrOfIdPs*100),
         $fail, ($fail/$nrOfIdPs*100), $notTested, ($notTested/$nrOfIdPs*100), "\n");
-    }
-    printf('    %s        <script>%s', self::HTML_TABLE_END, "\n", "\n");
-    foreach ($ecs as $ec => $descr) {
-      $markedECS = $ecsTested[$ec]['MarkedWithECS'];
-      $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
-        ? $ecsTested[$ec]['OK'] - $ecsTested[$ec]['MarkedWithECS'] : 0;
-      $fail = $ecsTested[$ec]['Fail'] > $nrOfIdPs ? 0 : $ecsTested[$ec]['Fail'];
-      $notTested = $nrOfIdPs - $markedECS - $ok - $fail;
       $ecdiv = 'ecs_' . str_replace('-','', $ec);
-      printf ("          const ctx%s = document.getElementById('%s').getContext('2d');%s", $ecdiv, $ecdiv, "\n");
-      printf ("          const my%s = new Chart(ctx%s, {
+      $scripts .= sprintf ("          const ctx%s = document.getElementById('%s').getContext('2d');
+          const my%s = new Chart(ctx%s, {
             width: 200,
             type: 'pie',
             data: {
@@ -550,9 +639,11 @@ class Statistics extends Common {
               }]
             },
           });%s",
+        $ecdiv, $ecdiv,
         $ecdiv, $ecdiv, $markedECS, $ok, $fail, $notTested, "\n");
     }
-   print "        </script>\n";
+    printf('    %s        <script>%s%s        </script>%s',
+      self::HTML_TABLE_END, "\n", $scripts, "\n");
   }
 
   /**
@@ -565,11 +656,10 @@ class Statistics extends Common {
    * @return void
    */
   private function printAssuranceRow($idp, $assurance) {
-    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     printf('          <tr>
             <td>%s</td>%s',
       htmlspecialchars($idp), "\n");
-    if ($swamid_assurance) {
+    if ($this->config->getFederation()['swamid_assurance']) {
         printf('            <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
@@ -586,20 +676,53 @@ class Statistics extends Common {
   }
 
   /**
+   * Show Graph for assurance recived from and marked in Metadata for IdP:s
+   *
+   * @param string $canvas Canvas to put graph in
+   *
+   * @param array $labels Arrray with labels
+   *
+   * @param array $data Arrray with data points
+   *
+   * @return void
+   */
+  protected function showAssuranceCountGraph($canvas, $labels, $data) {
+    printf('        <script>
+          const ctx%s = document.getElementById(\'%s\').getContext(\'2d\');
+          const my%s = new Chart(ctx%s, {
+            width: 200,
+            type: \'pie\',
+            data: {
+              labels: [\'%s\'],
+              datasets: [{
+                data: [%s],
+                backgroundColor: [
+                  \'rgb(99, 255, 132)\',
+                  \'rgb(255, 205, 86)\',
+                  \'rgb(255, 99, 132)\',
+                  \'rgb(255, 255, 255)\',
+                ],
+                borderColor : \'rgb(0,0,0)\',
+                hoverOffset: 4
+              }]
+            },
+          });
+        </script>%s',
+      $canvas, $canvas, $canvas, $canvas,
+      implode("','", $labels),
+      implode(',', $data), "\n");
+  }
+
+  /**
    * Show RAFStatistics for all seen IdP:s
    *
    * @return void
    */
   public function showRAFStatistics() {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
-    $idpCountHandler = $this->config->getDb()->prepare(
+    $idpCountHandler = $this->config->getDb()->query(
       'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`;');
-    $idpCountHandler->execute();
-    if ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) {
-      $idps = $idpCountRow['idps'];
-    } else {
-      $idps = 0;
-    }
+    $idps = ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) ? $idpCountRow['idps'] : 0;
 
     $idpAssuranceHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(`entityID`) as `count`, `assurance` FROM `assuranceLog` GROUP BY `assurance`;');
@@ -625,6 +748,10 @@ class Statistics extends Common {
         AND `publishIn` > 1
         AND `type` = 'assurance-certification'
       GROUP BY `attribute`;");
+    $nrOfIdPs = $this->config->getDb()->query(
+      "SELECT COUNT(`Entities`.`id`) AS `count`
+      FROM `Entities`
+      WHERE `status` = 1 AND `isIdP` = 1 AND `publishIn` > 1;")->fetchColumn();
 
     $metaAssuranceHandler->execute();
     $metaAssuranceCount = array(
@@ -634,12 +761,10 @@ class Statistics extends Common {
     while ($metaAssuranceRow = $metaAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       $metaAssuranceCount[$metaAssuranceRow['attribute']] = $metaAssuranceRow['count'];
     }
-
     printf('        <div class="row">
           <div class="col">
             <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
-      $idps,
-      "\n");
+      $idps, "\n");
     if ($swamid_assurance) {
         printf('            <div class="row"><div class="col">&nbsp;</div></div>
             <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
@@ -681,15 +806,9 @@ class Statistics extends Common {
         <table class="table table-striped table-bordered">
           <tr>
             <th>IdP</th>' . ( $swamid_assurance ? '
-            <th>AL1</th>
-            <th>AL2</th>
-            <th>AL3</th>' : '' ) . '
-            <th>RAF-Low</th>
-            <th>RAF-Medium</th>
-            <th>RAF-High</th>
-            <th>Nothing</th>
-          </tr>%s',
-      "\n");
+            <th>AL1</th><th>AL2</th><th>AL3</th>' : '' ) . '
+            <th>RAF-Low</th><th>RAF-Medium</th><th>RAF-High</th><th>Nothing</th>
+          </tr>%s', "\n");
 
     $assuranceHandler = $this->config->getDb()->prepare(
       'SELECT `entityID`, `assurance`, `logDate`
@@ -707,9 +826,7 @@ class Statistics extends Common {
 
     while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       if($assuranceRow['entityID'] != $oldIdp) {
-        if ($oldIdp) {
-          $this->printAssuranceRow($oldIdp, $assurance);
-        }
+        if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance); }
         $oldIdp = $assuranceRow['entityID'];
         $assurance['SWAMID-AL1'] = '';
         $assurance['SWAMID-AL2'] = '';
@@ -721,90 +838,32 @@ class Statistics extends Common {
       }
       $assurance[$assuranceRow['assurance']] = $assuranceRow['logDate'];
     }
-    if ($oldIdp) {
-      $this->printAssuranceRow($oldIdp, $assurance);
-    }
+    if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance);}
     printf('    %s        <br>%s', self::HTML_TABLE_END, "\n") ;
 
     if ($swamid_assurance) {
-      printf('        <script>
-          const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
-          const myswamid = new Chart(ctxswamid, {
-            width: 200,
-            type: \'pie\',
-            data: {
-              labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
-              datasets: [{
-                data: [%d, %d, %d, %d],
-                backgroundColor: [
-                  \'rgb(99, 255, 132)\',
-                  \'rgb(255, 205, 86)\',
-                  \'rgb(255, 99, 132)\',
-                  \'rgb(255, 255, 255)\',
-                ],
-                borderColor : \'rgb(0,0,0)\',
-                hoverOffset: 4
-              }]
-            },
-          });
-        </script>%s',
-        $assuranceCount['SWAMID-AL3'],
-        $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-        $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-        $idps - $assuranceCount['SWAMID-AL1'],
-        "\n");
+      $this->showAssuranceCountGraph('swamid',
+        array('AL3', 'AL2', 'AL1', 'None'),
+        array($assuranceCount['SWAMID-AL3'],
+          $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
+          $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
+          $idps - $assuranceCount['SWAMID-AL1']));
     }
-    printf('        <script>
-          const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
-          const myraf = new Chart(ctxraf, {
-            width: 200,
-            type: \'pie\',
-            data: {
-              labels: [\'High\', \'Medium\', \'Low\', \'None\'],
-              datasets: [{
-                data: [%d, %d, %d, %d],
-                backgroundColor: [
-                  \'rgb(99, 255, 132)\',
-                  \'rgb(255, 205, 86)\',
-                  \'rgb(255, 99, 132)\',
-                  \'rgb(255, 255, 255)\',
-                ],
-                borderColor : \'rgb(0,0,0)\',
-                hoverOffset: 4
-              }]
-            },
-          });
-        </script>%s',
-      $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-      $idps - $assuranceCount['RAF-low'],
-      "\n");
-    printf('        <script>
-          const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
-          const mymeta = new Chart(ctxmeta, {
-            width: 200,
-            type: \'pie\',
-            data: {
-              labels: [\'AL3\', \'AL2\', \'AL1\'],
-              datasets: [{
-                data: [%d, %d, %d],
-                backgroundColor: [
-                  \'rgb(99, 255, 132)\',
-                  \'rgb(255, 205, 86)\',
-                  \'rgb(255, 99, 132)\',
-                ],
-                borderColor : \'rgb(0,0,0)\',
-                hoverOffset: 4
-              }]
-            },
-          });
-        </script>%s',
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] - # NOSONAR Should be http://
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'], # NOSONAR Should be http://
-    "\n");
+    $this->showAssuranceCountGraph('raf',
+      array('High', 'Medium', 'Low', 'None'),
+      array($assuranceCount['RAF-high'],
+        $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
+        $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
+        $idps - $assuranceCount['RAF-low']));
+    $this->showAssuranceCountGraph('meta',
+      array('AL3', 'AL2', 'AL1', 'None'),
+      array(
+        $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
+        $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
+          $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
+        $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] - # NOSONAR Should be http://
+          $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'], # NOSONAR Should be http://
+        $nrOfIdPs - $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] # NOSONAR Should be http://
+      ));
   }
 }
