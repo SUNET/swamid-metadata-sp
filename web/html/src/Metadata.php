@@ -1190,13 +1190,13 @@ class Metadata extends Common {
       $statsUpdateHandler->execute(array('Date' => $date, 'NrOfEntities' => $row['entities'], 'SPs' => $row['sp'], 'IdPs' => $row['idp']));
       while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
         switch($assuranceRow['attribute']) {
-          case 'http://www.swamid.se/policy/assurance/al1' :
+          case 'http://www.swamid.se/policy/assurance/al1' : # NOSONAR Should be http://
             $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'AL1'));
             break;
-          case 'http://www.swamid.se/policy/assurance/al2' :
+          case 'http://www.swamid.se/policy/assurance/al2' : # NOSONAR Should be http://
             $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'AL2'));
             break;
-          case 'http://www.swamid.se/policy/assurance/al3' :
+          case 'http://www.swamid.se/policy/assurance/al3' : # NOSONAR Should be http://
             $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'AL3'));
             break;
           case 'https://refeds.org/sirtfi' :

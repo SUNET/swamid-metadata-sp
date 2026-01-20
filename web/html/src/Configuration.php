@@ -201,7 +201,7 @@ class Configuration {
   }
 
   const SQL_START_TRANSACTION = 'START TRANSACTION;';
-
+  const SQL_COMMIT = 'COMMIT;';
 
   /**
    * Check Database version
@@ -304,7 +304,7 @@ class Configuration {
       $this->db->query('ALTER TABLE `Mdui` DROP COLUMN `id`;');
       $this->db->query(
         "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
-      $this->db->query('COMMIT;');
+      $this->db->query(self::SQL_COMMIT);
     }
 
     if ($dbVersion < 3) {
@@ -318,7 +318,7 @@ class Configuration {
       );');
       $this->db->query(
         "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';");
-      $this->db->query('COMMIT;');
+      $this->db->query(self::SQL_COMMIT);
     }
 
     if ($dbVersion < 4) {
@@ -340,7 +340,7 @@ class Configuration {
 
       $this->db->query(
         "UPDATE `params` SET `value` = '4' WHERE `id` = 'dbVersion';");
-      $this->db->query('COMMIT;');
+      $this->db->query(self::SQL_COMMIT);
     }
   }
 

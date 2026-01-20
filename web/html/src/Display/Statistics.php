@@ -690,7 +690,7 @@ class Statistics extends Common {
       $assurance['AL3'],
       "\n");
     }
-    print ("          </tr>\n");
+    print "          </tr>\n";
   }
 
   /**
@@ -745,13 +745,13 @@ class Statistics extends Common {
       );
       while ($assuranceRow = $assuranceNowHandler->fetch(PDO::FETCH_ASSOC)) {
         switch($assuranceRow['attribute']) {
-          case 'http://www.swamid.se/policy/assurance/al1' :
+          case 'http://www.swamid.se/policy/assurance/al1' : # NOSONAR Should be http://
             $assuranceArray['Now']['AL1'] = $assuranceRow['entities'];
             break;
-          case 'http://www.swamid.se/policy/assurance/al2' :
+          case 'http://www.swamid.se/policy/assurance/al2' : # NOSONAR Should be http://
             $assuranceArray['Now']['AL2'] = $assuranceRow['entities'];
             break;
-          case 'http://www.swamid.se/policy/assurance/al3' :
+          case 'http://www.swamid.se/policy/assurance/al3' : # NOSONAR Should be http://
             $assuranceArray['Now']['AL3'] = $assuranceRow['entities'];
             break;
           case 'https://refeds.org/sirtfi' :
@@ -986,7 +986,6 @@ class Statistics extends Common {
       WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
         AND `Entities`.`status` = 1;');
     $idps = ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) ? $idpCountRow['idps'] : 0;
-
     $idpAssuranceHandler = $this->config->getDb()->prepare(
       'SELECT COUNT(`assuranceLog`.`entityID`) as `count`, `assurance`
       FROM `assuranceLog`, `Entities`
@@ -1005,7 +1004,6 @@ class Statistics extends Common {
     while ($idpAssuranceRow = $idpAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
     }
-
     $metaAssuranceHandler = $this->config->getDb()->prepare(
       "SELECT COUNT(`Entities`.`id`) AS `count`, `attribute`
       FROM `Entities`, `EntityAttributes`
@@ -1093,7 +1091,6 @@ class Statistics extends Common {
     $assurance['RAF-medium'] = '';
     $assurance['RAF-high'] = '';
     $assurance['None'] = '';
-
     while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       if($assuranceRow['entityID'] != $oldIdp) {
         if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance); }
