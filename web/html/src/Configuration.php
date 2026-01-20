@@ -200,6 +200,9 @@ class Configuration {
     }
   }
 
+  const SQL_START_TRANSACTION = 'START TRANSACTION;';
+
+
   /**
    * Check Database version
    *
@@ -242,7 +245,7 @@ class Configuration {
           CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
         );');
       }
-      $this->db->query('START TRANSACTION;');
+      $this->db->query(self::SQL_START_TRANSACTION);
       $this->db->query('CREATE TABLE `OrganizationInfoData` (
         `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
         `lang` char(10) DEFAULT NULL,
@@ -305,7 +308,7 @@ class Configuration {
     }
 
     if ($dbVersion < 3) {
-      $this->db->query('START TRANSACTION;');
+      $this->db->query(self::SQL_START_TRANSACTION);
       $this->db->query('CREATE TABLE `ServiceInfo` (
         `entity_id` int(10) unsigned NOT NULL,
         `ServiceURL` text NOT NULL,
@@ -319,7 +322,7 @@ class Configuration {
     }
 
     if ($dbVersion < 4) {
-      $this->db->query('START TRANSACTION;');
+      $this->db->query(self::SQL_START_TRANSACTION);
 
       $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
         FROM `EntityAttributes`, `Entities`
