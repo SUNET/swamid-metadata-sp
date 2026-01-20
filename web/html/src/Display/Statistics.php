@@ -107,7 +107,7 @@ class Statistics extends Common {
    *
    * @return void
    */
-  public function showEntityStatistics() {
+  protected function showEntityStatistics() {
     $labelsArray = array();
     $spArray = array();
     $idpArray = array();
@@ -495,7 +495,7 @@ class Statistics extends Common {
    *
    * @return void
    */
-  public function showEcsStatistics() {
+  protected function showEcsStatistics() {
     $ecsTagged = array(
       self::SAML_EC_RANDS => 'rands',
       self::SAML_EC_COCOV1 => 'cocov1-1',
@@ -655,7 +655,7 @@ class Statistics extends Common {
    *
    * @return void
    */
-  private function printAssuranceRow($idp, $assurance) {
+  protected function printAssuranceRow($idp, $assurance) {
     printf('          <tr>
             <td>%s</td>%s',
       htmlspecialchars($idp), "\n");
