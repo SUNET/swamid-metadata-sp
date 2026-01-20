@@ -203,7 +203,7 @@ class Statistics extends Common {
             options: {
               responsive: true,
               scales: {
-                yAxes: {
+                y: {
                   beginAtZero: true,
                   stacked: true,
                 }
@@ -934,14 +934,21 @@ class Statistics extends Common {
    *
    * @return void
    */
-  public function showRAFStatistics() {
+  protected function showRAFStatistics() {
     $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
     $idpCountHandler = $this->config->getDb()->query(
-      'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`;');
+      'SELECT COUNT(DISTINCT `assuranceLog`.`entityID`) AS `idps`
+      FROM `assuranceLog`, `Entities`
+      WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
+        AND `Entities`.`status` = 1;');
     $idps = ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) ? $idpCountRow['idps'] : 0;
 
     $idpAssuranceHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(`entityID`) as `count`, `assurance` FROM `assuranceLog` GROUP BY `assurance`;');
+      'SELECT COUNT(`assuranceLog`.`entityID`) as `count`, `assurance`
+      FROM `assuranceLog`, `Entities`
+      WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
+        AND `Entities`.`status` = 1
+      GROUP BY `assurance`;');
     $idpAssuranceHandler->execute();
     $assuranceCount = array(
       'SWAMID-AL1' => 0,
@@ -1027,8 +1034,11 @@ class Statistics extends Common {
           </tr>%s', "\n");
 
     $assuranceHandler = $this->config->getDb()->prepare(
-      'SELECT `entityID`, `assurance`, `logDate`
-      FROM `assuranceLog` ORDER BY `entityID`, `assurance`;');
+      'SELECT `assuranceLog`.`entityID`, `assurance`, `logDate`
+      FROM `assuranceLog`, `Entities`
+      WHERE `assuranceLog`.`entityID` = `Entities`.`EntityID`
+        AND `Entities`.`status` = 1
+      ORDER BY `entityID`, `assurance`;');
     $assuranceHandler->execute();
     $oldIdp = false;
     $assurance = array();
