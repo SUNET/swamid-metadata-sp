@@ -37,6 +37,13 @@ if (isset($_GET['showEntity'])) {
     case 'InterSP' :
       showInterfederation('SP');
       break;
+    case 'EntityFromMDQ' :
+      if (isset($_GET['entityID'])) {
+        showEntityFromMDQ($_GET['entityID']);
+      } else {
+        showInfo();
+      }
+      break;
     case 'feed' :
       if (isset($_GET['id'])) {
         showFeed($_GET['id']);
@@ -151,7 +158,8 @@ function showMenu($menuActive, $query = '') {
 # Shows Entity information
 ####
 function showEntity($entity_id, $urn = false)  {
-  global $config, $html, $display;
+  global $config, $html;
+  $display = $config->getExtendedClass('MetadataDisplay');
   $federation = $config->getFederation();
   $entityHandler = $urn ?
     $config->getDb()->prepare('SELECT `id`, `entityID`, `isIdP`, `isSP`, `isAA`, `publishIn`, `status`, `publishedId`
@@ -216,7 +224,8 @@ function showEntity($entity_id, $urn = false)  {
       $headerCol1 = '';
       $oldEntity_id = 0;
     }
-    $html->showHeaders($entity['entityID']); ?>
+    $html->showHeaders($entity['entityID']);
+    showMenu('',''); ?>
 
     <div class="row">
       <div class="col">
@@ -628,7 +637,7 @@ function showInterfederation($type){
       FROM ExternalEntities WHERE isIdP = 1');
     foreach ($entityList as $entity) {
       printf ('        <tr>
-          <td>%s</td>
+          <td><a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a></td>
           <td>%s</td>
           <td>%s</td>
           <td>%s</td>
@@ -636,7 +645,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
+        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
         htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
@@ -660,7 +669,7 @@ function showInterfederation($type){
       FROM ExternalEntities WHERE isSP = 1');
     foreach ($entityList as $entity) {
       printf ('        <tr>
-          <td>%s</td>
+          <td><a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a></td>
           <td>%s<br>%s</td>
           <td>%s</td>
           <td>%s</td>
@@ -668,8 +677,45 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
+        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
         $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
+  }
+}
+
+function showEntityFromMDQ($entityID) {
+  global $config;
+  $federation = $config->getFederation();
+  $target_url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_HEADER, 0);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 0);
+  curl_setopt($ch, CURLOPT_USERAGENT, $config->getFederation()['urlCheckUA']);
+  curl_setopt($ch, CURLOPT_PROTOCOLS, $config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
+  curl_setopt($ch, CURLOPT_MAXFILESIZE, $config->getFederation()['urlCheckMaxSize']);
+
+  $allowed_schemes = $config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
+  $default_ports = array( 'http' => 80, 'https' => 443);
+
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+
+  curl_setopt($ch, CURLINFO_HEADER_OUT, 0);
+
+  // sanity check URL before passing to URL
+  $parsed_url = parse_url($target_url);
+  $url_scheme = $parsed_url['scheme'] ?? '';
+  // guard against missing componets
+  if ($parsed_url && in_array($url_scheme, $allowed_schemes) && ($parsed_url['port'] ?? $default_ports[$url_scheme]) == $default_ports[$url_scheme]) {
+    curl_setopt($ch, CURLOPT_URL, $target_url);
+    $output = curl_exec($ch);
+    // check if we received a valid redirect
+    if (curl_errno($ch)) {
+      print 'Curl error';
+      exit;
+    }
+    header('Content-Type: application/xml; charset=utf-8');
+    print $output;
+    exit;
   }
 }
