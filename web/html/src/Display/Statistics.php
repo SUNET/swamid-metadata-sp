@@ -721,6 +721,50 @@ class Statistics extends Common {
       'SELECT `date`, `assurance`, `nrOfEntities`
       FROM `EntitiesAssuranceStatistics`;');
 
+    $entitysNowHandler = $this->config->getDb()->query(
+      'SELECT COUNT(`id`)  AS entities, SUM(`isIdP`) AS idp
+      FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;');
+    $assuranceNowHandler = $this->config->getDb()->query(
+      "SELECT COUNT(`entity_id`) AS entities, `attribute`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `EntityAttributes`.`entity_id` = `Entities`.`id`
+        AND `Entities`.`status` = 1
+        AND `type` = 'assurance-certification'
+      GROUP BY `attribute`");
+
+    if ($row = $entitysNowHandler->fetch(PDO::FETCH_ASSOC)) {
+      $assuranceArray['Now'] = array(
+          'NrOfEntites' => $row['entities'],
+          'NrOfIdPs' => $row['idp'],
+          'SIRTFI' => 0,
+          'SIRTFI2' => 0,
+          'AL1' => 0,
+          'AL2' => 0,
+          'AL2-MFA-HI' => 0,
+          'AL3' => 0,
+      );
+      while ($assuranceRow = $assuranceNowHandler->fetch(PDO::FETCH_ASSOC)) {
+        switch($assuranceRow['attribute']) {
+          case 'http://www.swamid.se/policy/assurance/al1' :
+            $assuranceArray['Now']['AL1'] = $assuranceRow['entities'];
+            break;
+          case 'http://www.swamid.se/policy/assurance/al2' :
+            $assuranceArray['Now']['AL2'] = $assuranceRow['entities'];
+            break;
+          case 'http://www.swamid.se/policy/assurance/al3' :
+            $assuranceArray['Now']['AL3'] = $assuranceRow['entities'];
+            break;
+          case 'https://refeds.org/sirtfi' :
+            $assuranceArray['Now']['SIRTFI'] = $assuranceRow['entities'];
+            break;
+          case 'https://refeds.org/sirtfi2' :
+            $assuranceArray['Now']['SIRTFI2'] = $assuranceRow['entities'];
+            break;
+          default :
+        }
+      }
+    }
+
     while ($row = $dateHandler->fetch(PDO::FETCH_ASSOC)) {
       $date = substr($row['date'],0,10);
       $assuranceArray[$date] = array(
@@ -759,7 +803,7 @@ class Statistics extends Common {
 
     foreach ($assuranceArray as $date => $assurance) {
       $this->printAssuranceCertificationRow($date, $assurance);
-      array_unshift($labelsArray, substr($date,2,8));
+      array_unshift($labelsArray, $date == 'Now' ? 'Now' : substr($date,2,8));
       array_unshift($entityArray, $assurance['NrOfEntites']);
       array_unshift($sirtfiArray, $assurance['SIRTFI'] - $assurance['SIRTFI2']);
       array_unshift($sirtfi2Array, $assurance['SIRTFI2']);
