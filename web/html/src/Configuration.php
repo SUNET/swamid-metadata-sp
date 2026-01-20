@@ -324,6 +324,13 @@ class Configuration {
     if ($dbVersion < 4) {
       $this->db->query(self::SQL_START_TRANSACTION);
 
+      $this->db->query('CREATE TABLE `EntitiesAssuranceStatistics` (
+        `date` datetime NOT NULL,
+        `assurance` varchar(10) DEFAULT NULL,
+        `nrOfEntities` int(10) unsigned DEFAULT NULL,
+        PRIMARY KEY (`date`, `assurance`)
+      );');
+
       $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
         FROM `EntityAttributes`, `Entities`
         WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
@@ -442,6 +449,13 @@ class Configuration {
       `NrOfSPs` int(10) unsigned DEFAULT NULL,
       `NrOfIdPs` int(10) unsigned DEFAULT NULL,
       PRIMARY KEY (`date`)
+    );');
+
+    $this->db->query('CREATE TABLE `EntitiesAssuranceStatistics` (
+      `date` datetime NOT NULL,
+      `assurance` varchar(10) DEFAULT NULL,
+      `nrOfEntities` int(10) unsigned DEFAULT NULL,
+      PRIMARY KEY (`date`, `assurance`)
     );');
 
     $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`

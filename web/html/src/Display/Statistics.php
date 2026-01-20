@@ -27,6 +27,10 @@ class Statistics extends Common {
     $ecsSelected='false';
     $ecsShow='';
     #
+    $acActive='';
+    $acSelected='false';
+    $acShow='';
+    #
     $assuranceActive='';
     $assuranceSelected='false';
     $assuranceShow='';
@@ -42,6 +46,11 @@ class Statistics extends Common {
           $ecsActive = self::HTML_ACTIVE;
           $ecsSelected = self::HTML_TRUE;
           $ecsShow = self::HTML_SHOW;
+          break;
+        case 'ac' :
+          $acActive = self::HTML_ACTIVE;
+          $acSelected = self::HTML_TRUE;
+          $acShow = self::HTML_SHOW;
           break;
         case 'assurance' :
           $assuranceActive = self::HTML_ACTIVE;
@@ -75,11 +84,15 @@ class Statistics extends Common {
               aria-controls="ecs" aria-selected="%s">Entity Category Support</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link%s" id="ac-tab" data-toggle="tab" href="#ac" role="tab"
+              aria-controls="ac" aria-selected="%s">Assurance Certification</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link%s" id="assurance-tab" data-toggle="tab" href="#assurance" role="tab"
               aria-controls="assurance" aria-selected="%s">Assurance</a>
           </li>%s',
       $entityActive, $entitySelected, $ecActive, $ecSelected,
-      $ecsActive, $ecsSelected, $assuranceActive, $assuranceSelected, "\n");
+      $ecsActive, $ecsSelected, $acActive, $acSelected, $assuranceActive, $assuranceSelected, "\n");
     printf('        </ul>
       </div>%s    </div>%s    <script src="/include/chart/chart.umd.js"></script>%s    <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade%s%s" id="entity" role="tabpanel" aria-labelledby="entity-tab">%s',
@@ -95,6 +108,10 @@ class Statistics extends Common {
         $ecsShow, $ecsActive, "\n");
     $this->showEcsStatistics();
     printf('      </div><!-- End tab-pane ecs -->
+      <div class="tab-pane fade%s%s" id="ac" role="tabpanel" aria-labelledby="ac-tab">%s',
+        $acShow, $acActive, "\n");
+    $this->showAcStatistics();
+    printf('      </div><!-- End tab-pane ac -->
       <div class="tab-pane fade%s%s" id="assurance" role="tabpanel" aria-labelledby="assurance-tab">%s',
       $assuranceShow, $assuranceActive, "\n");
     $this->showRAFStatistics();
@@ -644,6 +661,205 @@ class Statistics extends Common {
     }
     printf('    %s        <script>%s%s        </script>%s',
       self::HTML_TABLE_END, "\n", $scripts, "\n");
+  }
+
+  /**
+   * Shows row for AssuranceCertification
+   *
+   * @param string $date date of row
+   *
+   * @param array $assurance data about different AssuranceCertifications
+   *
+   * @return void
+   */
+  protected function printAssuranceCertificationRow($date, $assurance) {
+    printf('          <tr>
+            <td>%s</td>%s',
+      htmlspecialchars($date), "\n");
+    printf('            <td>%s</td><td>%s</td><td>%s</td>%s',
+      $assurance['NrOfEntites'],
+      $assurance['SIRTFI'],
+      $assurance['SIRTFI2'],
+      "\n");
+    if ($this->config->getFederation()['swamid_assurance']) {
+        printf('            <td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>%s',
+      $assurance['NrOfIdPs'],
+      $assurance['AL1'],
+      $assurance['AL2'],
+      $assurance['AL2-MFA-HI'],
+      $assurance['AL3'],
+      "\n");
+    }
+    print ("          </tr>\n");
+  }
+
+  /**
+   * Show Assurance Certification Statistics tab
+   *
+   * @return void
+   */
+  protected function showAcStatistics() {
+    $assuranceArray = array();
+    $labelsArray = array();
+    $entityArray = array();
+    $sirtfiArray = array();
+    $sirtfi2Array = array();
+    $idpArray = array();
+    $al1Array = array ();
+    $al2Array = array ();
+    $al2mhArray = array ();
+    $al3Array = array ();
+
+    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
+    $dateHandler = $this->config->getDb()->query(
+      'SELECT DISTINCT `EntitiesAssuranceStatistics`.`date`,`NrOfEntites`, `NrOfIdPs`
+      FROM `EntitiesAssuranceStatistics`
+      LEFT JOIN `EntitiesStatistics`
+        ON `EntitiesAssuranceStatistics`.`date` = `EntitiesStatistics`.`date`
+      ORDER BY `date` DESC;');
+    $assuranceHandler = $this->config->getDb()->query(
+      'SELECT `date`, `assurance`, `nrOfEntities`
+      FROM `EntitiesAssuranceStatistics`;');
+
+    while ($row = $dateHandler->fetch(PDO::FETCH_ASSOC)) {
+      $date = substr($row['date'],0,10);
+      $assuranceArray[$date] = array(
+          'NrOfEntites' => $row['NrOfEntites'],
+          'NrOfIdPs' => $row['NrOfIdPs'],
+          'SIRTFI' => 0,
+          'SIRTFI2' => 0,
+          'AL1' => 0,
+          'AL2' => 0,
+          'AL2-MFA-HI' => 0,
+          'AL3' => 0,
+      );
+    }
+
+    while ($row = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
+      $assuranceArray[substr($row['date'],0,10)][$row['assurance']] = $row['nrOfEntities'];
+    }
+
+    printf ('        <h3>Assurance Certification Statistics</h3>
+        Date of publication of Certifications<ul>
+          %s<li>Sirtfi: 2016-11-08</li>
+          <li>Sirtfi 2: 2022-07-22</li>
+        </ul>
+        %s
+        <canvas id="sirtfi" width="200" height="50"></canvas><br>
+        <br>
+        <h3>Statistics in numbers</h3>
+        <table class="table table-striped table-bordered">
+          <tr><th>Date</th><th>NrOfEntites</th><th>Sirtfi</th><th>Sirtfi2</th>%s</tr>%s',
+      $swamid_assurance ?
+        '<li>Swamid AL1: 2013-09-24</li><li>Swamid AL2: 2015-12-02</li>
+        <li>Swamid AL2+MFA(-HI): 2018-09-12, deprecated 2020-12-31</li><li>Swamid AL3: 2020-06-15</li>'
+        : '',
+      $swamid_assurance ? '<canvas id="idps" width="200" height="50"></canvas><br>' : '',
+      $swamid_assurance ? '<th>NrOfIdPs</th><th>AL1</th><th>AL2</th><th>AL2-MFA-HI</th><th>AL3</th>' : '', "\n");
+
+    foreach ($assuranceArray as $date => $assurance) {
+      $this->printAssuranceCertificationRow($date, $assurance);
+      array_unshift($labelsArray, substr($date,2,8));
+      array_unshift($entityArray, $assurance['NrOfEntites']);
+      array_unshift($sirtfiArray, $assurance['SIRTFI'] - $assurance['SIRTFI2']);
+      array_unshift($sirtfi2Array, $assurance['SIRTFI2']);
+      array_unshift($idpArray, $assurance['NrOfIdPs']);
+      array_unshift($al1Array, $assurance['AL1'] - $assurance['AL2']);
+      array_unshift($al2Array, $assurance['AL2'] - $assurance['AL2-MFA-HI'] - $assurance['AL3']);
+      array_unshift($al2mhArray, $assurance['AL2-MFA-HI']);
+      array_unshift($al3Array, $assurance['AL3']);
+    }
+
+    printf ('    %s        <script>%s', self::HTML_TABLE_END, "\n");
+    printf ("          const ctxSirtfi = document.getElementById('sirtfi').getContext('2d');
+          const mySirtfi = new Chart(ctxSirtfi, {
+            type: 'line',
+            data: {
+              labels: ['%s'],
+              datasets: [{
+                label: 'Sirtfi',
+                backgroundColor: \"rgb(0, 123, 255)\",
+                data: [%s],
+                fill: 'origin'
+              }, {
+                label: 'Sirtfi2',
+                backgroundColor: \"rgb(0, 255, 0)\",
+                data: [%s],
+                fill: 'origin'
+              }, {
+                label: '# of Entities',
+                backgroundColor: \"rgb(0,0,0)\",
+                data: [%s],
+                stack: 'total',
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  stacked: true,
+                }
+              }
+            }
+          });%s",
+      implode("','", $labelsArray),
+      implode(',', $sirtfiArray),
+      implode(',', $sirtfi2Array),
+      implode(',', $entityArray),
+      "\n");
+
+    if ($swamid_assurance) {
+      printf ("          const ctxIdps = document.getElementById('idps').getContext('2d');
+          const myIdps = new Chart(ctxIdps, {
+            type: 'line',
+            data: {
+              labels: ['%s'],
+              datasets: [{
+                label: 'AL1',
+                backgroundColor: \"rgb(255, 205, 86)\",
+                data: [%s],
+                fill: 'origin'
+              },{
+                label: 'AL2',
+                backgroundColor: \"rgb(0, 123, 255)\",
+                data: [%s],
+                fill: 'origin'
+              },{
+                label: 'AL2-MFA-HI',
+                backgroundColor: \"rgb(2, 255, 255)\",
+                data: [%s],
+                fill: 'origin'
+              }, {
+                label: 'AL3',
+                backgroundColor: \"rgb(0, 255, 0)\",
+                data: [%s],
+                fill: 'origin'
+              }, {
+                label: '# of IdP:s',
+                backgroundColor: \"rgb(0,0,0)\",
+                data: [%s],
+                stack: 'total',
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  stacked: true,
+                },
+              }
+            }
+          });%s",
+        implode("','", $labelsArray),
+        implode(',', $al1Array),
+        implode(',', $al2Array),
+        implode(',', $al2mhArray),
+        implode(',', $al3Array),
+        implode(',', $idpArray), "\n");
+    }
+    print "        </script>\n";
   }
 
   /**
