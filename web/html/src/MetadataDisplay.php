@@ -16,7 +16,6 @@ class MetadataDisplay extends Display\Common {
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SHOWALLORGS = '&showAllOrgs';
-  const HTML_SPACER = '      ';
   const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_SELECTED = ' selected';
 
@@ -335,119 +334,6 @@ class MetadataDisplay extends Display\Common {
     }
 
     return preg_replace(',^(https?://)([^/]+/).*$,', '\1' . $tag . '.\2', $rcConfURL);
-  }
-
-  /**
-   * Shows Collapsable Header
-   *
-   * @param string $title Title of header
-   *
-   * @param string $name Name of header
-   *
-   * @param bool $haveSub If header have subheaders
-   *
-   * @param int $step Steps to indent
-   *
-   * @param bool $expanded If expanded by default
-   *
-   * @param bool|string $extra if we have extra info
-   *
-   * @param int $entityId Id of current Entity
-   *
-   * @param int $oldEntityId Id of old Entity
-   *
-   * @return void
-   */
-  private function showCollapse($title, $name, $haveSub=true, $step=0, $expanded=true,
-    $extra = false, $entityId=0, $oldEntityId=0) {
-    $spacer = '';
-    while ($step > 0 ) {
-      $spacer .= self::HTML_SPACER;
-      $step--;
-    }
-    if ($expanded) {
-      $icon = 'down';
-      $show = 'show ';
-    } else {
-      $icon = 'right';
-      $show = '';
-    }
-    switch ($extra) {
-      case 'SSO' :
-        $extraButton = sprintf('<form action="." method="POST" name="removeSSO%s" style="display: inline;"><input type="hidden" name="removeSSO" value="%d"><input type="hidden" name="type" value="%s"><a href="#" onClick="document.forms.removeSSO%s.submit();"><i class="fas fa-trash"></i></a></form>', $name, $entityId, $name, $name);
-        break;
-      case 'EntityAttributes' :
-      case 'IdPMDUI' :
-      case 'SPMDUI' :
-      case 'SPServiceInfo' :
-      case 'DiscoveryResponse' :
-      case 'DiscoHints' :
-      case 'IdPKeyInfo' :
-      case 'SPKeyInfo' :
-      case 'AAKeyInfo' :
-      case 'AttributeConsumingService' :
-      case 'Organization' :
-      case 'ContactPersons' :
-        $extraButton = sprintf('<a href="?edit=%s&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
-          $extra, $entityId, $oldEntityId);
-        break;
-      default :
-        $extraButton = '';
-    }
-    printf('
-    %s<h4>
-      %s<i id="%s-icon" class="fas fa-chevron-circle-%s"></i>
-      %s<a data-toggle="collapse" href="#%s" aria-expanded="%s" aria-controls="%s">%s</a>
-      %s%s
-    %s</h4>
-    %s<div class="%scollapse multi-collapse" id="%s">
-    %s  <div class="row">%s',
-      $spacer, $spacer, $name, $icon, $spacer, $name, $expanded, $name, $title,
-      $spacer, $extraButton, $spacer, $spacer, $show, $name, $spacer, "\n");
-    if ($haveSub) {
-      printf('%s        <span class="border-right"><div class="col-md-auto"></div></span>%s',$spacer, "\n");
-    }
-    printf('%s        <div class="col%s">', $spacer, $oldEntityId > 0 ? '-6' : '');
-    $this->collapseIcons[] = $name;
-  }
-
-  /**
-   * Creates a new column below header
-   *
-   * @param int $step Steps to indent
-   *
-   * @return void
-   */
-  private function showNewCol($step) {
-    $spacer = '';
-    while ($step > 0 ) {
-      $spacer .= self::HTML_SPACER;
-      $step--;
-    } ?>
-
-        <?=$spacer?></div><!-- end col -->
-        <?=$spacer?><div class="col-6"><?php
-  }
-
-  /**
-   * Shows end of Collapseble header
-   *
-   * @param string $name Name of header to close
-   *
-   * @param int $step Steps to indent
-   *
-   * @return void
-   */
-  private function showCollapseEnd($name, $step = 0){
-    $spacer = '';
-    while ($step > 0 ) {
-      $spacer .= self::HTML_SPACER;
-      $step--;
-    }?>
-
-        <?=$spacer?></div><!-- end col -->
-      <?=$spacer?></div><!-- end row -->
-    <?=$spacer?></div><!-- end collapse <?=$name?>--><?php
   }
 
   /**
