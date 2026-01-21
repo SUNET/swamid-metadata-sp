@@ -77,11 +77,11 @@ class Statistics extends Common {
           </li>
           <li class="nav-item">
             <a class="nav-link%s" id="ec-tab" data-toggle="tab" href="#ec" role="tab"
-              aria-controls="ec" aria-selected="%s">Entity Category</a>
+              aria-controls="ec" aria-selected="%s">Service Provider Statistics</a>
           </li>
           <li class="nav-item">
             <a class="nav-link%s" id="ecs-tab" data-toggle="tab" href="#ecs" role="tab"
-              aria-controls="ecs" aria-selected="%s">Entity Category Support</a>
+              aria-controls="ecs" aria-selected="%s">Identity Provider Statistics</a>
           </li>
           <li class="nav-item">
             <a class="nav-link%s" id="ac-tab" data-toggle="tab" href="#ac" role="tab"
@@ -157,11 +157,12 @@ class Statistics extends Common {
     printf ('        <h3>Entity Statistics</h3>
         <p>Statistics on number of entities in %s.</p>
         <canvas id="total" width="200" height="50"></canvas>
-        <br><br>
-        <h3>Statistics in numbers</h3>
-        <table class="table table-striped table-bordered">
-          <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', $federation['displayName'], "\n");
-    printf('          <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
+        <br><br>', $federation['displayName']);
+    $this->showCollapse('Statistics in numbers', 'EntityStatistics', false, 2, false);
+    printf ('
+              <table class="table table-striped table-bordered">
+                <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', "\n");
+    printf('                <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
       'Now', $nrOfEntites, $nrOfSPs, $nrOfIdPs, "\n");
     array_unshift($labelsArray, 'Now');
     array_unshift($spArray, $nrOfSPs);
@@ -172,17 +173,20 @@ class Statistics extends Common {
     $statusRows->execute();
     while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
       $dateLabel = substr($row['date'],2,8);
-      printf('          <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
+      printf('                <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
         substr($row['date'],0,10), $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], "\n");
       array_unshift($labelsArray, $dateLabel);
       array_unshift($spArray, $row['NrOfSPs']);
       array_unshift($idpArray, $row['NrOfIdPs']);
     }
+    printf ('          %s', self::HTML_TABLE_END);
+    $this->showCollapseEnd('EntityStatistics', 2);
     $labels = implode("','", $labelsArray);
     $idps = implode(',', $idpArray);
     $sps = implode(',', $spArray);
 
-    printf ('    %s        <script>%s', self::HTML_TABLE_END, "\n", "\n");
+    printf ('
+        <script>%s', "\n");
     printf ("          const ctxTotal = document.getElementById('total').getContext('2d');
           const myTotal = new Chart(ctxTotal, {
             type: 'line',
@@ -659,7 +663,7 @@ class Statistics extends Common {
         $ecdiv, $ecdiv,
         $ecdiv, $ecdiv, $markedECS, $ok, $fail, $notTested, "\n");
     }
-    printf('    %s        <script>%s%s        </script>%s',
+    printf('      %s        <script>%s%s        </script>%s',
       self::HTML_TABLE_END, "\n", $scripts, "\n");
   }
 
@@ -673,16 +677,16 @@ class Statistics extends Common {
    * @return void
    */
   protected function printAssuranceCertificationRow($date, $assurance) {
-    printf('          <tr>
-            <td>%s</td>%s',
-      htmlspecialchars($date), "\n");
-    printf('            <td>%s</td><td>%s</td><td>%s</td>%s',
+    printf('                <tr>
+                  <td>%s</td>
+                  <td>%s</td><td>%s</td><td>%s</td>%s',
+      htmlspecialchars($date),
       $assurance['NrOfEntites'],
       $assurance['SIRTFI'],
       $assurance['SIRTFI2'],
       "\n");
     if ($this->config->getFederation()['swamid_assurance']) {
-        printf('            <td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>%s',
+        printf('                  <td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['NrOfIdPs'],
       $assurance['AL1'],
       $assurance['AL2'],
@@ -690,7 +694,7 @@ class Statistics extends Common {
       $assurance['AL3'],
       "\n");
     }
-    print "          </tr>\n";
+    print "                </tr>\n";
   }
 
   /**
@@ -783,22 +787,27 @@ class Statistics extends Common {
       $assuranceArray[substr($row['date'],0,10)][$row['assurance']] = $row['nrOfEntities'];
     }
 
-    printf ('        <h3>Assurance Certification Statistics</h3>
-        Date of publication of Certifications<ul>
-          %s<li>Sirtfi: 2016-11-08</li>
-          <li>Sirtfi 2: 2022-07-22</li>
-        </ul>
-        %s
-        <canvas id="sirtfi" width="200" height="50"></canvas><br>
-        <br>
-        <h3>Statistics in numbers</h3>
-        <table class="table table-striped table-bordered">
-          <tr><th>Date</th><th>NrOfEntites</th><th>Sirtfi</th><th>Sirtfi2</th>%s</tr>%s',
+    printf ('        <h3>Assurance Certification Statistics</h3>');
+    $this->showCollapse('Dates of publication of Certifications', 'DatesCertifications', false, 2);
+    printf ('%s              <ul>
+                %s<li>Sirtfi: 2016-11-08</li>
+                <li>Sirtfi 2: 2022-07-22</li>
+              </ul>%s',
+      "\n",
       $swamid_assurance ?
         '<li>Swamid AL1: 2013-09-24</li><li>Swamid AL2: 2015-12-02</li>
-        <li>Swamid AL2+MFA(-HI): 2018-09-12, deprecated 2020-12-31</li><li>Swamid AL3: 2020-06-15</li>'
-        : '',
-      $swamid_assurance ? '<canvas id="idps" width="200" height="50"></canvas><br>' : '',
+                <li>Swamid AL2+MFA(-HI): 2018-09-12, deprecated 2020-12-31</li><li>Swamid AL3: 2020-06-15</li>
+                ' : '', "\n");
+    $this->showCollapseEnd('DatesCertifications', 2);
+    printf ('
+        %s
+        <canvas id="sirtfi" width="200" height="50"></canvas><br>',
+      $swamid_assurance ? '<canvas id="idps" width="200" height="50"></canvas><br>' : '');
+    $this->showCollapse('Statistics in numbers', 'AcStatistics', false, 2, false);
+
+    printf ('
+              <table class="table table-striped table-bordered">
+                <tr><th>Date</th><th>NrOfEntites</th><th>Sirtfi</th><th>Sirtfi2</th>%s</tr>%s',
       $swamid_assurance ? '<th>NrOfIdPs</th><th>AL1</th><th>AL2</th><th>AL2-MFA-HI</th><th>AL3</th>' : '', "\n");
 
     foreach ($assuranceArray as $date => $assurance) {
@@ -813,8 +822,10 @@ class Statistics extends Common {
       array_unshift($al2mhArray, $assurance['AL2-MFA-HI']);
       array_unshift($al3Array, $assurance['AL3']);
     }
+    printf ('          %s', self::HTML_TABLE_END);
+    $this->showCollapseEnd('AcStatistics', 2);
 
-    printf ('    %s        <script>%s', self::HTML_TABLE_END, "\n");
+    printf ('%s        <script>%s', "\n", "\n");
     printf ("          const ctxSirtfi = document.getElementById('sirtfi').getContext('2d');
           const mySirtfi = new Chart(ctxSirtfi, {
             type: 'line',
@@ -916,19 +927,19 @@ class Statistics extends Common {
    * @return void
    */
   protected function printAssuranceRow($idp, $assurance) {
-    printf('          <tr>
-            <td>%s</td>%s',
+    printf('                <tr>
+                  <td>%s</td>%s',
       htmlspecialchars($idp), "\n");
     if ($this->config->getFederation()['swamid_assurance']) {
-        printf('            <td>%s</td><td>%s</td><td>%s</td>%s',
+        printf('                  <td>%s</td><td>%s</td><td>%s</td>%s',
       $assurance['SWAMID-AL1'],
       $assurance['SWAMID-AL2'],
       $assurance['SWAMID-AL3'],
       "\n");
     }
-    printf('            <td>%s</td><td>%s</td><td>%s</td>
-            <td>%s</td>
-          </tr>%s',
+    printf('                  <td>%s</td><td>%s</td><td>%s</td>
+                  <td>%s</td>
+                </tr>%s',
       $assurance['RAF-low'],
       $assurance['RAF-medium'],
       $assurance['RAF-high'],
@@ -1067,13 +1078,16 @@ class Statistics extends Common {
             <canvas id="meta"></canvas>
           </div>
         </div>
-        <br>
-        <table class="table table-striped table-bordered">
-          <tr>
-            <th>IdP</th>' . ( $swamid_assurance ? '
-            <th>AL1</th><th>AL2</th><th>AL3</th>' : '' ) . '
-            <th>RAF-Low</th><th>RAF-Medium</th><th>RAF-High</th><th>Nothing</th>
-          </tr>%s', "\n");
+        <br>');
+      $this->showCollapse('Last metadata tool login per level', 'RAFStatistics', false, 2, false);
+
+      printf('
+              <table class="table table-striped table-bordered">
+                <tr>
+                  <th>IdP</th>' . ( $swamid_assurance ? '
+                  <th>AL1</th><th>AL2</th><th>AL3</th>' : '' ) . '
+                  <th>RAF-Low</th><th>RAF-Medium</th><th>RAF-High</th><th>Nothing</th>
+                </tr>%s', "\n");
 
     $assuranceHandler = $this->config->getDb()->prepare(
       'SELECT `assuranceLog`.`entityID`, `assurance`, `logDate`
@@ -1106,8 +1120,9 @@ class Statistics extends Common {
       $assurance[$assuranceRow['assurance']] = $assuranceRow['logDate'];
     }
     if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance);}
-    printf('    %s        <br>%s', self::HTML_TABLE_END, "\n") ;
-
+    printf('          %s', self::HTML_TABLE_END) ;
+    $this->showCollapseEnd('RAFStatistics', 2);
+    print "\n";
     if ($swamid_assurance) {
       $this->showAssuranceCountGraph('swamid',
         array('AL3', 'AL2', 'AL1', 'None'),
