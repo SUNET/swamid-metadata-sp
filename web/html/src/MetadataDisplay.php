@@ -435,7 +435,7 @@ class MetadataDisplay extends Display\Common {
       if ($organizationErrors && $entity['OrganizationInfo_id'] > 0) {
         $this->compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults);
       }
-      $this->showCollapseEnd('OrganizationInfo', 0);
+      $this->showCollapseEnd('OrganizationInfo');
     }
   }
 
@@ -482,7 +482,7 @@ class MetadataDisplay extends Display\Common {
    * @return void
    */
   private function compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults) {
-    $this->showNewCol(0);
+    $this->showNewCol();
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
@@ -585,7 +585,7 @@ class MetadataDisplay extends Display\Common {
           </div>', "\n");
       }
     }
-    $this->showCollapseEnd('IMPS', 0);
+    $this->showCollapseEnd('IMPS');
   }
 
   /**
@@ -608,10 +608,10 @@ class MetadataDisplay extends Display\Common {
     }
     $this->showEntityAttributesPart($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(0);
+      $this->showNewCol();
       $this->showEntityAttributesPart($oldEntityId, $entityId, false);
     }
-    $this->showCollapseEnd('Attributes', 0);
+    $this->showCollapseEnd('Attributes');
   }
 
   /**
@@ -709,38 +709,38 @@ class MetadataDisplay extends Display\Common {
     $this->showErrorURL($entityId, $oldEntityId, true, $allowEdit);
     $this->showScopes($entityId, $oldEntityId, true, $allowEdit);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showErrorURL($oldEntityId, $entityId);
       $this->showScopes($oldEntityId, $entityId);
     }
     print '
             </div><!-- end col -->
           </div><!-- end row -->';
-    $this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 1, true,
+    $this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 3, true,
       $allowEdit ? 'IdPMDUI' : false, $entityId, $oldEntityId);
     $this->showMDUI($entityId, 'IDPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showMDUI($oldEntityId, 'IDPSSO', $entityId);
     }
-    $this->showCollapseEnd('UIInfo_IdPSSO', 1);
-    $this->showCollapse('DiscoHints', 'DiscoHints', false, 1, true,
+    $this->showCollapseEnd('UIInfo_IdPSSO', 3);
+    $this->showCollapse('DiscoHints', 'DiscoHints', false, 3, true,
       $allowEdit ? 'DiscoHints' : false, $entityId, $oldEntityId);
     $this->showDiscoHints($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showDiscoHints($oldEntityId, $entityId);
     }
-    $this->showCollapseEnd('DiscoHints', 1);
-    $this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 1, true,
+    $this->showCollapseEnd('DiscoHints', 3);
+    $this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 3, true,
       $allowEdit ? 'IdPKeyInfo' : false, $entityId, $oldEntityId);
     $this->showKeyInfo($entityId, 'IDPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'IDPSSO', $entityId);
     }
-    $this->showCollapseEnd('KeyInfo_IdPSSO', 1);
-    $this->showCollapseEnd('IdP', 0);
+    $this->showCollapseEnd('KeyInfo_IdPSSO', 3);
+    $this->showCollapseEnd('IdP');
   }
 
   /**
@@ -762,50 +762,50 @@ class MetadataDisplay extends Display\Common {
       $removable = 'SSO';
     }
     $this->showCollapse('SP data', 'SP', true, 0, true, $removable, $entityId);
-    $this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 1, true, $allowEdit ? 'SPMDUI' : false, $entityId, $oldEntityId);
+    $this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 3, true, $allowEdit ? 'SPMDUI' : false, $entityId, $oldEntityId);
     $this->showMDUI($entityId, 'SPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showMDUI($oldEntityId, 'SPSSO', $entityId);
     }
-    $this->showCollapseEnd('UIInfo_SPSSO', 1);
+    $this->showCollapseEnd('UIInfo_SPSSO', 3);
 
     if ($config->getFederation()['storeServiceInfo']) {
-        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 1, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
+        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 3, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
 
         $this->showServiceInfo($entityId, $oldEntityId, $allowEdit, true);
         if ($oldEntityId != 0 ) {
-          $this->showNewCol(1);
+          $this->showNewCol(3);
           $this->showServiceInfo($oldEntityId, $entityId, $allowEdit);
         }
-        $this->showCollapseEnd('ServiceInfo_SPSSO', 1);
+        $this->showCollapseEnd('ServiceInfo_SPSSO', 3);
     }
 
-    $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true,
+    $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 3, true,
       $allowEdit ? 'SPKeyInfo' : false, $entityId, $oldEntityId);
     $this->showKeyInfo($entityId, 'SPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'SPSSO', $entityId);
     }
-    $this->showCollapseEnd('KeyInfo_SPSSO', 1);
-    $this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 1, true,
+    $this->showCollapseEnd('KeyInfo_SPSSO', 3);
+    $this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 3, true,
       $allowEdit ? 'AttributeConsumingService' : false, $entityId, $oldEntityId);
     $this->showAttributeConsumingService($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showAttributeConsumingService($oldEntityId, $entityId);
     }
-    $this->showCollapseEnd('AttributeConsumingService', 1);
-    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 1, false,
+    $this->showCollapseEnd('AttributeConsumingService', 3);
+    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 3, false,
       $allowEdit ? 'DiscoveryResponse' : false, $entityId, $oldEntityId);
     $this->showDiscoveryResponse($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showDiscoveryResponse($oldEntityId, $entityId);
     }
-    $this->showCollapseEnd('DiscoveryResponse', 1);
-    $this->showCollapseEnd('SP', 0);
+    $this->showCollapseEnd('DiscoveryResponse', 3);
+    $this->showCollapseEnd('SP');
   }
 
   /**
@@ -826,15 +826,15 @@ class MetadataDisplay extends Display\Common {
       $removable = 'SSO';
     }
     $this->showCollapse('AttributeAuthority', 'AttributeAuthority', true, 0, true, $removable, $entityId);
-    $this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 1, true,
+    $this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 3, true,
       $allowEdit ? 'AAKeyInfo' : false, $entityId, $oldEntityId);
     $this->showKeyInfo($entityId, 'AttributeAuthority', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'AttributeAuthority', $entityId);
     }
-    $this->showCollapseEnd('KeyInfo_AttributeAuthority', 1);
-    $this->showCollapseEnd('AttributeAuthority', 0);
+    $this->showCollapseEnd('KeyInfo_AttributeAuthority', 3);
+    $this->showCollapseEnd('AttributeAuthority');
   }
 
   /**
@@ -1453,10 +1453,10 @@ class MetadataDisplay extends Display\Common {
     }
     $this->showOrganizationPart($entityId, $oldEntityId, 1);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(0);
+      $this->showNewCol();
       $this->showOrganizationPart($oldEntityId, $entityId, 0);
     }
-    $this->showCollapseEnd('Organization', 0);
+    $this->showCollapseEnd('Organization');
   }
 
   /**
@@ -1526,10 +1526,10 @@ class MetadataDisplay extends Display\Common {
     }
     $this->showContactsPart($entityId, $oldEntityId, 1);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(0);
+      $this->showNewCol();
       $this->showContactsPart($oldEntityId, $entityId, 0);
     }
-    $this->showCollapseEnd('ContactPersons', 0);
+    $this->showCollapseEnd('ContactPersons');
   }
 
   /**
@@ -1677,9 +1677,9 @@ class MetadataDisplay extends Display\Common {
     $federation = $this->config->getFederation();
     $this->showCollapse('Signed XML in ' . $federation['displayName'], 'MDQ', false, 0, true, false, 0, 0);
     $url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
-    printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
-      $url, $url, "\n");
-    $this->showCollapseEnd('MDQ', 0);
+    printf ('%s          URL at MDQ : <a href="%s">%s</a><br><br>',
+      "\n", $url, $url);
+    $this->showCollapseEnd('MDQ');
   }
 
   /**
@@ -1771,7 +1771,7 @@ class MetadataDisplay extends Display\Common {
         htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), htmlspecialchars($user['email']), $extraButton, "\n");
     }
     print "        </ul>";
-    $this->showCollapseEnd('Editors', 0);
+    $this->showCollapseEnd('Editors');
   }
 
   /**
@@ -2668,7 +2668,7 @@ class MetadataDisplay extends Display\Common {
         $organizationHandler->execute(array('Lang' => 'sv'));
         $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
         $this->printOrgList($organizationHandler, 'sv');
-        $this->showCollapseEnd('Organizations-sv', 0);
+        $this->showCollapseEnd('Organizations-sv');
     }
 
     if (in_array('en', $languages)) {
@@ -2679,7 +2679,7 @@ class MetadataDisplay extends Display\Common {
         } else {
             $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
             $this->printOrgList($organizationHandler, 'en');
-            $this->showCollapseEnd('Organizations-en', 0);
+            $this->showCollapseEnd('Organizations-en');
         }
     }
 
@@ -2859,7 +2859,7 @@ class MetadataDisplay extends Display\Common {
       $idpHandler->execute(array(self::BIND_ID => $imps['id']));
       $lastValidated = substr($imps['lastValidated'], 0 ,10);
       $name = htmlspecialchars($imps['name']) . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
-      $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
+      $this->showCollapse($name, "imps-" . $imps['id'], false, 3, $id == $imps['id'], false, 0, 0);
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
@@ -2880,7 +2880,7 @@ class MetadataDisplay extends Display\Common {
         printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
       }
       print '                </ul>';
-      $this->showCollapseEnd("imps-" . $imps['id'], 1);
+      $this->showCollapseEnd("imps-" . $imps['id'], 3);
       $idpHandler->closeCursor();
     }
   }
@@ -2949,7 +2949,7 @@ class MetadataDisplay extends Display\Common {
       if ($organization['notMemberAfter']) {
         $name .= '- Not member ' . ( date("Y-m-d") > $organization['notMemberAfter'] ? 'any more' : 'after ' . $organization['notMemberAfter']);
       }
-      $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
+      $this->showCollapse($name, "org-" . $organization['orgId'], false, 3, $id == $organization['orgId']);
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeOrganization&id=%d%s"><i class="fas fa-trash"></i></a>',
@@ -2994,7 +2994,7 @@ class MetadataDisplay extends Display\Common {
       print '                    </ul>
                   </li>
                 </ul>';
-      $this->showCollapseEnd("org-" . $organization['orgId'], 1);
+      $this->showCollapseEnd("org-" . $organization['orgId'], 3);
     }
   }
 
@@ -3050,7 +3050,7 @@ class MetadataDisplay extends Display\Common {
         <li>An e-mail will be sent to the technical and administrative contacts for confirmation of the requrest.</li>
         <li>Reach out to the administrative contact and ask them to accept your request by following the instructions in the mail.</li>
       </ol><?php
-    $this->showCollapseEnd('RequestAdminAccess', 0);
+    $this->showCollapseEnd('RequestAdminAccess');
     $this->showCollapse("Register a new entity in $federation_display_name", 'RegisterNewEntity', false, 0, false);?>
 
           <ol>
@@ -3081,7 +3081,7 @@ class MetadataDisplay extends Display\Common {
               Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
             <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
-    $this->showCollapseEnd('RegisterNewEntity', 0);
+    $this->showCollapseEnd('RegisterNewEntity');
     $this->showCollapse("Update published entity in $federation_display_name", 'UpdateEntity', false, 0, false);?>
 
           <ol>
@@ -3110,7 +3110,7 @@ class MetadataDisplay extends Display\Common {
               Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
             <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
-    $this->showCollapseEnd('UpdateEntity', 0);
+    $this->showCollapseEnd('UpdateEntity');
     $this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);?>
 
           <ol>
@@ -3137,7 +3137,7 @@ class MetadataDisplay extends Display\Common {
               Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
             <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
-    $this->showCollapseEnd('ContinueUpdateEntity', 0);
+    $this->showCollapseEnd('ContinueUpdateEntity');
     $this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);?>
 
           <ol>
@@ -3147,7 +3147,7 @@ class MetadataDisplay extends Display\Common {
             <li>Press the button ”Discard Draft”.</li>
             <li>Confirm the action by pressing the button ”Remove”.</li>
           </ol><?php
-    $this->showCollapseEnd('DiscardDraft', 0);
+    $this->showCollapseEnd('DiscardDraft');
     $this->showCollapse('Withdraw a publication request', 'WithdrawPublicationRequest', false, 0, false);?>
 
           <ol>
@@ -3160,7 +3160,7 @@ class MetadataDisplay extends Display\Common {
             <li>The entity is now back in draft mode so that you can continue to update,
               if you want to to cancel the update press the buton "Discard Draft" and "Remove" on next page.</li>
           </ol><?php
-    $this->showCollapseEnd('WithdrawPublicationRequest', 0);
+    $this->showCollapseEnd('WithdrawPublicationRequest');
   }
 
 }
