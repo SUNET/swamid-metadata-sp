@@ -618,6 +618,7 @@ function showRemoveQueue() {
 
 function showInterfederation($type){
   global $html, $config;
+  $federation = $config->getFederation();
   if ($type == 'IDP') {
     $html->showHeaders('eduGAIN - IdP:s');
     showMenu('fedIdPs','');
@@ -637,8 +638,11 @@ function showInterfederation($type){
     $entityList = $config->getDb()->query('SELECT `entityID`, `organization`, `contacts`, `scopes`, `ecs`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isIdP = 1');
     foreach ($entityList as $entity) {
+      $entityId_html = $federation['mdqBaseURL'] ?
+          sprintf('<a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a>', urlencode($entity['entityID']), htmlspecialchars($entity['entityID'])) :
+          htmlspecialchars($entity['entityID']);
       printf ('        <tr>
-          <td><a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a></td>
+          <td>%s</td>
           <td>%s</td>
           <td>%s</td>
           <td>%s</td>
@@ -646,7 +650,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        urlencode($entity['entityID']), htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
+        $entityId_html, $entity['organization'], $entity['contacts'],
         htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
@@ -669,8 +673,11 @@ function showInterfederation($type){
         `organization`, `contacts`, `ec`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isSP = 1');
     foreach ($entityList as $entity) {
+      $entityId_html = $federation['mdqBaseURL'] ?
+          sprintf('<a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a>', urlencode($entity['entityID']), htmlspecialchars($entity['entityID'])) :
+          htmlspecialchars($entity['entityID']);
       printf ('        <tr>
-          <td><a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a></td>
+          <td>%s</td>
           <td>%s<br>%s</td>
           <td>%s</td>
           <td>%s</td>
@@ -678,7 +685,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        urlencode($entity['entityID']), htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
+        $entityId_html,  htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
         $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   }
