@@ -2,6 +2,7 @@
 
 const HTML_OUTLINE = '-outline';
 const TEXT_PLAIN = 'Content-Type: text/plain; charset=utf-8';
+const ACCEPT_SAML_METADATA = 'Accept: application/samlmetadata+xml';
 
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
@@ -699,6 +700,7 @@ function showEntityFromMDQ($entityID) {
   curl_setopt($ch, CURLOPT_USERAGENT, $config->getFederation()['urlCheckUA']);
   curl_setopt($ch, CURLOPT_PROTOCOLS, $config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
   curl_setopt($ch, CURLOPT_MAXFILESIZE, $config->getFederation()['urlCheckMaxSize']);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array(ACCEPT_SAML_METADATA));
 
   $allowed_schemes = $config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
   $default_ports = array( 'http' => 80, 'https' => 443);
