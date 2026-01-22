@@ -9,31 +9,15 @@ use PDO;
 /**
  * Class to display Metadata
  */
-class MetadataDisplay extends Common {
+class MetadataDisplay extends Display\Common {
   use CommonTrait;
 
-  # Setup
-  private array $collapseIcons = array();
-
-  const SAML_EC_ANONYMOUS = 'https://refeds.org/category/anonymous';
-  const SAML_EC_COCOV1 = 'http://www.geant.net/uri/dataprotection-code-of-conduct/v1'; # NOSONAR Should be http://
-  const SAML_EC_COCOV2 = 'https://refeds.org/category/code-of-conduct/v2';
-  const SAML_EC_ESI = 'https://myacademicid.org/entity-categories/esi';
-  const SAML_EC_PERSONALIZED = 'https://refeds.org/category/personalized';
-  const SAML_EC_PSEUDONYMOUS = 'https://refeds.org/category/pseudonymous';
-  const SAML_EC_RANDS = 'http://refeds.org/category/research-and-scholarship'; # NOSONAR Should be http://
-
-  const HTML_ACTIVE = ' active';
   const HTML_CLASS_ALERT_WARNING = ' class="alert-warning" role="alert"';
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SHOWALLORGS = '&showAllOrgs';
-  const HTML_SPACER = '      ';
   const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
-  const HTML_TABLE_END = "    </table>\n";
   const HTML_SELECTED = ' selected';
-  const HTML_SHOW = ' show';
-  const HTML_TRUE = 'true';
 
   const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
 
@@ -353,119 +337,6 @@ class MetadataDisplay extends Common {
   }
 
   /**
-   * Shows Collapsable Header
-   *
-   * @param string $title Title of header
-   *
-   * @param string $name Name of header
-   *
-   * @param bool $haveSub If header have subheaders
-   *
-   * @param int $step Steps to indent
-   *
-   * @param bool $expanded If expanded by default
-   *
-   * @param bool|string $extra if we have extra info
-   *
-   * @param int $entityId Id of current Entity
-   *
-   * @param int $oldEntityId Id of old Entity
-   *
-   * @return void
-   */
-  private function showCollapse($title, $name, $haveSub=true, $step=0, $expanded=true,
-    $extra = false, $entityId=0, $oldEntityId=0) {
-    $spacer = '';
-    while ($step > 0 ) {
-      $spacer .= self::HTML_SPACER;
-      $step--;
-    }
-    if ($expanded) {
-      $icon = 'down';
-      $show = 'show ';
-    } else {
-      $icon = 'right';
-      $show = '';
-    }
-    switch ($extra) {
-      case 'SSO' :
-        $extraButton = sprintf('<form action="." method="POST" name="removeSSO%s" style="display: inline;"><input type="hidden" name="removeSSO" value="%d"><input type="hidden" name="type" value="%s"><a href="#" onClick="document.forms.removeSSO%s.submit();"><i class="fas fa-trash"></i></a></form>', $name, $entityId, $name, $name);
-        break;
-      case 'EntityAttributes' :
-      case 'IdPMDUI' :
-      case 'SPMDUI' :
-      case 'SPServiceInfo' :
-      case 'DiscoveryResponse' :
-      case 'DiscoHints' :
-      case 'IdPKeyInfo' :
-      case 'SPKeyInfo' :
-      case 'AAKeyInfo' :
-      case 'AttributeConsumingService' :
-      case 'Organization' :
-      case 'ContactPersons' :
-        $extraButton = sprintf('<a href="?edit=%s&Entity=%d&oldEntity=%d"><i class="fa fa-pencil-alt"></i></a>',
-          $extra, $entityId, $oldEntityId);
-        break;
-      default :
-        $extraButton = '';
-    }
-    printf('
-    %s<h4>
-      %s<i id="%s-icon" class="fas fa-chevron-circle-%s"></i>
-      %s<a data-toggle="collapse" href="#%s" aria-expanded="%s" aria-controls="%s">%s</a>
-      %s%s
-    %s</h4>
-    %s<div class="%scollapse multi-collapse" id="%s">
-    %s  <div class="row">%s',
-      $spacer, $spacer, $name, $icon, $spacer, $name, $expanded, $name, $title,
-      $spacer, $extraButton, $spacer, $spacer, $show, $name, $spacer, "\n");
-    if ($haveSub) {
-      printf('%s        <span class="border-right"><div class="col-md-auto"></div></span>%s',$spacer, "\n");
-    }
-    printf('%s        <div class="col%s">', $spacer, $oldEntityId > 0 ? '-6' : '');
-    $this->collapseIcons[] = $name;
-  }
-
-  /**
-   * Creates a new column below header
-   *
-   * @param int $step Steps to indent
-   *
-   * @return void
-   */
-  private function showNewCol($step) {
-    $spacer = '';
-    while ($step > 0 ) {
-      $spacer .= self::HTML_SPACER;
-      $step--;
-    } ?>
-
-        <?=$spacer?></div><!-- end col -->
-        <?=$spacer?><div class="col-6"><?php
-  }
-
-  /**
-   * Shows end of Collapseble header
-   *
-   * @param string $name Name of header to close
-   *
-   * @param int $step Steps to indent
-   *
-   * @return void
-   */
-  private function showCollapseEnd($name, $step = 0){
-    $spacer = '';
-    while ($step > 0 ) {
-      $spacer .= self::HTML_SPACER;
-      $step--;
-    }?>
-
-        <?=$spacer?></div><!-- end col -->
-      <?=$spacer?></div><!-- end row -->
-    <?=$spacer?></div><!-- end collapse <?=$name?>--><?php
-  }
-
-  /**
    * Shows a formular to connect entiy to an organization
    *
    * @param int $entitiesId id of entity
@@ -564,7 +435,7 @@ class MetadataDisplay extends Common {
       if ($organizationErrors && $entity['OrganizationInfo_id'] > 0) {
         $this->compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults);
       }
-      $this->showCollapseEnd('OrganizationInfo', 0);
+      $this->showCollapseEnd('OrganizationInfo');
     }
   }
 
@@ -611,7 +482,7 @@ class MetadataDisplay extends Common {
    * @return void
    */
   private function compareDefaultOrganization2Metadata($entitiesId, $organizationDefaults) {
-    $this->showNewCol(0);
+    $this->showNewCol();
     $organizationHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
       FROM `Organization` WHERE `entity_id` = :Id ORDER BY `element`, `lang`;');
     $organizationHandler->execute(array(self::BIND_ID => $entitiesId));
@@ -714,7 +585,7 @@ class MetadataDisplay extends Common {
           </div>', "\n");
       }
     }
-    $this->showCollapseEnd('IMPS', 0);
+    $this->showCollapseEnd('IMPS');
   }
 
   /**
@@ -737,10 +608,10 @@ class MetadataDisplay extends Common {
     }
     $this->showEntityAttributesPart($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(0);
+      $this->showNewCol();
       $this->showEntityAttributesPart($oldEntityId, $entityId, false);
     }
-    $this->showCollapseEnd('Attributes', 0);
+    $this->showCollapseEnd('Attributes');
   }
 
   /**
@@ -838,38 +709,38 @@ class MetadataDisplay extends Common {
     $this->showErrorURL($entityId, $oldEntityId, true, $allowEdit);
     $this->showScopes($entityId, $oldEntityId, true, $allowEdit);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showErrorURL($oldEntityId, $entityId);
       $this->showScopes($oldEntityId, $entityId);
     }
     print '
             </div><!-- end col -->
           </div><!-- end row -->';
-    $this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 1, true,
+    $this->showCollapse('MDUI', 'UIInfo_IDPSSO', false, 3, true,
       $allowEdit ? 'IdPMDUI' : false, $entityId, $oldEntityId);
     $this->showMDUI($entityId, 'IDPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showMDUI($oldEntityId, 'IDPSSO', $entityId);
     }
-    $this->showCollapseEnd('UIInfo_IdPSSO', 1);
-    $this->showCollapse('DiscoHints', 'DiscoHints', false, 1, true,
+    $this->showCollapseEnd('UIInfo_IdPSSO', 3);
+    $this->showCollapse('DiscoHints', 'DiscoHints', false, 3, true,
       $allowEdit ? 'DiscoHints' : false, $entityId, $oldEntityId);
     $this->showDiscoHints($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showDiscoHints($oldEntityId, $entityId);
     }
-    $this->showCollapseEnd('DiscoHints', 1);
-    $this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 1, true,
+    $this->showCollapseEnd('DiscoHints', 3);
+    $this->showCollapse('KeyInfo', 'KeyInfo_IdPSSO', false, 3, true,
       $allowEdit ? 'IdPKeyInfo' : false, $entityId, $oldEntityId);
     $this->showKeyInfo($entityId, 'IDPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'IDPSSO', $entityId);
     }
-    $this->showCollapseEnd('KeyInfo_IdPSSO', 1);
-    $this->showCollapseEnd('IdP', 0);
+    $this->showCollapseEnd('KeyInfo_IdPSSO', 3);
+    $this->showCollapseEnd('IdP');
   }
 
   /**
@@ -891,50 +762,50 @@ class MetadataDisplay extends Common {
       $removable = 'SSO';
     }
     $this->showCollapse('SP data', 'SP', true, 0, true, $removable, $entityId);
-    $this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 1, true, $allowEdit ? 'SPMDUI' : false, $entityId, $oldEntityId);
+    $this->showCollapse('MDUI', 'UIInfo_SPSSO', false, 3, true, $allowEdit ? 'SPMDUI' : false, $entityId, $oldEntityId);
     $this->showMDUI($entityId, 'SPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showMDUI($oldEntityId, 'SPSSO', $entityId);
     }
-    $this->showCollapseEnd('UIInfo_SPSSO', 1);
+    $this->showCollapseEnd('UIInfo_SPSSO', 3);
 
     if ($config->getFederation()['storeServiceInfo']) {
-        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 1, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
+        $this->showCollapse('ServiceInfo', 'ServiceInfo_SPSSO', false, 3, true, $allowEdit ? 'SPServiceInfo' : false, $entityId, $oldEntityId);
 
         $this->showServiceInfo($entityId, $oldEntityId, $allowEdit, true);
         if ($oldEntityId != 0 ) {
-          $this->showNewCol(1);
+          $this->showNewCol(3);
           $this->showServiceInfo($oldEntityId, $entityId, $allowEdit);
         }
-        $this->showCollapseEnd('ServiceInfo_SPSSO', 1);
+        $this->showCollapseEnd('ServiceInfo_SPSSO', 3);
     }
 
-    $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 1, true,
+    $this->showCollapse('KeyInfo', 'KeyInfo_SPSSO', false, 3, true,
       $allowEdit ? 'SPKeyInfo' : false, $entityId, $oldEntityId);
     $this->showKeyInfo($entityId, 'SPSSO', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'SPSSO', $entityId);
     }
-    $this->showCollapseEnd('KeyInfo_SPSSO', 1);
-    $this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 1, true,
+    $this->showCollapseEnd('KeyInfo_SPSSO', 3);
+    $this->showCollapse('AttributeConsumingService', 'AttributeConsumingService', false, 3, true,
       $allowEdit ? 'AttributeConsumingService' : false, $entityId, $oldEntityId);
     $this->showAttributeConsumingService($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showAttributeConsumingService($oldEntityId, $entityId);
     }
-    $this->showCollapseEnd('AttributeConsumingService', 1);
-    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 1, false,
+    $this->showCollapseEnd('AttributeConsumingService', 3);
+    $this->showCollapse('DiscoveryResponse', 'DiscoveryResponse', false, 3, false,
       $allowEdit ? 'DiscoveryResponse' : false, $entityId, $oldEntityId);
     $this->showDiscoveryResponse($entityId, $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showDiscoveryResponse($oldEntityId, $entityId);
     }
-    $this->showCollapseEnd('DiscoveryResponse', 1);
-    $this->showCollapseEnd('SP', 0);
+    $this->showCollapseEnd('DiscoveryResponse', 3);
+    $this->showCollapseEnd('SP');
   }
 
   /**
@@ -955,15 +826,15 @@ class MetadataDisplay extends Common {
       $removable = 'SSO';
     }
     $this->showCollapse('AttributeAuthority', 'AttributeAuthority', true, 0, true, $removable, $entityId);
-    $this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 1, true,
+    $this->showCollapse('KeyInfo', 'KeyInfo_AttributeAuthority', false, 3, true,
       $allowEdit ? 'AAKeyInfo' : false, $entityId, $oldEntityId);
     $this->showKeyInfo($entityId, 'AttributeAuthority', $oldEntityId, true);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(1);
+      $this->showNewCol(3);
       $this->showKeyInfo($oldEntityId, 'AttributeAuthority', $entityId);
     }
-    $this->showCollapseEnd('KeyInfo_AttributeAuthority', 1);
-    $this->showCollapseEnd('AttributeAuthority', 0);
+    $this->showCollapseEnd('KeyInfo_AttributeAuthority', 3);
+    $this->showCollapseEnd('AttributeAuthority');
   }
 
   /**
@@ -1582,10 +1453,10 @@ class MetadataDisplay extends Common {
     }
     $this->showOrganizationPart($entityId, $oldEntityId, 1);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(0);
+      $this->showNewCol();
       $this->showOrganizationPart($oldEntityId, $entityId, 0);
     }
-    $this->showCollapseEnd('Organization', 0);
+    $this->showCollapseEnd('Organization');
   }
 
   /**
@@ -1655,10 +1526,10 @@ class MetadataDisplay extends Common {
     }
     $this->showContactsPart($entityId, $oldEntityId, 1);
     if ($oldEntityId != 0 ) {
-      $this->showNewCol(0);
+      $this->showNewCol();
       $this->showContactsPart($oldEntityId, $entityId, 0);
     }
-    $this->showCollapseEnd('ContactPersons', 0);
+    $this->showCollapseEnd('ContactPersons');
   }
 
   /**
@@ -1806,9 +1677,9 @@ class MetadataDisplay extends Common {
     $federation = $this->config->getFederation();
     $this->showCollapse('Signed XML in ' . $federation['displayName'], 'MDQ', false, 0, true, false, 0, 0);
     $url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
-    printf ('        URL at MDQ : <a href="%s">%s</a><br><br>%s',
-      $url, $url, "\n");
-    $this->showCollapseEnd('MDQ', 0);
+    printf ('%s          URL at MDQ : <a href="%s">%s</a><br><br>',
+      "\n", $url, $url);
+    $this->showCollapseEnd('MDQ');
   }
 
   /**
@@ -1900,7 +1771,7 @@ class MetadataDisplay extends Common {
         htmlspecialchars($user['fullName']), htmlspecialchars($user['userID']), htmlspecialchars($user['email']), $extraButton, "\n");
     }
     print "        </ul>";
-    $this->showCollapseEnd('Editors', 0);
+    $this->showCollapseEnd('Editors');
   }
 
   /**
@@ -2718,523 +2589,6 @@ class MetadataDisplay extends Common {
   }
 
   /**
-   * Show EcsStatistics
-   *
-   * @return void
-   */
-  public function showEcsStatistics() {
-    $ecsTagged = array(
-      self::SAML_EC_RANDS => 'rands',
-      self::SAML_EC_COCOV1 => 'cocov1-1',
-      self::SAML_EC_ESI => 'esi',
-      self::SAML_EC_ANONYMOUS => 'anonymous',
-      self::SAML_EC_COCOV2 => 'cocov2-1',
-      self::SAML_EC_PERSONALIZED => 'personalized',
-      self::SAML_EC_PSEUDONYMOUS => 'pseudonymous');
-    $ecsTested = array(
-      'anonymous' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'pseudonymous' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'personalized' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'rands' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'cocov1-1' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'cocov2-1' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0),
-      'esi' => array('OK' => 0, 'Fail' => 0, 'MarkedWithECS' => 0));
-    $ecs = array(
-      'anonymous' => 'REFEDS Anonymous Access',
-      'pseudonymous' => 'REFEDS Pseudonymous Access',
-      'personalized' => 'REFEDS Personalized Access',
-      'rands' => 'REFEDS R&S',
-      'cocov1-1' => 'GÉANT CoCo (v1)',
-      'cocov2-1' => 'REFEDS CoCo (v2)',
-      'esi' => 'European Student Identifier');
-
-    $idpHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(`id`) AS `count` FROM `Entities` WHERE `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1;');
-    $idpHandler->execute();
-    if ($idps = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
-      $nrOfIdPs = $idps['count'];
-    } else {
-      $nrOfIdPs = 0;
-    }
-    $entityAttributesHandler = $this->config->getDb()->prepare(
-      "SELECT COUNT(`attribute`) AS `count`, `attribute`
-      FROM `EntityAttributes`, `Entities`
-      WHERE `type` = 'entity-category-support' AND `entity_id` = `Entities`.`id` AND `isIdP` = 1 AND `status` = 1 AND `publishIn` > 1
-      GROUP BY `attribute`;");
-    $entityAttributesHandler->execute();
-    while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-      $ecsTested[$ecsTagged[$attribute['attribute']]]['MarkedWithECS'] = $attribute['count'];
-    }
-
-    $testResultsHandeler = $this->config->getDb()->prepare(
-      "SELECT COUNT(entityID) AS `count`, `test`, `result`
-      FROM `TestResults`
-      WHERE `TestResults`.`entityID` IN (SELECT `entityID`
-      FROM `Entities` WHERE `isIdP` = 1 AND `publishIn` > 1)
-      GROUP BY `test`, `result`;");
-    $testResultsHandeler->execute();
-    while ($testResult = $testResultsHandeler->fetch(PDO::FETCH_ASSOC)) {
-      switch ($testResult['result']) {
-        case 'CoCo OK, Entity Category Support OK' :
-        case 'R&S attributes OK, Entity Category Support OK' :
-        case 'CoCo OK, Entity Category Support missing' :
-        case 'R&S attributes OK, Entity Category Support missing' :
-        case 'Anonymous attributes OK, Entity Category Support OK' :
-        case 'Personalized attributes OK, Entity Category Support OK' :
-        case 'Pseudonymous attributes OK, Entity Category Support OK' :
-        case 'Anonymous attributes OK, Entity Category Support missing' :
-        case 'Personalized attributes OK, Entity Category Support missing' :
-        case 'Pseudonymous attributes OK, Entity Category Support missing' :
-        case 'schacPersonalUniqueCode OK' :
-          $ecsTested[$testResult['test']]['OK'] += $testResult['count'];
-          break;
-        case 'Support for CoCo missing, Entity Category Support missing' :
-        case 'R&S attribute missing, Entity Category Support missing' :
-        case 'CoCo is not supported, BUT Entity Category Support is claimed' :
-        case 'R&S attributes missing, BUT Entity Category Support claimed' :
-        case 'Anonymous attribute missing, Entity Category Support missing' :
-        case 'Anonymous attributes missing, BUT Entity Category Support claimed' :
-        case 'Personalized attribute missing, Entity Category Support missing' :
-        case 'Personalized attributes missing, BUT Entity Category Support claimed' :
-        case 'Pseudonymous attribute missing, Entity Category Support missing' :
-        case 'Pseudonymous attributes missing, BUT Entity Category Support claimed' :
-        case 'Missing schacPersonalUniqueCode' :
-          $ecsTested[$testResult['test']]['Fail'] += $testResult['count'];
-          break;
-        default :
-          printf('Unknown result : %s', $testResult['result']);
-      }
-    }
-
-    $count = 1;
-    foreach ($ecs as $ec => $descr) {
-      if ($count == 1) {
-        printf ('    <div class="row">%s      <div class="col">%s', "\n", "\n");
-      } else {
-        printf ('      <div class="col">%s', "\n");
-      }
-      printf ('        <h3>%s</h3>%s        <canvas id="%s"></canvas>%s', $descr, "\n", str_replace('-','', $ec), "\n");
-      if ($count == 4) {
-        printf ('      </div>%s    </div>%s', "\n", "\n");
-        $count = 1;
-      } else {
-        printf ('      </div>%s', "\n");
-        $count ++;
-      }
-    }
-    if ($count > 1) {
-      while ($count < 5) {
-        printf ('      <div class="col"></div>%s', "\n");
-        $count ++;
-      }
-      printf ('    </div>%s', "\n");
-    }
-    printf ('    <br><br>
-    <h3>Statistics in numbers</h3>
-    <p>
-      Based on release-check test performed over the last 12 months and Entity-Category-Support registered in metadata.
-      <br>
-      Out of %d IdPs in %s:
-    </p>
-    <table class="table table-striped table-bordered">
-      <tr><th>EC</th><th>OK + ECS</th><th>OK no ECS</th><th>Fail</th><th>Not tested</th></tr>%s',
-      $nrOfIdPs, $this->config->getFederation()['displayName'], "\n");
-    foreach ($ecs as $ec => $descr) {
-      $markedECS = $ecsTested[$ec]['MarkedWithECS'];
-      $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
-        ? $ecsTested[$ec]['OK'] - $ecsTested[$ec]['MarkedWithECS']
-        : 0;
-      $fail = $ecsTested[$ec]['Fail'] > $nrOfIdPs ? 0 : $ecsTested[$ec]['Fail'];
-      $notTested = $nrOfIdPs - $markedECS - $ok - $fail;
-      printf('      <tr><td>%s</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td><td>%d (%d %%)</td></tr>%s',
-        $descr, $markedECS, ($markedECS/$nrOfIdPs*100), $ok, ($ok/$nrOfIdPs*100),
-        $fail, ($fail/$nrOfIdPs*100), $notTested, ($notTested/$nrOfIdPs*100), "\n");
-    }
-    printf('%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', self::HTML_TABLE_END, "\n", "\n");
-    foreach ($ecs as $ec => $descr) {
-      $markedECS = $ecsTested[$ec]['MarkedWithECS'];
-      $ok = $ecsTested[$ec]['OK'] > $ecsTested[$ec]['MarkedWithECS']
-        ? $ecsTested[$ec]['OK'] - $ecsTested[$ec]['MarkedWithECS'] : 0;
-      $fail = $ecsTested[$ec]['Fail'] > $nrOfIdPs ? 0 : $ecsTested[$ec]['Fail'];
-      $notTested = $nrOfIdPs - $markedECS - $ok - $fail;
-      $ecdiv = str_replace('-','', $ec);
-      printf ("      const ctx%s = document.getElementById('%s').getContext('2d');%s", $ecdiv, $ecdiv, "\n");
-      printf ("      const my%s = new Chart(ctx%s, {
-        width: 200,
-        type: 'pie',
-        data: {
-          labels: ['OK + ECS', 'OK no ECS', 'Fail', 'Not tested'],
-          datasets: [{
-            label: 'Errors',
-            data: [%d, %d, %d, %d],
-            backgroundColor: [
-              'rgb(99, 255, 132)',
-              'rgb(255, 205, 86)',
-              'rgb(255, 99, 132)',
-              'rgb(255, 255, 255)',
-            ],
-            borderColor : 'rgb(0,0,0)',
-            hoverOffset: 4
-          }]
-        },
-      });%s",
-        $ecdiv, $ecdiv, $markedECS, $ok, $fail, $notTested, "\n");
-    }
-   print "    </script>\n";
-  }
-
-  /**
-   * Shows row for Assurance
-   *
-   * @param string $idp EntityId of IdP
-   *
-   * @param array $assurance array with Assurance info
-   *
-   * @return void
-   */
-  private function printAssuranceRow($idp, $assurance) {
-    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
-    printf('      <tr>
-      <td>%s</td>%s',
-      htmlspecialchars($idp), "\n");
-    if ($swamid_assurance) {
-        printf('      <td>%s</td><td>%s</td><td>%s</td>%s',
-      $assurance['SWAMID-AL1'],
-      $assurance['SWAMID-AL2'],
-      $assurance['SWAMID-AL3'],
-      "\n");
-    }
-    printf('      <td>%s</td><td>%s</td><td>%s</td>
-      <td>%s</td>
-    </tr>%s',
-      $assurance['RAF-low'],
-      $assurance['RAF-medium'],
-      $assurance['RAF-high'],
-      $assurance['None'], "\n");
-  }
-
-  /**
-   * Show RAFStatistics for all seen IdP:s
-   *
-   * @return void
-   */
-  public function showRAFStatistics() {
-    $swamid_assurance = $this->config->getFederation()['swamid_assurance'];
-    $idpCountHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(DISTINCT `entityID`) as `idps` FROM `assuranceLog`;');
-    $idpCountHandler->execute();
-    if ($idpCountRow = $idpCountHandler->fetch(PDO::FETCH_ASSOC)) {
-      $idps = $idpCountRow['idps'];
-    } else {
-      $idps = 0;
-    }
-
-    $idpAssuranceHandler = $this->config->getDb()->prepare(
-      'SELECT COUNT(`entityID`) as `count`, `assurance` FROM `assuranceLog` GROUP BY `assurance`;');
-    $idpAssuranceHandler->execute();
-    $assuranceCount = array(
-      'SWAMID-AL1' => 0,
-      'SWAMID-AL2' => 0,
-      'SWAMID-AL3' => 0,
-      'RAF-low' => 0,
-      'RAF-medium' => 0,
-      'RAF-high' => 0,
-      'None' => 0);
-    while ($idpAssuranceRow = $idpAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
-      $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
-    }
-
-    $metaAssuranceHandler = $this->config->getDb()->prepare(
-      "SELECT COUNT(`Entities`.`id`) AS `count`, `attribute`
-      FROM `Entities`, `EntityAttributes`
-      WHERE `Entities`.`id` = `EntityAttributes`.`entity_id`
-        AND `status` = 1
-        AND `isIdP` = 1
-        AND `publishIn` > 1
-        AND `type` = 'assurance-certification'
-      GROUP BY `attribute`;");
-
-    $metaAssuranceHandler->execute();
-    $metaAssuranceCount = array(
-      'http://www.swamid.se/policy/assurance/al1' => 0, # NOSONAR Should be http://
-      'http://www.swamid.se/policy/assurance/al2' => 0, # NOSONAR Should be http://
-      'http://www.swamid.se/policy/assurance/al3' => 0); # NOSONAR Should be http://
-    while ($metaAssuranceRow = $metaAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
-      $metaAssuranceCount[$metaAssuranceRow['attribute']] = $metaAssuranceRow['count'];
-    }
-
-    printf('    <div class="row">
-      <div class="col">
-        <div class="row"><div class="col">Total nr of IdP:s</div><div class="col">%d</div></div>%s',
-      $idps,
-      "\n");
-    if ($swamid_assurance) {
-        printf('        <div class="row"><div class="col">&nbsp;</div></div>
-        <div class="row"><div class="col">Max SWAMID AL3</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max SWAMID AL2</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max SWAMID AL1</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">No SWAMID AL</div><div class="col">%d</div></div>%s',
-      $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-      $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-      $idps - $assuranceCount['SWAMID-AL1'],
-      "\n");
-    }
-    printf('        <div class="row"><div class="col">&nbsp;</div></div>
-        <div class="row"><div class="col">Max RAF High</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max RAF Medium</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">Max RAF Low</div><div class="col">%d</div></div>
-        <div class="row"><div class="col">No RAF</div><div class="col">%d</div></div>
-      </div>',
-      $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-      $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-      $idps - $assuranceCount['RAF-low'],
-      "\n");
-    printf(( $swamid_assurance ?  '
-      <div class="col">
-        <h3>SWAMID Assurance</h3>
-        <canvas id="swamid"></canvas>
-      </div>' : '' ) . '
-      <div class="col">
-        <h3>REFEDS Assurance</h3>
-        <canvas id="raf"></canvas>
-      </div>
-      <div class="col">
-        <h3>Assurance in metadata</h3>
-        <canvas id="meta"></canvas>
-      </div>
-    </div>
-    <br>
-    <table class="table table-striped table-bordered">
-      <tr>
-        <th>IdP</th>' . ( $swamid_assurance ? '
-        <th>AL1</th>
-        <th>AL2</th>
-        <th>AL3</th>' : '' ) . '
-        <th>RAF-Low</th>
-        <th>RAF-Medium</th>
-        <th>RAF-High</th>
-        <th>Nothing</th>
-      </tr>%s',
-      "\n");
-
-    $assuranceHandler = $this->config->getDb()->prepare(
-      'SELECT `entityID`, `assurance`, `logDate`
-      FROM `assuranceLog` ORDER BY `entityID`, `assurance`;');
-    $assuranceHandler->execute();
-    $oldIdp = false;
-    $assurance = array();
-    $assurance['SWAMID-AL1'] = '';
-    $assurance['SWAMID-AL2'] = '';
-    $assurance['SWAMID-AL3'] = '';
-    $assurance['RAF-low'] = '';
-    $assurance['RAF-medium'] = '';
-    $assurance['RAF-high'] = '';
-    $assurance['None'] = '';
-
-    while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
-      if($assuranceRow['entityID'] != $oldIdp) {
-        if ($oldIdp) {
-          $this->printAssuranceRow($oldIdp, $assurance);
-        }
-        $oldIdp = $assuranceRow['entityID'];
-        $assurance['SWAMID-AL1'] = '';
-        $assurance['SWAMID-AL2'] = '';
-        $assurance['SWAMID-AL3'] = '';
-        $assurance['RAF-low'] = '';
-        $assurance['RAF-medium'] = '';
-        $assurance['RAF-high'] = '';
-        $assurance['None'] = '';
-      }
-      $assurance[$assuranceRow['assurance']] = $assuranceRow['logDate'];
-    }
-    if ($oldIdp) {
-      $this->printAssuranceRow($oldIdp, $assurance);
-    }
-    print self::HTML_TABLE_END . "    <br>\n";
-
-    printf('      <script src="/include/chart/chart.min.js"></script>%s',
-      "\n");
-    if ($swamid_assurance) {
-        printf('      <script>
-        const ctxswamid = document.getElementById(\'swamid\').getContext(\'2d\');
-        const myswamid = new Chart(ctxswamid, {
-          width: 200,
-          type: \'pie\',
-          data: {
-            labels: [\'AL3\', \'AL2\', \'AL1\', \'None\'],
-            datasets: [{
-              label: \'SWAMID\',
-              data: [%d, %d, %d, %d],
-              backgroundColor: [
-                \'rgb(99, 255, 132)\',
-                \'rgb(255, 205, 86)\',
-                \'rgb(255, 99, 132)\',
-                \'rgb(255, 255, 255)\',
-              ],
-              borderColor : \'rgb(0,0,0)\',
-              hoverOffset: 4
-            }]
-          },
-        });
-      </script>%s',
-        $assuranceCount['SWAMID-AL3'],
-        $assuranceCount['SWAMID-AL2'] - $assuranceCount['SWAMID-AL3'],
-        $assuranceCount['SWAMID-AL1'] - $assuranceCount['SWAMID-AL2'],
-        $idps - $assuranceCount['SWAMID-AL1'],
-        "\n");
-    }
-    printf('      <script>
-        const ctxraf = document.getElementById(\'raf\').getContext(\'2d\');
-        const myraf = new Chart(ctxraf, {
-          width: 200,
-          type: \'pie\',
-          data: {
-            labels: [\'High\', \'Medium\', \'Low\', \'None\'],
-            datasets: [{
-              label: \'RAF\',
-              data: [%d, %d, %d, %d],
-              backgroundColor: [
-                \'rgb(99, 255, 132)\',
-                \'rgb(255, 205, 86)\',
-                \'rgb(255, 99, 132)\',
-                \'rgb(255, 255, 255)\',
-              ],
-              borderColor : \'rgb(0,0,0)\',
-              hoverOffset: 4
-            }]
-          },
-        });
-      </script>%s',
-    $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-medium'] - $assuranceCount['RAF-high'],
-    $assuranceCount['RAF-low'] - $assuranceCount['RAF-medium'],
-    $idps - $assuranceCount['RAF-low'],
-    "\n");
-    printf('      <script>
-        const ctxmeta = document.getElementById(\'meta\').getContext(\'2d\');
-        const mymeta = new Chart(ctxmeta, {
-          width: 200,
-          type: \'pie\',
-          data: {
-            labels: [\'AL3\', \'AL2\', \'AL1\'],
-            datasets: [{
-              label: \'Metadata\',
-              data: [%d, %d, %d],
-              backgroundColor: [
-                \'rgb(99, 255, 132)\',
-                \'rgb(255, 205, 86)\',
-                \'rgb(255, 99, 132)\',
-              ],
-              borderColor : \'rgb(0,0,0)\',
-              hoverOffset: 4
-            }]
-          },
-        });
-      </script>',
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2'] - # NOSONAR Should be http://
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al3'], # NOSONAR Should be http://
-    $metaAssuranceCount['http://www.swamid.se/policy/assurance/al1'] - # NOSONAR Should be http://
-      $metaAssuranceCount['http://www.swamid.se/policy/assurance/al2']); # NOSONAR Should be http://
-  }
-
-  /**
-   * Show EntityStatistics over time
-   *
-   * @return void
-   */
-  public function showEntityStatistics() {
-    $labelsArray = array();
-    $spArray = array();
-    $idpArray = array();
-
-    $nrOfEntites = 0;
-    $nrOfSPs = 0;
-    $nrOfIdPs = 0;
-
-    $federation = $this->config->getFederation();
-    $entitys = $this->config->getDb()->prepare(
-      "SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn` FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
-    $entitys->execute();
-    while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
-      switch ($row['publishIn']) {
-        case 1 :
-          break;
-        case 2 :
-        case 3 :
-        case 6 :
-        case 7 :
-          $nrOfEntites ++;
-          $nrOfIdPs += $row['isIdP'] ? 1 : 0;
-          $nrOfSPs += $row['isSP'] ? 1 : 0;
-          break;
-        default :
-          printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
-      }
-    }
-
-    printf ('    <h3>Entity Statistics</h3>
-    <p>Statistics on number of entities in %s.</p>
-    <canvas id="total" width="200" height="50"></canvas>
-    <br><br>
-    <h3>Statistics in numbers</h3>
-    <table class="table table-striped table-bordered">
-      <tr><th>Date</th><th>NrOfEntites</th><th>NrOfSPs</th><th>NrOfIdPs</th></tr>%s', $federation['displayName'], "\n");
-    printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
-      'Now', $nrOfEntites, $nrOfSPs, $nrOfIdPs, "\n");
-    array_unshift($labelsArray, 'Now');
-    array_unshift($spArray, $nrOfSPs);
-    array_unshift($idpArray, $nrOfIdPs);
-
-    $statusRows = $this->config->getDb()->prepare(
-      "SELECT `date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs` FROM `EntitiesStatistics` ORDER BY `date` DESC;");
-    $statusRows->execute();
-    while ($row = $statusRows->fetch(PDO::FETCH_ASSOC)) {
-      $dateLabel = substr($row['date'],2,8);
-      printf('      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>%s',
-        substr($row['date'],0,10), $row['NrOfEntites'], $row['NrOfSPs'], $row['NrOfIdPs'], "\n");
-      array_unshift($labelsArray, $dateLabel);
-      array_unshift($spArray, $row['NrOfSPs']);
-      array_unshift($idpArray, $row['NrOfIdPs']);
-    }
-    $labels = implode("','", $labelsArray);
-    $idps = implode(',', $idpArray);
-    $sps = implode(',', $spArray);
-
-    printf ('%s    <script src="/include/chart/chart.min.js"></script>%s    <script>%s', self::HTML_TABLE_END, "\n", "\n");
-    printf ("      const ctxTotal = document.getElementById('total').getContext('2d');
-      const myTotal = new Chart(ctxTotal, {
-        type: 'line',
-        data: {
-          labels: ['%s'],
-          datasets: [{
-            label: 'IdP',
-            backgroundColor: \"rgb(240,85,35)\",
-            data: [%s],
-            fill: 'origin'
-          }, {
-            label: 'SP',
-            backgroundColor: \"rgb(2,71,254)\",
-            data: [%s],
-            fill: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            yAxes: {
-              beginAtZero: true,
-              stacked: true,
-            }
-          }
-        }
-      });%s    </script>%s",
-      $labels, $idps, $sps, "\n", "\n");
-  }
-
-  /**
    * Show list of Organizations
    *
    * @return void
@@ -3314,7 +2668,7 @@ class MetadataDisplay extends Common {
         $organizationHandler->execute(array('Lang' => 'sv'));
         $this->showCollapse('Swedish', 'Organizations-sv', false, 0, $showSv);
         $this->printOrgList($organizationHandler, 'sv');
-        $this->showCollapseEnd('Organizations-sv', 0);
+        $this->showCollapseEnd('Organizations-sv');
     }
 
     if (in_array('en', $languages)) {
@@ -3325,7 +2679,7 @@ class MetadataDisplay extends Common {
         } else {
             $this->showCollapse('English', 'Organizations-en', false, 0, $showEn);
             $this->printOrgList($organizationHandler, 'en');
-            $this->showCollapseEnd('Organizations-en', 0);
+            $this->showCollapseEnd('Organizations-en');
         }
     }
 
@@ -3505,7 +2859,7 @@ class MetadataDisplay extends Common {
       $idpHandler->execute(array(self::BIND_ID => $imps['id']));
       $lastValidated = substr($imps['lastValidated'], 0 ,10);
       $name = htmlspecialchars($imps['name']) . " (AL" . $imps['maximumAL'] . ") - " . $lastValidated .$validationStatus;
-      $this->showCollapse($name, "imps-" . $imps['id'], false, 1, $id == $imps['id'], false, 0, 0);
+      $this->showCollapse($name, "imps-" . $imps['id'], false, 3, $id == $imps['id'], false, 0, 0);
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editImps&id=%d"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeImps&id=%d"><i class="fas fa-trash"></i></a>', "\n", $imps['id'], $imps['id']);
@@ -3526,7 +2880,7 @@ class MetadataDisplay extends Common {
         printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
       }
       print '                </ul>';
-      $this->showCollapseEnd("imps-" . $imps['id'], 1);
+      $this->showCollapseEnd("imps-" . $imps['id'], 3);
       $idpHandler->closeCursor();
     }
   }
@@ -3595,7 +2949,7 @@ class MetadataDisplay extends Common {
       if ($organization['notMemberAfter']) {
         $name .= '- Not member ' . ( date("Y-m-d") > $organization['notMemberAfter'] ? 'any more' : 'after ' . $organization['notMemberAfter']);
       }
-      $this->showCollapse($name, "org-" . $organization['orgId'], false, 1, $id == $organization['orgId'], false, 0, 0);
+      $this->showCollapse($name, "org-" . $organization['orgId'], false, 3, $id == $organization['orgId']);
       if ($userLevel > 10) {
         printf('%s                <a href="?action=Members&subAction=editOrganization&id=%d%s"><i class="fa fa-pencil-alt"></i></a>
                 <a href="?action=Members&subAction=removeOrganization&id=%d%s"><i class="fas fa-trash"></i></a>',
@@ -3640,7 +2994,7 @@ class MetadataDisplay extends Common {
       print '                    </ul>
                   </li>
                 </ul>';
-      $this->showCollapseEnd("org-" . $organization['orgId'], 1);
+      $this->showCollapseEnd("org-" . $organization['orgId'], 3);
     }
   }
 
@@ -3696,7 +3050,7 @@ class MetadataDisplay extends Common {
         <li>An e-mail will be sent to the technical and administrative contacts for confirmation of the requrest.</li>
         <li>Reach out to the administrative contact and ask them to accept your request by following the instructions in the mail.</li>
       </ol><?php
-    $this->showCollapseEnd('RequestAdminAccess', 0);
+    $this->showCollapseEnd('RequestAdminAccess');
     $this->showCollapse("Register a new entity in $federation_display_name", 'RegisterNewEntity', false, 0, false);?>
 
           <ol>
@@ -3727,7 +3081,7 @@ class MetadataDisplay extends Common {
               Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
             <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
-    $this->showCollapseEnd('RegisterNewEntity', 0);
+    $this->showCollapseEnd('RegisterNewEntity');
     $this->showCollapse("Update published entity in $federation_display_name", 'UpdateEntity', false, 0, false);?>
 
           <ol>
@@ -3756,7 +3110,7 @@ class MetadataDisplay extends Common {
               Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
             <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
-    $this->showCollapseEnd('UpdateEntity', 0);
+    $this->showCollapseEnd('UpdateEntity');
     $this->showCollapse('Continue working on a draft', 'ContinueUpdateEntity', false, 0, false);?>
 
           <ol>
@@ -3783,7 +3137,7 @@ class MetadataDisplay extends Common {
               Forward this to <?= $federation_display_name ?> operations as described in the e-mail.</li>
             <li><?= $federation_display_name ?> Operations will now check and publish the request.</li>
           </ol><?php
-    $this->showCollapseEnd('ContinueUpdateEntity', 0);
+    $this->showCollapseEnd('ContinueUpdateEntity');
     $this->showCollapse('Stop and remove a draft update', 'DiscardDraft', false, 0, false);?>
 
           <ol>
@@ -3793,7 +3147,7 @@ class MetadataDisplay extends Common {
             <li>Press the button ”Discard Draft”.</li>
             <li>Confirm the action by pressing the button ”Remove”.</li>
           </ol><?php
-    $this->showCollapseEnd('DiscardDraft', 0);
+    $this->showCollapseEnd('DiscardDraft');
     $this->showCollapse('Withdraw a publication request', 'WithdrawPublicationRequest', false, 0, false);?>
 
           <ol>
@@ -3806,15 +3160,7 @@ class MetadataDisplay extends Common {
             <li>The entity is now back in draft mode so that you can continue to update,
               if you want to to cancel the update press the buton "Discard Draft" and "Remove" on next page.</li>
           </ol><?php
-    $this->showCollapseEnd('WithdrawPublicationRequest', 0);
+    $this->showCollapseEnd('WithdrawPublicationRequest');
   }
 
-  /**
-   * Returns an array of HeadersIcons that should be collapsable
-   *
-   * @return array
-   */
-  public function getCollapseIcons() {
-    return $this->collapseIcons;
-  }
 }

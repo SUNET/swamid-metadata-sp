@@ -1169,33 +1169,46 @@ class Metadata extends Common {
     if ($date == '') {
       $date = gmdate('Y-m-d');
     }
-    $nrOfEntities = 0;
-    $nrOfSPs = 0;
-    $nrOfIdPs = 0;
 
-    $entitys = $this->config->getDb()->prepare("SELECT `id`, `entityID`, `isIdP`, `isSP`, `publishIn`
-      FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;");
-    $entitys->execute();
-    while ($row = $entitys->fetch(PDO::FETCH_ASSOC)) {
-      switch ($row['publishIn']) {
-        case 1 :
-          break;
-        case 2 :
-        case 3 :
-        case 6 :
-        case 7 :
-          $nrOfEntities ++;
-          if ($row['isIdP']) { $nrOfIdPs ++; }
-          if ($row['isSP']) { $nrOfSPs ++; }
-          break;
-        default :
-          printf ("Can't resolve publishIn = %d for enityID = %s", $row['publishIn'], $row['entityID']);
+    $entitysHandler = $this->config->getDb()->query(
+      'SELECT COUNT(`id`)  AS entities, SUM(`isSP`) AS sp, SUM(`isIdP`) AS idp
+      FROM `Entities` WHERE `status` = 1 AND `publishIn` > 1;');
+    $assuranceHandler = $this->config->getDb()->query(
+      "SELECT COUNT(`entity_id`) AS entities, `attribute`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `EntityAttributes`.`entity_id` = `Entities`.`id`
+        AND `Entities`.`status` = 1
+        AND `type` = 'assurance-certification'
+      GROUP BY `attribute`");
+    $statsUpdateHandler = $this->config->getDb()->prepare(
+      'INSERT INTO `EntitiesStatistics` (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`)
+      VALUES (:Date, :NrOfEntities, :SPs, :IdPs);');
+    $addEntitiesAssuranceStatisticsHandler = $this->config->getDb()->prepare(
+      'INSERT INTO `EntitiesAssuranceStatistics` (`date`, `assurance`, `nrOfEntities`)
+      VALUES (:Date, :Assurance, :NrOfEntities);');
+    if ($row = $entitysHandler->fetch(PDO::FETCH_ASSOC)) {
+      $statsUpdateHandler->execute(array('Date' => $date, 'NrOfEntities' => $row['entities'], 'SPs' => $row['sp'], 'IdPs' => $row['idp']));
+      while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
+        switch($assuranceRow['attribute']) {
+          case 'http://www.swamid.se/policy/assurance/al1' : # NOSONAR Should be http://
+            $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'AL1'));
+            break;
+          case 'http://www.swamid.se/policy/assurance/al2' : # NOSONAR Should be http://
+            $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'AL2'));
+            break;
+          case 'http://www.swamid.se/policy/assurance/al3' : # NOSONAR Should be http://
+            $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'AL3'));
+            break;
+          case 'https://refeds.org/sirtfi' :
+            $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'SIRTFI'));
+            break;
+          case 'https://refeds.org/sirtfi2' :
+            $addEntitiesAssuranceStatisticsHandler->execute(array('Date' => $date, 'NrOfEntities' => $assuranceRow['entities'], 'Assurance' => 'SIRTFI2'));
+            break;
+          default :
+        }
       }
     }
-    $statsUpdate = $this->config->getDb()->prepare("INSERT INTO `EntitiesStatistics`
-      (`date`, `NrOfEntites`, `NrOfSPs`, `NrOfIdPs`)
-      VALUES ('$date', $nrOfEntities, $nrOfSPs, $nrOfIdPs);");
-    $statsUpdate->execute();
   }
 
   /**

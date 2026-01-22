@@ -200,6 +200,9 @@ class Configuration {
     }
   }
 
+  const SQL_START_TRANSACTION = 'START TRANSACTION;';
+  const SQL_COMMIT = 'COMMIT;';
+
   /**
    * Check Database version
    *
@@ -221,7 +224,7 @@ class Configuration {
       } catch(PDOException $e) {
         $this->createTables();
         // Don't forget to update version in createTables!!!
-        $dbVersion = 3;
+        $dbVersion = 4;
       }
     }
     if ($dbVersion < 2) {
@@ -242,7 +245,7 @@ class Configuration {
           CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
         );');
       }
-      $this->db->query('START TRANSACTION;');
+      $this->db->query(self::SQL_START_TRANSACTION);
       $this->db->query('CREATE TABLE `OrganizationInfoData` (
         `OrganizationInfo_id` int(10) unsigned DEFAULT 0,
         `lang` char(10) DEFAULT NULL,
@@ -301,11 +304,11 @@ class Configuration {
       $this->db->query('ALTER TABLE `Mdui` DROP COLUMN `id`;');
       $this->db->query(
         "UPDATE `params` SET `value` = '2' WHERE `id` = 'dbVersion';");
-      $this->db->query('COMMIT;');
+      $this->db->query(self::SQL_COMMIT);
     }
 
     if ($dbVersion < 3) {
-      $this->db->query('START TRANSACTION;');
+      $this->db->query(self::SQL_START_TRANSACTION);
       $this->db->query('CREATE TABLE `ServiceInfo` (
         `entity_id` int(10) unsigned NOT NULL,
         `ServiceURL` text NOT NULL,
@@ -315,7 +318,29 @@ class Configuration {
       );');
       $this->db->query(
         "UPDATE `params` SET `value` = '3' WHERE `id` = 'dbVersion';");
-      $this->db->query('COMMIT;');
+      $this->db->query(self::SQL_COMMIT);
+    }
+
+    if ($dbVersion < 4) {
+      $this->db->query(self::SQL_START_TRANSACTION);
+
+      $this->db->query('CREATE TABLE `EntitiesAssuranceStatistics` (
+        `date` datetime NOT NULL,
+        `assurance` varchar(10) DEFAULT NULL,
+        `nrOfEntities` int(10) unsigned DEFAULT NULL,
+        PRIMARY KEY (`date`, `assurance`)
+      );');
+
+      $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
+        FROM `EntityAttributes`, `Entities`
+        WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+          AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+        GROUP BY `entityID`
+        ORDER BY `count`;");
+
+      $this->db->query(
+        "UPDATE `params` SET `value` = '4' WHERE `id` = 'dbVersion';");
+      $this->db->query(self::SQL_COMMIT);
     }
   }
 
@@ -425,6 +450,21 @@ class Configuration {
       `NrOfIdPs` int(10) unsigned DEFAULT NULL,
       PRIMARY KEY (`date`)
     );');
+
+    $this->db->query('CREATE TABLE `EntitiesAssuranceStatistics` (
+      `date` datetime NOT NULL,
+      `assurance` varchar(10) DEFAULT NULL,
+      `nrOfEntities` int(10) unsigned DEFAULT NULL,
+      PRIMARY KEY (`date`, `assurance`)
+    );');
+
+    $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+      GROUP BY `entityID`
+      ORDER BY `count`;");
+
 
     $this->db->query('CREATE TABLE `EntityAttributes` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -738,5 +778,23 @@ class Configuration {
    */
   public function getMode() {
     return $this->mode;
+  }
+
+  /**
+   * Get classname, Checks if extended class exists
+   *
+   * @param string $className name of baseClass
+   *
+   * @return instance of baseClass or if exists extended class
+   */
+  public function getExtendedClass($className, ...$params) {
+    $baseClass   = __NAMESPACE__ . '\\' . $className;
+    $extendClass = $baseClass . ($this->federation['extend'] ?? '');
+
+    if (!class_exists($baseClass)) {
+        return null;
+    }
+
+    return new (class_exists($extendClass) ? $extendClass : $baseClass)(...$params);
   }
 }
