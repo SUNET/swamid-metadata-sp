@@ -686,6 +686,11 @@ function showInterfederation($type){
 function showEntityFromMDQ($entityID) {
   global $config;
   $federation = $config->getFederation();
+  if (!$federation['mdqBaseURL']) {
+    http_response_code(500);
+    printf("ERROR: MDQ not configured\n");
+    exit;
+  }
   $target_url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -711,11 +716,23 @@ function showEntityFromMDQ($entityID) {
     $output = curl_exec($ch);
     // check if we received a valid redirect
     if (curl_errno($ch)) {
+      http_response_code(500);
       print 'Curl error';
+      exit;
+    }
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($http_code != 200) {
+      // propagate only 404, for other non-OK HTTP response codes, return 500
+      http_response_code($http_code == 404 ? $http_code : 500);
+      printf('Could not retrieve metadata from MDQ URL %s (received HTTP code %d)', $target_url, $http_code);
       exit;
     }
     header('Content-Type: application/xml; charset=utf-8');
     print $output;
+    exit;
+  } else {
+    http_response_code(500);
+    print "Invalid URL $target_url";
     exit;
   }
 }
