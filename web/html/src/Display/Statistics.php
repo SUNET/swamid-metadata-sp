@@ -8,6 +8,8 @@ use PDO;
  */
 class Statistics extends Common {
 
+const HTML_SPACER = '          %s';
+
   /**
    * Show Statistics
    *
@@ -179,7 +181,7 @@ class Statistics extends Common {
       array_unshift($spArray, $row['NrOfSPs']);
       array_unshift($idpArray, $row['NrOfIdPs']);
     }
-    printf ('          %s', self::HTML_TABLE_END);
+    printf (self::HTML_SPACER, self::HTML_TABLE_END);
     $this->showCollapseEnd('EntityStatistics', 2);
     $labels = implode("','", $labelsArray);
     $idps = implode(',', $idpArray);
@@ -822,7 +824,7 @@ class Statistics extends Common {
       array_unshift($al2mhArray, $assurance['AL2-MFA-HI']);
       array_unshift($al3Array, $assurance['AL3']);
     }
-    printf ('          %s', self::HTML_TABLE_END);
+    printf (self::HTML_SPACER, self::HTML_TABLE_END);
     $this->showCollapseEnd('AcStatistics', 2);
 
     printf ('%s        <script>%s', "\n", "\n");
@@ -1005,13 +1007,8 @@ class Statistics extends Common {
       GROUP BY `assurance`;');
     $idpAssuranceHandler->execute();
     $assuranceCount = array(
-      'SWAMID-AL1' => 0,
-      'SWAMID-AL2' => 0,
-      'SWAMID-AL3' => 0,
-      'RAF-low' => 0,
-      'RAF-medium' => 0,
-      'RAF-high' => 0,
-      'None' => 0);
+      'SWAMID-AL1' => 0, 'SWAMID-AL2' => 0, 'SWAMID-AL3' => 0,
+      'RAF-low' => 0, 'RAF-medium' => 0, 'RAF-high' => 0, 'None' => 0);
     while ($idpAssuranceRow = $idpAssuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       $assuranceCount[$idpAssuranceRow['assurance']] = $idpAssuranceRow['count'];
     }
@@ -1097,14 +1094,9 @@ class Statistics extends Common {
       ORDER BY `entityID`, `assurance`;');
     $assuranceHandler->execute();
     $oldIdp = false;
-    $assurance = array();
-    $assurance['SWAMID-AL1'] = '';
-    $assurance['SWAMID-AL2'] = '';
-    $assurance['SWAMID-AL3'] = '';
-    $assurance['RAF-low'] = '';
-    $assurance['RAF-medium'] = '';
-    $assurance['RAF-high'] = '';
-    $assurance['None'] = '';
+    $assurance = array(
+    'SWAMID-AL1' => '', 'SWAMID-AL2' => '', 'SWAMID-AL3' => '',
+    'RAF-low' => '', 'RAF-medium' => '', 'RAF-high' => '', 'None' => '');
     while ($assuranceRow = $assuranceHandler->fetch(PDO::FETCH_ASSOC)) {
       if($assuranceRow['entityID'] != $oldIdp) {
         if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance); }
@@ -1120,7 +1112,7 @@ class Statistics extends Common {
       $assurance[$assuranceRow['assurance']] = $assuranceRow['logDate'];
     }
     if ($oldIdp) { $this->printAssuranceRow($oldIdp, $assurance);}
-    printf('          %s', self::HTML_TABLE_END) ;
+    printf (self::HTML_SPACER, self::HTML_TABLE_END);
     $this->showCollapseEnd('RAFStatistics', 2);
     print "\n";
     if ($swamid_assurance) {
