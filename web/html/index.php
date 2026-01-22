@@ -645,7 +645,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
+        urlencode($entity['entityID']), htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
         htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
@@ -677,7 +677,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
+        urlencode($entity['entityID']), htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
         $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   }
