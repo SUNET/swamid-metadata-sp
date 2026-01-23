@@ -2215,7 +2215,7 @@ class MetadataDisplay extends Display\Common {
    */
   private function showEntityErrorURL($urlType) {
     $entityHandler = $this->config->getDb()->prepare('SELECT id, `isIdP`, `isSP`, `entityID`, `publishIn` FROM Entities WHERE status = 1 ORDER BY `entityID`;');
-    $URLHandler = $this->config->getDb()->prepare(
+    $urlHandler = $this->config->getDb()->prepare(
       'SELECT DISTINCT `URLs`.`URL`, URLs.`type`, `URLs`.`status`, `URLs`.`cocov1Status`, `URLs`.`validationOutput`
       FROM `Mdui`, `URLs`
       WHERE `Mdui`.`data` = `URLs`.`URL` AND
@@ -2228,14 +2228,14 @@ class MetadataDisplay extends Display\Common {
           <thead><tr><th>EntityID</th><th>Type</th><th>Feed</th><th></th></tr></thead>%s',
       $urlType, $urlType, "\n");
     while ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      $URLHandler->execute(array('Id' => $entity['id'], 'Type' => $urlType));
-      $URLInfo = '';
-      while($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
-        if ($URL['status'] != 0) {
-          $URLInfo .= htmlspecialchars($URL['URL']) . ' : ' . $URL['validationOutput'] .'<br>';
+      $urlHandler->execute(array('Id' => $entity['id'], 'Type' => $urlType));
+      $urlInfo = '';
+      while($url = $urlHandler->fetch(PDO::FETCH_ASSOC)) {
+        if ($url['status'] != 0) {
+          $urlInfo .= htmlspecialchars($url['URL']) . ' : ' . $url['validationOutput'] .'<br>';
         }
       }
-      if ($URLInfo != '') {
+      if ($urlInfo != '') {
         if ($entity['isIdP']) {
           if ($entity['isSP']) {
             $type='IdP/SP';
@@ -2248,7 +2248,7 @@ class MetadataDisplay extends Display\Common {
           $type='?';
         }
         printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>%s',
-          $entity['id'], htmlspecialchars($entity['entityID']), $type, ($entity['publishIn'] & 4) == 4 ? 'eduGAIN' : '', $URLInfo, "\n");
+          $entity['id'], htmlspecialchars($entity['entityID']), $type, ($entity['publishIn'] & 4) == 4 ? 'eduGAIN' : '', $urlInfo, "\n");
       }
     }
     print self::HTML_TABLE_END;

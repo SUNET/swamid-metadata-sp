@@ -480,48 +480,48 @@ function showList($entities, $show) {
   if ($show == 'All' || $show == 'SP') { ?>
 
       <tr>
-        <th id="ECS in production" rowspan="8">Entity Categories in production</th>
-        <th id="Anonymous">Anonymous</th><td><?=$countECanon?></td>
+        <th id="ecInPproduction" rowspan="8">Entity Categories in production</th>
+        <th id="ecAnonymous">Anonymous</th><td><?=$countECanon?></td>
       </tr>
-      <tr><th id="Pseudonymous">Pseudonymous</th><td><?=$countECpseuso?></td></tr>
-      <tr><th id="Personalized">Personalized</th><td><?=$countECpers?></td></tr>
-      <tr><th id="coco v1">CoCo v1</th><td><?=$countECcocov1?></td></tr>
-      <tr><th id="coco v2">CoCo v2</th><td><?=$countECcocov2?></td></tr>
-      <tr><th id="r and s">R&S</th><td><?=$countECrs?></td></tr>
-      <tr><th id="esi">ESI</th><td><?=$countECesi?></td></tr>
-      <tr><th id="HideFromDisco">DS-hide </th><td><?=$countHideFromDisc?></td></tr><?php
+      <tr><th id="ecPseudonymous">Pseudonymous</th><td><?=$countECpseuso?></td></tr>
+      <tr><th id="ecPersonalized">Personalized</th><td><?=$countECpers?></td></tr>
+      <tr><th id="ecCocov1">CoCo v1</th><td><?=$countECcocov1?></td></tr>
+      <tr><th id="ecCocov2">CoCo v2</th><td><?=$countECcocov2?></td></tr>
+      <tr><th id="ecRandS">R&S</th><td><?=$countECrs?></td></tr>
+      <tr><th id="ecesi">ESI</th><td><?=$countECesi?></td></tr>
+      <tr><th id="ecHideFromDisco">DS-hide </th><td><?=$countHideFromDisc?></td></tr><?php
   } else {
     printf('
       <tr>
-        <th id="ECS in production">Entity Categories in production</th>
-        <th id="HideFromDisco">DS-hide </th><td>%d</td>
+        <th id="ecInPproduction">Entity Categories in production</th>
+        <th id="ecHideFromDisco">DS-hide </th><td>%d</td>
       </tr>%s', $countHideFromDisc, "\n");
   }
   if ($show == 'All' || $show == 'IdP') { ?>
       <tr>
-        <th id="ECS in production" rowspan="7">Support Categorys in production</th>
-        <th id="Anonymous">Anonymous</th><td><?=$countECSanon?></td>
+        <th id="ecsInPproduction" rowspan="7">Support Categorys in production</th>
+        <th id="ecsAnonymous">Anonymous</th><td><?=$countECSanon?></td>
       </tr>
-      <tr><th id="Pseudonymous">Pseudonymous</th><td><?=$countECSpseuso?></td></tr>
-      <tr><th id="Personalized">Personalized</th><td><?=$countECSpers?></td></tr>
-      <tr><th id="coco v1">CoCo v1</th><td><?=$countECScocov1?></td></tr>
-      <tr><th id="coco v2">CoCo v2</th><td><?=$countECScocov2?></td></tr>
-      <tr><th id="r and s">R&S</th><td><?=$countECSrs?></td></tr>
-      <tr><th id="esi">ESI</th><td><?=$countECSesi?></td></tr>
+      <tr><th id="ecsPseudonymous">Pseudonymous</th><td><?=$countECSpseuso?></td></tr>
+      <tr><th id="ecsPersonalized">Personalized</th><td><?=$countECSpers?></td></tr>
+      <tr><th id="ecsCocov1">CoCo v1</th><td><?=$countECScocov1?></td></tr>
+      <tr><th id="ecsCocov2">CoCo v2</th><td><?=$countECScocov2?></td></tr>
+      <tr><th id="ecsRandS">R&S</th><td><?=$countECSrs?></td></tr>
+      <tr><th id="ecsesi">ESI</th><td><?=$countECSesi?></td></tr>
       <tr>
-        <th id="al" rowspan="5">Assurance profiles in production</th>
-        <th id="al1">AL1</th><td><?=$countAL1?></td>
+        <th id="acal" rowspan="5">Assurance profiles in production</th>
+        <th id="acal1">AL1</th><td><?=$countAL1?></td>
       </tr>
-      <tr><th id="al2">AL2 </th><td><?=$countAL2?></td></tr>
-      <tr><th id="al3">AL3 </th><td><?=$countAL3?></td></tr>
-      <tr><th id="sirtfi">SIRTFI </th><td><?=$countSIRTFI?></td></tr>
-      <tr><th id="sirtfi">SIRTFI2 </th><td><?=$countSIRTFI2?></td></tr><?php
+      <tr><th id="acal2">AL2 </th><td><?=$countAL2?></td></tr>
+      <tr><th id="acal3">AL3 </th><td><?=$countAL3?></td></tr>
+      <tr><th id="acsirtfi">SIRTFI </th><td><?=$countSIRTFI?></td></tr>
+      <tr><th id="acsirtfi2">SIRTFI2 </th><td><?=$countSIRTFI2?></td></tr><?php
   } else {
     printf('
       <tr>
-        <th  id="al" rowspan="2">Assurance profiles in production</th><th>SIRTFI</th><td>%d</td>
+        <th  id="acal" rowspan="2">Assurance profiles in production</th><th id="acsirtfi">SIRTFI</th><td>%d</td>
       </tr>
-      <tr><th>SIRTFI2</th><td>%d</td></tr>', $countSIRTFI, $countSIRTFI2);
+      <tr><th id="acsirtfi2">SIRTFI2</th><td>%d</td></tr>', $countSIRTFI, $countSIRTFI2);
   }?>
 
     </table>

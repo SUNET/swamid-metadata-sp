@@ -431,7 +431,7 @@ class IMPS {
     foreach (array('memberSince', 'notMemberAfter') as $key) {
       if (isset($_POST[$key])) {
         $this->errors .= ($_POST[$key] == '' ||
-          preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $_POST[$key]) && checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
+          preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST[$key]) && checkdate(intval(substr($_POST[$key],5,2)), intval(substr($_POST[$key],8,2)), intval(substr($_POST[$key],0,4))))
           ? '' : "Invalid date. \n";
       } else {
         $this->errors = self::TEXT_MISSING_POST;
