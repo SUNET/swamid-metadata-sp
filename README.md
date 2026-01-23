@@ -62,8 +62,7 @@ Actual removal is done by `cleanupDatabase.php`
 ### removeEntity.bash
 
 Parameters :
-- \<entityID\> entityID of Entity to remove
-- \<type\> Type of entity to remove. Could be Prod, Shadow or New.
+- \<file\> file containg an entityID of Entity to be removed
 
 Wrapper script that takes an file and parses out the first line for an entityID that should be removed.
 Output from `importAndValidateXML.php` is perfect for this :-)
@@ -133,8 +132,8 @@ Send out mailreminders
 
 ### saveQuarterlyStats.php
 
-Save statistics for display in *EntityStatistics* tab.
-Recomended is once per month or once per quater to not overload the page.
+Save statistics for display in *Statistics/Entity Statistics* and *Statistics/Assurance Certification* tabs.
+Recomended is once per month or once per quarter to not overload the page.
 
 ## Tooling for manual handling
 
@@ -151,15 +150,3 @@ Pameter :
 - \<id\> id of entity
 
 Change status from *pending* to *PendingPublished* for an Entity in status *pending* with *id*
-
-## Tooling not used anymore
-
-### importXML.bash ###
-
-Not in use in SWAMID.
-
-Used to be called from cron and selecting feeds based on filepath.
-
-### importXML-QA.bash
-
-See above
