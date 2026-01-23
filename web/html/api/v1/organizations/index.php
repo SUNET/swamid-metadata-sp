@@ -36,7 +36,7 @@ while ($organization = $organizationHandler->fetch(PDO::FETCH_ASSOC)) {
     $orgInfoDataObj->OrganizationURL = $orgInfoData['OrganizationURL'];
     $orgInfoDataArray[$orgInfoData['lang']] = $orgInfoDataObj;
     unset($orgInfoDataObj);
-  };
+  }
   $orgObj->id = $organization['orgId'];
   $orgObj->memberSince = $organization['memberSince'];
   $orgObj->notMemberAfter = $organization['notMemberAfter'];

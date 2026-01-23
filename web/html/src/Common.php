@@ -407,7 +407,7 @@ class Common {
           }
         }
       }
-    };
+    }
     if ($valid) {
       if ($type == 3) {
         $updateArray[self::BIND_RESULT] = 'Cannot use a <code>data:</code> URL for PrivacyStatementURL';
