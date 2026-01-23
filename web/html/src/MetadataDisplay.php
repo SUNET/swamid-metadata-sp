@@ -2232,7 +2232,7 @@ class MetadataDisplay extends Display\Common {
       $URLInfo = '';
       while($URL = $URLHandler->fetch(PDO::FETCH_ASSOC)) {
         if ($URL['status'] != 0) {
-          $URLInfo .= $URL['URL'] . ' : ' . $URL['validationOutput'] .'<br>';
+          $URLInfo .= htmlspecialchars($URL['URL']) . ' : ' . $URL['validationOutput'] .'<br>';
         }
       }
       if ($URLInfo != '') {

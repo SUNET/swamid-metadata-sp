@@ -2,6 +2,7 @@
 
 const HTML_OUTLINE = '-outline';
 const TEXT_PLAIN = 'Content-Type: text/plain; charset=utf-8';
+const ACCEPT_SAML_METADATA = 'Accept: application/samlmetadata+xml';
 
 //Load composer's autoloader
 require_once 'vendor/autoload.php';
@@ -617,6 +618,7 @@ function showRemoveQueue() {
 
 function showInterfederation($type){
   global $html, $config;
+  $federation = $config->getFederation();
   if ($type == 'IDP') {
     $html->showHeaders('eduGAIN - IdP:s');
     showMenu('fedIdPs','');
@@ -636,8 +638,11 @@ function showInterfederation($type){
     $entityList = $config->getDb()->query('SELECT `entityID`, `organization`, `contacts`, `scopes`, `ecs`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isIdP = 1');
     foreach ($entityList as $entity) {
+      $entityId_html = $federation['mdqBaseURL'] ?
+          sprintf('<a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a>', urlencode($entity['entityID']), htmlspecialchars($entity['entityID'])) :
+          htmlspecialchars($entity['entityID']);
       printf ('        <tr>
-          <td><a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a></td>
+          <td>%s</td>
           <td>%s</td>
           <td>%s</td>
           <td>%s</td>
@@ -645,7 +650,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['entityID']), $entity['organization'], $entity['contacts'],
+        $entityId_html, $entity['organization'], $entity['contacts'],
         htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
@@ -668,8 +673,11 @@ function showInterfederation($type){
         `organization`, `contacts`, `ec`, `assurancec`, `ra`
       FROM ExternalEntities WHERE isSP = 1');
     foreach ($entityList as $entity) {
+      $entityId_html = $federation['mdqBaseURL'] ?
+          sprintf('<a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a>', urlencode($entity['entityID']), htmlspecialchars($entity['entityID'])) :
+          htmlspecialchars($entity['entityID']);
       printf ('        <tr>
-          <td><a href="./?show=EntityFromMDQ&entityID=%s" target="_blank">%s</a></td>
+          <td>%s</td>
           <td>%s<br>%s</td>
           <td>%s</td>
           <td>%s</td>
@@ -677,7 +685,7 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        htmlspecialchars($entity['entityID']), htmlspecialchars($entity['entityID']), htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
+        $entityId_html,  htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
         $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   }
@@ -686,6 +694,11 @@ function showInterfederation($type){
 function showEntityFromMDQ($entityID) {
   global $config;
   $federation = $config->getFederation();
+  if (!$federation['mdqBaseURL']) {
+    http_response_code(500);
+    printf("ERROR: MDQ not configured\n");
+    exit;
+  }
   $target_url = sprintf('%s%s', $federation['mdqBaseURL'], urlencode($entityID));
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -694,6 +707,7 @@ function showEntityFromMDQ($entityID) {
   curl_setopt($ch, CURLOPT_USERAGENT, $config->getFederation()['urlCheckUA']);
   curl_setopt($ch, CURLOPT_PROTOCOLS, $config->getFederation()['urlCheckPlainHTTPEnabled'] ? CURLPROTO_HTTP | CURLPROTO_HTTPS : CURLPROTO_HTTPS);
   curl_setopt($ch, CURLOPT_MAXFILESIZE, $config->getFederation()['urlCheckMaxSize']);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array(ACCEPT_SAML_METADATA));
 
   $allowed_schemes = $config->getFederation()['urlCheckPlainHTTPEnabled'] ? array('http', 'https') : array('https');
   $default_ports = array( 'http' => 80, 'https' => 443);
@@ -711,11 +725,23 @@ function showEntityFromMDQ($entityID) {
     $output = curl_exec($ch);
     // check if we received a valid redirect
     if (curl_errno($ch)) {
+      http_response_code(500);
       print 'Curl error';
+      exit;
+    }
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($http_code != 200) {
+      // propagate only 404, for other non-OK HTTP response codes, return 500
+      http_response_code($http_code == 404 ? $http_code : 500);
+      printf('Could not retrieve metadata from MDQ URL %s (received HTTP code %d)', $target_url, $http_code);
       exit;
     }
     header('Content-Type: application/xml; charset=utf-8');
     print $output;
+    exit;
+  } else {
+    http_response_code(500);
+    print "Invalid URL $target_url";
     exit;
   }
 }
