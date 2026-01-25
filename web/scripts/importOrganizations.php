@@ -42,7 +42,7 @@ $orgHandler = $config->getDb()->prepare('INSERT INTO OrganizationInfo
     (' . ($use_id ? ':id ,' : '') . ':memberSince, :notMemberAfter)');
 if ($use_id) {
   $orgHandler->bindParam(':id', $org_id);
-};
+}
 $orgHandler->bindParam(':memberSince', $memberSince);
 $orgHandler->bindParam(':notMemberAfter', $notMemberAfter);
 
@@ -68,7 +68,7 @@ foreach ($organizations as $org) {
     printf("Found org %d\n", $org->id);
     if ($use_id) {
       $org_id = $org->id;
-    };
+    }
     $memberSince = $org->memberSince;
     $notMemberAfter = property_exists($org, 'notMemberAfter') ? $org->notMemberAfter : null;
     $orgHandler->execute();
@@ -76,7 +76,7 @@ foreach ($organizations as $org) {
     if (!$use_id) {
       $org_id = $config->getDb()->lastInsertId();
       printf("org got id %d\n", $org_id);
-    };
+    }
 
     foreach ($org->organizationInfoData as $lang => $orgInfoData) {
         $org_lang = $lang;
