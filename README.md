@@ -146,7 +146,31 @@ Usage depends on number of parameters passed:
 
 ### movePublishedPending.php
 
-Pameter :
+Parameter :
 - \<id\> id of entity
 
 Change status from *pending* to *PendingPublished* for an Entity in status *pending* with *id*
+
+## Tooling for initial bootstrap
+
+In particular when migrating from another tooling for managing a federation, the following scripts may be useful to bootstrap the Metadata Tool.
+
+### importOrganizations.php
+
+Import Organisations from JSON data (file or stdin) and store in the `OrganizationInfo` table.  The `--use-id` flag forces reusing the database ID (instead of having it auto-assigned by the DB).
+
+Optional parameter: `--use-id`.
+
+Required arguments: file name or `-` for stdin.
+
+### assignOrganizations.php
+
+For each published entity that is not linked to an Organisation (`OrganizationInfo` entry), try finding a corresponding entry that matches the `OrganizationName` in the entity metadata (comparing entries tagged with `en` language code) and link the entity to this entry.
+
+Optional parameter: `--dry-run`: do not perform any changes, only show what would be done.
+
+### importServices.php
+
+Import service catalogue listings and attach the **service URL** found in the catalogue to each SP entity listed in the catalogue.
+
+Required arguments: file name or `-` for stdin.
