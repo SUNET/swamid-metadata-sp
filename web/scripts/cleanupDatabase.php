@@ -3,6 +3,9 @@
     * SoftDeleted entities lastUpdated < 3 months
     * PublishedPending entities lastUpdated < 3 months
     * Shadow entities lastUpdated < 4 months (Should be 3 month + 2-3 days)
+    * Pending entities lastUpdated < 13 weeks
+    * Draft entities lastUpdated < 9 weeks
+    * Users not logged in for 6 months and not responsible for any Entities in the database.
 */
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
