@@ -65,6 +65,9 @@ trait CommonTrait {
       'http://refeds.org/category/research-and-scholarship' => array( # NOSONAR Should be http://
         'type' => 'IdP', 'standard' => true
       ),
+      'http://www.geant.net/uri/dataprotection-code-of-conduct/v1' => array( # NOSONAR Should be http://
+        'type' => 'IdP', 'standard' => true
+      ),
       'https://myacademicid.org/entity-categories/esi' => array(
         'type' => 'IdP', 'standard' => true
       ),
