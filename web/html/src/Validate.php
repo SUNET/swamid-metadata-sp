@@ -65,13 +65,14 @@ class Validate extends Common {
 
     $this->getEntityAttributes();
 
+    if ($this->isSP) { $this->validateSPServiceInfo(); }
+
     $this->checkRequiredContactPersonElements();
 
     if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
-    if ($this->isSP) { $this->validateSPServiceInfo(); }
     $this->saveResults();
   }
 
