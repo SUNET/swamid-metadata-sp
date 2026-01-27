@@ -323,18 +323,16 @@ class Validate extends Common {
     $entityAttributesHandler->bindValue(self::BIND_TYPE, 'subject-id:req');
     $entityAttributesHandler->execute();
     if ($subjectIdReq = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-      if ($subjectIdReq['attribute'] != 'pairwise-id' && $subjectIdReq['attribute'] != 'subject-id') {
+      if ($subjectIdReq['attribute'] != 'pairwise-id' && $subjectIdReq['attribute'] != 'subject-id') { # NOSONAR need to be 2 since subjectIdReq is created in above
         $this->error .= self::TEXT_COCOV2_REQ;
         $this->error .= sprintf(" in 5.2.1 to only use pairwise-id or subject-id as subject-id:req. %s is NOT allowed.\n",
           $subjectIdReq['attribute']);
       }
     }
     $requestedAttributeHandler->execute();
-    if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
-      if (! $subjectIdReq) {
-        $this->error .= self::TEXT_COCOV2_REQ;
-        $this->error .= " in 5.2.2 at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
-      }
+    if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC) && ! $subjectIdReq) {
+      $this->error .= self::TEXT_COCOV2_REQ;
+      $this->error .= " in 5.2.2 at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
     }
 
     if (! $this->isSIRTFI) {
