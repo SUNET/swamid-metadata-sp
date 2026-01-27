@@ -22,6 +22,12 @@ class ParseXML extends Common {
   protected $samlProtocolSupportFound = array();
   protected $discoveryResponseFound = false;
   protected $assertionConsumerServiceHTTPRedirectFound = false;
+  /**
+   * If subject-id:req already is found in XML
+   *
+   * In that case we need to create an error
+   */
+  protected $subjectIdReqFound = false;
 
   const BIND_COMPANY = ':Company';
   const BIND_DEFAULT = ':Default';
@@ -283,6 +289,13 @@ class ParseXML extends Common {
             $entityAttributesHandler->bindValue(self::BIND_VALUE, substr(trim($child->textContent),0,256));
           }
           $entityAttributesHandler->execute();
+          if ($attributeType == 'subject-id:req') {
+              if ($this->subjectIdReqFound) {
+                $this->error .= "subject-id:req MUST contain exactly one AttributeValue\n";
+              } else {
+                $this->subjectIdReqFound = true;
+              }
+          }
         } else {
           $this->result .= sprintf("Unknown Element Extensions -> EntityAttributes -> Attribute -> %s.\n", $child->nodeName);
         }
