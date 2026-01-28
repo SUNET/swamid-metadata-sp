@@ -70,6 +70,8 @@ class ValidateSWAMID extends Validate {
       $this->checkRequiredMDUIelementsSP();
       // 6.1.14, 6.2.x
       $this->checkRequiredSAMLcertificates('SPSSO');
+
+      $this->validateSPServiceInfo();
     }
     if ($this->isAA) {
       // 5.1.20, 5.2.x

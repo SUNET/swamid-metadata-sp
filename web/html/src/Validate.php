@@ -30,7 +30,7 @@ class Validate extends Common {
    */
   protected $isSIRTFI2 = false;
 
-  const TEXT_COCOV1_REC = 'GÉANT Data Protection Code of Conduct v1 Recomend';
+  const TEXT_COCOV1_REC = 'GÉANT Data Protection Code of Conduct v1 Recommend';
   const TEXT_COCOV1_REQ = 'GÉANT Data Protection Code of Conduct v1 Require';
   const TEXT_COCOV2_REC = 'REFEDS Data Protection Code of Conduct v2 Recommend';
   const TEXT_COCOV2_REQ = 'REFEDS Data Protection Code of Conduct v2 Require';
@@ -65,13 +65,14 @@ class Validate extends Common {
 
     $this->getEntityAttributes();
 
+    if ($this->isSP) { $this->validateSPServiceInfo(); }
+
     $this->checkRequiredContactPersonElements();
 
     if ($this->isSPandRandS) { $this->validateSPRandS(); }
 
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
-    if ($this->isSP) { $this->validateSPServiceInfo(); }
     $this->saveResults();
   }
 
@@ -228,32 +229,37 @@ class Validate extends Common {
       if ($element == 'PrivacyStatementURL' ) {
         $this->addURL($data, 3);
       }
+      if ($element == 'Description' && strlen($data) > 140) {
+        $this->warning .= self::TEXT_COCOV1_REC;
+        $this->warning .= ' in 2.2 an MDUI - Description no longer than 140 characters.';
+        $this->warning .= sprintf (' lang=%s is %d chars. %s', $lang, strlen($data), "\n");
+      }
     }
 
     if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
       $this->error .= self::TEXT_COCOV1_REQ;
-      $this->error .= " an MDUI - PrivacyStatementURL with at least lang=en.\n";
+      $this->error .= " in 2-1.1 an MDUI - PrivacyStatementURL with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['DisplayName'])) {
       $this->warning .= self::TEXT_COCOV1_REC;
-      $this->warning .= " an MDUI - DisplayName with at least lang=en.\n";
+      $this->warning .= " in 2-1.2 an MDUI - DisplayName with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['Description'])) {
       $this->warning .= self::TEXT_COCOV1_REC;
-      $this->warning .= " an MDUI - Description with at least lang=en.\n";
+      $this->warning .= " in 2-1.3 an MDUI - Description with at least lang=en.\n";
     }
     foreach ($mduiElementArray as $element => $value) {
       if (! isset($mduiArray['en'][$element])) {
         $this->error .= self::TEXT_COCOV1_REQ;
-        $this->error .= sprintf(" an MDUI - %s with lang=en for all present elements.\n", $element);
+        $this->error .= sprintf(" in 2-1.4 an MDUI - %s with lang=en for all present elements.\n", $element);
       }
     }
     $requestedAttributeHandler->execute();
     if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->error .= "GÉANT Data Protection Code of Conduct Require at least one RequestedAttribute.\n";
+      $this->error .= self::TEXT_COCOV1_REQ . " in 2-2.1 at least one RequestedAttribute.\n";
     }
     $this->warning .= 'The GEANT Data Protection Code of Conduct version 1.0 is now deprecated. ';
-    $this->warning .= 'It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0, which reflects updated legislaion, practices and standards. ';
+    $this->warning .= 'It is recommended to transition to the REFEDS Data Protection Code of Conduct version 2.0, which reflects updated legislation, practices and standards. ';
     $this->warning .= "However, version 1.0 may still be retained temporarily to ensure backward compatibility during the transition period.\n";
   }
 
@@ -288,36 +294,47 @@ class Validate extends Common {
       if ($element == 'PrivacyStatementURL' ) {
         $this->addURL($data, 2);
       }
+      if ($element == 'Description' && strlen($data) > 140) {
+        $this->warning .= self::TEXT_COCOV2_REC;
+        $this->warning .= ' in 5.1.3 an MDUI - Description no longer than 140 characters.';
+        $this->warning .= sprintf (' lang=%s is %d chars. %s', $lang, strlen($data), "\n");
+      }
     }
 
     if (! isset($mduiArray['en']['PrivacyStatementURL'])) {
       $this->error .= self::TEXT_COCOV2_REQ;
-      $this->error .= " an MDUI - PrivacyStatementURL with at least lang=en.\n";
+      $this->error .= " in 5.1.1 an MDUI - PrivacyStatementURL with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['DisplayName'])) {
       $this->warning .= self::TEXT_COCOV2_REC;
-      $this->warning .= " an MDUI - DisplayName with at least lang=en.\n";
+      $this->warning .= " in 5.1.2 an MDUI - DisplayName with at least lang=en.\n";
     }
     if (! isset($mduiArray['en']['Description'])) {
       $this->warning .= self::TEXT_COCOV2_REC;
-      $this->warning .= " an MDUI - Description with at least lang=en.\n";
+      $this->warning .= " in 5.1.3 an MDUI - Description with at least lang=en.\n";
     }
     foreach ($mduiElementArray as $element => $value) {
       if (! isset($mduiArray['en'][$element])) {
         $this->error .= self::TEXT_COCOV2_REQ;
-        $this->error .= sprintf(" an MDUI - %s with lang=en for all present elements.\n", $element);
+        $this->error .= sprintf(" in 5.1.4 an MDUI - %s with lang=en for all present elements.\n", $element);
       }
     }
 
-    $requestedAttributeHandler->execute();
-    if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
-      $entityAttributesHandler->bindValue(self::BIND_TYPE, 'subject-id:req');
-      $entityAttributesHandler->execute();
-      if (! $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+    $entityAttributesHandler->bindValue(self::BIND_TYPE, 'subject-id:req');
+    $entityAttributesHandler->execute();
+    if ($subjectIdReq = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+      if ($subjectIdReq['attribute'] != 'pairwise-id' && $subjectIdReq['attribute'] != 'subject-id') { # NOSONAR need to be 2 since subjectIdReq is created in above
         $this->error .= self::TEXT_COCOV2_REQ;
-        $this->error .= " at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
+        $this->error .= sprintf(" in 5.2.1 to only use pairwise-id or subject-id as subject-id:req. %s is NOT allowed.\n",
+          $subjectIdReq['attribute']);
       }
     }
+    $requestedAttributeHandler->execute();
+    if (! $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC) && ! $subjectIdReq) {
+      $this->error .= self::TEXT_COCOV2_REQ;
+      $this->error .= " in 5.2.2 at least one RequestedAttribute OR subject-id:req entity attribute extension.\n";
+    }
+
     if (! $this->isSIRTFI) {
       $this->error .= self::TEXT_COCOV2_REQ;
       $this->error .= "s in appendix 1 section G that SIRTFI is used to manage security incidents.\n";

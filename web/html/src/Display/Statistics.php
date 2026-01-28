@@ -790,7 +790,7 @@ const HTML_SPACER = '          %s';
     }
 
     printf ('        <h3>Assurance Certification Statistics</h3>');
-    $this->showCollapse('Dates of publication of Certifications', 'DatesCertifications', false, 2);
+    $this->showCollapse('Dates of publication of Certifications', 'DatesCertifications', false, 2, false);
     printf ('%s              <ul>
                 %s<li>Sirtfi: 2016-11-08</li>
                 <li>Sirtfi 2: 2022-07-22</li>
@@ -803,8 +803,10 @@ const HTML_SPACER = '          %s';
     $this->showCollapseEnd('DatesCertifications', 2);
     printf ('
         %s
+        <h4>Entities with registered support for Sirtfi</h4>
         <canvas id="sirtfi" width="200" height="50"></canvas><br>',
-      $swamid_assurance ? '<canvas id="idps" width="200" height="50"></canvas><br>' : '');
+      $swamid_assurance ? '<h4>Identity Providers with approved Assurance Profiles</h4>
+        <canvas id="idps" width="200" height="50"></canvas><br>' : '');
     $this->showCollapse('Statistics in numbers', 'AcStatistics', false, 2, false);
 
     printf ('
