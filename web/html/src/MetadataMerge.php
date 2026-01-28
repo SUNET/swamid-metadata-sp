@@ -189,11 +189,13 @@ class MetadataMerge extends Common {
           }
           $attributeValue = $attributeValue->nextSibling;
         }
-        foreach ($oldAttributeValues[$type] as $value) {
-          $attributeValue = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
-          $attributeValue->nodeValue = htmlspecialchars($value);
-          $attribute->appendChild($attributeValue);
-          unset($oldAttributeValues[$type][$value]);
+        if (isset($oldAttributeValues[$type])) {
+          foreach ($oldAttributeValues[$type] as $value) {
+            $attributeValue = $this->xml->createElement(self::SAML_SAMLA_ATTRIBUTEVALUE);
+            $attributeValue->nodeValue = htmlspecialchars($value);
+            $attribute->appendChild($attributeValue);
+            unset($oldAttributeValues[$type][$value]);
+          }
         }
         $attribute = $attribute->nextSibling;
       }
