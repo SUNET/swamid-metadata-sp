@@ -127,6 +127,10 @@ Send out mailreminders
  - Old certs 1 month before expiration and after expiration
  - Entities in status *pending* not touched for 1, 4 and 11 weeks
  - Entities in status *draft* not touched for 2 and 7 weeks
+ - IMPS to be confirmed (at 10, 11 and 12 month since last confirmation)
+
+Parameters:
+- `[--remind-only annualConfirm,certs,pending,draft,IMPS]` - select only certain reminders to be sent (comma-separated list)
 
 ## Tooling recommended to run on a monthly or quarterly schedule
 
