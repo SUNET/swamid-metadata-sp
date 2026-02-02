@@ -22,15 +22,61 @@ $removeMailRemindersHandler = $config->getDb()->prepare('DELETE FROM MailReminde
 $getMailRemindersHandler = $config->getDb()->prepare(
   'SELECT `entity_id`, `level` FROM MailReminders WHERE `type` = :Type');
 
-confirmEntities();
-oldCerts();
-checkOldPending();
-checkOldDraft();
-if ($config->getIMPS()) {
-  print "Checking old IMPS:es.\n";
-  checkOldIMPS();
-} else {
-  print "Skipping check of old IMPS since config missing.\n";
+const REMIND_ANNUAL = 'annualConfirm';
+const REMIND_CERTS = 'certs';
+const REMIND_PENDING = 'pending';
+const REMIND_DRAFT = 'draft';
+const REMIND_IMPS = 'IMPS';
+// all possible remind values
+$remindAll = array(REMIND_ANNUAL, REMIND_CERTS, REMIND_PENDING, REMIND_DRAFT, REMIND_IMPS);
+// default: include all reminders
+$remindOnly = $remindAll;
+if ($argc > 1) {
+  if ($argv[1] == '--remind-only') {
+    if ($argc == 3) {
+      $remindOnly = explode(',', $argv[2]);
+      foreach ($remindOnly as $remind) {
+        if (!in_array($remind, $remindAll)) {
+          invalidUsage(sprintf("Invalid remind task '%s'", $remind));
+        }
+      }
+      printf("Sending reminders only for %s\n", implode(',', $remindOnly));
+    } else {
+      invalidUsage('Invalid number of arguments.');
+    }
+  } else {
+    invalidUsage(sprintf("Invalid option '%s'", $argv[1]));
+  }
+}
+
+if (in_array(REMIND_ANNUAL, $remindOnly)) {
+  confirmEntities();
+}
+if (in_array(REMIND_CERTS, $remindOnly)) {
+  oldCerts();
+}
+if (in_array(REMIND_PENDING, $remindOnly)) {
+  checkOldPending();
+}
+if (in_array(REMIND_DRAFT, $remindOnly)) {
+  checkOldDraft();
+}
+if (in_array(REMIND_IMPS, $remindOnly)) {
+  if ($config->getIMPS()) {
+    print "Checking old IMPS:es.\n";
+    checkOldIMPS();
+  } else {
+    print "Skipping check of old IMPS since config missing.\n";
+  }
+}
+
+function invalidUsage($msg) {
+  global $argv, $remindAll;
+
+  printf("%s\n", $msg);
+  print "Usage:\n";
+  printf("    %s [--remind-only %s]\n", $argv[0], implode(',', $remindAll));
+  exit(1);
 }
 
 function confirmEntities() {
