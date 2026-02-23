@@ -62,8 +62,6 @@ class Configuration {
   /**
    * Setup the class
    *
-   * Return an array with the smtp configuration
-   *
    * @param bool $startDB If we should start the database connection or not.
    *
    * @return void
@@ -155,10 +153,10 @@ class Configuration {
         $this->db = new PDO($dbDSN, $db['username'], $db['password'], $options);
         // set the PDO error mode to exception
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->checkDBVersion();
       } catch(PDOException $e) {
         echo "Error: " . $e->getMessage();
       }
-      $this->checkDBVersion();
     }
 
     # Users
