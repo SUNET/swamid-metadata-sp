@@ -597,7 +597,7 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), $idx, 'Update', self::TEXT_COPY);
+      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), 0, 'Update', self::TEXT_COPY);
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
