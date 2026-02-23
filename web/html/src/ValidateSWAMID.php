@@ -828,7 +828,7 @@ class ValidateSWAMID extends Validate {
         $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
-    } elseif ($contactEmail['support'] == $contactEmail[self::CT_SECURITY]) {
+    } elseif (isset($contactEmail['support']) && $contactEmail['support'] == $contactEmail[self::CT_SECURITY]) {
       $this->warning .= 'Swamid advises against using the same email address for both support and security contact, ';
       $this->warning .= "as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.\n";
     }
