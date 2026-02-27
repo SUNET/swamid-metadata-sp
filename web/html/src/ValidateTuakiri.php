@@ -14,8 +14,6 @@ class ValidateTuakiri extends Validate {
 
   const TEXT_HTTP = 'http://';
   const TEXT_HTTPS = 'https://';
-  const TEXT_521 = '5.2.1';
-  const TEXT_621 = '6.2.1';
   const TEXT_DATA = 'data:';
 
   /**
@@ -41,15 +39,14 @@ class ValidateTuakiri extends Validate {
     if (! (substr($this->entityID, 0, 4) == 'urn:' ||
       substr($this->entityID, 0, 8) == self::TEXT_HTTPS ||
       substr($this->entityID, 0, 7) == self::TEXT_HTTP )) {
-        $this->error .= $this->selectError('5.1.7', '6.1.7',
-          'entityID MUST start with either urn:, https:// or http://.');
+        $this->error .= "entityID MUST start with either urn:, https:// or http://.\n";
     } elseif (substr($this->entityID, 0, 4) == 'urn:' ) {
-      $this->warning .= $this->selectError('5.1.7', '6.1.7', 'entityID SHOULD NOT start with urn: for new entities.');
+      $this->warning .= "entityID SHOULD NOT start with urn: for new entities.\n";
     }
 
     // 5.1.8 /6.1.8
     if (strlen($this->entityID) > 256) {
-      $this->error .= $this->selectError('5.1.8', '6.1.8', 'entityID MUST NOT exceed 256 characters.');
+      $this->error .= "entityID MUST NOT exceed 256 characters.\n";
     }
 
     if ($this->isIdP) {
@@ -122,13 +119,7 @@ class ValidateTuakiri extends Validate {
         $usedLangArray[$lang] = $lang;
       } else {
         $usedLangArray[$lang] = $lang;
-        if ($type == 'SPSSO') {
-          $this->error .= sprintf("SWAMID Tech 6.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
-            $lang, $element, $type);
-        } else {
-          $this->error .= sprintf("SWAMID Tech 5.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
-            $lang, $element, $type);
-        }
+        $this->error .= sprintf("Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n", $lang, $element, $type);
       }
 
       if (! isset ($mduiArray[$type])) {
@@ -140,13 +131,7 @@ class ValidateTuakiri extends Validate {
 
       if (isset($mduiArray[$type][$element][$lang])) {
         if ($element != 'Logo') {
-          if ($type == 'IDPSSO') {
-            $this->error .= sprintf("SWAMID Tech 5.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
-              $element, $lang, $type);
-          } else {
-            $this->error .= sprintf("SWAMID Tech 6.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
-              $element, $lang, $type);
-          }
+          $this->error .= sprintf("More than one mdui:%s with lang=%s in %sDescriptor.\n", $element, $lang, $type);
         }
       } else {
         $mduiArray[$type][$element][$lang] = true;
@@ -167,7 +152,7 @@ class ValidateTuakiri extends Validate {
 
       if (isset($serviceArray[$element][$index][$lang])) {
         $this->error .= sprintf(
-          "SWAMID Tech 6.1.2: More than one %s with lang=%s in AttributeConsumingService (index=%d).\n",
+          "More than one %s with lang=%s in AttributeConsumingService (index=%d).\n",
           $element, $lang, $index);
       } else {
         $serviceArray[$element][$index][$lang] = true;
@@ -183,8 +168,7 @@ class ValidateTuakiri extends Validate {
       $element = $organization['element'];
       $usedLangArray[$lang] = $lang;
       if (isset($organizationArray[$element][$lang])) {
-        $this->error .= $this->selectError('5.1.2', '6.1.2',
-          sprintf('More than one %s with lang=%s in Organization.', $element, $lang));
+        $this->error .= sprintf("More than one %s with lang=%s in Organization.\n", $element, $lang);
       } else {
         $organizationArray[$element][$lang] = true;
       }
@@ -199,13 +183,7 @@ class ValidateTuakiri extends Validate {
           if ( $lang == '' ) {
             unset($usedLangArray[$lang]);
           } elseif (! isset($langArray[$lang])) {
-            if ($type == 'IDPSSO') {
-              $this->error .= sprintf("SWAMID Tech 5.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
-                $lang, $element, $type);
-            } else {
-              $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
-                $lang, $element, $type);
-            }
+            $this->error .= sprintf("Missing lang=%s for mdui:%s in %sDescriptor.\n", $lang, $element, $type);
           }
         }
       }
@@ -214,7 +192,7 @@ class ValidateTuakiri extends Validate {
       foreach ($indexArray as $langArray) {
         foreach ($usedLangArray as $lang) {
           if (! isset($langArray[$lang])) {
-            $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
+            $this->error .= sprintf("Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
               $lang, $element, $index);
           }
         }
@@ -223,15 +201,14 @@ class ValidateTuakiri extends Validate {
     foreach ($organizationArray as $element => $langArray) {
       foreach ($usedLangArray as $lang) {
         if (! isset($langArray[$lang])) {
-          $this->error .= $this->selectError('5.1.3', '6.1.3',
-            sprintf('Missing lang=%s for %s in Organization.', $lang, $element));
+          $this->error .= sprintf("Missing lang=%s for %s in Organization.\n", $lang, $element);
         }
       }
     }
 
     //5.1.4/6.1.4 Metadata elements that support the lang attribute MUST have a definition with language English (en).
     if (! isset($usedLangArray['en'])) {
-      $this->error .= $this->selectError('5.1.4', '6.1.4', 'Missing MDUI/Organization/... with lang=en.');
+      $this->error .= "Missing MDUI/Organization/... with lang=en.\n";
     }
   }
 
@@ -276,7 +253,7 @@ class ValidateTuakiri extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category-support');
       $entityAttributesHandler->execute();
       if (! $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        $this->warning .= 'SWAMID Tech 5.1.11: Support for Entity Categories SHOULD be registered in the';
+        $this->warning .= 'Support for Entity Categories SHOULD be registered in the';
         $this->warning .= " entity category support entity attribute as defined by the respective Entity Category.\n";
       }
     } else {
@@ -309,7 +286,7 @@ class ValidateTuakiri extends Validate {
       $missingScope = false;
     }
     if ($missingScope) {
-      $this->error .= "SWAMID Tech 5.1.15: IdP:s MUST have at least one Scope registered.\n";
+      $this->error .= "A SAML IdP MUST have at least one Scope registered.\n";
     }
   }
 
@@ -356,7 +333,7 @@ class ValidateTuakiri extends Validate {
           $mduiDNUniqHandler->bindParam(self::BIND_ENTITYID, $entityID);
           $mduiDNUniqHandler->execute();
           while ($duplicate = $mduiDNUniqHandler->fetch(PDO::FETCH_ASSOC)) {
-            $this->error .= sprintf("SWAMID Tech 5.1.17: DisplayName for lang %s is also set on %s.\n",
+            $this->error .= sprintf("DisplayName for lang %s is also set on %s.\n",
               $lang, htmlspecialchars($duplicate['entityID']));
           }
           break;
@@ -368,7 +345,7 @@ class ValidateTuakiri extends Validate {
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
           if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
-            $this->error .= sprintf('SWAMID Tech 5.1.17: %s must be a URL%s', $mdui['element'], ".\n");
+            $this->error .= sprintf('%s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
         default :
@@ -376,7 +353,7 @@ class ValidateTuakiri extends Validate {
     }
 
     foreach ($elementArray as $element => $value) {
-      $this->error .= $value ? '' : sprintf("SWAMID Tech 5.1.17: Missing mdui:%s in IDPSSODecriptor.\n", $element);
+      $this->error .= $value ? '' : sprintf("Missing mdui:%s in IDPSSODecriptor.\n", $element);
     }
   }
 
@@ -410,7 +387,7 @@ class ValidateTuakiri extends Validate {
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
           if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,7) != self::TEXT_HTTP) {
-            $this->error .= sprintf('SWAMID Tech 6.1.12: %s must be a URL%s', $mdui['element'], ".\n");
+            $this->error .= sprintf('%s must be a URL%s', $mdui['element'], ".\n");
           }
           break;
         default :
@@ -419,7 +396,7 @@ class ValidateTuakiri extends Validate {
 
     foreach ($elementArray as $element => $value) {
       if (! $value) {
-        $this->error .= sprintf("SWAMID Tech 6.1.12: Missing mdui:%s in SPSSODescriptor.\n", $element);
+        $this->error .= sprintf("Missing mdui:%s in SPSSODescriptor.\n", $element);
       }
     }
   }
@@ -554,13 +531,13 @@ class ValidateTuakiri extends Validate {
     if (! $keyInfoArray[$type]) {
       if ($type == 'IDPSSO') {
         $this->error .=
-          "SWAMID Tech 5.1.20: Identity Providers MUST have at least one valid signing certificate.\n";
+          "Identity Providers MUST have at least one valid signing certificate.\n";
       } elseif ($type == 'AttributeAuthority') {
         $this->error .=
-          "SWAMID Tech 5.1.20: Attribute Authorities MUST have at least one valid signing certificate.\n";
+          "Attribute Authorities MUST have at least one valid signing certificate.\n";
       } else {
         $this->error .=
-          "SWAMID Tech 6.1.14: Service Providers MUST have at least one valid encryption certificate.\n";
+          "Service Providers MUST have at least one valid encryption certificate.\n";
       }
     }
     // 5.2.1 Identity Provider credentials (i.e. entity keys)
@@ -628,39 +605,32 @@ class ValidateTuakiri extends Validate {
     if ($swamid521error) {
       if ($swamid521error == 1) {
         if ($smalKeyFound) {
-          $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-            ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+          $this->errorNB .= '(NonBreaking) Certificate MUST NOT use shorter comparable';
           $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
         } else {
-          $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
-          $this->warning .= " Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n";
+          $this->warning .= "Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n";
         }
       } elseif ($swamid521error == 2) {
-        $this->error .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable',
-          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+        $this->error .= 'Certificate MUST NOT use shorter comparable';
         $this->error .= ' key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate';
         $this->error .= " should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
       }
     } else {
       if ($smalKeyFound) {
-        $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Certificate MUST NOT use shorter comparable',
-          ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+        $this->errorNB .= '(NonBreaking) Certificate MUST NOT use shorter comparable';
         $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
       }
     }
     if ($swamid5212030error) {
-      $this->warning .= sprintf('SWAMID Tech %s: Certificate MUST NOT use shorter comparable key strength',
-        ($type == 'SPSSO') ? self::TEXT_621 : self::TEXT_521);
+      $this->warning .= 'Certificate MUST NOT use shorter comparable key strength';
       $this->warning .= " (in the sense of NIST SP 800-57) than a 3072-bit RSA key if valid after 2030-12-31.\n";
     }
 
     if ($swamid522error) {
-      $this->error .= sprintf('SWAMID Tech %s: Signing and encryption certificates MUST NOT be expired. New',
-        ($type == 'SPSSO') ? '6.2.2' : '5.2.2');
+      $this->error .= 'Signing and encryption certificates MUST NOT be expired. New';
       $this->error .= " certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
     } elseif ($swamid522errorNB) {
-      $this->errorNB .= sprintf('SWAMID Tech %s: (NonBreaking) Signing and encryption certificates',
-        ($type == 'SPSSO') ? '6.2.2' : '5.2.2');
+      $this->errorNB .= '(NonBreaking) Signing and encryption certificates';
       $this->errorNB .= " MUST NOT be expired.\n";
     }
 
@@ -669,8 +639,7 @@ class ValidateTuakiri extends Validate {
     }
 
     if ($swamid523warning) {
-      $this->warning .= sprintf('SWAMID Tech %s:', ($type == 'SPSSO') ? '6.2.3' : '5.2.3');
-      $this->warning .= " Signing and encryption certificates SHOULD be self-signed.\n";
+      $this->warning .= "Signing and encryption certificates SHOULD be self-signed.\n";
     }
   }
 
@@ -697,7 +666,7 @@ class ValidateTuakiri extends Validate {
 
     foreach ($elementArray as $element => $value) {
       if (! $value) {
-        $this->error .= $this->selectError('5.1.22', '6.1.21', sprintf('Missing %s in Organization.', $element));
+        $this->error .= sprintf("Missing %s in Organization.\n", $element);
       }
     }
   }
@@ -730,23 +699,19 @@ class ValidateTuakiri extends Validate {
       if ($contactType == 'other' &&  $contactPerson['subcontactType'] == 'security' ) {
         $contactType = self::CT_SECURITY;
         if ( $contactPerson['givenName'] == '') {
-          $this->error .= $this->selectError('5.1.28', '6.1.27',
-            'GivenName element MUST be present for security ContactPerson.');
+          $this->error .= "GivenName element MUST be present for security ContactPerson.\n";
         }
       }
 
       // 5.1.23/6.1.22 ContactPerson elements MUST have an EmailAddress element
       if ($contactPerson['emailAddress'] == '') {
-        $this->error .= $this->selectError('5.1.23' , '6.1.22',
-          sprintf('ContactPerson [%s] elements MUST have an EmailAddress element.', $contactType));
+        $this->error .= sprintf("ContactPerson [%s] elements MUST have an EmailAddress element.\n", $contactType);
       } elseif (substr($contactPerson['emailAddress'], 0, 7) != 'mailto:') {
-        $this->error .= $this->selectError('5.1.23', '6.1.22',
-          sprintf('ContactPerson [%s] EmailAddress MUST start with mailto:.', $contactType));
+        $this->error .= sprintf("ContactPerson [%s] EmailAddress MUST start with mailto:.\n", $contactType);
       }
       // 5.1.24/6.1.23 There MUST NOT be more than one ContactPerson element of each type.
       if ( isset($usedContactTypes[$contactType])) {
-        $this->error .= $this->selectError('5.1.24', '6.1.23',
-          sprintf('There MUST NOT be more than one ContactPerson element of type = %s.', $contactType));
+        $this->error .= sprintf("There MUST NOT be more than one ContactPerson element of type = %s.\n", $contactType);
       } else {
         $usedContactTypes[$contactType] = true;
       }
@@ -755,21 +720,21 @@ class ValidateTuakiri extends Validate {
 
     // 5.1.25/6.1.24 Identity Providers MUST have one ContactPerson element of type administrative.
     if (!isset ($usedContactTypes['administrative'])) {
-      $this->error .= $this->selectError('5.1.25','6.1.24','Missing ContactPerson of type administrative');
+      $this->error .= "Missing ContactPerson of type administrative\n";
     }
 
     // 5.1.26/6.1.25 Identity Providers MUST have one ContactPerson element of type technical.
     if (!isset ($usedContactTypes['technical'])) {
-      $this->error .= $this->selectError('5.1.26','6.1.25','Missing ContactPerson of type technical.');
+      $this->error .= "Missing ContactPerson of type technical.\n";
     }
 
     // 5.1.27 Identity Providers MUST have one ContactPerson element of type support.
     // 6.1.26 Service Providers SHOULD have one ContactPerson element of type support.
     if (!isset ($usedContactTypes['support'])) {
       if ($this->isIdP) {
-        $this->error .= $this->selectError('5.1.27', '6.1.26', 'Missing ContactPerson of type support.');
+        $this->error .= "Missing ContactPerson of type support.\n";
       } else {
-        $this->warning .= $this->selectError('5.1.27', '6.1.26', 'Missing ContactPerson of type support.');
+        $this->warning .= "Missing ContactPerson of type support.\n";
       }
     }
 
@@ -778,42 +743,13 @@ class ValidateTuakiri extends Validate {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } else {
-        $this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
+        $this->warning .= "Missing security ContactPerson.\n";
         $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
     } elseif (isset($contactEmail['support']) && $contactEmail['support'] == $contactEmail[self::CT_SECURITY]) {
-      $this->warning .= 'Swamid advises against using the same email address for both support and security contact, ';
+      $this->warning .= 'Tuakiri advises against using the same email address for both support and security contact, ';
       $this->warning .= "as the security contact is used for sensitive communication and must comply with the Traffic Light Protocol.\n";
-    }
-  }
-
-  /**
-   * Select Error
-   *
-   * Select Error bases on if entity is IdP, SP or both
-   *
-   * @param string $idpCode error-code if IdP
-   *
-   * @param string $spCode error-code if SP
-   *
-   * @param string $error error messege to apend after idp/sp code
-   *
-   *
-   * @return string
-   */
-  private function selectError($idpCode,$spCode,$error) {
-    if ($this->isIdP) {
-      if ($this->isSP) {
-        # Both IdP and SP
-        return sprintf("SWAMID Tech %s/%s: %s\n", $idpCode, $spCode, $error);
-      } else {
-        # IdP Only
-        return sprintf("SWAMID Tech %s: %s\n", $idpCode, $error);
-      }
-    } elseif ($this->isSP) {
-      # SP Only
-      return sprintf("SWAMID Tech %s: %s\n", $spCode, $error);
     }
   }
 }
