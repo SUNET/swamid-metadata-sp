@@ -414,9 +414,7 @@ class ValidateTuakiri extends Validate {
     $keyInfoHandler->execute();
 
     $swamid521Level = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
-    $swamid521Level2030 = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
     $swamid521error = 0;
-    $swamid5212030error = 0;
     $swamid522error = false;
     $swamid522errorNB = false;
     $swamid523warning = false;
@@ -476,9 +474,6 @@ class ValidateTuakiri extends Validate {
           if ($keyInfo['bits'] >= 4096 ) {
             $swamid521Level[$keyInfo['use']] = 3;
           } elseif ($keyInfo['bits'] >= 2048 && $swamid521Level[$keyInfo['use']] < 2 ) {
-            if ($keyInfo['notValidAfter'] > '2030-12-31' && $keyInfo['bits'] < 3072) {
-              $swamid521Level2030[$keyInfo['use']] = true;
-            }
             $swamid521Level[$keyInfo['use']] = 2;
           } elseif ($swamid521Level[$keyInfo['use']] < 1) {
             $swamid521Level[$keyInfo['use']] = 1;
@@ -546,7 +541,6 @@ class ValidateTuakiri extends Validate {
           case 2 :
             // Key >= 2048 and < 4096  // >= 256 and <384
             $swamid521error = $swamid521error == 0 ? 1 : $swamid521error;
-            $swamid5212030error = $swamid5212030error ? true : $swamid521Level2030[$use];
             break;
           case 1 :
             // To small key
@@ -577,7 +571,6 @@ class ValidateTuakiri extends Validate {
             // No enc/siging found set warning
             $swamid521error = 1;
           }
-          $swamid5212030error = $swamid5212030error ? true : $swamid521Level2030['both'];
           break;
         case 1:
           // To small key
@@ -608,10 +601,6 @@ class ValidateTuakiri extends Validate {
         $this->errorNB .= '(NonBreaking) Certificate MUST NOT use shorter comparable';
         $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
       }
-    }
-    if ($swamid5212030error) {
-      $this->warning .= 'Certificate MUST NOT use shorter comparable key strength';
-      $this->warning .= " (in the sense of NIST SP 800-57) than a 3072-bit RSA key if valid after 2030-12-31.\n";
     }
 
     if ($swamid522error) {
