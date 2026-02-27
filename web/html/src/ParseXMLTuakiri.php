@@ -50,10 +50,6 @@ class ParseXMLTuakiri extends ParseXML {
     } elseif ($this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1']) {
       $this->errorNB .= "SPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
     }
-    // 6.1.16
-    if ($this->assertionConsumerServiceHTTPRedirectFound) {
-      $this->cleanOutAssertionConsumerServiceHTTPRedirect();
-    }
   }
 
   /**
@@ -87,44 +83,5 @@ class ParseXMLTuakiri extends ParseXML {
         $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, htmlspecialchars($binding));
     }
     parent::checkSAMLEndpoint($data,$type, $saml2, $saml1);
-  }
-
-  /**
-   * Clean out AssertionConsumerService of type HTTPRedirect
-   *
-   * Removes AssertionConsumerService with binding = HTTP-Redirect.
-   *
-   * @param DOMNode $data XML to parse
-   *
-   * @return void
-   */
-  private function cleanOutAssertionConsumerServiceHTTPRedirect() {
-    $removed = false;
-    $child = $this->entityDescriptor->firstChild;
-    while ($child) {
-      if ($child->nodeName == self::SAML_MD_SPSSODESCRIPTOR) {
-        $subchild = $child->firstChild;
-        while ($subchild) {
-          if ($subchild->nodeName == self::SAML_MD_ASSERTIONCONSUMERSERVICE
-            && $subchild->getAttribute('Binding') == self::SAML_BINDING_HTTP_REDIRECT) {
-            $index = $subchild->getAttribute('index');
-            $remChild = $subchild;
-            $child->removeChild($remChild);
-            $subchild = false;
-            $child=false;
-            $removed = true;
-          } else {
-            $subchild = $subchild->nextSibling;
-          }
-        }
-      } else {
-        $child = $child->nextSibling;
-      }
-    }
-    if ($removed) {
-      $this->error .= 'SWAMID Tech 6.1.16: Binding with value urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect';
-      $this->error .= ' is not allowed in';
-      $this->error .= sprintf(" SPSSODescriptor->AssertionConsumerService[index=%d]. Have been removed.\n", $index);
-    }
   }
 }
