@@ -5,7 +5,7 @@ use PDO;
 
 /**
  * Class to Validate SAML information
- * SWAMID specific code
+ * Tuakiri specific code
  */
 class ValidateTuakiri extends Validate {
   use CommonTrait;
@@ -16,11 +16,12 @@ class ValidateTuakiri extends Validate {
   const TEXT_HTTPS = 'https://';
   const TEXT_521 = '5.2.1';
   const TEXT_621 = '6.2.1';
+  const TEXT_DATA = 'data:';
 
   /**
    * Validate SAML
    *
-   * SWAMID Version
+   * Tuakiri Version
    * Validates SAML of an Entity.
    *  - Correct EC:s
    *  - ....
@@ -54,8 +55,6 @@ class ValidateTuakiri extends Validate {
     if ($this->isIdP) {
       // 5.1.9 -> 5.1.12
       $this->checkEntityAttributes('IDPSSO');
-      // 5.1.13 errorURL
-      $this->checkErrorURL();
       // 5.1.15, 5.1.16 Scope
       $this->checkIDPScope();
       // 5.1.17
@@ -234,11 +233,6 @@ class ValidateTuakiri extends Validate {
     if (! isset($usedLangArray['en'])) {
       $this->error .= $this->selectError('5.1.4', '6.1.4', 'Missing MDUI/Organization/... with lang=en.');
     }
-    // 5.1.5/6.1.5 Metadata elements that support the lang attribute SHOULD
-    //             have a definition with language Swedish (sv).
-    if (! isset($usedLangArray['sv'])) {
-      $this->warning .= $this->selectError('5.1.5', '6.1.5' ,'Missing MDUI/Organization/... with lang=sv.');
-    }
   }
 
   /**
@@ -299,34 +293,10 @@ class ValidateTuakiri extends Validate {
   }
 
   /**
-   * Validate Error URL of an IdP
-   *
-   * Validate than an Error URL exists in IDPSSODecriptor
-   *
-   * SWAMID Tech
-   *  - 5.1.13 errorURL
-   *
-   * @return void
-   */
-  private function checkErrorURL() {
-    $errorURLHandler = $this->config->getDb()->prepare("SELECT DISTINCT `URL`
-      FROM `EntityURLs` WHERE `entity_id` = :Id AND `type` = 'error';");
-    $errorURLHandler->bindParam(self::BIND_ID, $this->dbIdNr);
-    $errorURLHandler->execute();
-    if (! $errorURLHandler->fetch(PDO::FETCH_ASSOC)) {
-      $this->error .= "SWAMID Tech 5.1.13: IdP:s MUST have a registered errorURL.\n";
-    }
-  }
-
-  /**
    * Validate IdP Scope
    *
    * Validate IdP ScopeEntity Attributes
-   *  - RegExp
    *  - Missing Scope
-   *
-   * SWAMID Tech
-   *  - 5.1.15, 5.1.16
    *
    * @return void
    */
@@ -337,10 +307,6 @@ class ValidateTuakiri extends Validate {
     $missingScope = true;
     while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $missingScope = false;
-      if ($scope['regexp']) {
-        $this->error .= sprintf("SWAMID Tech 5.1.16: IdP Scopes (%s) MUST NOT include regular expressions.\n",
-          htmlspecialchars($scope['scope']));
-      }
     }
     if ($missingScope) {
       $this->error .= "SWAMID Tech 5.1.15: IdP:s MUST have at least one Scope registered.\n";
@@ -352,21 +318,17 @@ class ValidateTuakiri extends Validate {
    *
    * Validate Required MDUI-elements for an IdP
    *  - DisplayName
-   *  - Description
-   *  - InformationURL
-   *  - PrivacyStatementURL
    *  - Logo
    *
-   * SWAMID Tech
-   *  - 5.1.17
+   * Further validate:
+   *  - Logo
+   *  - InformationURL
+   *  - PrivacyStatementURL
    *
    * @return void
    */
   private function checkRequiredMDUIelementsIdP() {
     $elementArray = array ('DisplayName' => false,
-      'Description' => false,
-      'InformationURL' => false,
-      'PrivacyStatementURL' => false,
       'Logo' => false);
     $mduiDNUniqHandler = $this->config->getDb()->prepare("SELECT `entityID`
       FROM `Entities`, `Mdui`
@@ -399,8 +361,8 @@ class ValidateTuakiri extends Validate {
           }
           break;
         case 'Logo' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS) {
-            $this->error .= "SWAMID Tech 5.1.17: Logo must start with <b>https://</b> .\n";
+          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,5) != self::TEXT_DATA) {
+            $this->error .= "Logo must start with <b>https://</b> or <b>data:</b>.\n";
           }
           break;
         case 'InformationURL' :
@@ -423,20 +385,16 @@ class ValidateTuakiri extends Validate {
    *
    * Validate Required MDUI-elements for a SP
    *  - DisplayName
-   *  - Description
+   *
+   * Further validate:
+   *  - Logo
    *  - InformationURL
    *  - PrivacyStatementURL
-   *
-   * SWAMID Tech
-   *  - 6.1.12
    *
    * @return void
    */
   private function checkRequiredMDUIelementsSP() {
-    $elementArray = array ('DisplayName' => false,
-      'Description' => false,
-      'InformationURL' => false,
-      'PrivacyStatementURL' => false);
+    $elementArray = array ('DisplayName' => false);
     $mduiHandler = $this->config->getDb()->prepare("SELECT DISTINCT `element`, `data`
       FROM `Mdui` WHERE `entity_id` = :Id AND `type`  = 'SPSSO';");
     $mduiHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -445,8 +403,8 @@ class ValidateTuakiri extends Validate {
       $elementArray[$mdui['element']] = true;
       switch($mdui['element']) {
         case 'Logo' :
-          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS) {
-            $this->error .= "SWAMID Tech 6.1.13: Logo must start with <b>https://</b> .\n";
+          if (substr($mdui['data'],0,8) != self::TEXT_HTTPS && substr($mdui['data'],0,5) != self::TEXT_DATA) {
+            $this->error .= "Logo must start with <b>https://</b> or <b>data:</b>.\n";
           }
           break;
         case 'InformationURL' :
@@ -723,10 +681,6 @@ class ValidateTuakiri extends Validate {
    *  - OrganizationName
    *  - OrganizationDisplayName
    *  - OrganizationURL
-   *
-   * SWAMID Tech
-   *  - 5.1.22
-   *  - 6.1.21
    *
    * @return void
    */
