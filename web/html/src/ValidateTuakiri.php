@@ -697,31 +697,36 @@ class ValidateTuakiri extends Validate {
       } elseif (substr($contactPerson['emailAddress'], 0, 7) != 'mailto:') {
         $this->error .= sprintf("ContactPerson [%s] EmailAddress MUST start with mailto:.\n", $contactType);
       }
-      // 5.1.24/6.1.23 There MUST NOT be more than one ContactPerson element of each type.
-      if ( isset($usedContactTypes[$contactType])) {
-        $this->error .= sprintf("There MUST NOT be more than one ContactPerson element of type = %s.\n", $contactType);
-      } else {
+      if ( !isset($usedContactTypes[$contactType])) {
         $usedContactTypes[$contactType] = true;
       }
       $contactEmail[$contactType] = $contactPerson['emailAddress'];
     }
 
-    // 5.1.25/6.1.24 Identity Providers MUST have one ContactPerson element of type administrative.
+    if ($this->isIdP) {
+      // IdPs MUST have one ContactPerson element of type technical.
+      if (!isset ($usedContactTypes['technical'])) {
+        $this->error .= "Missing ContactPerson of type technical.\n";
+      }
+    } else {
+      // SPs MUST have one ContactPerson element of type administrative and/or technical.
+      if (!isset ($usedContactTypes['administrative']) && !isset ($usedContactTypes['technical'])) {
+        $this->error .= "Missing ContactPerson of type administrative and/or technical\n";
+      }
+      // SPs SHOULD have one ContactPerson element of type technical.
+      if (!isset ($usedContactTypes['technical'])) {
+        $this->warning .= "Missing ContactPerson of type technical.\n";
+      }
+    }
+
+    // IdP or SP SHOULD have one ContactPerson element of type administrative.
     if (!isset ($usedContactTypes['administrative'])) {
-      $this->error .= "Missing ContactPerson of type administrative\n";
+      $this->warning .= "Missing ContactPerson of type administrative.\n";
     }
 
-    // 5.1.26/6.1.25 Identity Providers MUST have one ContactPerson element of type technical.
-    if (!isset ($usedContactTypes['technical'])) {
-      $this->error .= "Missing ContactPerson of type technical.\n";
-    }
-
-    // 5.1.27 Identity Providers MUST have one ContactPerson element of type support.
-    // 6.1.26 Service Providers SHOULD have one ContactPerson element of type support.
+    // IdP or SP SHOULD have one ContactPerson element of type support.
     if (!isset ($usedContactTypes['support'])) {
       if ($this->isIdP) {
-        $this->error .= "Missing ContactPerson of type support.\n";
-      } else {
         $this->warning .= "Missing ContactPerson of type support.\n";
       }
     }
@@ -730,7 +735,7 @@ class ValidateTuakiri extends Validate {
     if (!isset ($usedContactTypes[self::CT_SECURITY])) {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
-      } else {
+      } elseif ($this->isIdP) {
         $this->warning .= "Missing security ContactPerson.\n";
         $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
