@@ -415,8 +415,8 @@ class ValidateTuakiri extends Validate {
 
     $swamid521Level = array ('encryption' => 0, 'signing' => 0, 'both' => 0);
     $swamid521error = 0;
-    $swamid522error = false;
-    $swamid522errorNB = false;
+    $allCertsExpired = false;
+    $someCertsExpired = false;
     $swamid523warning = false;
     $validEncryptionFound = false;
     $validSigningFound = false;
@@ -429,10 +429,10 @@ class ValidateTuakiri extends Validate {
       $validCertExists = false;
       switch ($keyInfo['use']) {
         case 'encryption' :
+          if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
+            $keyInfoArray['SPSSO'] = true;
+          }
           if ($keyInfo['notValidAfter'] > $timeNow ) {
-            if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
-              $keyInfoArray['SPSSO'] = true;
-            }
             $validEncryptionFound = true;
           } elseif ($validEncryptionFound) {
             $validCertExists = true;
@@ -440,11 +440,11 @@ class ValidateTuakiri extends Validate {
           }
           break;
         case 'signing' :
+          if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
+            $keyInfoArray['IDPSSO'] = true;
+            $keyInfoArray['AttributeAuthority'] = true;
+          }
           if ($keyInfo['notValidAfter'] > $timeNow ) {
-            if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
-              $keyInfoArray['IDPSSO'] = true;
-              $keyInfoArray['AttributeAuthority'] = true;
-            }
             $validSigningFound = true;
           } elseif ($validSigningFound) {
             $validCertExists = true;
@@ -452,12 +452,12 @@ class ValidateTuakiri extends Validate {
           }
           break;
         case 'both' :
+          if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
+            $keyInfoArray['SPSSO'] = true;
+            $keyInfoArray['IDPSSO'] = true;
+            $keyInfoArray['AttributeAuthority'] = true;
+          }
           if ($keyInfo['notValidAfter'] > $timeNow ) {
-            if (($keyInfo['bits'] >= 256 && $keyInfo['key_type'] == "EC") || $keyInfo['bits'] >= 2048) {
-              $keyInfoArray['SPSSO'] = true;
-              $keyInfoArray['IDPSSO'] = true;
-              $keyInfoArray['AttributeAuthority'] = true;
-            }
             $validEncryptionFound = true;
             $validSigningFound = true;
           } elseif ($validEncryptionFound &&  $validSigningFound) {
@@ -495,9 +495,9 @@ class ValidateTuakiri extends Validate {
       }
       if ($keyInfo['notValidAfter'] <= $timeNow ) {
         if ($validCertExists) {
-          $swamid522errorNB = true;
+          $someCertsExpired = true;
         } else {
-          $swamid522error = true;
+          $allCertsExpired = true;
         }
       } elseif ($keyInfo['notValidAfter'] <= $timeWarn ) {
         $this->warning .= sprintf (
@@ -602,12 +602,11 @@ class ValidateTuakiri extends Validate {
       }
     }
 
-    if ($swamid522error) {
-      $this->error .= 'Signing and encryption certificates MUST NOT be expired. New';
-      $this->error .= " certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.\n";
-    } elseif ($swamid522errorNB) {
-      $this->errorNB .= '(NonBreaking) Signing and encryption certificates';
-      $this->errorNB .= " MUST NOT be expired.\n";
+    if ($allCertsExpired) {
+      $this->warning .= 'Signing and encryption certificates SHOULD NOT be expired. New';
+      $this->warning .= " certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.\n";
+    } elseif ($someCertsExpired) {
+      $this->warning .= "Signing and encryption certificates SHOULD NOT be expired.\n";
     }
 
     if ($oldCertFound) {
