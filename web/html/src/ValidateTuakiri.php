@@ -232,26 +232,13 @@ class ValidateTuakiri extends Validate {
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
 
     if ($type == 'IDPSSO' ) {
-      //5.1.9 SWAMID Identity Assurance Profile compliance MUST be registered in
-      //      the assurance certification entity attribute as defined by the profiles.
-      $swamid519error = true;
-      $entityAttributesHandler->bindValue(self::BIND_TYPE, 'assurance-certification');
-      $entityAttributesHandler->execute();
-      while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        $swamid519error = $entityAttribute['attribute'] == 'http://www.swamid.se/policy/assurance/al1' ? # NOSONAR Should be http://
-          false : $swamid519error ;
-      }
-      if ($swamid519error) {
-        $this->error .= 'SWAMID Tech 5.1.9: SWAMID Identity Assurance Profile compliance MUST';
-        $this->error .= " be registered in the assurance certification entity attribute as defined by the profiles.\n";
-      }
-
       // 5.1.10 Entity Categories applicable to the Identity Provider SHOULD be registered in
       ///       the entity category entity attribute as defined by the respective Entity Category.
       // Not handled yet.
 
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category-support');
       $entityAttributesHandler->execute();
+      // Issue a warning if no EC support declared: at least RnS should be supported even in Tuakiri
       if (! $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
         $this->warning .= 'Support for Entity Categories SHOULD be registered in the';
         $this->warning .= " entity category support entity attribute as defined by the respective Entity Category.\n";
@@ -260,6 +247,7 @@ class ValidateTuakiri extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
+        // detect deprecated Entity Categories
         if (isset(self::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]) &&
           ! self::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]['standard']) {
             $this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n",
