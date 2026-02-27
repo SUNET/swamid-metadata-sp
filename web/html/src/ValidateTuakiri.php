@@ -471,7 +471,7 @@ class ValidateTuakiri extends Validate {
       switch ($keyInfo['key_type']) {
         case 'RSA' :
         case 'DSA' :
-          if ($keyInfo['bits'] >= 4096 ) {
+          if ($keyInfo['bits'] >= 3072 ) {
             $swamid521Level[$keyInfo['use']] = 3;
           } elseif ($keyInfo['bits'] >= 2048 && $swamid521Level[$keyInfo['use']] < 2 ) {
             $swamid521Level[$keyInfo['use']] = 2;
@@ -503,7 +503,7 @@ class ValidateTuakiri extends Validate {
         $this->warning .= sprintf (
           "Certificate (%s) %s will soon expire. %s\n",
           $keyInfo['use'], htmlspecialchars($keyInfo['subject']),
-          'New certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.');
+          'New certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.');
       }
 
       if ($keyInfo['subject'] != $keyInfo['issuer']) {
@@ -525,21 +525,21 @@ class ValidateTuakiri extends Validate {
     }
     // 5.2.1 Identity Provider credentials (i.e. entity keys)
     //       MUST NOT use shorter comparable key strength
-    //       (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 4096-bit is RECOMMENDED.
+    //       (in the sense of NIST SP 800-57) than a 2048-bit RSA key. 3072-bit is RECOMMENDED.
     // 6.2.1 Relying Party credentials (i.e. entity keys)
     //       MUST NOT use shorter comparable key strength (in the sense of NIST SP 800-57)
-    //       than 2048-bit RSA/DSA keysor 256-bit ECC keys. 4096-bit RSA/DSAkeysor 384-bitECC keys are RECOMMENDED
+    //       than 2048-bit RSA/DSA keysor 256-bit ECC keys. 3072-bit RSA/DSAkeysor 384-bitECC keys are RECOMMENDED
     // At least one cert exist that is used for either signing or encryption,
     //  Error = code for cert with lowest # of bits
     foreach (array('encryption', 'signing') as $use) {
       if ($swamid521Level[$use] > 0) {
         switch ($swamid521Level[$use]) {
           case 3 :
-            // Key >= 4096 or >= 384
+            // Key >= 3072 or >= 384
             // Do nothing. Keep current level.
             break;
           case 2 :
-            // Key >= 2048 and < 4096  // >= 256 and <384
+            // Key >= 2048 and < 3072  // >= 256 and <384
             $swamid521error = $swamid521error == 0 ? 1 : $swamid521error;
             break;
           case 1 :
@@ -558,12 +558,11 @@ class ValidateTuakiri extends Validate {
       // Error code could get better if both is better than encryption/signing
       switch ($swamid521Level['both']) {
         case 3 :
-          // Key >= 4096 or >= 384
+          // Key >= 3072 or >= 384
           $swamid521error = 0;
-          $swamid5212030error = false;
           break;
         case 2 :
-          // Key >= 2048 and < 4096  // >= 256 and <384
+          // Key >= 2048 and < 3072  // >= 256 and <384
           if ($keyFound) {
             // If already checked enc/signing lower if we are better
             $swamid521error = $swamid521error > 1 ? 1 : $swamid521error;
@@ -589,12 +588,12 @@ class ValidateTuakiri extends Validate {
           $this->errorNB .= '(NonBreaking) Certificate MUST NOT use shorter comparable';
           $this->errorNB .= " key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key.\n";
         } else {
-          $this->warning .= "Certificate key strength under 4096-bit RSA is NOT RECOMMENDED.\n";
+          $this->warning .= "Certificate key strength under 3072-bit RSA is NOT RECOMMENDED.\n";
         }
       } elseif ($swamid521error == 2) {
         $this->error .= 'Certificate MUST NOT use shorter comparable';
         $this->error .= ' key strength (in the sense of NIST SP 800-57) than a 2048-bit RSA key. New certificate';
-        $this->error .= " should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
+        $this->error .= " should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.\n";
       }
     } else {
       if ($smalKeyFound) {
@@ -605,7 +604,7 @@ class ValidateTuakiri extends Validate {
 
     if ($swamid522error) {
       $this->error .= 'Signing and encryption certificates MUST NOT be expired. New';
-      $this->error .= " certificate should be have a key strength of at least 4096 bits for RSA or 384 bits for EC.\n";
+      $this->error .= " certificate should be have a key strength of at least 3072 bits for RSA or 384 bits for EC.\n";
     } elseif ($swamid522errorNB) {
       $this->errorNB .= '(NonBreaking) Signing and encryption certificates';
       $this->errorNB .= " MUST NOT be expired.\n";
