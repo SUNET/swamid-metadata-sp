@@ -653,7 +653,7 @@ class Configuration {
       `id` varchar(20) DEFAULT NULL,
       `value` text DEFAULT NULL
     );');
-    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '3');");
+    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '4');");
 
     $this->db->query('CREATE TABLE `DiscoveryResponse` (
       `entity_id` int(10) unsigned NOT NULL,
