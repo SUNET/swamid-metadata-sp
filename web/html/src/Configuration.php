@@ -227,6 +227,7 @@ class Configuration {
     }
     if ($dbVersion < 2) {
       if ($dbVersion < 1) {
+        $this->db->query(self::SQL_START_TRANSACTION);
         $this->db->query(
           'CREATE TABLE `params` (
             `id` varchar(20) DEFAULT NULL,
@@ -242,6 +243,7 @@ class Configuration {
           PRIMARY KEY (`entity_id`,`index`),
           CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
         );');
+        $this->db->query(self::SQL_COMMIT);
       }
       $this->db->query(self::SQL_START_TRANSACTION);
       $this->db->query('CREATE TABLE `OrganizationInfoData` (
@@ -349,6 +351,9 @@ class Configuration {
    * @return void
    */
   private function createTables() {
+
+    $this->db->query(self::SQL_START_TRANSACTION);
+
     $this->db->query('CREATE TABLE `Entities` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
       `publishedId` int(10) unsigned NOT NULL DEFAULT 0,
@@ -670,6 +675,8 @@ class Configuration {
       PRIMARY KEY (`entity_id`),
       CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
+
+    $this->db->query(self::SQL_COMMIT);
   }
 
   /**
