@@ -456,14 +456,6 @@ class Configuration {
       PRIMARY KEY (`date`, `assurance`)
     );');
 
-    $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
-      FROM `EntityAttributes`, `Entities`
-      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
-        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
-      GROUP BY `entityID`
-      ORDER BY `count`;");
-
-
     $this->db->query('CREATE TABLE `EntityAttributes` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
       `entity_id` int(10) unsigned NOT NULL,
@@ -473,6 +465,13 @@ class Configuration {
       KEY `entity_id` (`entity_id`),
       CONSTRAINT `EntityAttributes_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
+
+    $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+      GROUP BY `entityID`
+      ORDER BY `count`;");
 
     $this->db->query('CREATE TABLE `EntityConfirmation` (
       `entity_id` int(10) unsigned NOT NULL,
