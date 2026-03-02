@@ -6,6 +6,8 @@ $config = new \metadata\Configuration();
 
 header('Content-type: application/json');
 
+$orgsArray = array();
+
 $organizationHandler = $config->getDb()->prepare(
   "SELECT `OrganizationInfo`.`id` AS orgId,
       `OrganizationDisplayName`, `memberSince`, `notMemberAfter`,
