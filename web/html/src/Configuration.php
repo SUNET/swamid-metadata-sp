@@ -227,6 +227,7 @@ class Configuration {
     }
     if ($dbVersion < 2) {
       if ($dbVersion < 1) {
+        $this->db->query(self::SQL_START_TRANSACTION);
         $this->db->query(
           'CREATE TABLE `params` (
             `id` varchar(20) DEFAULT NULL,
@@ -242,6 +243,7 @@ class Configuration {
           PRIMARY KEY (`entity_id`,`index`),
           CONSTRAINT `DiscoveryResponse_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
         );');
+        $this->db->query(self::SQL_COMMIT);
       }
       $this->db->query(self::SQL_START_TRANSACTION);
       $this->db->query('CREATE TABLE `OrganizationInfoData` (
@@ -349,6 +351,9 @@ class Configuration {
    * @return void
    */
   private function createTables() {
+
+    $this->db->query(self::SQL_START_TRANSACTION);
+
     $this->db->query('CREATE TABLE `Entities` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
       `publishedId` int(10) unsigned NOT NULL DEFAULT 0,
@@ -456,14 +461,6 @@ class Configuration {
       PRIMARY KEY (`date`, `assurance`)
     );');
 
-    $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
-      FROM `EntityAttributes`, `Entities`
-      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
-        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
-      GROUP BY `entityID`
-      ORDER BY `count`;");
-
-
     $this->db->query('CREATE TABLE `EntityAttributes` (
       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
       `entity_id` int(10) unsigned NOT NULL,
@@ -473,6 +470,13 @@ class Configuration {
       KEY `entity_id` (`entity_id`),
       CONSTRAINT `EntityAttributes_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
+
+    $this->db->query("CREATE VIEW EntityEntityAttributes AS SELECT COUNT(`attribute`) AS `count`, `entityID`
+      FROM `EntityAttributes`, `Entities`
+      WHERE `type` = 'entity-category' AND `entity_id` = `Entities`.`id` AND `isSP` = 1 AND `status` = 1 AND `publishIn` > 1
+        AND `attribute` IN ('http://refeds.org/category/research-and-scholarship','http://www.geant.net/uri/dataprotection-code-of-conduct/v1','https://myacademicid.org/entity-categories/esi','https://refeds.org/category/anonymous','https://refeds.org/category/code-of-conduct/v2','https://refeds.org/category/personalized','https://refeds.org/category/pseudonymous')
+      GROUP BY `entityID`
+      ORDER BY `count`;");
 
     $this->db->query('CREATE TABLE `EntityConfirmation` (
       `entity_id` int(10) unsigned NOT NULL,
@@ -654,7 +658,7 @@ class Configuration {
       `id` varchar(20) DEFAULT NULL,
       `value` text DEFAULT NULL
     );');
-    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '3');");
+    $this->db->query("INSERT INTO `params` (`id`, `value`) VALUES ('dbVersion', '4');");
 
     $this->db->query('CREATE TABLE `DiscoveryResponse` (
       `entity_id` int(10) unsigned NOT NULL,
@@ -671,6 +675,8 @@ class Configuration {
       PRIMARY KEY (`entity_id`),
       CONSTRAINT `ServiceInfo_ibfk_1` FOREIGN KEY (`entity_id`) REFERENCES `Entities` (`id`) ON DELETE CASCADE
     );');
+
+    $this->db->query(self::SQL_COMMIT);
   }
 
   /**
