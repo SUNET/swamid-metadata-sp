@@ -1,0 +1,87 @@
+<?php
+namespace metadata;
+
+/**
+ * Class to Parse XML for an Entity into Database
+ * SWAMID specific code
+ */
+class ParseXMLTuakiri extends ParseXML {
+
+  /**
+   * Parse IDPSSODescriptor
+   *
+   * SWAMID version
+   * - runs parent
+   * - error if missing support for SAML2
+   * - warning if supporting SAML1
+   *
+   * @param DOMNode $data XML to parse
+   *
+   * @return void
+   */
+  protected function parseIDPSSODescriptor($data) {
+    parent::parseIDPSSODescriptor($data);
+
+    if (! $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml2']) {
+      $this->error .= "IDPSSODescriptor is missing support for SAML2.\n";
+    } elseif ($this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml1']) {
+      $this->warning .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
+  }
+
+ /**
+   * Parse SPSSODescriptor
+   *
+   * SWAMID version
+   * - runs parent
+   * - error if missing support for SAML2
+   * - Nonbreaking error if supporting SAML1
+   * - Cleans out AssertionConsumerService of type HTTPRedirect (6.1.16)
+   *
+   * @param DOMNode $data XML to parse
+   *
+   * @return void
+   */
+  protected function parseSPSSODescriptor($data) {
+    parent::parseSPSSODescriptor($data);
+
+    if (! $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2']) {
+      $this->error .= "SPSSODescriptor is missing support for SAML2.\n";
+    } elseif ($this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1']) {
+      $this->errorNB .= "SPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+    }
+  }
+
+  /**
+   * Checks SAMLEndpoint
+   *
+   * Verifies that it's a binding used in protocols of the SSODescriptor
+   * SWAMID version
+   * - error if not https://  (5.1.21 / 6.1.15)
+   * - runs parent
+   *
+   * @param DOMNode $data XML to parse
+   *
+   * @param string $type Type of Node
+   *  - AttributeAuthority
+   *  - IDPSSO
+   *  - SPSSO
+   *
+   * @param bool $saml2 If SSODescriptor is of type SAML2
+   *
+   * @param bool $saml1 If SSODescriptor is of type SAML1
+   *
+   * @return void
+   */
+  protected function checkSAMLEndpoint($data,$type, $saml2, $saml1) {
+    $name = $data->nodeName;
+    $binding = $data->getAttribute('Binding');
+    $location =$data->getAttribute('Location');
+    if (substr($location,0,8) <> self::TEXT_HTTPS) {
+      $this->error .= sprintf(
+        "SWAMID Tech %s: All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
+        $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, htmlspecialchars($binding));
+    }
+    parent::checkSAMLEndpoint($data,$type, $saml2, $saml1);
+  }
+}
