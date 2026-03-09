@@ -99,10 +99,6 @@ class ValidateTuakiri extends Validate {
    *  - AttributeConsumingService
    *  - Organization
    *
-   * SWAMID Tech
-   *  - 5.1.1 -> 5.1.5
-   *  - 6.1.1 -> 6.1.5
-   *
    * @return void
    */
   private function checkLangElements() {
@@ -219,10 +215,6 @@ class ValidateTuakiri extends Validate {
    *  - EntityCategory
    *  - EntityCategorySupport
    *  - Assurance Certification
-   *
-   * SWAMID Tech
-   *  - 5.1.9 -> 5.1.11
-   *  - 6.1.9 -> 6.1.11
    *
    * @return void
    */
@@ -396,10 +388,6 @@ class ValidateTuakiri extends Validate {
    *  - Length of certs
    *  - Validity of certs
    *  - Required cert exists
-   *
-   * SWAMID Tech
-   *  - 5.1.20, 5.2.x
-   *  - 6.1.14, 6.2.x
    *
    * @return void
    */
@@ -650,10 +638,6 @@ class ValidateTuakiri extends Validate {
    * Validate Required Contact Person Elements
    *
    * Validate Required Contact Person Elements
-   *
-   * SWAMID Tech
-   *  - 5.1.23 -> 5.1.28
-   *  - 6.1.22 -> 6.1.26
    *
    * @return void
    */
