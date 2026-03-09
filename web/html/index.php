@@ -560,6 +560,9 @@ function showInfo() {
           operations for compleation.</p>
         <p>If you do not have an active user account at a <?= $federation['displayName'] ?> Identity Provider,
           <?= $federation['noAccountHtml'] ?>.</p>
+<?php if ($federation['infoPageHtml']) { ?>
+        <p><?= $federation['infoPageHtml'] ?></p>
+<?php } ?>
       </div>
     </div>
 <?php

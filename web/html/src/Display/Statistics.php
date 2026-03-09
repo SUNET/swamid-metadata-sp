@@ -423,6 +423,15 @@ const HTML_SPACER = '          %s';
       FROM EntityEntityAttributes
       GROUP BY `count`
       ORDER BY `count`;");
+    // initialize results array - for keys where DB query returns no result
+    $ecTagged = array(
+      self::SAML_EC_ANONYMOUS => 0,
+      self::SAML_EC_PSEUDONYMOUS => 0,
+      self::SAML_EC_PERSONALIZED => 0,
+      self::SAML_EC_RANDS => 0,
+      self::SAML_EC_COCOV2 => 0,
+      self::SAML_EC_COCOV1 => 0,
+      self::SAML_EC_ESI => 0);
     $spHandler->execute();
     if ($sps = $spHandler->fetch(PDO::FETCH_ASSOC)) {
       $nrOfSPs = $sps['count'];

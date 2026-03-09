@@ -3,14 +3,14 @@ namespace metadata;
 
 /**
  * Class to Parse XML for an Entity into Database
- * SWAMID specific code
+ * Tuakiri specific code
  */
 class ParseXMLTuakiri extends ParseXML {
 
   /**
    * Parse IDPSSODescriptor
    *
-   * SWAMID version
+   * Tuakiri version
    * - runs parent
    * - error if missing support for SAML2
    * - warning if supporting SAML1
@@ -25,14 +25,14 @@ class ParseXMLTuakiri extends ParseXML {
     if (! $this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml2']) {
       $this->error .= "IDPSSODescriptor is missing support for SAML2.\n";
     } elseif ($this->samlProtocolSupportFound[self::SAML_MD_IDPSSODESCRIPTOR]['saml1']) {
-      $this->warning .= "IDPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+      $this->warning .= "IDPSSODescriptor claims support for SAML1. Tuakiri is a SAML2 federation\n";
     }
   }
 
  /**
    * Parse SPSSODescriptor
    *
-   * SWAMID version
+   * Tuakiri version
    * - runs parent
    * - error if missing support for SAML2
    * - Nonbreaking error if supporting SAML1
@@ -48,7 +48,7 @@ class ParseXMLTuakiri extends ParseXML {
     if (! $this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml2']) {
       $this->error .= "SPSSODescriptor is missing support for SAML2.\n";
     } elseif ($this->samlProtocolSupportFound[self::SAML_MD_SPSSODESCRIPTOR]['saml1']) {
-      $this->errorNB .= "SPSSODescriptor claims support for SAML1. SWAMID is a SAML2 federation\n";
+      $this->errorNB .= "SPSSODescriptor claims support for SAML1. Tuakiri is a SAML2 federation\n";
     }
   }
 
@@ -56,7 +56,7 @@ class ParseXMLTuakiri extends ParseXML {
    * Checks SAMLEndpoint
    *
    * Verifies that it's a binding used in protocols of the SSODescriptor
-   * SWAMID version
+   * Tuakiri version
    * - error if not https://  (5.1.21 / 6.1.15)
    * - runs parent
    *
@@ -79,8 +79,8 @@ class ParseXMLTuakiri extends ParseXML {
     $location =$data->getAttribute('Location');
     if (substr($location,0,8) <> self::TEXT_HTTPS) {
       $this->error .= sprintf(
-        "SWAMID Tech %s: All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
-        $type == "IDPSSO" ? '5.1.21' : '6.1.15', $type, $name, htmlspecialchars($binding));
+        "All SAML endpoints MUST start with https://. Problem in %sDescriptor->%s[Binding=%s].\n",
+        $type, $name, htmlspecialchars($binding));
     }
     parent::checkSAMLEndpoint($data,$type, $saml2, $saml1);
   }

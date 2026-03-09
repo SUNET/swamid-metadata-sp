@@ -91,6 +91,7 @@ class Configuration {
       'fromName'    => 'Metadata - Admin',
     );
     $defaultValuesFederation = array(
+      'infoPageHtml' => '',
       'storeServiceInfo' => false,
       'eduPersonAffiliationLink' => '',
       'eduPersonAffiliationExemptIdPs' => array(),
