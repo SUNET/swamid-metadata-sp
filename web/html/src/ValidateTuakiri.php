@@ -84,7 +84,7 @@ class ValidateTuakiri extends Validate {
 
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
-    if (! $this->isSIRTFI2) {
+    if (! $this->isSIRTFI2 && $this->isIdP) {
       $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';
       $this->warning .= "the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
     }
