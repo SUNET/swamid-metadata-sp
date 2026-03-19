@@ -274,7 +274,7 @@ class MetadataDisplay extends Display\Common {
                 $entityError['organizationErrors'] = true;
             }
           }
-          $errors .= $organizationDefaultsMatch ? '' : 'The Organization information in SAML Metadata differ from registered default information for organization bound to the Entity.';
+          $errors .= $organizationDefaultsMatch ? '' : 'The Organization information in SAML Metadata is different from information registered for the organization bound to the Entity.';
         }
       }
       $errors .= $entity['errors'] . $entity['errorsNB'];
