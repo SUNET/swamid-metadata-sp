@@ -84,7 +84,7 @@ class ValidateTuakiri extends Validate {
 
     if ($this->isSPandCoCov1) { $this->validateSPCoCov1(); }
     if ($this->isSPandCoCov2) { $this->validateSPCoCov2(); }
-    if (! $this->isSIRTFI2) {
+    if (! $this->isSIRTFI2 && $this->isIdP) {
       $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities published in eduGAIN to support ';
       $this->warning .= "the Security Incident Response Trust Framework for Federated Identity (Sirtfi) Version 2.\n";
     }
@@ -707,7 +707,7 @@ class ValidateTuakiri extends Validate {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } elseif ($this->isIdP) {
-        $this->warning .= "Missing security ContactPerson.\n";
+        $this->warning .= "Missing ContactPerson of type security.\n";
         $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }

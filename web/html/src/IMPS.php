@@ -400,12 +400,12 @@ class IMPS {
             <div class="col"><h5>Membership</h5></div>
           </div>
           <div class="row">
-            <div class="col-2">Member Since</div>
-            <div class="col"><input type="text" name="memberSince" value="%s" size="10"></div>
+            <div class="col-2">Member since</div>
+            <div class="col"><input type="text" name="memberSince" value="%s" size="10" placeholder="YYYY-MM-DD"></div>
           </div>
           <div class="row">
-            <div class="col-2">Left</div>
-            <div class="col"><input type="text" name="notMemberAfter" value="%s" size="10"></div>
+            <div class="col-2">Membership end date</div>
+            <div class="col"><input type="text" name="notMemberAfter" value="%s" size="10" placeholder="YYYY-MM-DD"></div>
           </div>
           <input type="submit" name="formAction" value="Add/Update">
         </form>

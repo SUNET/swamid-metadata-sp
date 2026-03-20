@@ -824,7 +824,7 @@ class ValidateSWAMID extends Validate {
       if ($this->isSIRTFI || $this->isSIRTFI2) {
         $this->error .= "REFEDS Sirtfi Require that a security contact is published in the entity’s metadata.\n";
       } else {
-        $this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing security ContactPerson.');
+        $this->warning .= $this->selectError('5.1.28', '6.1.27', 'Missing ContactPerson of type security.');
         $this->warning .= 'eduGAIN is in the process of introducing a requirement for all entities ';
         $this->warning .= "published in eduGAIN to publish a security contact in metadata.\n";
       }
