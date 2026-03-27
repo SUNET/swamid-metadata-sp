@@ -1943,7 +1943,7 @@ class MetadataEdit extends Common {
         <option%s value="both">Encryption & Signing</option>
       </select><br>
       <button type="submit" class="btn btn-primary">Submit</button>%s    </form>',
-        $edit, $this->dbIdNr, $this->dbOldIdNr, $certificate, $use == "encryption" ? self::HTML_SELECTED : '',
+        $edit, $this->dbIdNr, $this->dbOldIdNr, htmlspecialchars($certificate), $use == "encryption" ? self::HTML_SELECTED : '',
         $use == "signing" ? self::HTML_SELECTED : '', $use == "both" ? self::HTML_SELECTED : '', "\n");
       printf('    <a href="?edit=%s&Entity=%d&oldEntity=%d"><button>Back</button></a>%s',
         $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
