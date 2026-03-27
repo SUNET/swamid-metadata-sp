@@ -145,6 +145,8 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editEntityAttributes() {
+    $standardAttributes = $this->getAttributeDefs()->getStandardEntityAttributes();
+
     $entityAttributesHandler = $this->config->getDb()->prepare(
       'SELECT type, attribute FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
 
@@ -365,8 +367,8 @@ class MetadataEdit extends Common {
         $error = self::HTML_CLASS_ALERT_WARNING;
         $entityType = '?';
       }
-      if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
-        $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
+      if (isset($standardAttributes[$type][$value])) {
+        $error = ($standardAttributes[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
         $entityType = $type;
       }
       printf('
@@ -399,8 +401,8 @@ class MetadataEdit extends Common {
           $error = self::HTML_CLASS_ALERT_WARNING;
           $entityType = '?';
         }
-        if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
-          $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
+        if (isset($standardAttributes[$type][$value])) {
+          $error = ($standardAttributes[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
           $entityType = $type;
         }
         if ($oldType != $type) {
@@ -429,7 +431,7 @@ class MetadataEdit extends Common {
         Quick-links
         <ul>';
     $idx=0;
-    foreach (self::STANDARD_ATTRIBUTES as $type => $values) {
+    foreach ($standardAttributes as $type => $values) {
       printf ('%s          <li>%s</li><ul>', "\n", $type);
       foreach ($values as $value => $data) {
         $entityType = $data['type'];
@@ -2494,6 +2496,8 @@ class MetadataEdit extends Common {
    * @return void
    */
   private function editAttributeConsumingService() {
+    $friendlyNameDefs = $this->getAttributeDefs()->getAttributeFriendlyNames();
+
     if (isset($_POST['action'])) {
       $name = '';
       $friendlyName = '';
@@ -2560,8 +2564,8 @@ class MetadataEdit extends Common {
           if (isset($_POST['friendlyName']) && trim($_POST['friendlyName']) != '') {
             $friendlyName = trim($_POST['friendlyName']);
           } else {
-            if (isset(self::FRIENDLY_NAMES[$name])) {
-              $friendlyName = self::FRIENDLY_NAMES[$name]['desc'];
+            if (isset($friendlyNameDefs[$name])) {
+              $friendlyName = $friendlyNameDefs[$name]['desc'];
             }
           }
           if (isset($_POST['NameFormat']) && trim($_POST['NameFormat']) != '') {
@@ -3013,9 +3017,9 @@ class MetadataEdit extends Common {
       while ($requestedAttribute = $requestedAttributeHandler->fetch(PDO::FETCH_ASSOC)) {
         $error = '';
         if ($requestedAttribute['FriendlyName'] == '') {
-          if (isset(self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
-            $friendlyNameDisplay = sprintf('(%s)', self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']);
-            if (! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
+          if (isset($friendlyNameDefs[$requestedAttribute['Name']])) {
+            $friendlyNameDisplay = sprintf('(%s)', $friendlyNameDefs[$requestedAttribute['Name']]['desc']);
+            if (! $friendlyNameDefs[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -3024,9 +3028,9 @@ class MetadataEdit extends Common {
           }
         } else {
           $friendlyNameDisplay = $requestedAttribute['FriendlyName'];
-          if (isset (self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
-            if ($requestedAttribute['FriendlyName'] != self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']
-              || ! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
+          if (isset ($friendlyNameDefs[$requestedAttribute['Name']])) {
+            if ($requestedAttribute['FriendlyName'] != $friendlyNameDefs[$requestedAttribute['Name']]['desc']
+              || ! $friendlyNameDefs[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -3053,7 +3057,7 @@ class MetadataEdit extends Common {
 
       if ($indexValue == $index) {
         print "<h5>Available attributes:</h5>";
-        foreach (self::FRIENDLY_NAMES as $nameL => $data) {
+        foreach ($friendlyNameDefs as $nameL => $data) {
           if ($data['standard']) {
             if (isset($existingRequestedAttribute[$nameL])) {
               printf('<b>%s</b> - %s<br>%s', $data['desc'], $nameL,  "\n");
@@ -3074,7 +3078,7 @@ class MetadataEdit extends Common {
           }
         }
         print '<br><h5>Not recommended attributes:</h5>';
-        foreach (self::FRIENDLY_NAMES as $nameL => $data) {
+        foreach ($friendlyNameDefs as $nameL => $data) {
           if (! $data['standard']) {
             if (substr($nameL, 0, 27) == 'urn:mace:dir:attribute-def:') {
               $samlVer = ' (SAML1)';
@@ -3190,7 +3194,7 @@ class MetadataEdit extends Common {
           }
           printf('%s            <li>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
             "\n", $copy, $state,
-            $data['friendlyName'] == '' ? '(' . self::FRIENDLY_NAMES[$name]['desc'] .')' : htmlspecialchars($data['friendlyName']),
+            $data['friendlyName'] == '' ? '(' . $friendlyNameDefs[$name]['desc'] .')' : htmlspecialchars($data['friendlyName']),
             htmlspecialchars($name), $data['isRequired'] == '1' ? ' (Required)' : '');
           $idx++;
         }
