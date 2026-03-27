@@ -14,6 +14,7 @@ class Common {
 
   # Setup
   protected Configuration $config;
+  protected static ?AttributeDefs $attributeDefs = null;
 
   protected int $dbIdNr = 0;
   protected string $entityID = 'Unknown';
@@ -858,4 +859,10 @@ class Common {
     $delSrvInfHandler->execute();
   }
 
+  public function getAttributeDefs() {
+    if (!self::$attributeDefs) {
+      self::$attributeDefs = $this->config->getExtendedClass('AttributeDefs');
+    }
+    return self::$attributeDefs;
+  }
 }

@@ -625,6 +625,8 @@ class MetadataDisplay extends Display\Common {
    * @param bool $added if this is the added or Old entity
    */
   private function showEntityAttributesPart($entityId, $otherEntityId, $added) {
+    $standardAttributes = $this->getAttributeDefs()->getStandardEntityAttributes();
+
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `type`, `attribute`
       FROM `EntityAttributes` WHERE `entity_id` = :Id ORDER BY `type`, `attribute`;');
     if ($otherEntityId) {
@@ -652,8 +654,8 @@ class MetadataDisplay extends Display\Common {
         $state = 'dark';
       }
       $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
-      if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
-        $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
+      if (isset($standardAttributes[$type][$value])) {
+        $error = ($standardAttributes[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
       }
       ?>
 
@@ -671,8 +673,8 @@ class MetadataDisplay extends Display\Common {
           $state = 'dark';
         }
         $error = ($type == 'entity-selection-profile') ? '' : self::HTML_CLASS_ALERT_WARNING;
-        if (isset(self::STANDARD_ATTRIBUTES[$type][$value])) {
-          $error = (self::STANDARD_ATTRIBUTES[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
+        if (isset($standardAttributes[$type][$value])) {
+          $error = ($standardAttributes[$type][$value]['standard']) ? '' : self::HTML_CLASS_ALERT_DANGER;
         }
         if ($oldType != $type) {
           print "\n          </ul>";
@@ -1296,6 +1298,8 @@ class MetadataDisplay extends Display\Common {
    * @return void
    */
   private function showAttributeConsumingService($entityId, $otherEntityId=0, $added = false) {
+    $friendlyNames = $this->getAttributeDefs()->getAttributeFriendlyNames();
+
     $serviceIndexHandler = $this->config->getDb()->prepare('SELECT `Service_index`
       FROM `AttributeConsumingService` WHERE `entity_id` = :Id;');
     $serviceElementHandler = $this->config->getDb()->prepare('SELECT `element`, `lang`, `data`
@@ -1367,9 +1371,9 @@ class MetadataDisplay extends Display\Common {
         }
         $error = '';
         if ($requestedAttribute['FriendlyName'] == '') {
-          if (isset(self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
-            $friendlyNameDisplay = sprintf('(%s)', self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']);
-            if (! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
+          if (isset($friendlyNames[$requestedAttribute['Name']])) {
+            $friendlyNameDisplay = sprintf('(%s)', $friendlyNames[$requestedAttribute['Name']]['desc']);
+            if (! $friendlyNames[$requestedAttribute['Name']]['standard']) {
               $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {
@@ -1378,9 +1382,9 @@ class MetadataDisplay extends Display\Common {
           }
         } else {
           $friendlyNameDisplay = $requestedAttribute['FriendlyName'];
-          if (isset (self::FRIENDLY_NAMES[$requestedAttribute['Name']])) {
-            if ($requestedAttribute['FriendlyName'] != self::FRIENDLY_NAMES[$requestedAttribute['Name']]['desc']
-              || ! self::FRIENDLY_NAMES[$requestedAttribute['Name']]['standard']) {
+          if (isset ($friendlyNames[$requestedAttribute['Name']])) {
+            if ($requestedAttribute['FriendlyName'] != $friendlyNames[$requestedAttribute['Name']]['desc']
+              || ! $friendlyNames[$requestedAttribute['Name']]['standard']) {
                 $error = self::HTML_CLASS_ALERT_WARNING;
             }
           } else {

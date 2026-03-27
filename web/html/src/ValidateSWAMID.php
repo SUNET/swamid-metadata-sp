@@ -256,6 +256,8 @@ class ValidateSWAMID extends Validate {
    * @return void
    */
   private function checkEntityAttributes($type) {
+    $standardAttributes = $this->getAttributeDefs()->getStandardEntityAttributes();
+
     $entityAttributesHandler = $this->config->getDb()->prepare('SELECT `attribute`
       FROM `EntityAttributes` WHERE `entity_id` = :Id AND `type` = :Type');
     $entityAttributesHandler->bindValue(self::BIND_ID, $this->dbIdNr);
@@ -289,8 +291,8 @@ class ValidateSWAMID extends Validate {
       $entityAttributesHandler->bindValue(self::BIND_TYPE, 'entity-category');
       $entityAttributesHandler->execute();
       while ($entityAttribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
-        if (isset(self::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]) &&
-          ! self::STANDARD_ATTRIBUTES['entity-category'][$entityAttribute['attribute']]['standard']) {
+        if (isset($standardAttributes['entity-category'][$entityAttribute['attribute']]) &&
+          ! $standardAttributes['entity-category'][$entityAttribute['attribute']]['standard']) {
             $this->error .= sprintf ("Entity Category Error: The entity category %s is deprecated.\n",
               $entityAttribute['attribute']);
         }

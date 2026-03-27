@@ -560,6 +560,8 @@ class ParseXML extends Common {
    * @return void
    */
   protected function parseSPSSODescriptorAttributeConsumingService($data) {
+    $friendlyNames = $this->getAttributeDefs()->getAttributeFriendlyNames();
+
     $index = $data->getAttribute('index');
     if ($index == '') {
       $this->error .= "Index is Required in SPSSODescriptor->AttributeConsumingService.\n";
@@ -625,11 +627,11 @@ class ParseXML extends Common {
           if ($child->getAttribute('Name')) {
             $name = $child->getAttribute('Name');
             if ($friendlyName != '' &&
-              isset(self::FRIENDLY_NAMES[$name]) &&
-              self::FRIENDLY_NAMES[$name]['desc'] != $friendlyName) {
+              isset($friendlyNames[$name]) &&
+              $friendlyNames[$name]['desc'] != $friendlyName) {
                 $this->warning .= sprintf(
                   "FriendlyName for %s %s %d is %s (recomended is %s).\n",
-                  htmlspecialchars($name), 'in RequestedAttribute for index', $index, htmlspecialchars($friendlyName), self::FRIENDLY_NAMES[$name]['desc']);
+                  htmlspecialchars($name), 'in RequestedAttribute for index', $index, htmlspecialchars($friendlyName), $friendlyNames[$name]['desc']);
             }
             if ($child->getAttribute('NameFormat')) {
               $nameFormat = $child->getAttribute('NameFormat');
