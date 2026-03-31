@@ -205,6 +205,6 @@ class AttributeDefs {
   }
 
   public function getAttributeFriendlyNames() {
-    return self::FRIENDLY_NAMES;;
+    return self::FRIENDLY_NAMES;
   }
 }
