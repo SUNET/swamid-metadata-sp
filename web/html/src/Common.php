@@ -859,6 +859,12 @@ class Common {
     $delSrvInfHandler->execute();
   }
 
+  /**
+   * Returns a singleton instance of the AttributeDefs object (class that can be extended in local deployments)
+   *
+   * @return AttributeDefs
+   */
+
   public function getAttributeDefs() {
     if (!self::$attributeDefs) {
       self::$attributeDefs = $this->config->getExtendedClass('AttributeDefs');

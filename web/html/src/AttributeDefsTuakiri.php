@@ -59,6 +59,12 @@ class AttributeDefsTuakiri extends AttributeDefs {
     'urn:oid:2.5.4.6' => false, // c
   );
 
+  /**
+   * Returns attribute definitions customised for Tuakiri
+   *
+   * @return array
+   */
+
   public function getAttributeFriendlyNames() {
     return array_merge(array_diff_key(self::FRIENDLY_NAMES, self::FRIENDLY_NAMES_EXCLUDE), self::FRIENDLY_NAMES_TUAKIRI);
   }

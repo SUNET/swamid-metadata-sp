@@ -200,9 +200,21 @@ class AttributeDefs {
     )
   );
 
+  /**
+   * Returns an associative of entity attribute definitions, indexed by entity attribute name.
+   *
+   * @return array
+   */
+
   public function getStandardEntityAttributes() {
     return self::STANDARD_ATTRIBUTES;
   }
+
+  /**
+   * Returns an associative of attribute definitions, indexed by attribute SAML name.
+   *
+   * @return array
+   */
 
   public function getAttributeFriendlyNames() {
     return self::FRIENDLY_NAMES;
