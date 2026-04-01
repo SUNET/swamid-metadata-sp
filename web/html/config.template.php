@@ -125,6 +125,9 @@ $federation = array(
   'swamid_assurance' => true,
   # If we should check/force a organization connected to each entity
   'checkOrganization' => false,
+  # If "Create new organization based on this entity" should set memberSince based on registrationInstant.
+  # NOTE: if using this option, set date.timezone in your php.ini to interpret registrationInstant in the correct timezone.
+  'populateMemberSince' => true,
   # Should we clean up saml:Attribute elements from IDPSSODescriptors
   'cleanAttribuesFromIDPSSODescriptor' => true,
   # Whether to offer UI to store Service Catalogue info (Service URL, ...)

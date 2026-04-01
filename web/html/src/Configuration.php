@@ -93,6 +93,7 @@ class Configuration {
     $defaultValuesFederation = array(
       'infoPageHtml' => '',
       'storeServiceInfo' => false,
+      'populateMemberSince' => false,
       'eduPersonAffiliationLink' => '',
       'eduPersonAffiliationExemptIdPs' => array(),
       'mdsDbPath' => '',
