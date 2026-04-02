@@ -264,7 +264,7 @@ class ValidateTuakiri extends Validate {
     $scopesHandler->bindParam(self::BIND_ID, $this->dbIdNr);
     $scopesHandler->execute();
     $missingScope = true;
-    while ($scope = $scopesHandler->fetch(PDO::FETCH_ASSOC)) {
+    while ($scopesHandler->fetch(PDO::FETCH_ASSOC)) {
       $missingScope = false;
     }
     if ($missingScope) {

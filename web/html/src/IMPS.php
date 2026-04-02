@@ -641,14 +641,24 @@ class IMPS {
       WHERE `id` = :Id;');
     $organizationsInfoHandler = $this->config->getDb()->prepare(
       'INSERT INTO `OrganizationInfo` (`memberSince`, `notMemberAfter`)
-      VALUES (NULL, NULL);');
+      VALUES (:memberSince, NULL);');
     $organizationsInfoDataHandler = $this->config->getDb()->prepare(
       'INSERT INTO `OrganizationInfoData`
         (`OrganizationInfo_id`, `lang`, `OrganizationName`, `OrganizationDisplayName`, `OrganizationURL`)
       VALUES (:Id, :Lang, :OrganizationName, :OrganizationDisplayName, :OrganizationURL);');
+    $registrationInstantHandler = $this->config->getDb()->prepare('SELECT `registrationInstant` FROM `Entities` WHERE `id` = :Id;');
     $organizationData = array();
 
-    $organizationsInfoHandler->execute();
+    $memberSince = null;
+    if ($this->config->getFederation()['populateMemberSince']) {
+      $registrationInstantHandler->execute(array(self::BIND_ID => $entitiesId));
+      $registrationInstantResult = $registrationInstantHandler->fetch(PDO::FETCH_ASSOC);
+      $registrationInstant = $registrationInstantResult['registrationInstant'] ?? null;
+      if ( $registrationInstant ) {
+        $memberSince = date("Y-m-d", strtotime($registrationInstant));
+      }
+    }
+    $organizationsInfoHandler->execute(array('memberSince' => $memberSince));
     $organizationsInfoId = $this->config->getDb()->lastInsertId();
     foreach ($this->config->getFederation()['languages'] as $lang) {
       $organizationHandler->execute(array(self::BIND_ID => $entitiesId, self::BIND_LANG => $lang));

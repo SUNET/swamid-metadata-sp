@@ -21,6 +21,12 @@ class AttributeDefsSWAMID extends AttributeDefs {
     ),
   );
 
+  /**
+   * Returns attribute definitions customised for Tuakiri
+   *
+   * @return array
+   */
+
   public function getAttributeFriendlyNames() {
     return array_merge(self::FRIENDLY_NAMES, self::FRIENDLY_NAMES_SWAMID);
   }
