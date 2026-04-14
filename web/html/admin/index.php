@@ -1,8 +1,4 @@
 <?php
-// Import PHPMailer classes into the global namespace
-// These must be at the top of your script, not inside a function
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 const BIND_ASSURANCE = ':Assurance';
 const HTML_CLASS_FA_UP = '<i class="fa fa-arrow-up"></i>';
@@ -1919,28 +1915,10 @@ function setupMail() {
   global $config;
   global $mailContacts, $mailRequester;
 
-  $mailContacts = new PHPMailer(true);
-  $mailRequester = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailRequester->isSMTP();
+  $mailContacts = $config->getMailer();
+  $mailRequester = $config->getMailer();
   $mailContacts->CharSet = "UTF-8";
   $mailRequester->CharSet = "UTF-8";
-  $mailContacts->Host = $config->getSmtp()['host'];
-  $mailRequester->Host = $config->getSmtp()['host'];
-  $mailContacts->Port = $config->getSmtp()['port'];
-  $mailRequester->Port = $config->getSmtp()['port'];
-  $mailContacts->SMTPAutoTLS = true;
-  $mailRequester->SMTPAutoTLS = true;
-  if ($config->smtpAuth()) {
-    $mailContacts->SMTPAuth = true;
-    $mailRequester->SMTPAuth = true;
-    $mailContacts->Username = $config->getSmtp()['sasl']['user'];
-    $mailRequester->Username = $config->getSmtp()['sasl']['user'];
-    $mailContacts->Password = $config->getSmtp()['sasl']['password'];
-    $mailRequester->Password = $config->getSmtp()['sasl']['password'];
-    $mailContacts->SMTPSecure = 'tls';
-    $mailRequester->SMTPSecure = 'tls';
-  }
 
   //Recipients
   $mailContacts->setFrom($config->getSmtp()['from'], $config->getSmtp()['fromName']);
@@ -2260,17 +2238,7 @@ function approveAccessRequest($code) {
       if ($result['returnCode'] < 10) {
         $info = $result['info'];
         if ($result['returnCode'] == 2) {
-          $mail = new PHPMailer(true);
-          $mail->isSMTP();
-          $mail->Host = $config->getSmtp()['host'];
-          $mail->Port = $config->getSmtp()['port'];
-          $mail->SMTPAutoTLS = true;
-          if ($config->smtpAuth()) {
-            $mail->SMTPAuth = true;
-            $mail->Username = $config->getSmtp()['sasl']['user'];
-            $mail->Password = $config->getSmtp()['sasl']['password'];
-            $mail->SMTPSecure = 'tls';
-          }
+          $mail = $config->getMailer();
 
           //Recipients
           $mail->setFrom($config->getSmtp()['from'], 'Metadata');

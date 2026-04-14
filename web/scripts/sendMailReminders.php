@@ -5,11 +5,6 @@ const BIND_ID = ':Id';
 const BIND_LEVEL = ':Level';
 const BIND_TYPE = ':Type';
 
-// Import PHPMailer classes into the global namespace
-// These must be at the top of your script, not inside a function
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
@@ -796,17 +791,7 @@ function getAdmins($id) {
 function setupMail() {
   global $config, $mailContacts;
 
-  $mailContacts = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailContacts->Host = $config->getSmtp()['host'];
-  $mailContacts->Port = $config->getSmtp()['port'];
-  $mailContacts->SMTPAutoTLS = true;
-  if ($config->smtpAuth()) {
-    $mailContacts->SMTPAuth = true;
-    $mailContacts->Username = $config->getSmtp()['sasl']['user'];
-    $mailContacts->Password = $config->getSmtp()['sasl']['password'];
-    $mailContacts->SMTPSecure = 'tls';
-  }
+  $mailContacts = $config->getMailer();
 
   //Recipients
   $mailContacts->setFrom($config->getSmtp()['from'], $config->getSmtp()['fromName']);
