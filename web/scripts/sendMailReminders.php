@@ -662,6 +662,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
 
 function sendImpsReminder($id, $name, $months) {
   global $config, $mailContacts;
+  $federation = $config->getFederation();
 
   setupMail();
 
@@ -685,53 +686,77 @@ function sendImpsReminder($id, $name, $months) {
     <p>Hi.</p>
     <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
-    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.</p>
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
+    to remove the entity related to this IMPS from %s metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     <p>You can view information about your IMPS at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>\n  </body>\n</html>",
-    htmlspecialchars($name), $config->baseURL(), $id, $config->baseURL(), $id);
+    On behalf of %s</p>\n  </body>\n</html>",
+    htmlspecialchars($name),
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id, $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
     $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.
+    to remove the entity related to this IMPS from %s metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     \nYou can view information about your IMPS at %sadmin/?showEntity=%d .
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
-    $name, $config->baseURL(), $id);
+    On behalf of %s",
+    $name,
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
   } else {
     $mailContacts->Body    = sprintf("<html>\n  <body>
     <p>Hi.</p>
     <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
-    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.</p>
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
+    to remove the entity related to this IMPS from %s metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     <p>You can validate/confirm your IMPS at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>\n  </body>\n</html>",
-    htmlspecialchars($name), $months, $config->baseURL(), $id, $config->baseURL(), $id);
+    On behalf of %s</p>\n  </body>\n</html>",
+    htmlspecialchars($name), $months,
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id, $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
     $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
-    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
+    to remove the entity related to this IMPS from %s metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     \nYou can validate/confirm your IMPS at %sadmin/?showEntity=%d .
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
-    $name, $months, $config->baseURL(), $id);
+    On behalf of %s",
+    $name, $months,
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
   }
-  $mailContacts->Subject  = 'Warning : SWAMID IMPS ' . $name . ' needs to be validated';
+  $mailContacts->Subject  = 'Warning : ' . $federation['displayName'] . ' IMPS ' . $name . ' needs to be validated';
 
   try {
     $mailContacts->send();
