@@ -1917,8 +1917,6 @@ function setupMail() {
 
   $mailContacts = $config->getMailer();
   $mailRequester = $config->getMailer();
-  $mailContacts->CharSet = "UTF-8";
-  $mailRequester->CharSet = "UTF-8";
 
   //Recipients
   $mailContacts->setFrom($config->getSmtp()['from'], $config->getSmtp()['fromName']);

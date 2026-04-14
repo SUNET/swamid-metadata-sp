@@ -823,6 +823,7 @@ class Configuration {
       $mailer->Password = $this->smtp['sasl']['password'];
       $mailer->SMTPSecure = 'tls';
     }
+    $mailer->CharSet = PHPMailer::CHARSET_UTF8;
     return $mailer;
   }
 }
