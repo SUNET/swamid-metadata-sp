@@ -3,6 +3,8 @@ namespace metadata;
 
 use PDO;
 use PDOException;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 class Configuration {
   /**
@@ -802,5 +804,26 @@ class Configuration {
     }
 
     return new (class_exists($extendClass) ? $extendClass : $baseClass)(...$params);
+  }
+
+  /**
+   * Return an instance of PHPMailer ready to use.
+   *
+   * @return PHPMailer a fully configured instance of PHPMailer
+   */
+  public function getMailer() {
+    $mailer = new PHPMailer(true);
+    $mailer->isSMTP();
+    $mailer->Host = $this->smtp['host'];
+    $mailer->Port = $this->smtp['port'];
+    $mailer->SMTPAutoTLS = true;
+    if ($this->smtpAuth) {
+      $mailer->SMTPAuth = true;
+      $mailer->Username = $this->smtp['sasl']['user'];
+      $mailer->Password = $this->smtp['sasl']['password'];
+      $mailer->SMTPSecure = 'tls';
+    }
+    $mailer->CharSet = PHPMailer::CHARSET_UTF8;
+    return $mailer;
   }
 }

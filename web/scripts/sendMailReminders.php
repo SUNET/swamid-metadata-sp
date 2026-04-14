@@ -5,11 +5,6 @@ const BIND_ID = ':Id';
 const BIND_LEVEL = ':Level';
 const BIND_TYPE = ':Type';
 
-// Import PHPMailer classes into the global namespace
-// These must be at the top of your script, not inside a function
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
 //Load composer's autoloader
 require_once __DIR__ . '/../html/vendor/autoload.php';
 
@@ -116,17 +111,17 @@ function confirmEntities() {
         printf('Error %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 3));
         sendEntityConfirmation($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 12);
+          $entity['DisplayName'], 12);
       } elseif ($warn2Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 2) {
         printf('Warn2 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 2));
         sendEntityConfirmation($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 11);
+          $entity['DisplayName'], 11);
       } elseif ($warn1Date > $entity['lastConfirmed'] && $reminders[$entity['id']] < 1) {
         printf('Warn1 %s %s%s', $entity['lastConfirmed'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 1, BIND_LEVEL => 1));
         sendEntityConfirmation($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), 10);
+          $entity['DisplayName'], 10);
       }
       unset($reminders[$entity['id']]);
     }
@@ -255,7 +250,7 @@ function oldCerts() {
         printf("\nProblem with %s\n%s",$entity['entityID'],$errorText);
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 2, BIND_LEVEL => $maxStatus));
         sendCertReminder($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $maxStatus);
+          $entity['DisplayName'], $maxStatus);
       }
       unset($reminders[$entity['id']]);
     }
@@ -319,17 +314,17 @@ function checkOldPending() {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 3));
         sendOldUpdates($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 11);
+          $entity['DisplayName'], $entity['removeDate'], 11);
       } elseif ($warn2Date > $entity['lastValidated'] && $reminders[$entity['id']] < 2) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 2));
         sendOldUpdates($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 4);
+          $entity['DisplayName'], $entity['removeDate'], 4);
       } elseif ($warn1Date > $entity['lastValidated'] && $reminders[$entity['id']] < 1) {
         printf('Pending since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 3, BIND_LEVEL => 1));
         sendOldUpdates($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 1);
+          $entity['DisplayName'], $entity['removeDate'], 1);
       }
       unset($reminders[$entity['id']]);
     }
@@ -382,12 +377,12 @@ function checkOldDraft() {
         printf('Draft since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 4, BIND_LEVEL => 2));
         sendOldUpdates($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 7, false);
+          $entity['DisplayName'], $entity['removeDate'], 7, false);
       } elseif ($warn1Date > $entity['lastValidated'] && $reminders[$entity['id']] < 1) {
         printf('Draft since %s %s%s', $entity['lastValidated'], $entity['entityID'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $entity['id'], BIND_TYPE => 4, BIND_LEVEL => 1));
         sendOldUpdates($entity['id'], $entity['entityID'],
-          iconv("UTF-8", "ISO-8859-1", $entity['DisplayName']), $entity['removeDate'], 2, false);
+          $entity['DisplayName'], $entity['removeDate'], 2, false);
       }
       unset($reminders[$entity['id']]);
     }
@@ -448,19 +443,19 @@ function checkOldIMPS() {
       if ($oldDate > $imps['lastUpdated'] && $reminderIMPS[$imps['id']] < 4) {
         printf('Error old profile %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 4));
-        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), 99);
+        sendImpsReminder($imps['entity_id'], $imps['name'], 99);
       } elseif ($errorDate > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 3) {
         printf('Error %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 3));
-        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['error']);
+        sendImpsReminder($imps['entity_id'], $imps['name'], $config->getIMPS()['error']);
       } elseif ($warn2Date > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 2) {
         printf('Warn2 %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 2));
-        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['warn2']);
+        sendImpsReminder($imps['entity_id'], $imps['name'], $config->getIMPS()['warn2']);
       } elseif ($warn1Date > $imps['lastValidated'] && $reminderIMPS[$imps['id']] < 1) {
         printf('Warn1 %s %s%s', $imps['lastValidated'], $imps['name'], "\n");
         $updateMailRemindersHandler->execute(array(BIND_ID => $imps['entity_id'], BIND_TYPE => 5, BIND_LEVEL => 1));
-        sendImpsReminder($imps['entity_id'], iconv("UTF-8", "ISO-8859-1", $imps['name']), $config->getIMPS()['warn1']);
+        sendImpsReminder($imps['entity_id'], $imps['name'], $config->getIMPS()['warn1']);
       }
       unset($reminders[$imps['entity_id']]);
     }
@@ -508,7 +503,7 @@ function sendEntityConfirmation($id, $entityID, $displayName, $months) {
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  htmlspecialchars($displayName, ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, 'ISO-8859-1'), htmlspecialchars($entityID), $months,
+  htmlspecialchars($displayName), htmlspecialchars($entityID), $months,
   $federation['rulesName'],
   $federation['displayName'],
   $federation['teamName'], $federation['displayName'],
@@ -576,7 +571,7 @@ function sendCertReminder($id, $entityID, $displayName, $maxStatus) {
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  $federation['displayName'], htmlspecialchars($displayName, ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, 'ISO-8859-1'), htmlspecialchars($entityID), $expireStatus,
+  $federation['displayName'], htmlspecialchars($displayName), htmlspecialchars($entityID), $expireStatus,
   $federation['rulesName'],
   $config->baseURL(), $id, $config->baseURL(), $id,
   $federation['roloverDocURL'], $federation['roloverDocURL'],
@@ -633,7 +628,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
     --<br>
     On behalf of %s</p>
   </body>\n</html>",
-  htmlspecialchars($displayName, ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, 'ISO-8859-1'), htmlspecialchars($entityID), $pending ? 'Pending' : 'Drafts', $weeks,
+  htmlspecialchars($displayName), htmlspecialchars($entityID), $pending ? 'Pending' : 'Drafts', $weeks,
   $pending ? 'publication request' : 'draft', substr($removeDate,0,10),
   $pending ? '<p>To get a change published forward this mail to ' . $federation['teamMail'] . '</p>' : '',
   $pending ? 'request' : 'draft',
@@ -667,6 +662,7 @@ function sendOldUpdates($id, $entityID, $displayName, $removeDate, $weeks, $pend
 
 function sendImpsReminder($id, $name, $months) {
   global $config, $mailContacts;
+  $federation = $config->getFederation();
 
   setupMail();
 
@@ -690,53 +686,77 @@ function sendImpsReminder($id, $name, $months) {
     <p>Hi.</p>
     <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
-    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.</p>
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
+    to remove the entity related to this IMPS from %s metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     <p>You can view information about your IMPS at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>\n  </body>\n</html>",
-    htmlspecialchars($name, ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, 'ISO-8859-1'), $config->baseURL(), $id, $config->baseURL(), $id);
+    On behalf of %s</p>\n  </body>\n</html>",
+    htmlspecialchars($name),
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id, $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
     $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed.
     Current approved IMPS is based on a earlier version of the assurance profile.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
     and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.
+    to remove the entity related to this IMPS from %s metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     \nYou can view information about your IMPS at %sadmin/?showEntity=%d .
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
-    $name, $config->baseURL(), $id);
+    On behalf of %s",
+    $name,
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
   } else {
     $mailContacts->Body    = sprintf("<html>\n  <body>
     <p>Hi.</p>
     <p>The Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
-    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.</p>
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
+    to remove the entity related to this IMPS from %s metadata registry.</p>
     <p>You have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     <p>You can validate/confirm your IMPS at
     <a href=\"%sadmin/?showEntity=%d\">%sadmin/?showEntity=%d</a> .</p>
-    <p>This is a message from the SWAMID SAML WebSSO metadata administration tool.<br>
+    <p>This is a message from the %s.<br>
     --<br>
-    On behalf of SWAMID Operations</p>\n  </body>\n</html>",
-    htmlspecialchars($name, ENT_QUOTES|ENT_SUBSTITUTE|ENT_HTML401, 'ISO-8859-1'), $months, $config->baseURL(), $id, $config->baseURL(), $id);
+    On behalf of %s</p>\n  </body>\n</html>",
+    htmlspecialchars($name), $months,
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id, $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
     $mailContacts->AltBody = sprintf("Hi.\n\nThe Identity Management Practice Statement (IMPS) for \"%s\" has not been validated/confirmed for %d months.
-    The SWAMID Assurance Profiles requires an annual confirmation that the IMPS is still accurate
-    and that the Identity Providers adhere to it. If not annually confirmed the Operations team will start the process
-    to remove the entity related to this IMPS from SWAMID metadata registry.
+    The %s Assurance Profiles requires an annual confirmation that the IMPS is still accurate
+    and that the Identity Providers adhere to it. If not annually confirmed the %s team will start the process
+    to remove the entity related to this IMPS from %s metadata registry.
     \nYou have received this email because you are either the technical and/or administrative contact of a related IdP.</p>
     \nYou can validate/confirm your IMPS at %sadmin/?showEntity=%d .
-    \nThis is a message from the SWAMID SAML WebSSO metadata administration tool.
+    \nThis is a message from the %s.
     --
-    On behalf of SWAMID Operations",
-    $name, $months, $config->baseURL(), $id);
+    On behalf of %s",
+    $name, $months,
+    $federation['displayName'],
+    $federation['teamName'],
+    $federation['displayName'],
+    $config->baseURL(), $id,
+    $federation['toolName'],
+    $federation['teamName']);
   }
-  $mailContacts->Subject  = 'Warning : SWAMID IMPS ' . $name . ' needs to be validated';
+  $mailContacts->Subject  = 'Warning : ' . $federation['displayName'] . ' IMPS ' . $name . ' needs to be validated';
 
   try {
     $mailContacts->send();
@@ -796,17 +816,7 @@ function getAdmins($id) {
 function setupMail() {
   global $config, $mailContacts;
 
-  $mailContacts = new PHPMailer(true);
-  $mailContacts->isSMTP();
-  $mailContacts->Host = $config->getSmtp()['host'];
-  $mailContacts->Port = $config->getSmtp()['port'];
-  $mailContacts->SMTPAutoTLS = true;
-  if ($config->smtpAuth()) {
-    $mailContacts->SMTPAuth = true;
-    $mailContacts->Username = $config->getSmtp()['sasl']['user'];
-    $mailContacts->Password = $config->getSmtp()['sasl']['password'];
-    $mailContacts->SMTPSecure = 'tls';
-  }
+  $mailContacts = $config->getMailer();
 
   //Recipients
   $mailContacts->setFrom($config->getSmtp()['from'], $config->getSmtp()['fromName']);
