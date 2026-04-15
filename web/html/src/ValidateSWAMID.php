@@ -76,6 +76,8 @@ class ValidateSWAMID extends Validate {
     if ($this->isAA) {
       // 5.1.20, 5.2.x
       $this->checkRequiredSAMLcertificates('AttributeAuthority');
+      $this->result .= 'The AttributeAuthority is a part of the Identity Provider and follow the same rules for SWAMID Tech 5.1.21 and 5.2.x.<br>';
+      $this->result .= "If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.\n";
     }
 
     // 5.1.22 / 6.1.20
