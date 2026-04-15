@@ -294,10 +294,6 @@ class MetadataDisplay extends Display\Common {
         </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($warnings)), "\n", "\n");
       }
 
-      if ($entity['isAA']) {
-        $notice .= 'The AttributeAuthority is a part of the Identity Provider and follow the same rules for SWAMID Tech 5.1.21 and 5.2.x.<br>';
-        $notice .= "If the AttributeAuthority part of the entity is not used SWAMID recommends that is removed.\n";
-      }
       if ($entity['validationOutput'] != '') {
         $notice .= $entity['validationOutput'];
       }
