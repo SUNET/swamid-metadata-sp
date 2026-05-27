@@ -239,6 +239,10 @@ class ParseXML extends Common {
         case 'http://macedir.org/entity-category' : # NOSONAR Should be http://
           $attributeType = 'entity-category';
           break;
+        case 'https://macedir.org/entity-category' : # NOSONAR Should be http://
+          $attributeType = 'entity-category';
+          $data->setAttribute('Name', 'http://macedir.org/entity-category');
+          break;
         case 'http://macedir.org/entity-category-support' : # NOSONAR Should be http://
           $attributeType = 'entity-category-support';
           break;
