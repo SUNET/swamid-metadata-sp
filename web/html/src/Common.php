@@ -210,6 +210,7 @@ class Common {
     $default_ports = array( 'http' => 80, 'https' => 443);
 
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
     curl_setopt($ch, CURLINFO_HEADER_OUT, 0);
 
