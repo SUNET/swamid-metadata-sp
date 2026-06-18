@@ -1070,7 +1070,7 @@ function showMyEntities() {
         AND `status` < 4
         AND `userID` = :UserID
       ORDER BY `entityID`, `status`");
-    $entitiesHandler->bindValue(':UserID', $EPPN);
+    $entitiesHandler->bindValue(':UserID', strtolower($EPPN));
   }
   $entityConfirmationHandler = $config->getDb()->prepare(
     "SELECT `lastConfirmed`, `fullName`, `email`, NOW() - INTERVAL 10 MONTH AS `warnDate`,
