@@ -2121,6 +2121,7 @@ function requestAccess($entitiesId) {
           <p>%s (%s) has requested access to update %s</p>
           <p>You have received this email because you are either the technical and/or administrative contact.</p>
           <p>If you approve, please click on this link <a href=\"%sadmin/?approveAccessRequest=%s\">%sadmin/?approveAccessRequest=%s</a></p>
+          <p>This link is valid for 24 hours.</p>
           <p>If you do not approve, you can ignore this email. No changes will be made.</p>
           <p>This is a message from the %s.<br>
           --<br>
@@ -2132,6 +2133,7 @@ function requestAccess($entitiesId) {
           \n%s (%s) has requested access to update %s
           \nYou have received this email because you are either the technical and/or administrative contact.
           \nIf you approve, please click on this link %sadmin/?approveAccessRequest=%s
+          \nThis link is valid for 24 hours.
           \nIf you do not approve, you can ignore this email. No changes will be made.
           \nThis is a message from the %s.
           --
