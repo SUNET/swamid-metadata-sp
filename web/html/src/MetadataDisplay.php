@@ -2902,7 +2902,7 @@ class MetadataDisplay extends Display\Common {
           COUNT(DISTINCT `IMPS`.`id`) AS impsCount, COUNT(DISTINCT `Entities`.`id`) AS entitiesCount
         FROM `OrganizationInfoData`, `OrganizationInfo`
         LEFT JOIN `IMPS` ON `IMPS`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
-        LEFT JOIN `Entities` ON `Entities`.`OrganizationInfo_id` = `OrganizationInfo`.`id`
+        LEFT JOIN `Entities` ON `Entities`.`OrganizationInfo_id` = `OrganizationInfo`.`id` AND `Entities`.`status` = 1
         WHERE `OrganizationInfo`.`id` = `OrganizationInfoData`.`OrganizationInfo_id` AND
           `lang` = 'en'
         GROUP BY(orgId)
