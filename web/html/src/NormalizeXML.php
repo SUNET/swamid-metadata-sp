@@ -92,9 +92,11 @@ class NormalizeXML {
             // TEXT_NODE
           case 8 :
             // COMMENT_NODE
+          case 7 :
+            // PROCESSING_INSTRUCTION_NODE
             break;
           default :
-            printf ('-----> Unknown type %s<br>%s', $child->nodeType, $child->nodeValue);
+            // Ignore unsupported node types; parser code must not write input to the response.
         }
       }
     }

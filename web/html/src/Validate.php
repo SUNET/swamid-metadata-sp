@@ -326,7 +326,7 @@ class Validate extends Common {
       if ($subjectIdReq['attribute'] != 'pairwise-id' && $subjectIdReq['attribute'] != 'subject-id') { # NOSONAR need to be 2 since subjectIdReq is created in above
         $this->error .= self::TEXT_COCOV2_REQ;
         $this->error .= sprintf(" in 5.2.1 to only use pairwise-id or subject-id as subject-id:req. %s is NOT allowed.\n",
-          $subjectIdReq['attribute']);
+          Security::escape($subjectIdReq['attribute']));
       }
     }
     $requestedAttributeHandler->execute();

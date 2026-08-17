@@ -23,7 +23,6 @@ class MetadataEdit extends Common {
   const HTML_DIV_CLASS_ALERT_DANGER = '<div class="row alert alert-danger" role="alert">Error:%s</div>';
   const HTML_END_DIV_COL_ROW = "\n      </div><!-- end col -->\n    </div><!-- end row -->\n";
   const HTML_END_UL = '        </ul>';
-  const HTML_HREF_BLANK = '<a href="%s" class="text-%s" target="blank">%s</a>';
   const HTML_LI_SPAN = '%s          <li>%s<span class="text-%s">%s[%s] = %s</span></li>';
   const HTML_LIE = '<br>Lang is empty';
   const HTML_NES = '<br>No Element selected';
@@ -381,8 +380,8 @@ class MetadataEdit extends Common {
               %s
             </div>
           </li>',
-        $type, $error, $state, htmlspecialchars($value), $entityType,
-        $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
+        Security::escape($type), $error, $state, htmlspecialchars($value), Security::escape($entityType),
+        $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => $value), $idx, 'Delete', '<i class="fas fa-trash"></i>')
       );
       $oldType = $type;
       while ($attribute = $entityAttributesHandler->fetch(PDO::FETCH_ASSOC)) {
@@ -406,7 +405,7 @@ class MetadataEdit extends Common {
           $entityType = $type;
         }
         if ($oldType != $type) {
-          printf ("\n%s\n        <b>%s</b>\n        <ul>", self::HTML_END_UL, $type);
+          printf ("\n%s\n        <b>%s</b>\n        <ul>", self::HTML_END_UL, Security::escape($type));
           $oldType = $type;
           if (! isset($existingAttributeValues[$type]) ) {
             $existingAttributeValues[$type] = array();
@@ -420,8 +419,8 @@ class MetadataEdit extends Common {
               %s
             </div>
           </li>',
-          $error, $state, htmlspecialchars($value), $entityType,
-          $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => htmlspecialchars($value)), $idx, 'Delete', '<i class="fas fa-trash"></i>')
+          $error, $state, htmlspecialchars($value), Security::escape($entityType),
+          $this->getEditActionLink('EntityAttributes', array('type' => $type, 'attribute' => $value), $idx, 'Delete', '<i class="fas fa-trash"></i>')
         );
         $existingAttributeValues[$type][$value] = true;
       }
@@ -503,12 +502,12 @@ class MetadataEdit extends Common {
           ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
           ) {
           $addLink = $this->getEditActionLink('EntityAttributes',
-                  array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
+                  array('type' => $attribute['type'], 'attribute' => $attribute['attribute']),
                   $idx, 'Add', self::TEXT_COPY);
         }
         $state = 'danger';
       }?>
-        <b><?=$attribute['type']?></b>
+        <b><?=Security::escape($attribute['type'])?></b>
         <ul>
           <li><?=$addLink?><span class="text-<?=$state?>"><?=htmlspecialchars($attribute['attribute'])?></span></li><?php
       $oldType = $attribute['type'];
@@ -522,14 +521,14 @@ class MetadataEdit extends Common {
             ($attribute['type'] == 'entity-selection-profile' && isset($this->config->entitySelectionProfiles()[$attribute['attribute']]))
             ) {
             $addLink = $this->getEditActionLink('EntityAttributes',
-                  array('type' => $attribute['type'], 'attribute' => htmlspecialchars($attribute['attribute'])),
+                  array('type' => $attribute['type'], 'attribute' => $attribute['attribute']),
                   $idx, 'Add', self::TEXT_COPY);
           }
           $state = 'danger';
         }
         if ($oldType != $attribute['type']) {
           print "\n" . self::HTML_END_UL;
-          printf ("\n        <b>%s</b>\n        <ul>", $attribute['type']);
+          printf ("\n        <b>%s</b>\n        <ul>", Security::escape($attribute['type']));
           $oldType = $attribute['type'];
         }
         printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n",
@@ -599,16 +598,16 @@ class MetadataEdit extends Common {
       $newstate = 'dark';
       $oldstate = 'dark';
     } else {
-      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => htmlspecialchars($oldURL)), 0, 'Update', self::TEXT_COPY);
+      $copy = ($oldURL == 'Missing') ? '' : $this->getEditActionLink('IdPErrorURL', array('errorURL' => $oldURL), 0, 'Update', self::TEXT_COPY);
       $newstate = ($newURL == 'Missing') ? 'dark' : 'success';
       $oldstate = ($oldURL == 'Missing') ? 'dark' :'danger';
     }
     $oldURL = ($oldURL == 'Missing')
       ? 'Missing'
-      : sprintf (self::HTML_HREF_BLANK, htmlspecialchars($oldURL), $oldstate, htmlspecialchars($oldURL));
+      : Security::httpLink($oldURL, $oldURL, 'text-' . $oldstate);
     if ($newURL != 'Missing') {
-      $links = $this->getEditDeleteLinks('IdPErrorURL', array('errorURL' => htmlspecialchars($newURL)), 1);
-      $newURL = sprintf (self::HTML_HREF_BLANK, htmlspecialchars($newURL), $newstate, htmlspecialchars($newURL));
+      $links = $this->getEditDeleteLinks('IdPErrorURL', array('errorURL' => $newURL), 1);
+      $newURL = Security::httpLink($newURL, $newURL, 'text-' . $newstate);
     } else {
       $links = '';
     }
@@ -795,7 +794,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = $this->getEditActionLink('IdPScopes', array('value' => htmlspecialchars($scope)), $idx, 'Add', self::TEXT_COPY);
+          $copy = $this->getEditActionLink('IdPScopes', array('value' => $scope), $idx, 'Add', self::TEXT_COPY);
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s">%s (regexp="%s")</span></li>%s',
@@ -828,6 +827,10 @@ class MetadataEdit extends Common {
       }
       if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
         $langvalue = strtolower(trim($_POST['lang']));
+        if ($_POST['action'] == 'Add'
+          && ! Security::isAllowedLanguage($langvalue, $this->config->getFederation()['languages'])) {
+          $error .= '<br>Language is not enabled for this federation';
+        }
       } else {
         $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
         $langvalue = '';
@@ -1093,7 +1096,7 @@ class MetadataEdit extends Common {
           $fullLang = "Unknown";
         }
         printf('%s        <b>Lang = "%s" - %s</b>%s        <ul>',
-          $showEndUL ? "\n        </ul>\n" : '', $lang, $fullLang, "\n");
+          $showEndUL ? "\n        </ul>\n" : '', Security::escape($lang), Security::escape($fullLang), "\n");
         $showEndUL = true;
         $oldLang = $lang;
       }
@@ -1123,16 +1126,17 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $links = $this->getEditDeleteLinks($edit, array('element'=>$element, 'height' => $height, 'width' => $width, 'lang' => $lang, 'value' => htmlspecialchars($data)), $idx);
+      $links = $this->getEditDeleteLinks($edit, array('element'=>$element, 'height' => $height, 'width' => $width, 'lang' => $lang, 'value' => $data), $idx);
       switch ($element) {
         case 'Logo' :
           printf ('%s          <li>%s<span class="text-%s">%s (%dx%d) = %s</span></li>',
-            "\n", $links, $state, $element, $height, $width, sprintf (self::HTML_HREF_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data)));
+            "\n", $links, $state, $element, $height, $width,
+            Security::httpLink($data, $data, 'text-' . $state));
         break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>',
-            "\n", $links, $state, $element, sprintf (self::HTML_HREF_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data)));
+            "\n", $links, $state, $element, Security::httpLink($data, $data, 'text-' . $state));
           break;
         default :
           printf ('%s          <li>%s<span class="text-%s">%s = %s</span></li>', "\n", $links, $state, $element, htmlspecialchars($data));
@@ -1190,7 +1194,7 @@ class MetadataEdit extends Common {
 
     $idx=0;
     foreach ($oldMDUIElements as $lang => $elementValues) {
-      printf ('%s        <b>Lang = "%s"</b>%s        <ul>', "\n", $lang, "\n");
+      printf ('%s        <b>Lang = "%s"</b>%s        <ul>', "\n", Security::escape($lang), "\n");
       foreach ($elementValues as $element => $data) {
         switch ($data['state']) {
           case 'same' :
@@ -1200,11 +1204,11 @@ class MetadataEdit extends Common {
           case 'removed' :
             if ($element == 'Logo') {
               $copy = $this->getEditActionLink($edit,
-                  array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value']), 'height' => $data['height'], 'width' => $data['width']),
+                  array('element' => $element, 'lang' => $lang, 'value' => $data['value'], 'height' => $data['height'], 'width' => $data['width']),
                   $idx, 'Add', self::TEXT_COPY);
             } else {
               $copy = $this->getEditActionLink($edit,
-                  array('element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
+                  array('element' => $element, 'lang' => $lang, 'value' => $data['value']),
                   $idx, 'Add', self::TEXT_COPY);
             }
             $state = 'danger';
@@ -1217,7 +1221,7 @@ class MetadataEdit extends Common {
           case 'InformationURL' :
           case 'Logo' :
           case 'PrivacyStatementURL' :
-            $value = sprintf (self::HTML_HREF_BLANK, htmlspecialchars($data['value']), $state, htmlspecialchars($data['value']));
+            $value = Security::httpLink($data['value'], $data['value'], 'text-' . $state);
             break;
           default :
             $value = htmlspecialchars($data['value']);
@@ -1317,7 +1321,7 @@ class MetadataEdit extends Common {
       // no need to test again of oldServiceURL is non-empty
       $data = htmlspecialchars($oldServiceURL) . ($oldEnabled ? ' (active)' : ' (inactive)' );
       if ($state == 'danger') {
-        $copy = $this->getEditActionLink('SPServiceInfo', array('ServiceURL' => htmlspecialchars($oldServiceURL), 'enabled' => $oldEnabled), 1, 'Add', self::TEXT_COPY);
+        $copy = $this->getEditActionLink('SPServiceInfo', array('ServiceURL' => $oldServiceURL, 'enabled' => $oldEnabled), 1, 'Add', self::TEXT_COPY);
       } else {
         $copy = '';
       }
@@ -1528,7 +1532,7 @@ class MetadataEdit extends Common {
           $copy = '';
           $state = 'dark';
         } else {
-          $copy = $this->getEditActionLink('DiscoveryResponse', array('index' => $index, 'value' => htmlspecialchars($data['location'])), $index, 'Add', self::TEXT_COPY);
+          $copy = $this->getEditActionLink('DiscoveryResponse', array('index' => $index, 'value' => $data['location']), $index, 'Add', self::TEXT_COPY);
           $state = 'danger';
         }
         printf ('          <li>%s<span class="text-%s"><b>Index = %d</b><br>%s</span></li>%s',
@@ -1711,7 +1715,7 @@ class MetadataEdit extends Common {
       } else {
         $state = 'success';
       }
-      $links = $this->getEditDeleteLinks('DiscoHints', array('element'=>$element, 'value'=>htmlspecialchars($data)), $idx);
+      $links = $this->getEditDeleteLinks('DiscoHints', array('element'=>$element, 'value'=>$data), $idx);
       printf ('%s          <li>%s<span class="text-%s">%s</span></li>', "\n", $links, $state, htmlspecialchars($data));
       $idx++;
     }
@@ -1756,7 +1760,7 @@ class MetadataEdit extends Common {
             $state = 'dark';
             break;
           case 'removed' :
-            $copy = $this->getEditActionLink('DiscoHints', array('element' => $element, 'value' => htmlspecialchars($data)), $idx, 'Add', self::TEXT_COPY);
+            $copy = $this->getEditActionLink('DiscoHints', array('element' => $element, 'value' => $data), $idx, 'Add', self::TEXT_COPY);
             $state = 'danger';
             break;
           default :
@@ -2386,7 +2390,7 @@ class MetadataEdit extends Common {
           break;
         default :
       }
-      $name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+      $name = $keyInfo['name'] == '' ? '' : '(' . Security::escape($keyInfo['name']) .')';
 
       if ($keyInfo['notValidAfter'] <= $timeNow ) {
         $error = ($validCertExists) ? self::HTML_CLASS_ALERT_WARNING : self::HTML_CLASS_ALERT_DANGER;
@@ -2473,7 +2477,7 @@ class MetadataEdit extends Common {
             break;
           default :
         }
-        $name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+        $name = $keyInfo['name'] == '' ? '' : '(' . Security::escape($keyInfo['name']) .')';
         $state = $oldKeyInfos[$keyInfo['serialNumber']][$keyInfo['use']] == "same" ? 'dark' : 'danger';
         printf('%s        <span class="text-%s text-truncate"><b>KeyUse = "%s"</b> %s</span>
         <ul>
@@ -2547,6 +2551,10 @@ class MetadataEdit extends Common {
         if ($placement < 3 ) {
           if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
             $langvalue = strtolower(trim($_POST['lang']));
+            if ($_POST['action'] == 'Add'
+              && ! Security::isAllowedLanguage($langvalue, $this->config->getFederation()['languages'])) {
+              $error .= '<br>Language is not enabled for this federation';
+            }
           } else {
             $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
           }
@@ -2974,9 +2982,10 @@ class MetadataEdit extends Common {
           $state = 'success';
         }
         $links = $this->getEditDeleteLinks('AttributeConsumingService',
-            array('index' => $index, 'element' => $serviceElement['element'], 'lang' => $serviceElement['lang'], 'value' => htmlspecialchars($serviceElement['data'])), $idx);
+            array('index' => $index, 'element' => $serviceElement['element'], 'lang' => $serviceElement['lang'], 'value' => $serviceElement['data']), $idx);
         printf(self::HTML_LI_SPAN,
-          "\n", $links, $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
+          "\n", $links, $state, Security::escape($serviceElement['element']),
+          Security::escape($serviceElement['lang']), htmlspecialchars($serviceElement['data']));
         $idx++;
       }
       print "\n" . self::HTML_END_UL;
@@ -3046,7 +3055,7 @@ class MetadataEdit extends Common {
           $state = 'success';
         }
         $links = $this->getEditDeleteLinks('AttributeConsumingService',
-            array('index' => $index, 'element' => 'RequestedAttribute', 'name' => htmlspecialchars($requestedAttribute['Name']), 'isRequired' => $requestedAttribute['isRequired'], 'friendlyName' => htmlspecialchars($requestedAttribute['FriendlyName'])), $idx);
+            array('index' => $index, 'element' => 'RequestedAttribute', 'name' => $requestedAttribute['Name'], 'isRequired' => $requestedAttribute['isRequired'], 'friendlyName' => $requestedAttribute['FriendlyName']), $idx);
         $existingRequestedAttribute[$requestedAttribute['Name']] = true;
         printf('%s            <li%s>%s<span class="text-%s"><b>%s</b> - %s%s</span></li>',
           "\n", $error, $links, $state, htmlspecialchars($friendlyNameDisplay), htmlspecialchars($requestedAttribute['Name']),
@@ -3156,7 +3165,7 @@ class MetadataEdit extends Common {
                 break;
               case 'removed' :
                 $copy = $this->getEditActionLink('AttributeConsumingService',
-                    array('index' => $index, 'element' => $element, 'lang' => $lang, 'value' => htmlspecialchars($data['value'])),
+                    array('index' => $index, 'element' => $element, 'lang' => $lang, 'value' => $data['value']),
                     $idx, 'Add', self::TEXT_COPY);
                 $state = 'danger';
                 break;
@@ -3165,7 +3174,8 @@ class MetadataEdit extends Common {
                 $state = 'danger';
             }
             printf(self::HTML_LI_SPAN, "\n",
-              $copy, $state, $element, $lang, htmlspecialchars($data['value']));
+              $copy, $state, Security::escape($element), Security::escape($lang),
+              htmlspecialchars($data['value']));
             $idx++;
           }
         }
@@ -3180,10 +3190,10 @@ class MetadataEdit extends Common {
               $copy = $this->getEditActionLink('AttributeConsumingService',
                     array('index' => $index,
                           'element' => 'RequestedAttribute',
-                          'name' => htmlspecialchars($name),
+                          'name' => $name,
                           'isRequired' => $data['isRequired'],
                           'friendlyName' => $data['friendlyName'],
-                          'NameFormat' => htmlspecialchars($data['nameFormat'])
+                          'NameFormat' => $data['nameFormat']
                           ),
                     $idx, 'Add', self::TEXT_COPY);
               $state = 'danger';
@@ -3228,6 +3238,10 @@ class MetadataEdit extends Common {
       }
       if (isset($_POST['lang']) && trim($_POST['lang']) != '') {
         $lang = strtolower(trim($_POST['lang']));
+        if ($_POST['action'] == 'Add'
+          && ! Security::isAllowedLanguage($lang, $this->config->getFederation()['languages'])) {
+          $error .= '<br>Language is not enabled for this federation';
+        }
       } else {
         $error .= $_POST['action'] == "Add" ? self::HTML_LIE : '';
         $lang = '';
@@ -3391,9 +3405,10 @@ class MetadataEdit extends Common {
         $state = 'dark';
         $oldOrganizationElements[$organization['element']][$organization['lang']]['state'] = 'same';
       } else { $state = 'success'; }
-      $links = $this->getEditDeleteLinks('Organization', array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])), $idx);
+      $links = $this->getEditDeleteLinks('Organization', array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => $organization['data']), $idx);
       printf (self::HTML_LI_SPAN,
-        "\n", $links, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
+        "\n", $links, $state, Security::escape($organization['element']),
+        Security::escape($organization['lang']), htmlspecialchars($organization['data']));
       $existingOrganizationElements[$organization['element']][$organization['lang']] = true;
       $idx++;
     }
@@ -3444,10 +3459,11 @@ class MetadataEdit extends Common {
       $addLink =  (isset($existingOrganizationElements[$organization['element']][$organization['lang']]) )
         ? ''
         : $this->getEditActionLink('Organization',
-                  array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => htmlspecialchars($organization['data'])),
+                  array('element' => $organization['element'], 'lang' => $organization['lang'], 'value' => $organization['data']),
                   $idx, 'Add', self::TEXT_COPY);
       printf (self::HTML_LI_SPAN,
-        "\n", $addLink, $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
+        "\n", $addLink, $state, Security::escape($organization['element']),
+        Security::escape($organization['lang']), htmlspecialchars($organization['data']));
       $idx++;
     }
     print "\n        <ul>";
@@ -3772,7 +3788,7 @@ class MetadataEdit extends Common {
           $addLink = isset($existingContactPersons[$contactType][$dbPart])
             ? ''
             : $this->getEditActionLink('ContactPersons',
-                  array('type' => $type, 'part' => $samlPart, 'value' => htmlspecialchars($contactPerson[$dbPart])),
+                  array('type' => $type, 'part' => $samlPart, 'value' => $contactPerson[$dbPart]),
                   $idx, 'Add', self::TEXT_COPY);
           printf ('          <li>%s<span class="text-%s">%s = %s</span></li>%s',
             $addLink, $state, $samlPart, htmlspecialchars($contactPerson[$dbPart]), "\n");
@@ -3895,7 +3911,7 @@ class MetadataEdit extends Common {
    *
    * @param string $edit Name of element being edited
    *
-   * @param array $data Array of key value pairs to include on the form (data to be edited).  Values already have to be prepared to render as %s (so escaped as needed)
+   * @param array $data Array of raw key value pairs to include on the form (data to be edited)
    *
    * @param int $id Index value to use in identifying edit forms.  Must be unique across the page (for a single action).
    *
@@ -3912,7 +3928,8 @@ class MetadataEdit extends Common {
               $action, $edit, $id, // form id
               $edit, $this->dbIdNr, $this->dbOldIdNr, "\n");
     foreach ($data as $key => $value) {
-      $link .= sprintf('              <input type="hidden" name="%s" value="%s">%s', $key, $value, "\n");
+      $link .= sprintf('              <input type="hidden" name="%s" value="%s">%s',
+        Security::escape($key), Security::escape($value), "\n");
     }
     $link .= sprintf('              <input type="hidden" name="action" value="%s">
               <a href="#" onClick="document.forms.%s%s%d.submit();">%s</a></form>%s',
@@ -3928,7 +3945,7 @@ class MetadataEdit extends Common {
    *
    * @param string $edit Name of element being edited
    *
-   * @param array $data Array of key value pairs to include on the form (data to be edited).  Values already have to be prepared to render as %s (so escaped as needed)
+   * @param array $data Array of raw key value pairs to include on the form (data to be edited)
    *
    * @param int $id Index value to use in identifying edit forms.  Must be unique across the page.
    */

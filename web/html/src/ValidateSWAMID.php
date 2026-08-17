@@ -127,10 +127,10 @@ class ValidateSWAMID extends Validate {
         $usedLangArray[$lang] = $lang;
         if ($type == 'SPSSO') {
           $this->error .= sprintf("SWAMID Tech 6.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
-            $lang, $element, $type);
+            Security::escape($lang), Security::escape($element), Security::escape($type));
         } else {
           $this->error .= sprintf("SWAMID Tech 5.1.1: Lang (%s) is not a value from ISO 639-1 on mdui:%s in %sDescriptor.\n",
-            $lang, $element, $type);
+            Security::escape($lang), Security::escape($element), Security::escape($type));
         }
       }
 
@@ -145,10 +145,10 @@ class ValidateSWAMID extends Validate {
         if ($element != 'Logo') {
           if ($type == 'IDPSSO') {
             $this->error .= sprintf("SWAMID Tech 5.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
-              $element, $lang, $type);
+              Security::escape($element), Security::escape($lang), Security::escape($type));
           } else {
             $this->error .= sprintf("SWAMID Tech 6.1.2: More than one mdui:%s with lang=%s in %sDescriptor.\n",
-              $element, $lang, $type);
+              Security::escape($element), Security::escape($lang), Security::escape($type));
           }
         }
       } else {
@@ -171,7 +171,7 @@ class ValidateSWAMID extends Validate {
       if (isset($serviceArray[$element][$index][$lang])) {
         $this->error .= sprintf(
           "SWAMID Tech 6.1.2: More than one %s with lang=%s in AttributeConsumingService (index=%d).\n",
-          $element, $lang, $index);
+          Security::escape($element), Security::escape($lang), $index);
       } else {
         $serviceArray[$element][$index][$lang] = true;
       }
@@ -187,7 +187,8 @@ class ValidateSWAMID extends Validate {
       $usedLangArray[$lang] = $lang;
       if (isset($organizationArray[$element][$lang])) {
         $this->error .= $this->selectError('5.1.2', '6.1.2',
-          sprintf('More than one %s with lang=%s in Organization.', $element, $lang));
+          sprintf('More than one %s with lang=%s in Organization.',
+            Security::escape($element), Security::escape($lang)));
       } else {
         $organizationArray[$element][$lang] = true;
       }
@@ -204,10 +205,10 @@ class ValidateSWAMID extends Validate {
           } elseif (! isset($langArray[$lang])) {
             if ($type == 'IDPSSO') {
               $this->error .= sprintf("SWAMID Tech 5.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
-                $lang, $element, $type);
+                Security::escape($lang), Security::escape($element), Security::escape($type));
             } else {
               $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for mdui:%s in %sDescriptor.\n",
-                $lang, $element, $type);
+                Security::escape($lang), Security::escape($element), Security::escape($type));
             }
           }
         }
@@ -218,7 +219,7 @@ class ValidateSWAMID extends Validate {
         foreach ($usedLangArray as $lang) {
           if (! isset($langArray[$lang])) {
             $this->error .= sprintf("SWAMID Tech 6.1.3: Missing lang=%s for %s in AttributeConsumingService with index=%d.\n",
-              $lang, $element, $index);
+              Security::escape($lang), Security::escape($element), $index);
           }
         }
       }
@@ -227,7 +228,8 @@ class ValidateSWAMID extends Validate {
       foreach ($usedLangArray as $lang) {
         if (! isset($langArray[$lang])) {
           $this->error .= $this->selectError('5.1.3', '6.1.3',
-            sprintf('Missing lang=%s for %s in Organization.', $lang, $element));
+            sprintf('Missing lang=%s for %s in Organization.',
+              Security::escape($lang), Security::escape($element)));
         }
       }
     }

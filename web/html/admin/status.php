@@ -219,7 +219,9 @@ function showValidationOutput() {
         <table id="validation-table" class="table table-striped table-bordered">
           <thead><tr><th>entityID</th><th>Validation error</th></tr></thead>%s', "\n");
   while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
-    printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td></tr>%s', $entity['id'], htmlspecialchars($entity['entityID']), str_ireplace("\n", "<br>", $entity['validationOutput']), "\n");
+    printf('          <tr><td><a href=./?showEntity=%d target="_blank">%s</a></td><td>%s</td></tr>%s',
+      $entity['id'], htmlspecialchars($entity['entityID']),
+      nl2br(\metadata\Security::escape($entity['validationOutput']), false), "\n");
   }
   print HTML_TABLE_END;
 }
