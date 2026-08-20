@@ -653,7 +653,8 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entityId_html, $entity['organization'], $entity['contacts'],
+        $entityId_html, nl2br(\metadata\Security::escape($entity['organization']), false),
+        nl2br(\metadata\Security::escape($entity['contacts']), false),
         htmlspecialchars($entity['scopes']), htmlspecialchars($entity['ecs']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   } else {
@@ -688,8 +689,10 @@ function showInterfederation($type){
           <td>%s</td>
           <td>%s</td>
         </tr>%s',
-        $entityId_html,  htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']), $entity['organization'],
-        $entity['contacts'], htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
+        $entityId_html, htmlspecialchars($entity['displayName']), htmlspecialchars($entity['serviceName']),
+        nl2br(\metadata\Security::escape($entity['organization']), false),
+        nl2br(\metadata\Security::escape($entity['contacts']), false),
+        htmlspecialchars($entity['ec']), htmlspecialchars($entity['assurancec']), htmlspecialchars($entity['ra']), "\n");
     }
   }
 }

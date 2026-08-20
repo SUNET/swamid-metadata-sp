@@ -274,7 +274,7 @@ function checkEntities(&$xml) {
                   default:
                     break;
                 }
-                $organization = sprintf('<a href="%s">%s</a>', htmlspecialchars($orgURL), htmlspecialchars($orgName)); #NOSONAR used above
+                $organization = $orgName . ($orgURL == '' ? '' : sprintf(' (%s)', $orgURL));
               }
               break;
             case MD_CONTACT_PERSON :
@@ -295,7 +295,7 @@ function checkEntities(&$xml) {
         if ($saveEntity) {
           $contacts = '';
           foreach ($contactsArray as $contact) {
-            $contacts .= sprintf ('<a href="%s">%s<a><br>', htmlspecialchars($contact['email']), htmlspecialchars($contact['type']));
+            $contacts .= sprintf("%s: %s\n", $contact['type'], $contact['email']);
           }
           $updateHandler->execute();
           if (! $updateHandler->rowCount()) {

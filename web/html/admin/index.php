@@ -955,7 +955,8 @@ function showEntity($entitiesId, $showHeader = true)  {
           }
           $mergeEntityHandler->execute();
           while ($mergeEntity = $mergeEntityHandler->fetch(PDO::FETCH_ASSOC)) {
-            printf('%s          <option value="%d">%s</option>', "\n", $mergeEntity['id'], $mergeEntity['entityID']);
+            printf('%s          <option value="%d">%s</option>', "\n", $mergeEntity['id'],
+              htmlspecialchars($mergeEntity['entityID']));
           }
           printf ('%s        </select>%s        <button type="submit">Merge</button>%s      </form>', "\n", "\n", "\n");
         }
@@ -1618,7 +1619,7 @@ function annualConfirmation($entitiesId){
           }
           printf(
             '%s    <p>You are confirming that <b>%s</b> is operational and fulfils %s</p>%s',
-            "\n", $metadata->entityID(), $federation['rulesName'], "\n");
+            "\n", htmlspecialchars($metadata->entityID()), $federation['rulesName'], "\n");
           printf('    <form action="." method="post">
       <input type="hidden" name="Entity" value="%d">
       <input type="hidden" name="FormVisit" value="true">
@@ -1688,8 +1689,8 @@ function annualConfirmationList($list){
       if ($metadata->status() == 1) {
         # Entity is Published
         $metadata->getUserId($EPPN);
-        print $metadata->getWarning();
-        print $metadata->getError();
+        print \metadata\Security::escape($metadata->getWarning());
+        print \metadata\Security::escape($metadata->getError());
         if ($metadata->getWarning() == '' && $metadata->getError() == '' && $metadata->isResponsible()) {
           # User have access to entity and no warnings or error
           #check if IdP och SP and add save for later display
@@ -1741,7 +1742,8 @@ function annualConfirmationList($list){
       <input type="hidden" name="FormVisit" value="true">
       <ul>', "\n", $federation['rulesName']);
       foreach ($entityList as $id => $entityID) {
-        printf('      <li><input type="hidden" name="validate_%d" value="on">%s</li>%s', $id , $entityID, "\n");
+        printf('      <li><input type="hidden" name="validate_%d" value="on">%s</li>%s',
+          $id, htmlspecialchars($entityID), "\n");
       }
       printf('
       </ul>
@@ -1908,7 +1910,8 @@ function requestRemoval($entitiesId) {
       } else {
         $menuActive = 'publ';
         showMenu();
-        printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the %s metadata.</p>', "\n", $metadata->entityID(), $federation['displayName']);
+        printf('%s    <p>You are about to request removal of the entity with the entityID <b>%s</b> from the %s metadata.</p>',
+          "\n", htmlspecialchars($metadata->entityID()), $federation['displayName']);
         if (($metadata->feedValue() & 2) == 2) { $publishArray[] = $federation['displayName']; }
         if (($metadata->feedValue() & 4) == 4) { $publishArray[] = 'eduGAIN'; }
         printf('%s    <p>Currently published in <b>%s</b></p>%s', "\n", implode (' and ', $publishArray), "\n");
@@ -2213,7 +2216,7 @@ function getBlockingErrors($entitiesId) {
 
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    $errors .= $entity['errors'];
+    $errors .= \metadata\Security::escape($entity['errors']);
   }
   return $errors;
 }
@@ -2228,8 +2231,8 @@ function getErrors($entitiesId) {
 
   $entityHandler->execute();
   if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-    $errors = $entity['errorsNB'];
-    $errors .= $entity['errors'];
+    $errors = \metadata\Security::escape($entity['errorsNB']);
+    $errors .= \metadata\Security::escape($entity['errors']);
   }
   return $errors;
 }

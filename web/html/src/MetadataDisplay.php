@@ -16,7 +16,6 @@ class MetadataDisplay extends Display\Common {
   const HTML_CLASS_ALERT_DANGER = ' class="alert-danger" role="alert"';
   const HTML_SHOW_URL = '%s - <a href="?action=showURL&URL=%s" target="_blank">%s</a>%s';
   const HTML_SHOWALLORGS = '&showAllOrgs';
-  const HTML_TARGET_BLANK = '<a href="%s" class="text-%s" target="_blank">%s</a>';
   const HTML_SELECTED = ' selected';
 
   const TEXT_IHNBVF = 'IMPS has not been validated for %d months';
@@ -277,7 +276,7 @@ class MetadataDisplay extends Display\Common {
           $errors .= $organizationDefaultsMatch ? '' : 'The Organization information in SAML Metadata is different from information registered for the organization bound to the Entity.';
         }
       }
-      $errors .= $entity['errors'] . $entity['errorsNB'];
+      $errors .= Security::escape($entity['errors'] . $entity['errorsNB']);
       if ($errors != '') {
         printf('%s    <div class="row alert alert-danger" role="alert">%s      <div class="col">
         <b>Errors:</b>
@@ -285,7 +284,7 @@ class MetadataDisplay extends Display\Common {
           <li>%s</li>
         </ul>%s      </div>%s    </div>', "\n", "\n", str_ireplace("\n", "</li>\n          <li>", trim($errors)), "\n", "\n");
       }
-      $warnings .= $entity['warnings'];
+      $warnings .= Security::escape($entity['warnings']);
       if ( $warnings != '') {
         printf('%s    <div class="row alert alert-warning" role="alert">%s      <div class="col">
         <b>Warnings:</b>
@@ -295,7 +294,7 @@ class MetadataDisplay extends Display\Common {
       }
 
       if ($entity['validationOutput'] != '') {
-        $notice .= $entity['validationOutput'];
+        $notice .= Security::escape($entity['validationOutput']);
       }
       if ($notice != '') {
         printf('%s    <div class="row alert alert-primary" role="alert">%s      <div class="col">
@@ -490,7 +489,8 @@ class MetadataDisplay extends Display\Common {
         && $organizationDefaults[$organization['element']][$organization['lang']] <> $organization['data'] )
         ? 'danger' : 'dark';
       printf ('            <li><span class="text-%s">%s[%s] = %s</span></li>%s',
-        $state, $organization['element'], $organization['lang'], $organization['data'], "\n");
+        $state, Security::escape($organization['element']), Security::escape($organization['lang']),
+        Security::escape($organization['data']), "\n");
     }
     printf('          </ul>%s', "\n",);
   }
@@ -655,7 +655,7 @@ class MetadataDisplay extends Display\Common {
       }
       ?>
 
-          <b><?=$type?></b>
+          <b><?=Security::escape($type)?></b>
           <ul>
             <li><div<?=$error?>><span class="text-<?=$state?>"><?=htmlspecialchars($value)?></span></div></li><?php
       $oldType = $type;
@@ -674,7 +674,7 @@ class MetadataDisplay extends Display\Common {
         }
         if ($oldType != $type) {
           print "\n          </ul>";
-          printf ("\n          <b>%s</b>\n          <ul>", $type);
+          printf ("\n          <b>%s</b>\n          <ul>", Security::escape($type));
           $oldType = $type;
         }
         printf ('%s            <li><div%s><span class="text-%s">%s</span></div></li>', "\n", $error, $state, htmlspecialchars($value));
@@ -884,7 +884,7 @@ class MetadataDisplay extends Display\Common {
                 <p class="text-%s" style="white-space: nowrap;overflow: hidden;text-overflow: ellipsis;max-width: 30em;">',
       "\n", $edit, $state);
     if ($thisURL != '') {
-      printf (self::HTML_TARGET_BLANK, htmlspecialchars($thisURL), $state, htmlspecialchars($thisURL));
+      print Security::httpLink($thisURL, $thisURL, 'text-' . $state);
     } else {
       print 'Missing';
     }
@@ -987,7 +987,8 @@ class MetadataDisplay extends Display\Common {
         }
 
         printf('%s                <b>Lang = "%s" - %s</b>%s                <ul>',
-          $showEndUL ? "\n                </ul>\n" : "\n", $lang, $fullLang, "\n");
+          $showEndUL ? "\n                </ul>\n" : "\n", Security::escape($lang),
+          Security::escape($fullLang), "\n");
         $showEndUL = true;
         $oldLang = $lang;
       }
@@ -1033,13 +1034,13 @@ class MetadataDisplay extends Display\Common {
           } else {
             $statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
           }
-          $data = sprintf (self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
+          $data = Security::httpLink($data, $data, 'text-' . $state);
           printf ('%s                  <li>%s <span class="text-%s">%s (%s) = %s</span>%s</li>',
             "\n", $statusIcon, $state, $element, $size, $data, $statusText);
           break;
         case 'InformationURL' :
         case 'PrivacyStatementURL' :
-          $data = sprintf (self::HTML_TARGET_BLANK, htmlspecialchars($data), $state, htmlspecialchars($data));
+          $data = Security::httpLink($data, $data, 'text-' . $state);
           printf ('%s                  <li><span class="text-%s">%s = %s</span></li>',
           "\n", $state, $element, $data);
           break;
@@ -1249,7 +1250,7 @@ class MetadataDisplay extends Display\Common {
           break;
         default :
       }
-      $name = $keyInfo['name'] == '' ? '' : '(' . $keyInfo['name'] .')';
+      $name = $keyInfo['name'] == '' ? '' : '(' . Security::escape($keyInfo['name']) .')';
 
       if ($keyInfo['notValidAfter'] <= $timeNow ) {
         $error = ($validCertExists) ? self::HTML_CLASS_ALERT_WARNING : self::HTML_CLASS_ALERT_DANGER;
@@ -1351,7 +1352,8 @@ class MetadataDisplay extends Display\Common {
           $state = 'dark';
         }
         printf('%s                  <li><span class="text-%s">%s[%s] = %s</span></li>',
-          "\n", $state, $serviceElement['element'], $serviceElement['lang'], htmlspecialchars($serviceElement['data']));
+          "\n", $state, Security::escape($serviceElement['element']),
+          Security::escape($serviceElement['lang']), htmlspecialchars($serviceElement['data']));
       }
       $requestedAttributeHandler->execute();
       print "\n                  <li>RequestedAttributes : <ul>";
@@ -1495,12 +1497,13 @@ class MetadataDisplay extends Display\Common {
         $state = 'dark';
       }
       if ($organization['element'] == 'OrganizationURL' ) {
-        printf ('%s          <li><span class="text-%s">%s[%s] = <a href="%s" class="text-%s">%s</a></span></li>',
-          "\n", $state, $organization['element'], $organization['lang'],
-          htmlspecialchars($organization['data']), $state, htmlspecialchars($organization['data']));
+        printf ('%s          <li><span class="text-%s">%s[%s] = %s</span></li>',
+          "\n", $state, Security::escape($organization['element']), Security::escape($organization['lang']),
+          Security::httpLink($organization['data'], $organization['data'], 'text-' . $state));
       } else {
         printf ('%s          <li><span class="text-%s">%s[%s] = %s</span></li>',
-          "\n", $state, $organization['element'], $organization['lang'], htmlspecialchars($organization['data']));
+          "\n", $state, Security::escape($organization['element']),
+          Security::escape($organization['lang']), htmlspecialchars($organization['data']));
       }
     }
     print "\n        </ul>";
@@ -1719,9 +1722,8 @@ class MetadataDisplay extends Display\Common {
     $entityHandler->bindParam(self::BIND_ID, $entityId);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
-      header('Content-Type: application/xml; charset=utf-8');
-      if (isset($_GET['download'])) {
-        header('Content-Disposition: attachment; filename=metadata.xml');
+      foreach (Security::rawXmlHeaders(isset($_GET['download'])) as $header) {
+        header($header);
       }
       print $entity['xml'];
     } else {
@@ -2201,7 +2203,7 @@ class MetadataDisplay extends Display\Common {
             <td>%s</td>
             <td>%s</td>%s          </tr>%s',
           $type, $feed, $entity['id'], htmlspecialchars($entity['entityID']), htmlspecialchars($email),
-          str_ireplace("\n", "<br>",$entity['errors'].$entity['errorsNB']), "\n", "\n");
+          nl2br(Security::escape($entity['errors'] . $entity['errorsNB']), false), "\n", "\n");
       }
     }
     if (!$download) {print "    " . self::HTML_TABLE_END; }
@@ -2453,7 +2455,7 @@ class MetadataDisplay extends Display\Common {
         $normalize2 = new \metadata\NormalizeXML();
         $normalize2->fromString($entity2['xml']);
         if ($normalize1->getStatus() && $normalize2->getStatus()) {
-          printf ('<h4>Diff of %s</h4>', $entity1['entityID']);
+          printf ('<h4>Diff of %s</h4>', Security::escape($entity1['entityID']));
           // renderer class name:
           //     Text renderers: Context, JsonText, Unified
           //     HTML renderers: Combined, Inline, JsonHtml, SideBySide
@@ -2878,7 +2880,8 @@ class MetadataDisplay extends Display\Common {
         "\n", $imps['orgId'], $imps['orgId'], htmlspecialchars($imps['OrganizationDisplayName']), $imps['maximumAL'],
         $imps['lastUpdated'], $lastValidated, $validatedBy, "\n");
       while ($idp = $idpHandler->fetch(PDO::FETCH_ASSOC)) {
-        printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s', $idp['id'], $idp['entityID'] , "\n");
+        printf ('                  <li><a href="?showEntity=%d" target="_blank">%s</a></li>%s',
+          $idp['id'], Security::escape($idp['entityID']), "\n");
       }
       print '                </ul>';
       $this->showCollapseEnd("imps-" . $imps['id'], 3);
@@ -2966,7 +2969,9 @@ class MetadataDisplay extends Display\Common {
                       <li>URL : %s</li>
                     </ul>
                   </li>%s',
-          isset(self::LANG_CODES[$orgInfoData['lang']]) ? self::LANG_CODES[$orgInfoData['lang']] : sprintf('Unkown lang code: %s', $orgInfoData['lang']),
+          isset(self::LANG_CODES[$orgInfoData['lang']])
+            ? Security::escape(self::LANG_CODES[$orgInfoData['lang']])
+            : sprintf('Unkown lang code: %s', Security::escape($orgInfoData['lang'])),
           htmlspecialchars($orgInfoData['OrganizationName']), htmlspecialchars($orgInfoData['OrganizationDisplayName']), htmlspecialchars($orgInfoData['OrganizationURL']), "\n");
 
       }
@@ -2990,7 +2995,7 @@ class MetadataDisplay extends Display\Common {
                     <ul>%s', "\n");
       while ($entity = $entitiesHandler->fetch(PDO::FETCH_ASSOC)) {
         printf ('                      <li><a href="?showEntity=%d">%s</a></li>%s',
-          $entity['id'], $entity['entityID'], "\n");
+          $entity['id'], Security::escape($entity['entityID']), "\n");
       }
       print '                    </ul>
                   </li>

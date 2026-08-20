@@ -306,7 +306,7 @@ class IMPS {
           } else {
             $assuranceLevel = 0;
           }
-          printf('           <li>%s (AL%d)</li>%s', $idp['entityID'], $assuranceLevel, "\n");
+          printf('           <li>%s (AL%d)</li>%s', htmlspecialchars($idp['entityID']), $assuranceLevel, "\n");
         }
         printf('          </ul>
           <form action="." method="POST">
