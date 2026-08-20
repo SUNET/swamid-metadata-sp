@@ -250,7 +250,7 @@ if (isset($_FILES['XMLfile'])) {
   }
 } elseif (isset($_REQUEST['rawXML'])) {
   $display = $config->getExtendedClass('MetadataDisplay');
-  $display->showRawXML($_REQUEST['rawXML'], false, true);
+  $display->showRawXML($_REQUEST['rawXML']);
 } elseif (isset(($_REQUEST['approveAccessRequest']))) {
   approveAccessRequest($_REQUEST['approveAccessRequest']);
 } elseif (isset($_REQUEST['showHelp'])) {

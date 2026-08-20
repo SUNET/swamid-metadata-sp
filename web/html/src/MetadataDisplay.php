@@ -1713,20 +1713,12 @@ class MetadataDisplay extends Display\Common {
    *
    * @param bool $urn if $entityId is Id in database or EntityId
    *
-   * @param bool $includeUnpublished allow authenticated administrative callers to retrieve drafts
-   *
    * @return void
    */
-  public function showRawXML($entityId, $urn = false, $includeUnpublished = false) {
-    if ($urn) {
-      $entityHandler = $this->config->getDb()->prepare(
-        'SELECT `xml` FROM `Entities` WHERE `entityID` = :Id AND `status` = 1;');
-    } elseif ($includeUnpublished) {
-      $entityHandler = $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `id` = :Id;');
-    } else {
-      $entityHandler = $this->config->getDb()->prepare(
-        'SELECT `xml` FROM `Entities` WHERE `id` = :Id AND `status` = 1;');
-    }
+  public function showRawXML($entityId, $urn = false) {
+    $entityHandler = $urn
+      ? $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `entityID` = :Id AND `status` = 1;')
+      : $this->config->getDb()->prepare('SELECT `xml` FROM `Entities` WHERE `id` = :Id;');
     $entityHandler->bindParam(self::BIND_ID, $entityId);
     $entityHandler->execute();
     if ($entity = $entityHandler->fetch(PDO::FETCH_ASSOC)) {
