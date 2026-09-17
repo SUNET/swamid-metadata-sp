@@ -8,6 +8,21 @@ namespace metadata;
 class AttributeDefsSWAMID extends AttributeDefs
 {
   /**
+   * STANDARD_ATTRIBUTES
+   *
+   */
+  protected const STANDARD_ATTRIBUTES_SWAMID = array(
+    'entity-category' => array(
+      'http://www.swamid.se/policy/assurance/al2' => array( # NOSONAR Should be http://
+        'type' => 'SP', 'standard' => true
+      ),
+      'http://www.swamid.se/policy/assurance/al3' => array( # NOSONAR Should be http://
+        'type' => 'SP', 'standard' => true
+      )
+    )
+  );
+
+  /**
    * FRIENDLY_NAMES
    *
    */
@@ -24,11 +39,21 @@ class AttributeDefsSWAMID extends AttributeDefs
   );
 
   /**
-   * Returns attribute definitions customised for Tuakiri
+   * Returns an associative of entity attribute definitions, indexed by entity attribute name.
    *
-   * @return array
+   * @return array<mixed>
    */
 
+  public function getStandardEntityAttributes()
+  {
+    return array_merge_recursive(self::STANDARD_ATTRIBUTES, self::STANDARD_ATTRIBUTES_SWAMID);
+  }
+
+  /**
+   * Returns attribute definitions customised for Tuakiri
+   *
+   * @return array<mixed>
+   */
   public function getAttributeFriendlyNames()
   {
     return array_merge(self::FRIENDLY_NAMES, self::FRIENDLY_NAMES_SWAMID);
